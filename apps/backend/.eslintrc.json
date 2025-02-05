@@ -1,0 +1,6 @@
+{
+  "extends": ["@oticas-queiroz/config/.eslintrc.json"],
+  "parserOptions": {
+    "project": "./tsconfig.json" // Indica ao ESLint onde está o tsconfig.json
+  }
+}

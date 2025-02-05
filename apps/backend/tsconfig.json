@@ -1,0 +1,14 @@
+{
+  "extends": "@oticas-queiroz/config/tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist", // Diretório de saída para os arquivos compilados
+    "rootDir": "./src", // Diretório raiz do código TypeScript
+    "baseUrl": ".", // Permite usar caminhos absolutos
+    "paths": {
+      // Mapeamento de caminhos para módulos
+      "@oticas-queiroz/config": ["../../packages/config"]
+    }
+  },
+  "include": ["src/**/*"], // Incluir todos os arquivos na pasta src
+  "exclude": ["node_modules"] // Excluir a pasta node_modules
+}
