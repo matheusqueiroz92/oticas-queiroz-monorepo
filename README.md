@@ -12,6 +12,7 @@ Este repositório contém o projeto completo da Óticas Queiroz, incluindo backe
 
 ## 📂 Estrutura do Projeto
 
+```bash
 oticas-queiroz-monorepo/
 ├── apps/
 │ ├── backend/ # API Node.js
@@ -26,6 +27,7 @@ oticas-queiroz-monorepo/
 ├── package.json # Dependências globais
 ├── .gitignore
 └── README.md
+```
 
 ## 🛠️ Como Executar o Projeto
 
@@ -68,9 +70,9 @@ npx turbo run dev
 
 5. Acesse as aplicações:
 
-- Backend: http://localhost:3000
-- Swagger UI: http://localhost:3000/api-docs
-- Frontend: http://localhost:3001
+- Backend: http://localhost:3333
+- Swagger UI: http://localhost:3333/api-docs
+- Frontend: http://localhost:3000
 - Mobile: Utilize o Expo Go no seu dispositivo móvel.
 - Desktop: Execute o Electron localmente no seu computador.
 
