@@ -95,3 +95,55 @@ O projeto utiliza GitHub Actions para CI/CD. O workflow está configurado em .gi
 
 📝 Licença
 Este projeto está licenciado sob a MIT License. Veja o arquivo LICENSE para mais detalhes.
+
+---
+
+## 🚀 Backend
+
+A API do backend foi desenvolvida utilizando Node.js, Express, MongoDB e Mongoose. Ela roda na porta **3333** e está documentada com Swagger.
+
+### Estrutura do Backend
+
+- **app.ts**: Configuração do Express, rotas, banco de dados e Swagger.
+- **server.ts**: Inicialização do servidor.
+
+### Rotas de Usuário
+
+- **POST /api/users**: Cria um novo usuário.
+- **GET /api/users/{id}**: Obtém um usuário pelo ID.
+- **PUT /api/users/{id}**: Atualiza um usuário pelo ID.
+- **DELETE /api/users/{id}**: Remove um usuário pelo ID.
+
+### Rotas de Produtos
+
+- **POST /api/products**: Cria um novo produto.
+- **GET /api/products/{id}**: Obtém um produto pelo ID.
+- **PUT /api/products/{id}**: Atualiza um produto pelo ID.
+- **DELETE /api/products/{id}**: Remove um produto pelo ID.
+
+### Como Executar
+
+1. Navegue até a pasta `apps/backend`.
+2. Instale as dependências:
+
+```bash
+npm install
+```
+
+### Tratamento de Erros
+
+- Todos os erros são tratados de forma segura, garantindo que mensagens de erro sejam retornadas de forma clara e consistente.
+- Erros desconhecidos são capturados e retornados com a mensagem "An unknown error occurred".
+
+## 🧪 Testes
+
+O backend foi desenvolvido seguindo o TDD (Test-Driven Development). Para executar os testes, siga os passos abaixo:
+
+1. Navegue até a pasta `apps/backend`.
+2. Execute os testes:
+
+```bash
+npm test
+```
+
+testando
