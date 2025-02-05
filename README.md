@@ -53,9 +53,12 @@ npm install
 3. Configure as variáveis de ambiente:
 
 - Crie um arquivo .env na raiz do backend e acrescente o conteúdo:
-  PORT=porta_utilizada
-  MONGODB_URI=uri_de_conexão_com_MongoDB
-  JWT_SECRET=sua_chave_JWT
+
+```bash
+PORT=porta_utilizada
+MONGODB_URI=uri_de_conexão_com_MongoDB
+JWT_SECRET=sua_chave_JWT
+```
 
 4. Inicie todos os projetos em modo de desenvolvimento:
 
