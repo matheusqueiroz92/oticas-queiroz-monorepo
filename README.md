@@ -77,7 +77,7 @@ npx turbo run dev
 - Desktop: Execute o Electron localmente no seu computador.
 
 📚 Documentação da API
-A documentação da API está disponível no Swagger UI: http://localhost:3000/api-docs.
+A documentação da API está disponível no Swagger UI: http://localhost:3333/api-docs.
 
 🐳 Docker e Kubernetes
 
