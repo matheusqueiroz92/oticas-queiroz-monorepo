@@ -14,4 +14,5 @@ export interface IUser {
   debts?: number;
   createdAt?: Date;
   updatedAt?: Date;
+  comparePassword(candidatePassword: string): Promise<boolean>;
 }

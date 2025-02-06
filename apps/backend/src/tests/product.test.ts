@@ -1,6 +1,7 @@
 import request from "supertest";
 import app from "../app";
 import { Product } from "../models/Product";
+import { describe, it, expect, afterEach } from "@jest/globals";
 
 describe("Product API", () => {
   afterEach(async () => {
@@ -8,15 +9,13 @@ describe("Product API", () => {
   });
 
   it("should create a new product", async () => {
-    const res = await request(app)
-      .post("/api/products")
-      .send({
-        name: "Óculos de Grau",
-        description: "Óculos para miopia",
-        price: 250,
-        stock: 10,
-        category: "grau",
-      });
+    const res = await request(app).post("/api/products").send({
+      name: "Óculos de Grau",
+      description: "Óculos para miopia",
+      price: 250,
+      stock: 10,
+      category: "grau",
+    });
 
     expect(res.statusCode).toEqual(201);
     expect(res.body).toHaveProperty("name", "Óculos de Grau");

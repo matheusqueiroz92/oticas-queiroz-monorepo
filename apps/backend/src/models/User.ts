@@ -1,4 +1,5 @@
 import { Schema, model } from "mongoose";
+import bcrypt from "bcrypt";
 import type { IUser } from "../interfaces/IUser";
 
 const userSchema = new Schema<IUser>(
@@ -25,5 +26,11 @@ const userSchema = new Schema<IUser>(
   },
   { timestamps: true } // Adiciona createdAt e updatedAt automaticamente
 );
+
+userSchema.methods.comparePassword = async function (
+  candidatePassword: string
+): Promise<boolean> {
+  return bcrypt.compare(candidatePassword, this.password);
+};
 
 export const User = model<IUser>("User", userSchema);

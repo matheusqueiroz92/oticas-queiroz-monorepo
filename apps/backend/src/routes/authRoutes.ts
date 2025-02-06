@@ -1,5 +1,6 @@
 import express from "express";
 import { AuthController } from "../controllers/AuthController";
+import { authenticate, authorize } from "src/middlewares/authMiddleware";
 
 const router = express.Router();
 const authController = new AuthController();
@@ -8,7 +9,7 @@ const authController = new AuthController();
  * @swagger
  * /api/auth/login:
  *   post:
- *     summary: Autentica um usuário
+ *     summary: Login de usuário
  *     requestBody:
  *       required: true
  *       content:
@@ -16,37 +17,46 @@ const authController = new AuthController();
  *           schema:
  *             type: object
  *             properties:
- *               login:
+ *               email:
  *                 type: string
- *                 description: Email ou nome do usuário
  *               password:
  *                 type: string
  *     responses:
  *       200:
- *         description: Login realizado com sucesso
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 token:
- *                   type: string
- *                 user:
- *                   type: object
- *                   properties:
- *                     id:
- *                       type: string
- *                     name:
- *                       type: string
- *                     email:
- *                       type: string
- *                     role:
- *                       type: string
- *       401:
- *         description: Credenciais inválidas
- *       500:
- *         description: Erro no servidor
+ *         description: Token JWT gerado com sucesso
  */
-router.post("/login", (req, res) => authController.login(req, res));
+router.post("/auth/login", (req, res) => authController.login(req, res));
+
+/**
+ * @swagger
+ * /api/auth/register:
+ *   post:
+ *     summary: Registro de usuário
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *               role:
+ *                 type: string
+ *                 enum: [admin, employee, customer]
+ *     responses:
+ *       201:
+ *         description: Usuário criado com sucesso
+ */
+router.post(
+  "/auth/register",
+  authenticate,
+  authorize(["admin", "employee"]),
+  authController.register
+);
 
 export default router;

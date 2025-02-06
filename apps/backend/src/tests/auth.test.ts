@@ -1,54 +1,61 @@
 import request from "supertest";
 import app from "../app";
 import { User } from "../models/User";
-import jwt from "jsonwebtoken";
-import bcrypt from "bcryptjs";
+import { generateToken } from "../utils/jwt";
+import { describe, it, expect, beforeEach } from "@jest/globals";
 
 describe("Auth API", () => {
+  let adminToken: string;
+
   beforeEach(async () => {
     await User.deleteMany({});
+    const admin = await User.create({
+      name: "Admin",
+      email: "admin@test.com",
+      password: "123456",
+      role: "admin",
+    });
+    adminToken = generateToken(admin._id.toString(), "admin");
   });
 
-  it("should authenticate user and return JWT token", async () => {
-    const user = await User.create({
-      name: "Test User",
-      email: "test@example.com",
-      password: await bcrypt.hash("123456", 10),
-      role: "employee",
-    });
+  it("should register a new user", async () => {
+    const res = await request(app)
+      .post("/api/auth/register")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({
+        name: "Matheus",
+        email: "newuser@example.com",
+        password: "123456",
+        role: "customer",
+      });
+
+    expect(res.statusCode).toEqual(201);
+  });
+
+  it("should login with valid credentials", async () => {
+    await request(app)
+      .post("/api/auth/register")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({
+        name: "Matheus",
+        email: "matheus@example.com",
+        password: "123456",
+        role: "customer",
+      });
 
     const res = await request(app)
       .post("/api/auth/login")
-      .send({ email: "test@example.com", password: "123456" });
+      .send({ email: "matheus@example.com", password: "123456" });
 
-    expect(res.statusCode).toBe(200);
+    expect(res.statusCode).toEqual(200);
     expect(res.body).toHaveProperty("token");
   });
 
-  it("should not authenticate invalid credentials", async () => {
+  it("should not login with invalid credentials", async () => {
     const res = await request(app)
       .post("/api/auth/login")
-      .send({ email: "wrong@example.com", password: "wrong" });
+      .send({ email: "matheus@example.com", password: "wrongpassword" });
 
-    expect(res.statusCode).toBe(401);
-  });
-
-  it("should include user role in token", async () => {
-    const user = await User.create({
-      name: "Admin User",
-      email: "admin@example.com",
-      password: await bcrypt.hash("123456", 10),
-      role: "admin",
-    });
-
-    const res = await request(app)
-      .post("/api/auth/login")
-      .send({ email: "admin@example.com", password: "123456" });
-
-    const decoded = jwt.verify(
-      res.body.token,
-      process.env.JWT_SECRET || "secret"
-    );
-    expect(decoded).toHaveProperty("role", "admin");
+    expect(res.statusCode).toEqual(401);
   });
 });

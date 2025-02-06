@@ -1,8 +1,9 @@
 import express from "express";
 import { setupSwagger } from "./config/swagger";
+import authRoutes from "./routes/authRoutes";
 import userRoutes from "./routes/userRoutes";
 import productRoutes from "./routes/productRoutes";
-import orderRoutes from "./routes/orderRoutes"; // Importe as rotas de pedidos
+import orderRoutes from "./routes/orderRoutes";
 import connectDB from "./config/db";
 
 class App {
@@ -21,6 +22,7 @@ class App {
   }
 
   private routes(): void {
+    this.app.use("/api", authRoutes);
     this.app.use("/api", userRoutes);
     this.app.use("/api", productRoutes);
     this.app.use("/api", orderRoutes); // Adicione as rotas de pedidos
