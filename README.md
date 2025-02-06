@@ -1,35 +1,145 @@
 # Óticas Queiroz Monorepo
 
-Este repositório contém o projeto completo da Óticas Queiroz, incluindo backend, frontend, mobile e desktop, gerenciado com Turborepo.
+Este repositório contém um sistema de gerenciamento para ótica que integra controle de clientes, funcionários, produtos, pedidos, pagamentos, laboratório e fornecedores. Esta aplicação inclui backend, frontend, mobile e desktop, gerenciado com Turborepo.
 
-## 🚀 Tecnologias Utilizadas
+## 🚀 Tecnologias
 
-- **Backend:** Node.js, Express, MongoDB, Mongoose, Swagger
-- **Frontend:** Next.js, Tailwind CSS, Shadcn UI
-- **Mobile:** React Native (Expo)
-- **Desktop:** Electron
-- **Ferramentas:** Turborepo, TypeScript, ESLint, Jest, Docker, Kubernetes
+### Backend
 
-## 📂 Estrutura do Projeto
+- Node.js
+- Express
+- MongoDB
+- Mongoose
+- Swagger
+- TypeScript
+- Jest
+- Supertest
+
+### Frontend
+
+- Next.js
+- Tailwind CSS
+- Shadcn UI
+- TypeScript
+
+### Mobile
+
+- React Native (Expo)
+
+### Desktop
+
+- Electron
+
+### DevOps
+
+- Turborepo
+- ESLint
+- Docker
+- Kubernetes
+
+## 📂 Estrutura
 
 ```bash
 oticas-queiroz-monorepo/
 ├── apps/
-│ ├── backend/ # API Node.js
-│ ├── frontend/ # Next.js
-│ ├── mobile/ # React Native (Expo)
-│ └── desktop/ # Electron
+│   ├── backend/      # API Node.js
+│   ├── frontend/     # Next.js
+│   ├── mobile/       # React Native
+│   └── desktop/      # Electron
 ├── packages/
-│ ├── config/ # Configurações compartilhadas (ESLint, TS, Tailwind)
-│ ├── ui/ # Componentes UI compartilhados (Shadcn UI)
-│ └── shared/ # Código compartilhado (tipos, utilitários)
-├── turbo.json # Configuração do Turborepo
-├── package.json # Dependências globais
-├── .gitignore
-└── README.md
+│   ├── config/       # Configurações (ESLint, TS, Tailwind)
+│   ├── ui/           # Componentes UI (Shadcn UI)
+│   └── shared/       # Código compartilhado
 ```
 
-## 🛠️ Como Executar o Projeto
+## 🔒 Autenticação
+
+### Features
+
+- Login via email ou username
+- JWT (JSON Web Token)
+- Autorização baseada em roles
+- Middleware de proteção de rotas
+
+### Roles
+
+- **Admin**: Acesso total ao sistema
+- **Employee**: Gestão de clientes, produtos e pedidos
+- **Customer**: Consulta de pedidos e débitos
+
+### Rotas
+
+- POST `/api/auth/login`
+
+  ```typescript
+  // Request
+  {
+    "login": string,    // email ou username
+    "password": string
+  }
+
+  // Response 200
+  {
+    "token": string,
+    "user": {
+      "id": string,
+      "name": string,
+      "email": string,
+      "role": "admin" | "employee" | "customer"
+    }
+  }
+  ```
+
+## 👥 Usuários
+
+### Rotas
+
+- POST `/api/users`: Criar usuário
+- GET `/api/users`: Listar usuários
+- GET `/api/users/:id`: Buscar usuário
+- PUT `/api/users/:id`: Atualizar usuário
+- DELETE `/api/users/:id`: Remover usuário
+
+### Schema
+
+```typescript
+{
+  name: string;
+  email: string;
+  password: string;
+  role: "admin" | "employee" | "customer";
+  address?: string;
+  phone?: string;
+  prescription?: {
+    leftEye: number;
+    rightEye: number;
+    addition?: number;
+  };
+  purchases?: string[];
+  debts?: number;
+}
+```
+
+## 📦 Produtos
+
+### Rotas
+
+- POST `/api/products`: Criar produto
+- GET `/api/products`: Listar produtos
+- GET `/api/products/:id`: Buscar produto
+- PUT `/api/products/:id`: Atualizar produto
+- DELETE `/api/products/:id`: Remover produto
+
+## 🛍️ Pedidos
+
+### Rotas
+
+- POST `/api/orders`: Criar pedido
+- GET `/api/orders`: Listar pedidos
+- GET `/api/orders/:id`: Buscar pedido
+- PUT `/api/orders/:id/status`: Atualizar status
+
+## 🛠️ Setup
 
 ### Pré-requisitos
 
@@ -37,103 +147,53 @@ oticas-queiroz-monorepo/
 - MongoDB
 - Docker (opcional)
 
-### Passos
-
-1. Clone o repositório:
+### Instalação
 
 ```bash
+# Clone o repositório
 git clone https://github.com/matheusqueiroz92/oticas-queiroz-monorepo.git
+
+# Entre na pasta
 cd oticas-queiroz-monorepo
-```
 
-2. Instale as dependências:
-
-```bash
+# Instale as dependências
 npm install
 ```
 
-3. Configure as variáveis de ambiente:
-
-- Crie um arquivo .env na raiz do backend e acrescente o conteúdo:
+### Variáveis de Ambiente
 
 ```bash
-PORT=porta_utilizada
-MONGODB_URI=uri_de_conexão_com_MongoDB
-JWT_SECRET=sua_chave_JWT
+# Adicione o arquivo (.env) na pasta raiz do backend para as variáveis de ambiente
+PORT=porta_de_conexao_utilizada
+MONGODB_URI=uri_de_conexao_com_mongoDB
+JWT_SECRET=sua_senha_jwt
 ```
 
-4. Inicie todos os projetos em modo de desenvolvimento:
+### Desenvolvimento
 
 ```bash
+# Roda todos os apps
 npx turbo run dev
+
+# Roda apenas o backend
+cd apps/backend
+npm run dev
+
+# Roda apenas o frontend
+cd apps/frontend
+npm run dev
 ```
 
-5. Acesse as aplicações:
-
-- Backend: http://localhost:3333
-- Swagger UI: http://localhost:3333/api-docs
-- Frontend: http://localhost:3000
-- Mobile: Utilize o Expo Go no seu dispositivo móvel.
-- Desktop: Execute o Electron localmente no seu computador.
-
-📚 Documentação da API
-A documentação da API está disponível no Swagger UI: http://localhost:3333/api-docs.
-
-🐳 Docker e Kubernetes
-
-Para rodar o projeto com Docker:
+### Testes
 
 ```bash
-docker-compose up --build
-```
+# Roda apenas os testes do backend
+cd apps/backend
+npm test
 
-🤖 Kubernetes (opcional)
-Os arquivos de configuração do Kubernetes estão na pasta kubernetes/.
-
-🤖 CI/CD
-O projeto utiliza GitHub Actions para CI/CD. O workflow está configurado em .github/workflows/ci.yml.
-
-📝 Licença
-Este projeto está licenciado sob a MIT License. Veja o arquivo LICENSE para mais detalhes.
-
----
-
-## 🚀 Backend
-
-A API do backend foi desenvolvida utilizando Node.js, Express, MongoDB e Mongoose. Ela roda na porta **3333** e está documentada com Swagger.
-
-### Estrutura do Backend
-
-- **app.ts**: Configuração do Express, rotas, banco de dados e Swagger.
-- **server.ts**: Inicialização do servidor.
-
-### Rotas de Usuário
-
-- **POST /api/users**: Cria um novo usuário.
-- **GET /api/users/{id}**: Obtém um usuário pelo ID.
-- **PUT /api/users/{id}**: Atualiza um usuário pelo ID.
-- **DELETE /api/users/{id}**: Remove um usuário pelo ID.
-
-### Rotas de Produtos
-
-- **POST /api/products**: Cria um novo produto.
-- **GET /api/products/{id}**: Obtém um produto pelo ID.
-- **PUT /api/products/{id}**: Atualiza um produto pelo ID.
-- **DELETE /api/products/{id}**: Remove um produto pelo ID.
-
-### Rotas de Pedidos
-
-- **POST /api/orders**: Cria um novo pedido.
-- **GET /api/orders/{id}**: Obtém um pedido pelo ID.
-- **PUT /api/orders/{id}/status**: Atualiza o status de um pedido.
-
-### Como Executar
-
-1. Navegue até a pasta `apps/backend`.
-2. Instale as dependências:
-
-```bash
-npm install
+# Roda apenas os testes do frontend
+cd apps/frontend
+npm test
 ```
 
 ### Tratamento de Erros
@@ -141,13 +201,65 @@ npm install
 - Todos os erros são tratados de forma segura, garantindo que mensagens de erro sejam retornadas de forma clara e consistente.
 - Erros desconhecidos são capturados e retornados com a mensagem "An unknown error occurred".
 
-## 🧪 Testes
+### URLs
 
-O backend foi desenvolvido seguindo o TDD (Test-Driven Development). Para executar os testes, siga os passos abaixo:
+- Backend: http://localhost:3333
+- Swagger: http://localhost:3333/api-docs
+- Frontend: http://localhost:3000
 
-1. Navegue até a pasta `apps/backend`.
-2. Execute os testes:
+## 📈 Próximos Passos
+
+- [ ] Sistema de laboratório ótico
+
+  - [ ] Cadastro de laboratórios
+  - [ ] Gestão de pedidos
+  - [ ] Acompanhamento de produção
+
+- [ ] Gestão de fornecedores
+
+  - [ ] Cadastro
+  - [ ] Catálogo
+  - [ ] Pedidos
+
+- [ ] Sistema de pagamentos
+
+  - [ ] Integração com gateway
+  - [ ] Parcelamento
+  - [ ] Emissão de NF
+
+- [ ] Dashboard
+
+  - [ ] Métricas de vendas
+  - [ ] Controle de estoque
+  - [ ] Relatórios
+
+- [ ] Melhorias técnicas
+  - [ ] CI/CD
+  - [ ] Monitoramento
+  - [ ] Logs
+  - [ ] Cache
+
+## 📝 Licença
+
+Este projeto está sob a licença MIT.
+
+---
+
+📚 Documentação da API
+A documentação da API está disponível no Swagger UI: http://localhost:3333/api-docs.
+
+---
+
+🤖 Docker, Kubernetes e CI/CD
+
+🐳 Para rodar o projeto com Docker:
 
 ```bash
-npm test
+docker-compose up --build
 ```
+
+- Kubernetes (opcional)
+  Os arquivos de configuração do Kubernetes estão na pasta kubernetes/.
+
+- CI/CD
+  O projeto utiliza GitHub Actions para CI/CD. O workflow está configurado em .github/workflows/ci.yml.
