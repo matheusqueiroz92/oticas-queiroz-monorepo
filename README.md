@@ -243,14 +243,11 @@ npm test
 
 Este projeto está sob a licença MIT.
 
----
+## 📚 Documentação da API
 
-📚 Documentação da API
 A documentação da API está disponível no Swagger UI: http://localhost:3333/api-docs.
 
----
-
-🤖 Docker, Kubernetes e CI/CD
+## 🤖 Docker, Kubernetes e CI/CD
 
 🐳 Para rodar o projeto com Docker:
 
