@@ -51,6 +51,11 @@ router.post("/products", (req, res) =>
  *       404:
  *         description: Produto não encontrado
  */
+
+router.get("/products", (req, res) =>
+  productController.getAllProducts(req, res)
+);
+
 router.get("/products/:id", (req, res) =>
   productController.getProductById(req, res)
 );

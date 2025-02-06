@@ -48,6 +48,9 @@ router.post("/users", (req, res) => userController.createUser(req, res));
  *       404:
  *         description: Usuário não encontrado
  */
+
+router.get("/users", (req, res) => userController.getAllUsers(req, res));
+
 router.get("/users/:id", (req, res) => userController.getUserById(req, res));
 
 /**
