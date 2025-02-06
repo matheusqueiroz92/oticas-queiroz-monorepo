@@ -260,3 +260,5 @@ docker-compose up --build
 
 - CI/CD
   O projeto utiliza GitHub Actions para CI/CD. O workflow está configurado em .github/workflows/ci.yml.
+
+atualizado
