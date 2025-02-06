@@ -130,6 +130,21 @@ oticas-queiroz-monorepo/
 - PUT `/api/products/:id`: Atualizar produto
 - DELETE `/api/products/:id`: Remover produto
 
+### Schema
+
+```typescript
+{
+  name: string;
+  category: "prescription" | "sunglasses";
+  description?: string;
+  brand: string;
+  model: string;
+  price: number;
+  stock: number;
+  reference?: string;
+}
+```
+
 ## 🛍️ Pedidos
 
 ### Rotas
@@ -138,6 +153,58 @@ oticas-queiroz-monorepo/
 - GET `/api/orders`: Listar pedidos
 - GET `/api/orders/:id`: Buscar pedido
 - PUT `/api/orders/:id/status`: Atualizar status
+
+### Schema
+
+```typescript
+{
+  clientId: string;
+  products: productId[];
+  price: number;
+  description?: string;
+  employeeId: string;
+  paymentMethod: string;
+  paymentEntry?: string;
+  installments?: number;
+  deliveryDate: date;
+  status: string;
+  loboratoryId: string;
+  lensType: string;
+  prescriptionData: {
+    doctorName: string;
+    clinicName: string;
+    appointmentdate: data;
+    leftEye: {
+      near: {
+        sph: number;
+        cyl: number;
+        axis: number;
+        pd: number;
+      },
+      far: {
+        sph: number;
+        cyl: number;
+        axis: number;
+        pd: number;
+      }
+    }
+    rightEye: {
+      near: {
+        sph: number;
+        cyl: number;
+        axis: number;
+        pd: number;
+      },
+      far: {
+        sph: number;
+        cyl: number;
+        axis: number;
+        pd: number;
+      }
+    }
+  }
+}
+```
 
 ## 🛠️ Setup
 
