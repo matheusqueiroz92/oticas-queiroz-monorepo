@@ -121,6 +121,12 @@ A API do backend foi desenvolvida utilizando Node.js, Express, MongoDB e Mongoos
 - **PUT /api/products/{id}**: Atualiza um produto pelo ID.
 - **DELETE /api/products/{id}**: Remove um produto pelo ID.
 
+### Rotas de Pedidos
+
+- **POST /api/orders**: Cria um novo pedido.
+- **GET /api/orders/{id}**: Obtém um pedido pelo ID.
+- **PUT /api/orders/{id}/status**: Atualiza o status de um pedido.
+
 ### Como Executar
 
 1. Navegue até a pasta `apps/backend`.
@@ -145,5 +151,3 @@ O backend foi desenvolvido seguindo o TDD (Test-Driven Development). Para execut
 ```bash
 npm test
 ```
-
-testando
