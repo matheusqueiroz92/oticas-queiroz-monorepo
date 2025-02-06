@@ -30,6 +30,8 @@ const orderController = new OrderController();
  */
 router.post("/orders", (req, res) => orderController.createOrder(req, res));
 
+router.get("/orders", (req, res) => orderController.getAllOrders(req, res));
+
 /**
  * @swagger
  * /api/orders/{id}:

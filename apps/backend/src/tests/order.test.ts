@@ -8,14 +8,20 @@ describe("Order API", () => {
   let clientId: string;
   let productId: string;
 
-  beforeAll(async () => {
-    // Criar um cliente e um produto para usar nos testes
+  beforeEach(async () => {
+    // Limpar dados
+    await User.deleteMany({});
+    await Product.deleteMany({});
+    await Order.deleteMany({});
+
+    // Criar dados de teste
     const client = await User.create({
-      name: "Matheus",
-      email: "matheus@example.com",
+      name: "Test",
+      email: `test${Date.now()}@example.com`,
       password: "123456",
       role: "customer",
     });
+
     const product = await Product.create({
       name: "Óculos de Grau",
       description: "Óculos para miopia",
@@ -25,10 +31,6 @@ describe("Order API", () => {
     });
     clientId = client._id.toString();
     productId = product._id.toString();
-  });
-
-  afterEach(async () => {
-    await Order.deleteMany({});
   });
 
   it("should create a new order", async () => {
@@ -51,8 +53,8 @@ describe("Order API", () => {
     const res = await request(app).get(`/api/orders/${order._id}`);
 
     expect(res.statusCode).toEqual(200);
-    expect(res.body).toHaveProperty("clientId", clientId);
-    expect(res.body).toHaveProperty("totalPrice", 250);
+    expect(res.body.clientId._id.toString()).toBe(clientId);
+    expect(res.body.totalPrice).toBe(250);
   });
 
   it("should update the status of an order", async () => {

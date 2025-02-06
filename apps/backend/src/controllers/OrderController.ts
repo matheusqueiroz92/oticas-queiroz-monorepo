@@ -18,11 +18,34 @@ export class OrderController {
     }
   }
 
+  async getAllOrders(_req: Request, res: Response): Promise<void> {
+    try {
+      const orders = await Order.find()
+        .populate("clientId") // Popula o campo clientId
+        .populate("products") // Popula o campo products
+        .populate("laboratoryId"); // Popula o campo laboratoryId
+
+      if (orders) {
+        res.status(200).json(orders);
+      } else {
+        res.status(404).json({ message: "No orders found" });
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        res.status(500).json({ message: error.message });
+      } else {
+        res.status(500).json({ message: "An unknown error occurred" });
+      }
+    }
+  }
+
   async getOrderById(req: Request, res: Response): Promise<void> {
     try {
-      const order = await Order.findById(req.params.id).populate(
-        "clientId products laboratoryId"
-      );
+      const order = await Order.findById(req.params.id)
+        .populate("clientId") // Popula o campo clientId
+        .populate("products") // Popula o campo products
+        .populate("laboratoryId"); // Popula o campo laboratoryId
+
       if (order) {
         res.status(200).json(order);
       } else {

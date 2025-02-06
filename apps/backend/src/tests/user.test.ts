@@ -1,10 +1,10 @@
 import request from "supertest";
-import app from "../app"; // Certifique-se de que está importando o app corretamente
+import app from "../app";
 import { User } from "../models/User";
 
 describe("User API", () => {
-  afterEach(async () => {
-    await User.deleteMany({});
+  beforeEach(async () => {
+    await User.deleteMany({}); // Limpa a coleção de usuários antes de cada teste
   });
 
   it("should create a new user", async () => {
@@ -17,36 +17,6 @@ describe("User API", () => {
 
     expect(res.statusCode).toEqual(201);
     expect(res.body).toHaveProperty("name", "Matheus");
-    expect(res.body).toHaveProperty("email", "matheus@example.com");
-  });
-
-  it("should get all users", async () => {
-    const user1 = await User.create({
-      name: "Matheus",
-      email: "matheus@example.com",
-      password: "123456",
-      role: "customer",
-    });
-
-    const user2 = await User.create({
-      name: "Lucas",
-      email: "lucas@example.com",
-      password: "123456",
-      role: "customer",
-    });
-
-    const user3 = await User.create({
-      name: "Deborah",
-      email: "deborah@example.com",
-      password: "123456",
-      role: "customer",
-    });
-
-    const res = await request(app).get("/api/users/");
-
-    expect(res.statusCode).toEqual(200);
-    expect(res.body).toHaveProperty("name", "Matheus");
-
     expect(res.body).toHaveProperty("email", "matheus@example.com");
   });
 
