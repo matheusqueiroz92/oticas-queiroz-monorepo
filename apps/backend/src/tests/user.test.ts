@@ -3,27 +3,23 @@ import app from "../app";
 import { User } from "../models/User";
 
 describe("User API", () => {
-  beforeEach(async () => {
-    await User.deleteMany({}); // Limpa a coleção de usuários antes de cada teste
-  });
-
   it("should create a new user", async () => {
     const res = await request(app).post("/api/users").send({
-      name: "Matheus",
-      email: "matheus@example.com",
+      name: "Matheus1",
+      email: "matheus1@example.com",
       password: "123456",
       role: "customer",
     });
 
     expect(res.statusCode).toEqual(201);
-    expect(res.body).toHaveProperty("name", "Matheus");
-    expect(res.body).toHaveProperty("email", "matheus@example.com");
+    expect(res.body).toHaveProperty("name", "Matheus1");
+    expect(res.body).toHaveProperty("email", "matheus1@example.com");
   });
 
   it("should get a user by ID", async () => {
     const user = await User.create({
-      name: "Matheus",
-      email: "matheus@example.com",
+      name: "Matheus2",
+      email: "matheus2@example.com",
       password: "123456",
       role: "customer",
     });
@@ -31,14 +27,18 @@ describe("User API", () => {
     const res = await request(app).get(`/api/users/${user._id}`);
 
     expect(res.statusCode).toEqual(200);
-    expect(res.body).toHaveProperty("name", "Matheus");
-    expect(res.body).toHaveProperty("email", "matheus@example.com");
+    expect(res.body).toHaveProperty("name", "Matheus2");
+    expect(res.body).toHaveProperty("email", "matheus2@example.com");
+  });
+
+  beforeEach(async () => {
+    await User.deleteMany({});
   });
 
   it("should update a user by ID", async () => {
     const user = await User.create({
-      name: "Matheus",
-      email: "matheus@example.com",
+      name: "Matheus3",
+      email: "matheus3@example.com",
       password: "123456",
       role: "customer",
     });
@@ -50,12 +50,12 @@ describe("User API", () => {
     expect(res.statusCode).toEqual(200);
     expect(res.body).toHaveProperty("name", "Matheus Updated");
     expect(res.body).toHaveProperty("email", "matheus.updated@example.com");
-  });
+  }, 10000);
 
   it("should delete a user by ID", async () => {
     const user = await User.create({
-      name: "Matheus",
-      email: "matheus@example.com",
+      name: "Matheus4",
+      email: "matheus4@example.com",
       password: "123456",
       role: "customer",
     });

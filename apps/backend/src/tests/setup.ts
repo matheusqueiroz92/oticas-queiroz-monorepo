@@ -19,6 +19,15 @@ beforeAll(async () => {
   }
 });
 
+beforeEach(async () => {
+  // Limpa todas as coleções antes de cada teste
+  const collections = Object.keys(mongoose.connection.collections);
+  for (const collectionName of collections) {
+    const collection = mongoose.connection.collections[collectionName];
+    await collection.deleteMany({});
+  }
+});
+
 afterAll(async () => {
   await mongoose.connection.close();
 });

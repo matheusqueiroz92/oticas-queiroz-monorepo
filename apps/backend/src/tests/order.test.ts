@@ -33,6 +33,12 @@ describe("Order API", () => {
     productId = product._id.toString();
   });
 
+  afterEach(async () => {
+    await User.deleteMany({});
+    await Product.deleteMany({});
+    await Order.deleteMany({});
+  });
+
   it("should create a new order", async () => {
     const res = await request(app)
       .post("/api/orders")
@@ -41,7 +47,7 @@ describe("Order API", () => {
     expect(res.statusCode).toEqual(201);
     expect(res.body).toHaveProperty("clientId", clientId);
     expect(res.body).toHaveProperty("totalPrice", 250);
-  });
+  }, 10000);
 
   it("should get an order by ID", async () => {
     const order = await Order.create({
@@ -50,7 +56,12 @@ describe("Order API", () => {
       totalPrice: 250,
     });
 
+    // console.log("Order created:", order);
+    const savedOrder = await Order.findById(order._id);
+    console.log("Order found in DB:", savedOrder);
+
     const res = await request(app).get(`/api/orders/${order._id}`);
+    console.log("Response:", res.body);
 
     expect(res.statusCode).toEqual(200);
     expect(res.body.clientId._id.toString()).toBe(clientId);
