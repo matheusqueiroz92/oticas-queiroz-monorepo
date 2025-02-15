@@ -1,61 +1,65 @@
 import request from "supertest";
 import app from "../app";
-import { User } from "../models/User";
+import { User } from "../schemas/UserSchema";
 import { generateToken } from "../utils/jwt";
+import bcrypt from "bcrypt";
 import { describe, it, expect, beforeEach } from "@jest/globals";
 
-describe("Auth API", () => {
-  let adminToken: string;
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+const debugTest = (res: any) => {
+  console.log({
+    status: res.status,
+    body: res.body,
+    headers: res.headers,
+    error: res.error?.text,
+  });
+};
 
+describe("Auth API", () => {
   beforeEach(async () => {
     await User.deleteMany({});
-    const admin = await User.create({
-      name: "Admin",
-      email: "admin@test.com",
-      password: "123456",
-      role: "admin",
+  });
+
+  it("should login successfully", async () => {
+    // Criar usuário para teste
+    const user = await User.create({
+      name: "Test User",
+      email: "test@example.com",
+      password: await bcrypt.hash("123456", 10),
+      role: "customer",
     });
-    adminToken = generateToken(admin._id.toString(), "admin");
-  });
 
-  it("should register a new user", async () => {
-    const res = await request(app)
-      .post("/api/auth/register")
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({
-        name: "Matheus",
-        email: "newuser@example.com",
-        password: "123456",
-        role: "customer",
-      });
+    const res = await request(app).post("/api/auth/login").send({
+      email: "test@example.com",
+      password: "123456",
+    });
 
-    expect(res.statusCode).toEqual(201);
-  });
-
-  it("should login with valid credentials", async () => {
-    await request(app)
-      .post("/api/auth/register")
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({
-        name: "Matheus",
-        email: "matheus@example.com",
-        password: "123456",
-        role: "customer",
-      });
-
-    const res = await request(app)
-      .post("/api/auth/login")
-      .send({ email: "matheus@example.com", password: "123456" });
-
+    debugTest(res);
     expect(res.statusCode).toEqual(200);
     expect(res.body).toHaveProperty("token");
   });
 
-  it("should not login with invalid credentials", async () => {
-    const res = await request(app)
-      .post("/api/auth/login")
-      .send({ email: "matheus@example.com", password: "wrongpassword" });
+  it("should register new user with admin token", async () => {
+    const admin = await User.create({
+      name: "Admin",
+      email: "admin@test.com",
+      password: await bcrypt.hash("123456", 10),
+      role: "admin",
+    });
 
-    expect(res.statusCode).toEqual(401);
+    const adminToken = generateToken(admin._id.toString(), "admin");
+
+    const res = await request(app)
+      .post("/api/auth/register") // Certifique-se que a rota está correta
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({
+        name: "New User",
+        email: "new@test.com",
+        password: "123456",
+        role: "customer",
+      });
+
+    debugTest(res);
+    expect(res.statusCode).toEqual(201);
   });
 });

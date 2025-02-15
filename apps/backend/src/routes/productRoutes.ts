@@ -1,5 +1,6 @@
 import express from "express";
 import { ProductController } from "../controllers/ProductController";
+import { authenticate, authorize } from "../middlewares/authMiddleware";
 
 const router = express.Router();
 const productController = new ProductController();
@@ -30,8 +31,11 @@ const productController = new ProductController();
  *       201:
  *         description: Produto criado com sucesso
  */
-router.post("/products", (req, res) =>
-  productController.createProduct(req, res)
+router.post(
+  "/products",
+  authenticate,
+  authorize(["admin", "employee"]),
+  (req, res) => productController.createProduct(req, res)
 );
 
 /**
@@ -51,13 +55,29 @@ router.post("/products", (req, res) =>
  *       404:
  *         description: Produto não encontrado
  */
-
-router.get("/products", (req, res) =>
-  productController.getAllProducts(req, res)
+router.get(
+  "/products/:id",
+  authenticate,
+  authorize(["admin", "employee"]),
+  (req, res) => productController.getProductById(req, res)
 );
 
-router.get("/products/:id", (req, res) =>
-  productController.getProductById(req, res)
+/**
+ * @swagger
+ * /api/products:
+ *   get:
+ *     summary: Obtém todos os produtos
+ *     responses:
+ *       200:
+ *         description: Produtos encontrados
+ *       404:
+ *         description: Nenhum produto encontrado
+ */
+router.get(
+  "/products",
+  authenticate,
+  authorize(["admin", "employee"]),
+  (req, res) => productController.getAllProducts(req, res)
 );
 
 /**
@@ -94,8 +114,11 @@ router.get("/products/:id", (req, res) =>
  *       404:
  *         description: Produto não encontrado
  */
-router.put("/products/:id", (req, res) =>
-  productController.updateProduct(req, res)
+router.put(
+  "/products/:id",
+  authenticate,
+  authorize(["admin", "employee"]),
+  (req, res) => productController.updateProduct(req, res)
 );
 
 /**
@@ -115,8 +138,11 @@ router.put("/products/:id", (req, res) =>
  *       404:
  *         description: Produto não encontrado
  */
-router.delete("/products/:id", (req, res) =>
-  productController.deleteProduct(req, res)
+router.delete(
+  "/products/:id",
+  authenticate,
+  authorize(["admin", "employee"]),
+  (req, res) => productController.deleteProduct(req, res)
 );
 
 export default router;

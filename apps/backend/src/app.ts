@@ -22,7 +22,7 @@ class App {
   }
 
   private routes(): void {
-    this.app.use("/api", authRoutes);
+    this.app.use("/api/auth", authRoutes);
     this.app.use("/api", userRoutes);
     this.app.use("/api", productRoutes);
     this.app.use("/api", orderRoutes); // Adicione as rotas de pedidos

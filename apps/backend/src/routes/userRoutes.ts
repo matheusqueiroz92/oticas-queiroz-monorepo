@@ -41,8 +41,8 @@ const userController = new UserController();
 router.post(
   "/users",
   authenticate,
-  authorize(["admin"]),
-  userController.createUser
+  authorize(["admin", "employee"]),
+  (req, res) => userController.createUser(req, res)
 );
 
 /**
@@ -62,11 +62,59 @@ router.post(
  *       403:
  *         description: Acesso proibido
  */
-router.get(
-  "/users",
-  authenticate,
-  authorize(["admin"]),
-  userController.getAllUsers
+router.get("/users", authenticate, authorize(["admin"]), (req, res) =>
+  userController.getAllUsers(req, res)
+);
+
+/**
+ * @swagger
+ * /api/users/profile:
+ *   get:
+ *     summary: Obtém o perfil do usuário logado
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Users]
+ *     description: Usuários podem ver seu próprio perfil
+ *     responses:
+ *       200:
+ *         description: Perfil do usuário
+ *       401:
+ *         description: Não autorizado
+ */
+router.get("/users/profile", authenticate, (req, res) =>
+  userController.getProfile(req, res)
+);
+
+/**
+ * @swagger
+ * /api/users/profile:
+ *   put:
+ *     summary: Atualiza o perfil do usuário logado
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Users]
+ *     description: Usuários podem atualizar seu próprio perfil
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Perfil atualizado
+ *       401:
+ *         description: Não autorizado
+ */
+router.put("/users/profile", authenticate, (req, res) =>
+  userController.updateProfile(req, res)
 );
 
 /**
@@ -98,7 +146,7 @@ router.get(
   "/users/:id",
   authenticate,
   authorize(["admin", "employee"]),
-  userController.getUserById
+  (req, res) => userController.getUserById(req, res)
 );
 
 /**
@@ -142,8 +190,8 @@ router.get(
 router.put(
   "/users/:id",
   authenticate,
-  authorize(["admin"]),
-  userController.updateUser
+  authorize(["admin", "employee"]),
+  (req, res) => userController.updateUser(req, res)
 );
 
 /**
@@ -171,58 +219,8 @@ router.put(
  *       404:
  *         description: Usuário não encontrado
  */
-router.delete(
-  "/users/:id",
-  authenticate,
-  authorize(["admin"]),
-  userController.deleteUser
+router.delete("/users/:id", authenticate, authorize(["admin"]), (req, res) =>
+  userController.deleteUser(req, res)
 );
-
-/**
- * @swagger
- * /api/users/profile:
- *   get:
- *     summary: Obtém o perfil do usuário logado
- *     security:
- *       - bearerAuth: []
- *     tags: [Users]
- *     description: Usuários podem ver seu próprio perfil
- *     responses:
- *       200:
- *         description: Perfil do usuário
- *       401:
- *         description: Não autorizado
- */
-router.get("/users/profile", authenticate, userController.getProfile);
-
-/**
- * @swagger
- * /api/users/profile:
- *   put:
- *     summary: Atualiza o perfil do usuário logado
- *     security:
- *       - bearerAuth: []
- *     tags: [Users]
- *     description: Usuários podem atualizar seu próprio perfil
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               name:
- *                 type: string
- *               email:
- *                 type: string
- *               password:
- *                 type: string
- *     responses:
- *       200:
- *         description: Perfil atualizado
- *       401:
- *         description: Não autorizado
- */
-router.put("/users/profile", authenticate, userController.updateProfile);
 
 export default router;

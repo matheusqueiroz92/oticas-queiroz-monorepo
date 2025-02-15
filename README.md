@@ -37,13 +37,24 @@ Este repositório contém um sistema de gerenciamento para ótica que integra co
 - Docker
 - Kubernetes
 
-## 📂 Estrutura
+## 📂 Estrutura de pastas do projeto
 
 ```bash
 oticas-queiroz-monorepo/
 ├── apps/
 │   ├── backend/      # API Node.js
-│   ├── frontend/     # Next.js
+│     ├── src/
+│       ├── config/       # Configurações de conexão ao banco de dados e documentação da API
+│       ├── controllers/  # Camada de controle HTTP
+│       ├── interfaces/   # Definições de tipos
+│       ├── middlewares/  # Definições dos middlewares
+│       ├── models/       # Camada de acesso ao banco
+│       ├── services/     # Camada de regras de negócio
+│       ├── schemas/      # Schemas do Mongoose
+│       ├── tests/        # Testes da aplicação
+│       ├── types/        # Tipagens Express
+│       └── utils/        # Arquivos auxiliares
+├── frontend/     # Next.js
 │   ├── mobile/       # React Native
 │   └── desktop/      # Electron
 ├── packages/
@@ -136,12 +147,11 @@ oticas-queiroz-monorepo/
 {
   name: string;
   category: "prescription" | "sunglasses";
-  description?: string;
+  description: string;
   brand: string;
-  model: string;
+  modelGlasses: string;
   price: number;
   stock: number;
-  reference?: string;
 }
 ```
 
@@ -251,16 +261,47 @@ cd apps/frontend
 npm run dev
 ```
 
-### Testes
+### Testes do Backend
 
 ```bash
 # Roda apenas os testes do backend
 cd apps/backend
 npm test
+```
 
+#### 🔄 Estrutura de Testes do Backend
+
+```bash
+oticas-queiroz-monorepo/
+├── apps/
+│   ├── backend/
+│     ├── src/
+│       ├── tests/
+│         ├── unit/
+│            ├── models/       # Testes da camada Model
+│            └── services/     # Testes da camada Service
+│         └── integration/
+│            └──controllers/   # Testes da camada Controller
+```
+
+### Testes do Frontend
+
+```bash
 # Roda apenas os testes do frontend
 cd apps/frontend
 npm test
+```
+
+#### 🔄 Estrutura de Testes do Frontend
+
+```bash
+oticas-queiroz-monorepo/
+├── apps/
+│   ├── frontend/
+│     ├── src/
+│       ├── tests/
+│         └── unit/
+
 ```
 
 ### Tratamento de Erros

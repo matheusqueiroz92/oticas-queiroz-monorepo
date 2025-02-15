@@ -1,5 +1,10 @@
 import type { Request, Response } from "express";
 import { UserService } from "../services/UserService";
+import type { JwtPayload } from "jsonwebtoken";
+
+interface AuthRequest extends Request {
+  user?: JwtPayload;
+}
 
 export class UserController {
   private userService: UserService;
@@ -8,11 +13,14 @@ export class UserController {
     this.userService = new UserService();
   }
 
-  async createUser(req: Request, res: Response): Promise<void> {
+  async createUser(req: AuthRequest, res: Response): Promise<void> {
     try {
       const user = await this.userService.createUser(req.body, req.user?.role);
       res.status(201).json(user);
     } catch (error) {
+      // Adicionar log para debug
+      console.error("Error creating user:", error);
+
       if (error instanceof Error) {
         res.status(400).json({ message: error.message });
       } else {
@@ -21,7 +29,7 @@ export class UserController {
     }
   }
 
-  async getAllUsers(_req: Request, res: Response): Promise<void> {
+  async getAllUsers(_req: AuthRequest, res: Response): Promise<void> {
     try {
       const users = await this.userService.getAllUsers();
       if (!users.length) {
@@ -38,7 +46,7 @@ export class UserController {
     }
   }
 
-  async getUserById(req: Request, res: Response): Promise<void> {
+  async getUserById(req: AuthRequest, res: Response): Promise<void> {
     try {
       const user = await this.userService.getUserById(req.params.id);
       if (!user) {
@@ -55,7 +63,7 @@ export class UserController {
     }
   }
 
-  async updateUser(req: Request, res: Response): Promise<void> {
+  async updateUser(req: AuthRequest, res: Response): Promise<void> {
     try {
       const user = await this.userService.updateUser(req.params.id, req.body);
       if (!user) {
@@ -72,7 +80,7 @@ export class UserController {
     }
   }
 
-  async deleteUser(req: Request, res: Response): Promise<void> {
+  async deleteUser(req: AuthRequest, res: Response): Promise<void> {
     try {
       const user = await this.userService.deleteUser(req.params.id);
       if (!user) {
@@ -89,7 +97,7 @@ export class UserController {
     }
   }
 
-  async getProfile(req: Request, res: Response): Promise<void> {
+  async getProfile(req: AuthRequest, res: Response): Promise<void> {
     try {
       const user = await this.userService.getProfile(req.user?.id);
       if (!user) {
@@ -106,7 +114,7 @@ export class UserController {
     }
   }
 
-  async updateProfile(req: Request, res: Response): Promise<void> {
+  async updateProfile(req: AuthRequest, res: Response): Promise<void> {
     try {
       const user = await this.userService.updateProfile(req.user?.id, req.body);
       if (!user) {

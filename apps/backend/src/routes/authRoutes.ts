@@ -1,6 +1,6 @@
 import express from "express";
 import { AuthController } from "../controllers/AuthController";
-import { authenticate, authorize } from "src/middlewares/authMiddleware";
+import { authenticate, authorize } from "../middlewares/authMiddleware";
 
 const router = express.Router();
 const authController = new AuthController();
@@ -25,7 +25,7 @@ const authController = new AuthController();
  *       200:
  *         description: Token JWT gerado com sucesso
  */
-router.post("/auth/login", (req, res) => authController.login(req, res));
+router.post("/login", (req, res) => authController.login(req, res));
 
 /**
  * @swagger
@@ -53,10 +53,10 @@ router.post("/auth/login", (req, res) => authController.login(req, res));
  *         description: Usuário criado com sucesso
  */
 router.post(
-  "/auth/register",
+  "/register",
   authenticate,
   authorize(["admin", "employee"]),
-  authController.register
+  (req, res) => authController.register(req, res)
 );
 
 export default router;

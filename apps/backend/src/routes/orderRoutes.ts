@@ -1,5 +1,6 @@
 import express from "express";
 import { OrderController } from "../controllers/OrderController";
+import { authenticate, authorize } from "../middlewares/authMiddleware";
 
 const router = express.Router();
 const orderController = new OrderController();
@@ -28,9 +29,30 @@ const orderController = new OrderController();
  *       201:
  *         description: Pedido criado com sucesso
  */
-router.post("/orders", (req, res) => orderController.createOrder(req, res));
+router.post(
+  "/orders",
+  authenticate,
+  authorize(["admin", "employee"]),
+  (req, res) => orderController.createOrder(req, res)
+);
 
-router.get("/orders", (req, res) => orderController.getAllOrders(req, res));
+/**
+ * @swagger
+ * /api/orders/{id}:
+ *   get:
+ *     summary: Obtém todos os pedidos
+ *     responses:
+ *       200:
+ *         description: Pedidos encontrados
+ *       404:
+ *         description: Nenhum pedido encontrado
+ */
+router.get(
+  "/orders",
+  authenticate,
+  authorize(["admin", "employee"]),
+  (req, res) => orderController.getAllOrders(req, res)
+);
 
 /**
  * @swagger
@@ -49,7 +71,12 @@ router.get("/orders", (req, res) => orderController.getAllOrders(req, res));
  *       404:
  *         description: Pedido não encontrado
  */
-router.get("/orders/:id", (req, res) => orderController.getOrderById(req, res));
+router.get(
+  "/orders/:id",
+  authenticate,
+  authorize(["admin", "employee"]),
+  (req, res) => orderController.getOrderById(req, res)
+);
 
 /**
  * @swagger
@@ -78,8 +105,11 @@ router.get("/orders/:id", (req, res) => orderController.getOrderById(req, res));
  *       404:
  *         description: Pedido não encontrado
  */
-router.put("/orders/:id/status", (req, res) =>
-  orderController.updateOrderStatus(req, res)
+router.put(
+  "/orders/:id/status",
+  authenticate,
+  authorize(["admin", "employee", "customer"]),
+  (req, res) => orderController.updateOrderStatus(req, res)
 );
 
 export default router;

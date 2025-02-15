@@ -1,11 +1,22 @@
 import type { Request, Response } from "express";
-import { User } from "../models/User";
+import { User } from "../schemas/UserSchema";
+import bcrypt from "bcrypt";
 import { generateToken } from "../utils/jwt";
-// import { UserController } from "./UserController";
-import { UserService } from "src/services/UserService";
+import { UserService } from "../services/UserService"; // Corrigir caminho da importação
+import type { JwtPayload } from "jsonwebtoken";
+
+interface AuthRequest extends Request {
+  user?: JwtPayload;
+}
 
 export class AuthController {
-  async login(req: Request, res: Response): Promise<void> {
+  private userService: UserService;
+
+  constructor() {
+    this.userService = new UserService();
+  }
+
+  async login(req: AuthRequest, res: Response): Promise<void> {
     try {
       const { email, password } = req.body;
       const user = await User.findOne({ email });
@@ -16,15 +27,7 @@ export class AuthController {
       }
 
       const token = generateToken(user._id.toString(), user.role);
-      res.status(200).json({
-        token,
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-        },
-      });
+      res.status(200).json({ token });
     } catch (error) {
       if (error instanceof Error) {
         res.status(500).json({ message: error.message });
@@ -34,7 +37,7 @@ export class AuthController {
     }
   }
 
-  async register(req: Request, res: Response): Promise<void> {
+  async register(req: AuthRequest, res: Response): Promise<void> {
     try {
       const { email } = req.body;
       const existingUser = await User.findOne({ email });
@@ -44,8 +47,9 @@ export class AuthController {
         return;
       }
 
-      const userService = new UserService();
-      const user = await userService.createUser(req.body, req.user?.role);
+      // Hash da senha antes de criar o usuário
+      req.body.password = await bcrypt.hash(req.body.password, 10);
+      const user = await this.userService.createUser(req.body, req.user?.role);
       res.status(201).json(user);
     } catch (error) {
       if (error instanceof Error) {

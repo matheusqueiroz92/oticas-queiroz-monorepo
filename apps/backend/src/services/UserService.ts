@@ -1,5 +1,5 @@
 import bcrypt from "bcrypt";
-import { User } from "../models/User";
+import { User } from "../schemas/UserSchema";
 import type { IUser } from "../interfaces/IUser";
 
 export class UserService {
