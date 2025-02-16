@@ -300,14 +300,15 @@ oticas-queiroz-monorepo/
 │   ├── frontend/
 │     ├── src/
 │       ├── tests/
-│         └── unit/
+│          └── unit/
 
 ```
 
 ### Tratamento de Erros
 
-- Todos os erros são tratados de forma segura, garantindo que mensagens de erro sejam retornadas de forma clara e consistente.
-- Erros desconhecidos são capturados e retornados com a mensagem "An unknown error occurred".
+- Implementado tratamento consistente de erros em todas as camadas
+- Validação de dados com tipagem forte
+- Mensagens de erro claras e específicas
 
 ### URLs
 

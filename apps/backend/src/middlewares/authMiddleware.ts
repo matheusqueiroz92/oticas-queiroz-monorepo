@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import type { JwtPayload } from "jsonwebtoken";
 import { verifyToken } from "../utils/jwt";
+import { AuthError } from "../services/AuthService";
 
 interface AuthRequest extends Request {
   user?: JwtPayload;
@@ -8,31 +9,33 @@ interface AuthRequest extends Request {
 
 export const authenticate = (
   req: AuthRequest,
-  res: Response,
+  _res: Response,
   next: NextFunction
 ): void => {
-  const token = req.header("Authorization")?.replace("Bearer ", "");
-
-  if (!token) {
-    res.status(401).json({ message: "Acesso não autorizado" });
-    return;
-  }
-
   try {
+    const token = req.header("Authorization")?.replace("Bearer ", "");
+
+    if (!token) {
+      throw new AuthError("Token não fornecido");
+    }
+
     const decoded = verifyToken(token) as JwtPayload;
     req.user = decoded;
     next();
   } catch (error) {
-    res.status(401).json({ message: "Token inválido" });
+    next(error);
   }
 };
 
 export const authorize = (roles: string[]) => {
-  return (req: AuthRequest, res: Response, next: NextFunction): void => {
-    if (!req.user || !roles.includes(req.user.role)) {
-      res.status(403).json({ message: "Acesso proibido" });
-      return;
+  return (req: AuthRequest, _res: Response, next: NextFunction): void => {
+    try {
+      if (!req.user || !roles.includes(req.user.role)) {
+        throw new AuthError("Acesso não autorizado");
+      }
+      next();
+    } catch (error) {
+      next(error);
     }
-    next();
   };
 };

@@ -1,208 +1,190 @@
-import { ProductService } from "../../../services/ProductService";
-import { Product } from "../../../schemas/ProductSchema";
-import mongoose from "mongoose";
-import { config } from "dotenv";
-import type { ICreateProductDTO } from "../../../interfaces/IProduct";
+import { ProductService, ProductError } from "../../../services/ProductService";
+import { ProductModel } from "../../../models/ProductModel";
+import type { IProduct, ICreateProductDTO } from "../../../interfaces/IProduct";
 import {
   describe,
   it,
   expect,
   beforeEach,
-  beforeAll,
-  afterEach,
-  afterAll,
+  // beforeAll,
+  // afterEach,
+  // afterAll,
+  jest,
 } from "@jest/globals";
 
-config();
+interface MockProductModel extends ProductModel {
+  findByName: jest.MockedFunction<ProductModel["findByName"]>;
+  create: jest.MockedFunction<ProductModel["create"]>;
+  findById: jest.MockedFunction<ProductModel["findById"]>;
+  findAll: jest.MockedFunction<ProductModel["findAll"]>;
+  update: jest.MockedFunction<ProductModel["update"]>;
+  delete: jest.MockedFunction<ProductModel["delete"]>;
+}
+
+jest.mock("../../../models/ProductModel");
 
 describe("ProductService", () => {
   let productService: ProductService;
-  const mongoURI = process.env.MONGODB_URI || "mongodb://localhost:27017/test";
+  let productModel: jest.Mocked<ProductModel>;
+
+  const mockProduct: ICreateProductDTO = {
+    name: "Óculos de Sol Ray-Ban",
+    category: "solar",
+    description: "Óculos de sol estiloso",
+    brand: "Ray-Ban",
+    modelGlasses: "Aviador",
+    price: 599.99,
+    stock: 10,
+  };
 
   beforeEach(() => {
+    productModel = new ProductModel() as jest.Mocked<ProductModel>;
     productService = new ProductService();
-  });
-
-  beforeAll(async () => {
-    await mongoose.connect(mongoURI);
-  });
-
-  afterAll(async () => {
-    await mongoose.connection.close();
-  });
-
-  afterEach(async () => {
-    await Product.deleteMany({});
+    Object.defineProperty(productService, "productModel", {
+      value: productModel,
+      writable: true,
+    });
   });
 
   describe("createProduct", () => {
     it("should create a product successfully", async () => {
-      const productData: ICreateProductDTO = {
-        name: "Óculos de Sol",
-        description: "Óculos estiloso",
-        price: 299.99,
-        stock: 10,
-        category: "solar",
+      const mockCreatedProduct: IProduct = {
+        _id: "product-id",
+        ...mockProduct,
       };
 
-      const product = await productService.createProduct(productData);
+      productModel.findByName.mockResolvedValue(null);
+      productModel.create.mockResolvedValue(mockCreatedProduct);
 
-      expect(product).toHaveProperty("_id");
-      expect(product.name).toBe(productData.name);
-      expect(product.price).toBe(productData.price);
+      const result = await productService.createProduct(mockProduct);
+
+      expect(result).toEqual(mockCreatedProduct);
+      expect(productModel.findByName).toHaveBeenCalledWith(mockProduct.name);
+      expect(productModel.create).toHaveBeenCalledWith(mockProduct);
     });
 
-    it("should throw error if product with same name already exists", async () => {
-      const productData: ICreateProductDTO = {
-        name: "Óculos de Sol",
-        description: "Óculos estiloso",
-        price: 299.99,
-        stock: 10,
-        category: "solar",
-      };
+    it("should throw error if product already exists", async () => {
+      productModel.findByName.mockResolvedValue({
+        _id: "existing-id",
+        ...mockProduct,
+      });
 
-      await productService.createProduct(productData);
-
-      await expect(productService.createProduct(productData)).rejects.toThrow(
-        "Produto já cadastrado com este nome"
+      await expect(productService.createProduct(mockProduct)).rejects.toThrow(
+        new ProductError("Produto já cadastrado com este nome")
       );
+    });
+
+    it("should throw error if price is negative", async () => {
+      await expect(
+        productService.createProduct({ ...mockProduct, price: -10 })
+      ).rejects.toThrow(new ProductError("Preço não pode ser negativo"));
+    });
+
+    it("should throw error if stock is negative", async () => {
+      await expect(
+        productService.createProduct({ ...mockProduct, stock: -1 })
+      ).rejects.toThrow(new ProductError("Estoque não pode ser negativo"));
     });
   });
 
   describe("getAllProducts", () => {
-    it("should return all products", async () => {
-      const productsData: ICreateProductDTO[] = [
-        {
-          name: "Óculos de Sol 1",
-          description: "Descrição 1",
-          price: 299.99,
-          stock: 10,
-          category: "solar",
-        },
-        {
-          name: "Óculos de Sol 2",
-          description: "Descrição 2",
-          price: 399.99,
-          stock: 5,
-          category: "solar",
-        },
-      ];
+    it("should return all products with pagination", async () => {
+      const mockProducts = {
+        products: [{ _id: "1", ...mockProduct }],
+        total: 1,
+      };
 
-      await Promise.all(
-        productsData.map((data) => productService.createProduct(data))
+      productModel.findAll.mockResolvedValue(mockProducts);
+
+      const result = await productService.getAllProducts(1, 10);
+
+      expect(result).toEqual(mockProducts);
+      expect(productModel.findAll).toHaveBeenCalledWith(1, 10, {});
+    });
+
+    it("should throw error when no products found", async () => {
+      productModel.findAll.mockResolvedValue({ products: [], total: 0 });
+
+      await expect(productService.getAllProducts()).rejects.toThrow(
+        new ProductError("Nenhum produto encontrado")
       );
-
-      const products = await productService.getAllProducts();
-
-      expect(products).toHaveLength(2);
-      expect(products[0]).toHaveProperty("_id");
-      expect(products[1]).toHaveProperty("_id");
     });
   });
 
   describe("getProductById", () => {
-    it("should return a product by id", async () => {
-      const productData: ICreateProductDTO = {
-        name: "Óculos de Sol",
-        description: "Óculos estiloso",
-        price: 299.99,
-        stock: 10,
-        category: "solar",
-      };
+    it("should return product by id", async () => {
+      const mockFoundProduct = { _id: "product-id", ...mockProduct };
+      productModel.findById.mockResolvedValue(mockFoundProduct);
 
-      const createdProduct = await productService.createProduct(productData);
-      const foundProduct = await productService.getProductById(
-        createdProduct._id
-      );
+      const result = await productService.getProductById("product-id");
 
-      expect(foundProduct).toBeTruthy();
-      expect(foundProduct?.name).toBe(productData.name);
+      expect(result).toEqual(mockFoundProduct);
     });
 
-    it("should return null for non-existent product", async () => {
-      const nonExistentId = new mongoose.Types.ObjectId().toString();
-      const product = await productService.getProductById(nonExistentId);
+    it("should throw error if product not found", async () => {
+      productModel.findById.mockResolvedValue(null);
 
-      expect(product).toBeNull();
+      await expect(
+        productService.getProductById("non-existent")
+      ).rejects.toThrow(new ProductError("Produto não encontrado"));
     });
   });
 
   describe("updateProduct", () => {
-    it("should update a product successfully", async () => {
-      const productData: ICreateProductDTO = {
-        name: "Óculos de Sol",
-        description: "Óculos estiloso",
-        price: 299.99,
-        stock: 10,
-        category: "solar",
+    it("should update product successfully", async () => {
+      const updateData = { price: 699.99, stock: 15 };
+      const mockUpdatedProduct = {
+        _id: "product-id",
+        ...mockProduct,
+        ...updateData,
       };
 
-      const createdProduct = await productService.createProduct(productData);
-      const updateData = {
-        price: 349.99,
-        stock: 15,
-      };
+      productModel.update.mockResolvedValue(mockUpdatedProduct);
 
-      const updatedProduct = await productService.updateProduct(
-        createdProduct._id,
+      const result = await productService.updateProduct(
+        "product-id",
         updateData
       );
 
-      expect(updatedProduct).toBeTruthy();
-      expect(updatedProduct?.price).toBe(updateData.price);
-      expect(updatedProduct?.stock).toBe(updateData.stock);
+      expect(result).toEqual(mockUpdatedProduct);
     });
 
-    it("should throw error when updating with existing product name", async () => {
-      const product1Data: ICreateProductDTO = {
-        name: "Óculos de Sol",
-        description: "Óculos estiloso",
-        price: 299.99,
-        stock: 10,
-        category: "solar",
-      };
-
-      const product2Data: ICreateProductDTO = {
-        name: "Óculos de Grau",
-        description: "Óculos para leitura",
-        price: 399.99,
-        stock: 5,
-        category: "grau",
-      };
-
-      const product1 = await productService.createProduct(product1Data);
-      await productService.createProduct(product2Data);
+    it("should throw error when updating with existing name", async () => {
+      productModel.findByName.mockResolvedValue({
+        _id: "other-id",
+        ...mockProduct,
+      });
 
       await expect(
-        productService.updateProduct(product1._id, { name: "Óculos de Grau" })
-      ).rejects.toThrow("Já existe um produto com este nome");
+        productService.updateProduct("product-id", { name: mockProduct.name })
+      ).rejects.toThrow(new ProductError("Já existe um produto com este nome"));
+    });
+
+    it("should throw error when product not found", async () => {
+      productModel.update.mockResolvedValue(null);
+
+      await expect(
+        productService.updateProduct("non-existent", { price: 699.99 })
+      ).rejects.toThrow(new ProductError("Produto não encontrado"));
     });
   });
 
   describe("deleteProduct", () => {
-    it("should delete a product successfully", async () => {
-      const productData: ICreateProductDTO = {
-        name: "Óculos de Sol",
-        description: "Óculos estiloso",
-        price: 299.99,
-        stock: 10,
-        category: "solar",
-      };
+    it("should delete product successfully", async () => {
+      const mockDeletedProduct = { _id: "product-id", ...mockProduct };
+      productModel.delete.mockResolvedValue(mockDeletedProduct);
 
-      const product = await productService.createProduct(productData);
-      const deletedProduct = await productService.deleteProduct(product._id);
+      const result = await productService.deleteProduct("product-id");
 
-      expect(deletedProduct).toBeTruthy();
-
-      const foundProduct = await productService.getProductById(product._id);
-      expect(foundProduct).toBeNull();
+      expect(result).toEqual(mockDeletedProduct);
     });
 
-    it("should return null when trying to delete non-existent product", async () => {
-      const nonExistentId = new mongoose.Types.ObjectId().toString();
-      const result = await productService.deleteProduct(nonExistentId);
+    it("should throw error when product not found", async () => {
+      productModel.delete.mockResolvedValue(null);
 
-      expect(result).toBeNull();
+      await expect(
+        productService.deleteProduct("non-existent")
+      ).rejects.toThrow(new ProductError("Produto não encontrado"));
     });
   });
 });

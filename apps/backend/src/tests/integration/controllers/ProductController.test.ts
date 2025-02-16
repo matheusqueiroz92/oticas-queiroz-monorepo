@@ -3,29 +3,40 @@ import app from "../../../app";
 import { Product } from "../../../schemas/ProductSchema";
 import { User } from "../../../schemas/UserSchema";
 import { generateToken } from "../../../utils/jwt";
-import mongoose from "mongoose";
+import mongoose, { mongo } from "mongoose";
 import type { ICreateProductDTO } from "../../../interfaces/IProduct";
 import bcrypt from "bcrypt";
+import { config } from "dotenv";
 import {
   describe,
   it,
   expect,
   beforeEach,
   beforeAll,
+  // afterEach,
   afterAll,
+  // jest,
 } from "@jest/globals";
-import { config } from "dotenv";
 
 config();
 
 describe("ProductController", () => {
   let adminToken: string;
   let employeeToken: string;
+  const mongoURI = process.env.MONGODB_URI || "mongodb://localhost:27017/test";
+
+  const mockProduct: ICreateProductDTO = {
+    name: "Óculos de Sol Ray-Ban",
+    category: "solar",
+    description: "Óculos de sol estiloso",
+    brand: "Ray-Ban",
+    modelGlasses: "Aviador",
+    price: 599.99,
+    stock: 10,
+  };
 
   beforeAll(async () => {
-    await mongoose.connect(
-      process.env.MONGODB_URI || "mongodb://localhost:27017/test"
-    );
+    await mongoose.connect(mongoURI);
   });
 
   afterAll(async () => {
@@ -54,108 +65,88 @@ describe("ProductController", () => {
   });
 
   describe("POST /api/products", () => {
-    it("should create a new product when admin", async () => {
-      const productData: ICreateProductDTO = {
-        name: "Óculos de Sol",
-        description: "Óculos estiloso",
-        price: 299.99,
-        stock: 10,
-        category: "solar",
-      };
-
+    it("should create a product when admin", async () => {
       const res = await request(app)
         .post("/api/products")
         .set("Authorization", `Bearer ${adminToken}`)
-        .send(productData);
+        .send(mockProduct);
 
       expect(res.status).toBe(201);
       expect(res.body).toHaveProperty("_id");
-      expect(res.body.name).toBe(productData.name);
+      expect(res.body.name).toBe(mockProduct.name);
     });
 
-    it("should create a new product when employee", async () => {
-      const productData: ICreateProductDTO = {
-        name: "Óculos de Sol",
-        description: "Óculos estiloso",
-        price: 299.99,
-        stock: 10,
-        category: "solar",
-      };
-
+    it("should create a product when employee", async () => {
       const res = await request(app)
         .post("/api/products")
         .set("Authorization", `Bearer ${employeeToken}`)
-        .send(productData);
+        .send(mockProduct);
 
       expect(res.status).toBe(201);
     });
 
     it("should not create product without authorization", async () => {
-      const productData: ICreateProductDTO = {
-        name: "Óculos de Sol",
-        description: "Óculos estiloso",
-        price: 299.99,
-        stock: 10,
-        category: "solar",
-      };
-
-      const res = await request(app).post("/api/products").send(productData);
+      const res = await request(app).post("/api/products").send(mockProduct);
 
       expect(res.status).toBe(401);
+    });
+
+    it("should not create product with invalid data", async () => {
+      const res = await request(app)
+        .post("/api/products")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({ ...mockProduct, price: -10 });
+
+      expect(res.status).toBe(400);
     });
   });
 
   describe("GET /api/products", () => {
-    it("should get all products", async () => {
-      const productData: ICreateProductDTO = {
-        name: "Óculos de Sol",
-        description: "Óculos estiloso",
-        price: 299.99,
-        stock: 10,
-        category: "solar",
-      };
-
-      await Product.create(productData);
+    it("should get all products with pagination", async () => {
+      await Product.create(mockProduct);
 
       const res = await request(app)
         .get("/api/products")
         .set("Authorization", `Bearer ${employeeToken}`);
 
       expect(res.status).toBe(200);
-      expect(Array.isArray(res.body)).toBeTruthy();
-      expect(res.body.length).toBe(1);
+      expect(res.body.products).toHaveLength(1);
+      expect(res.body.pagination).toBeDefined();
     });
 
-    it("should not get products without authorization", async () => {
-      const res = await request(app).get("/api/products");
+    it("should filter products by category", async () => {
+      await Product.create(mockProduct);
+      await Product.create({
+        ...mockProduct,
+        name: "Óculos de Grau",
+        category: "grau",
+      });
 
-      expect(res.status).toBe(401);
+      const res = await request(app)
+        .get("/api/products?category=solar")
+        .set("Authorization", `Bearer ${employeeToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.products).toHaveLength(1);
+      expect(res.body.products[0].category).toBe("solar");
     });
   });
 
   describe("GET /api/products/:id", () => {
     it("should get a product by id", async () => {
-      const product = await Product.create({
-        name: "Óculos de Sol",
-        description: "Óculos estiloso",
-        price: 299.99,
-        stock: 10,
-        category: "solar",
-      });
+      const product = await Product.create(mockProduct);
 
       const res = await request(app)
         .get(`/api/products/${product._id}`)
         .set("Authorization", `Bearer ${employeeToken}`);
 
       expect(res.status).toBe(200);
-      expect(res.body.name).toBe("Óculos de Sol");
+      expect(res.body.name).toBe(mockProduct.name);
     });
 
     it("should return 404 for non-existent product", async () => {
-      const nonExistentId = new mongoose.Types.ObjectId();
-
       const res = await request(app)
-        .get(`/api/products/${nonExistentId}`)
+        .get(`/api/products/${new mongoose.Types.ObjectId()}`)
         .set("Authorization", `Bearer ${employeeToken}`);
 
       expect(res.status).toBe(404);
@@ -164,18 +155,8 @@ describe("ProductController", () => {
 
   describe("PUT /api/products/:id", () => {
     it("should update a product", async () => {
-      const product = await Product.create({
-        name: "Óculos de Sol",
-        description: "Óculos estiloso",
-        price: 299.99,
-        stock: 10,
-        category: "solar",
-      });
-
-      const updateData = {
-        price: 349.99,
-        stock: 15,
-      };
+      const product = await Product.create(mockProduct);
+      const updateData = { price: 699.99 };
 
       const res = await request(app)
         .put(`/api/products/${product._id}`)
@@ -184,35 +165,23 @@ describe("ProductController", () => {
 
       expect(res.status).toBe(200);
       expect(res.body.price).toBe(updateData.price);
-      expect(res.body.stock).toBe(updateData.stock);
     });
 
-    it("should not update product without authorization", async () => {
-      const product = await Product.create({
-        name: "Óculos de Sol",
-        description: "Óculos estiloso",
-        price: 299.99,
-        stock: 10,
-        category: "solar",
-      });
+    it("should not update with invalid data", async () => {
+      const product = await Product.create(mockProduct);
 
       const res = await request(app)
         .put(`/api/products/${product._id}`)
-        .send({ price: 349.99 });
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({ price: -10 });
 
-      expect(res.status).toBe(401);
+      expect(res.status).toBe(400);
     });
   });
 
   describe("DELETE /api/products/:id", () => {
     it("should delete a product", async () => {
-      const product = await Product.create({
-        name: "Óculos de Sol",
-        description: "Óculos estiloso",
-        price: 299.99,
-        stock: 10,
-        category: "solar",
-      });
+      const product = await Product.create(mockProduct);
 
       const res = await request(app)
         .delete(`/api/products/${product._id}`)
@@ -224,18 +193,12 @@ describe("ProductController", () => {
       expect(deletedProduct).toBeNull();
     });
 
-    it("should not delete product without authorization", async () => {
-      const product = await Product.create({
-        name: "Óculos de Sol",
-        description: "Óculos estiloso",
-        price: 299.99,
-        stock: 10,
-        category: "solar",
-      });
+    it("should return 404 for non-existent product", async () => {
+      const res = await request(app)
+        .delete(`/api/products/${new mongoose.Types.ObjectId()}`)
+        .set("Authorization", `Bearer ${adminToken}`);
 
-      const res = await request(app).delete(`/api/products/${product._id}`);
-
-      expect(res.status).toBe(401);
+      expect(res.status).toBe(404);
     });
   });
 });

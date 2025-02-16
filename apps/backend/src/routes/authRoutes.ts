@@ -1,6 +1,7 @@
 import express from "express";
 import { AuthController } from "../controllers/AuthController";
 import { authenticate, authorize } from "../middlewares/authMiddleware";
+import { asyncHandler } from "../utils/asyncHandler";
 
 const router = express.Router();
 const authController = new AuthController();
@@ -25,7 +26,7 @@ const authController = new AuthController();
  *       200:
  *         description: Token JWT gerado com sucesso
  */
-router.post("/login", (req, res) => authController.login(req, res));
+router.post("/login", asyncHandler(authController.login.bind(authController)));
 
 /**
  * @swagger
@@ -56,7 +57,7 @@ router.post(
   "/register",
   authenticate,
   authorize(["admin", "employee"]),
-  (req, res) => authController.register(req, res)
+  asyncHandler(authController.register.bind(authController))
 );
 
 export default router;

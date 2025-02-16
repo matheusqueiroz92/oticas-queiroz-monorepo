@@ -1,5 +1,6 @@
 import express from "express";
 import { setupSwagger } from "./config/swagger";
+import { errorMiddleware } from "./middlewares/errorMiddleware";
 import authRoutes from "./routes/authRoutes";
 import userRoutes from "./routes/userRoutes";
 import productRoutes from "./routes/productRoutes";
@@ -15,6 +16,7 @@ class App {
     this.routes();
     this.database();
     this.swagger();
+    this.errorHandling();
   }
 
   private config(): void {
@@ -25,7 +27,7 @@ class App {
     this.app.use("/api/auth", authRoutes);
     this.app.use("/api", userRoutes);
     this.app.use("/api", productRoutes);
-    this.app.use("/api", orderRoutes); // Adicione as rotas de pedidos
+    this.app.use("/api", orderRoutes);
   }
 
   private database(): void {
@@ -34,6 +36,10 @@ class App {
 
   private swagger(): void {
     setupSwagger(this.app);
+  }
+
+  private errorHandling(): void {
+    this.app.use(errorMiddleware);
   }
 }
 
