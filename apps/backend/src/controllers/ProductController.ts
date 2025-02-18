@@ -1,19 +1,29 @@
 import type { Request, Response } from "express";
 import { ProductService, ProductError } from "../services/ProductService";
-import type { ICreateProductDTO } from "../interfaces/IProduct";
 import { z } from "zod";
+import type { ICreateProductDTO } from "../interfaces/IProduct";
 
-const productSchema = z.object({
-  name: z.string().min(1, "Nome é obrigatório"),
-  category: z.string().min(1, "Categoria é obrigatória"),
-  description: z.string().min(1, "Descrição é obrigatória"),
-  brand: z.string().min(1, "Marca é obrigatória"),
-  modelGlasses: z.string().min(1, "Modelo é obrigatório"),
-  price: z.number().min(0, "Preço deve ser maior que zero"),
-  stock: z.number().min(0, "Estoque deve ser maior ou igual a zero"),
+const createProductSchema = z.object({
+  name: z.string().min(2, "Nome deve ter no mínimo 2 caracteres"),
+  category: z.enum(["solar", "grau"], {
+    errorMap: () => ({ message: "Categoria deve ser 'solar' ou 'grau'" }),
+  }),
+  description: z.string().min(10, "Descrição deve ter no mínimo 10 caracteres"),
+  brand: z.string().min(2, "Marca deve ter no mínimo 2 caracteres"),
+  modelGlasses: z.string().min(2, "Modelo deve ter no mínimo 2 caracteres"),
+  price: z.number().positive("Preço deve ser positivo"),
+  stock: z.number().min(0, "Estoque não pode ser negativo"),
 });
 
-const updateProductSchema = productSchema.partial();
+const updateProductSchema = createProductSchema
+  .partial()
+  .refine(
+    (data) => Object.keys(data).length > 0,
+    "Pelo menos um campo deve ser fornecido para atualização"
+  );
+
+type CreateProductInput = z.infer<typeof createProductSchema>;
+type UpdateProductInput = z.infer<typeof updateProductSchema>;
 
 export class ProductController {
   private productService: ProductService;
@@ -24,7 +34,7 @@ export class ProductController {
 
   async createProduct(req: Request, res: Response): Promise<void> {
     try {
-      const validatedData = productSchema.parse(req.body);
+      const validatedData = createProductSchema.parse(req.body);
       const product = await this.productService.createProduct(validatedData);
       res.status(201).json(product);
     } catch (error) {
@@ -39,6 +49,7 @@ export class ProductController {
         res.status(400).json({ message: error.message });
         return;
       }
+      console.error("Error creating product:", error);
       res.status(500).json({ message: "Erro interno do servidor" });
     }
   }
