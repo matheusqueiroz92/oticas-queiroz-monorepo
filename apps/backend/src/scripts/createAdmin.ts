@@ -4,7 +4,7 @@ import connectDB from "../config/db";
 
 config(); // Carrega as variáveis de ambiente
 
-const createAdminUser = async () => {
+export const createAdminUser = async () => {
   try {
     await connectDB();
     const userModel = new UserModel();

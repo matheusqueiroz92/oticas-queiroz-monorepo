@@ -1,6 +1,6 @@
 # Óticas Queiroz Monorepo
 
-Este repositório contém um sistema de gerenciamento para ótica que integra controle de clientes, funcionários, produtos, pedidos, pagamentos, laboratório e fornecedores. Esta aplicação inclui backend, frontend, mobile e desktop, gerenciado com Turborepo.
+Este repositório contém um sistema de gerenciamento para ótica que integra controle de clientes, funcionários, produtos, pedidos, pagamentos, laboratórios e fornecedores. Esta aplicação inclui backend, frontend, mobile e desktop, e é gerenciada com Turborepo.
 
 ## 🚀 Tecnologias
 
@@ -14,9 +14,12 @@ Este repositório contém um sistema de gerenciamento para ótica que integra co
 - TypeScript
 - Jest
 - Supertest
-- BCrypt para hash de senhas
-- Zod para validação
-- MongoDB Memory Server para testes
+- MongoDB Memory Server
+- JWT
+- BCrypt
+- Zod
+- Cors
+- Dotenv
 
 ### Frontend
 
@@ -24,6 +27,7 @@ Este repositório contém um sistema de gerenciamento para ótica que integra co
 - Tailwind CSS
 - Shadcn UI
 - TypeScript
+- Zod
 
 ### Mobile
 
@@ -119,6 +123,7 @@ oticas-queiroz-monorepo/
 
 ```typescript
 {
+  _id?: string;
   name: string;
   email: string;
   password: string;
@@ -132,8 +137,9 @@ oticas-queiroz-monorepo/
   };
   purchases?: string[];
   debts?: number;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
+  comparePassword(candidatePassword: string): Promise<boolean>;
 }
 ```
 
@@ -151,8 +157,9 @@ oticas-queiroz-monorepo/
 
 ```typescript
 {
+  _id: string;
   name: string;
-  category: "solar" | "grau";
+  category: string;
   description: string;
   brand: string;
   modelGlasses: string;
@@ -170,12 +177,13 @@ oticas-queiroz-monorepo/
 - POST `/api/orders`: Criar pedido
 - GET `/api/orders`: Listar pedidos
 - GET `/api/orders/:id`: Buscar pedido
-- PUT `/api/orders/:id/status`: Atualizar status
+- PUT `/api/orders/:id/status`: Atualizar status do pedido
 
 ### Schema
 
 ```typescript
 {
+  _id: string;
   clientId: string;
   employeeId: string;
   products: string[];
@@ -221,8 +229,43 @@ oticas-queiroz-monorepo/
     };
   };
   totalPrice: number;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+```
+
+## 🔬 Laboratórios
+
+### Rotas
+
+- POST `/api/laboratories`: Criar laboratório
+- GET `/api/laboratories`: Listar laboratórios
+- GET `/api/laboratories/:id`: Buscar laboratórios
+- PUT `/api/laboratories/:id`: Atualizar laboratório
+- DELETE `/api/laboratories/:id`: Remover laboratório
+- PATCH `/api/laboratories/:id/toggle-status` : Atualizar status do laboratório
+
+### Schema
+
+```typescript
+{
+  _id?: string;
+  name: string;
+  address: {
+    street: string;
+    number: string;
+    complement?: string;
+    neighborhood: string;
+    city: string;
+    state: string;
+    zipCode: string;
+  };
+  phone: string;
+  email: string;
+  contactName: string;
+  isActive: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 ```
 
@@ -278,20 +321,23 @@ npm run dev
   - User Model
   - Product Model
   - Order Model
+  - Laboratory Model
 
 - ✅ Testes unitários para Services
 
+  - Auth Service
   - User Service
   - Product Service
   - Order Service
-  - Auth Service
+  - Laboratory Service
 
 - ✅ Testes de integração para Controllers
 
+  - Auth Controller
   - User Controller
   - Product Controller
   - Order Controller
-  - Auth Controller
+  - Laboratory Controller
 
 - Ferramentas e práticas
   - Jest para execução dos testes
@@ -303,7 +349,12 @@ npm run dev
 ```bash
 # Roda os testes do backend
 cd apps/backend
-npm test
+npm test # roda todos os testes
+npm run test:auth-user # roda os testes de autenticação e de usuário
+npm run test:product # roda os testes de produto
+npm run test:order # roda os testes de pedido
+npm run test:laboratory # roda os testes de laboratório
+npm run coverage # verifica a cobertura dos testes
 ```
 
 ### Testes do Frontend

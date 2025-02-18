@@ -7,6 +7,8 @@ export interface IProduct {
   modelGlasses: string;
   price: number;
   stock: number;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface ICreateProductDTO {
