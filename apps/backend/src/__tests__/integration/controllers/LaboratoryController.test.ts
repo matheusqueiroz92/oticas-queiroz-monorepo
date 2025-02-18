@@ -86,7 +86,7 @@ describe("LaboratoryController", () => {
         .set("Authorization", `Bearer ${employeeToken}`)
         .send(mockLaboratory);
 
-      expect(res.status).toBe(401);
+      expect(res.status).toBe(403);
     });
 
     it("should not create laboratory with invalid data", async () => {

@@ -1,4 +1,4 @@
-import { OrderService, OrderError } from "../../../services/OrderService";
+import { OrderService, OrderError } from "../../../services/OrerService";
 import { OrderModel } from "../../../models/OrderModel";
 import { UserModel } from "../../../models/UserModel";
 import { ProductModel } from "../../../models/ProductModel";

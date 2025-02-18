@@ -30,8 +30,14 @@ export const authenticate = (
 export const authorize = (roles: string[]) => {
   return (req: AuthRequest, _res: Response, next: NextFunction): void => {
     try {
-      if (!req.user || !roles.includes(req.user.role)) {
-        throw new AuthError("Acesso não autorizado");
+      if (!req.user) {
+        throw new AuthError("Token não fornecido", 401);
+      }
+
+      if (!roles.includes(req.user.role)) {
+        // Garantir que o erro é do tipo AuthError
+        const error = new AuthError("Acesso não autorizado", 403);
+        throw error;
       }
       next();
     } catch (error) {

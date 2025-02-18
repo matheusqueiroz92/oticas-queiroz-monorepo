@@ -1,6 +1,6 @@
 // src/controllers/OrderController.ts
 import type { Request, Response } from "express";
-import { OrderService, OrderError } from "../services/OrderService";
+import { OrderService, OrderError } from "../services/OrerService";
 import { z } from "zod";
 import type { IOrder } from "../interfaces/IOrder";
 

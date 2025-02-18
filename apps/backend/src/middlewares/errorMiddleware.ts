@@ -17,9 +17,11 @@ export const errorMiddleware = (
   console.error(`[Error] ${error.name}: ${error.message}`);
 
   if (error instanceof AuthError) {
-    res.status(401).json({
+    const status = error.statusCode || 401;
+    res.status(status).json({
       status: "error",
       message: error.message,
+      code: status, // opcional, para debugging
     });
     return;
   }

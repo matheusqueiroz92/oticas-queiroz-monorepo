@@ -1,41 +1,29 @@
 import type { Request, Response } from "express";
 import { UserService, UserError } from "../services/UserService";
-import { z } from "zod";
 import type { JwtPayload } from "jsonwebtoken";
+import { z } from "zod";
 
 interface AuthRequest extends Request {
   user?: JwtPayload;
 }
 
-const prescriptionSchema = z.object({
-  leftEye: z.number(),
-  rightEye: z.number(),
-  addition: z.number().optional(),
-});
-
-const createUserSchema = z.object({
-  name: z.string().min(2, "Nome deve ter no mínimo 2 caracteres"),
-  email: z.string().email("Email inválido"),
-  password: z.string().min(6, "Senha deve ter no mínimo 6 caracteres"),
-  role: z.enum(["admin", "employee", "customer"], {
-    errorMap: () => ({ message: "Role inválida" }),
-  }),
+const userUpdateSchema = z.object({
+  name: z.string().min(2).optional(),
+  email: z.string().email().optional(),
+  password: z.string().min(6).optional(),
+  role: z.enum(["admin", "employee", "customer"]).optional(),
   address: z.string().optional(),
   phone: z.string().optional(),
-  prescription: prescriptionSchema.optional(),
+  prescription: z
+    .object({
+      leftEye: z.number(),
+      rightEye: z.number(),
+      addition: z.number().optional(),
+    })
+    .optional(),
   purchases: z.array(z.string()).optional(),
-  debts: z.number().min(0).optional(),
+  debts: z.number().optional(),
 });
-
-const updateUserSchema = createUserSchema
-  .partial()
-  .refine(
-    (data) => Object.keys(data).length > 0,
-    "Pelo menos um campo deve ser fornecido para atualização"
-  );
-
-type CreateUserInput = z.infer<typeof createUserSchema>;
-type UpdateUserInput = z.infer<typeof updateUserSchema>;
 
 export class UserController {
   private userService: UserService;
@@ -44,33 +32,7 @@ export class UserController {
     this.userService = new UserService();
   }
 
-  async createUser(req: AuthRequest, res: Response): Promise<void> {
-    try {
-      const validatedData = createUserSchema.parse(req.body);
-      const user = await this.userService.createUser(
-        validatedData,
-        req.user?.role
-      );
-      const { password: _, ...userWithoutPassword } = user;
-      res.status(201).json(userWithoutPassword);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({
-          message: "Dados inválidos",
-          errors: error.errors,
-        });
-        return;
-      }
-      if (error instanceof UserError) {
-        res.status(400).json({ message: error.message });
-        return;
-      }
-      console.error("Error creating user:", error);
-      res.status(500).json({ message: "Erro interno do servidor" });
-    }
-  }
-
-  async getAllUsers(_req: AuthRequest, res: Response): Promise<void> {
+  async getAllUsers(_req: Request, res: Response): Promise<void> {
     try {
       const users = await this.userService.getAllUsers();
       res.status(200).json(users);
@@ -98,9 +60,35 @@ export class UserController {
 
   async updateUser(req: AuthRequest, res: Response): Promise<void> {
     try {
-      const user = await this.userService.updateUser(req.params.id, req.body);
+      const userData = userUpdateSchema.parse(req.body);
+
+      // Se for employee tentando mudar role
+      if (req.user?.role === "employee" && userData.role) {
+        res
+          .status(403)
+          .json({ message: "Funcionários não podem alterar roles" });
+        return;
+      }
+
+      // Se for employee tentando atualizar não-customer
+      const targetUser = await this.userService.getUserById(req.params.id);
+      if (req.user?.role === "employee" && targetUser.role !== "customer") {
+        res.status(403).json({
+          message: "Funcionários só podem atualizar dados de clientes",
+        });
+        return;
+      }
+
+      const user = await this.userService.updateUser(req.params.id, userData);
       res.status(200).json(user);
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({
+          message: "Dados inválidos",
+          errors: error.errors,
+        });
+        return;
+      }
       if (error instanceof UserError) {
         res.status(400).json({ message: error.message });
         return;
@@ -109,7 +97,7 @@ export class UserController {
     }
   }
 
-  async deleteUser(req: AuthRequest, res: Response): Promise<void> {
+  async deleteUser(req: Request, res: Response): Promise<void> {
     try {
       await this.userService.deleteUser(req.params.id);
       res.status(204).send();
@@ -145,9 +133,27 @@ export class UserController {
         res.status(401).json({ message: "Usuário não autenticado" });
         return;
       }
-      const user = await this.userService.updateProfile(req.user.id, req.body);
+
+      const userData = userUpdateSchema.parse(req.body);
+
+      // Não permitir atualização de role no perfil
+      if (userData.role) {
+        res
+          .status(400)
+          .json({ message: "Não é permitido alterar a role do usuário" });
+        return;
+      }
+
+      const user = await this.userService.updateProfile(req.user.id, userData);
       res.status(200).json(user);
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({
+          message: "Dados inválidos",
+          errors: error.errors,
+        });
+        return;
+      }
       if (error instanceof UserError) {
         res.status(400).json({ message: error.message });
         return;

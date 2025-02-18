@@ -108,7 +108,7 @@ router.get(
 router.put(
   "/orders/:id/status",
   authenticate,
-  authorize(["admin", "employee", "customer"]),
+  authorize(["admin", "employee"]),
   (req, res) => orderController.updateOrderStatus(req, res)
 );
 
