@@ -54,12 +54,13 @@ oticas-queiroz-monorepo/
 │       ├── models/       # Camada de acesso ao banco
 │       ├── services/     # Camada de regras de negócio
 │       ├── schemas/      # Schemas do Mongoose
-│       ├── __tests__/        # Testes da aplicação
+│       ├── __tests__/    # Testes da aplicação
 │       ├── types/        # Tipagens Express
 │       └── utils/        # Arquivos auxiliares
-├── frontend/     # Next.js
+│   ├── frontend/     # Next.js
 │   ├── mobile/       # React Native
 │   └── desktop/      # Electron
+│
 ├── packages/
 │   ├── config/       # Configurações (ESLint, TS, Tailwind)
 │   ├── ui/           # Componentes UI (Shadcn UI)
