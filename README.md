@@ -60,7 +60,6 @@ oticas-queiroz-monorepo/
 │   ├── frontend/     # Next.js
 │   ├── mobile/       # React Native
 │   └── desktop/      # Electron
-│
 ├── packages/
 │   ├── config/       # Configurações (ESLint, TS, Tailwind)
 │   ├── ui/           # Componentes UI (Shadcn UI)
