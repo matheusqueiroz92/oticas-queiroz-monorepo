@@ -22,8 +22,15 @@ export class AuthService {
   }
 
   async login(email: string, password: string): Promise<LoginResponse> {
+    // Primeiro, validamos se os campos foram fornecidos
     if (!email?.trim() || !password?.trim()) {
       throw new AuthError("Email e senha são obrigatórios");
+    }
+
+    // Depois, validamos o formato do email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      throw new AuthError("Email inválido");
     }
 
     const user = await this.authModel.findUserByEmail(email);
@@ -56,6 +63,13 @@ export class AuthService {
       throw new AuthError("Token inválido");
     }
 
-    return this.authModel.convertToIUser(user);
+    const userData = this.authModel.convertToIUser(user);
+    const {
+      password: _,
+      comparePassword: __,
+      ...userWithoutSensitiveData
+    } = userData;
+
+    return userWithoutSensitiveData as IUser;
   }
 }

@@ -47,7 +47,7 @@ export class ProductService {
     filters?: Partial<ICreateProductDTO>
   ): Promise<{ products: IProduct[]; total: number }> {
     const result = await this.productModel.findAll(page, limit, filters);
-    if (!result.products.length) {
+    if (result.total === 0) {
       throw new ProductError("Nenhum produto encontrado");
     }
     return result;

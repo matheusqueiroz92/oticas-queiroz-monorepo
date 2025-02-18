@@ -68,25 +68,25 @@ export class ProductModel {
   ): Promise<IProduct | null> {
     if (!this.isValidId(id)) return null;
 
-    const product = (await Product.findByIdAndUpdate(
+    const product = await Product.findByIdAndUpdate(
       id,
       { $set: productData },
       {
         new: true,
         runValidators: true,
       }
-    )) as ProductDocument | null;
+    );
 
-    return product ? this.convertToIProduct(product) : null;
+    if (!product) return null;
+    return this.convertToIProduct(product);
   }
 
   async delete(id: string): Promise<IProduct | null> {
     if (!this.isValidId(id)) return null;
 
-    const product = (await Product.findByIdAndDelete(
-      id
-    )) as ProductDocument | null;
-    return product ? this.convertToIProduct(product) : null;
+    const product = await Product.findByIdAndDelete(id);
+    if (!product) return null;
+    return this.convertToIProduct(product);
   }
 
   async updateStock(id: string, quantity: number): Promise<IProduct | null> {

@@ -11,6 +11,7 @@ import {
   // afterAll,
   jest,
 } from "@jest/globals";
+import { object } from "zod";
 
 interface MockProductModel extends ProductModel {
   findByName: jest.MockedFunction<ProductModel["findByName"]>;
@@ -96,10 +97,10 @@ describe("ProductService", () => {
 
       productModel.findAll.mockResolvedValue(mockProducts);
 
-      const result = await productService.getAllProducts(1, 10);
+      const result = await productService.getAllProducts(1, 10, mockProduct);
 
       expect(result).toEqual(mockProducts);
-      expect(productModel.findAll).toHaveBeenCalledWith(1, 10, {});
+      expect(productModel.findAll).toHaveBeenCalledWith(1, 10, mockProduct);
     });
 
     it("should throw error when no products found", async () => {
@@ -167,6 +168,49 @@ describe("ProductService", () => {
         productService.updateProduct("non-existent", { price: 699.99 })
       ).rejects.toThrow(new ProductError("Produto não encontrado"));
     });
+
+    it("should update stock successfully when increasing quantity", async () => {
+      const mockUpdateProduct = {
+        _id: "product-id",
+        ...mockProduct,
+        stock: 10,
+      };
+      productModel.findById.mockResolvedValue(mockUpdateProduct);
+      productModel.updateStock.mockResolvedValue({
+        ...mockUpdateProduct,
+        stock: 15,
+      });
+
+      const result = await productService.updateStock("product-id", 5);
+
+      expect(result.stock).toBe(15);
+    });
+
+    it("should update stock successfully when decreasing quantity", async () => {
+      const mockUpdateProduct = {
+        _id: "product-id",
+        ...mockProduct,
+        stock: 10,
+      };
+      productModel.findById.mockResolvedValue(mockUpdateProduct);
+      productModel.updateStock.mockResolvedValue({
+        ...mockUpdateProduct,
+        stock: 5,
+      });
+
+      const result = await productService.updateStock("product-id", -5);
+
+      expect(result.stock).toBe(5);
+    });
+
+    it("should throw error when trying to decrease more than available stock", async () => {
+      const mockUpdateProduct = { _id: "product-id", ...mockProduct, stock: 5 };
+      productModel.findById.mockResolvedValue(mockUpdateProduct);
+
+      await expect(
+        productService.updateStock("product-id", -10)
+      ).rejects.toThrow("Estoque insuficiente");
+    });
   });
 
   describe("deleteProduct", () => {
@@ -185,6 +229,45 @@ describe("ProductService", () => {
       await expect(
         productService.deleteProduct("non-existent")
       ).rejects.toThrow(new ProductError("Produto não encontrado"));
+    });
+  });
+
+  describe("filters", () => {
+    it("should filter products by brand", async () => {
+      const mockProducts = {
+        products: [{ _id: "1", ...mockProduct }],
+        total: 1,
+      };
+
+      productModel.findAll.mockResolvedValue(mockProducts);
+
+      const result = await productService.getAllProducts(1, 10, {
+        brand: "Ray-Ban",
+      });
+
+      expect(result.products[0].brand).toBe("Ray-Ban");
+      expect(productModel.findAll).toHaveBeenCalledWith(1, 10, {
+        brand: "Ray-Ban",
+      });
+    });
+
+    it("should filter products by category and brand", async () => {
+      const mockProducts = {
+        products: [{ _id: "1", ...mockProduct }],
+        total: 1,
+      };
+
+      productModel.findAll.mockResolvedValue(mockProducts);
+
+      const result = await productService.getAllProducts(1, 10, {
+        category: "solar",
+        brand: "Ray-Ban",
+      });
+
+      expect(productModel.findAll).toHaveBeenCalledWith(1, 10, {
+        category: "solar",
+        brand: "Ray-Ban",
+      });
     });
   });
 });

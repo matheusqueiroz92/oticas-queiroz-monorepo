@@ -8,46 +8,6 @@ const userController = new UserController();
 /**
  * @swagger
  * /api/users:
- *   post:
- *     summary: Cria um novo usuário
- *     security:
- *       - bearerAuth: []
- *     tags: [Users]
- *     description: Apenas administradores podem criar novos usuários
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               name:
- *                 type: string
- *               email:
- *                 type: string
- *               password:
- *                 type: string
- *               role:
- *                 type: string
- *                 enum: [admin, employee, customer]
- *     responses:
- *       201:
- *         description: Usuário criado com sucesso
- *       401:
- *         description: Não autorizado
- *       403:
- *         description: Acesso proibido
- */
-router.post(
-  "/users",
-  authenticate,
-  authorize(["admin", "employee"]),
-  (req, res) => userController.createUser(req, res)
-);
-
-/**
- * @swagger
- * /api/users:
  *   get:
  *     summary: Lista todos os usuários
  *     security:

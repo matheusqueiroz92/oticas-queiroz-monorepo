@@ -14,6 +14,9 @@ Este repositório contém um sistema de gerenciamento para ótica que integra co
 - TypeScript
 - Jest
 - Supertest
+- BCrypt para hash de senhas
+- Zod para validação
+- MongoDB Memory Server para testes
 
 ### Frontend
 
@@ -51,7 +54,7 @@ oticas-queiroz-monorepo/
 │       ├── models/       # Camada de acesso ao banco
 │       ├── services/     # Camada de regras de negócio
 │       ├── schemas/      # Schemas do Mongoose
-│       ├── tests/        # Testes da aplicação
+│       ├── __tests__/        # Testes da aplicação
 │       ├── types/        # Tipagens Express
 │       └── utils/        # Arquivos auxiliares
 ├── frontend/     # Next.js
@@ -71,6 +74,7 @@ oticas-queiroz-monorepo/
 - JWT (JSON Web Token)
 - Autorização baseada em roles
 - Middleware de proteção de rotas
+- Middleware para tratamento de erros
 
 ### Roles
 
@@ -128,6 +132,8 @@ oticas-queiroz-monorepo/
   };
   purchases?: string[];
   debts?: number;
+  createdAt: Date;
+  updatedAt: Date;
 }
 ```
 
@@ -146,12 +152,14 @@ oticas-queiroz-monorepo/
 ```typescript
 {
   name: string;
-  category: "prescription" | "sunglasses";
+  category: "solar" | "grau";
   description: string;
   brand: string;
   modelGlasses: string;
   price: number;
   stock: number;
+  createdAt: Date;
+  updatedAt: Date;
 }
 ```
 
@@ -169,50 +177,52 @@ oticas-queiroz-monorepo/
 ```typescript
 {
   clientId: string;
-  products: productId[];
-  price: number;
-  description?: string;
   employeeId: string;
+  products: string[];
+  description?: string;
   paymentMethod: string;
-  paymentEntry?: string;
+  paymentEntry?: number;
   installments?: number;
-  deliveryDate: date;
-  status: string;
-  loboratoryId: string;
+  deliveryDate: Date;
+  status: "pending" | "in_production" | "ready" | "delivered";
+  laboratoryId?: string;
   lensType: string;
   prescriptionData: {
     doctorName: string;
     clinicName: string;
-    appointmentdate: data;
+    appointmentdate: Date;
     leftEye: {
       near: {
         sph: number;
         cyl: number;
         axis: number;
         pd: number;
-      },
+      };
       far: {
         sph: number;
         cyl: number;
         axis: number;
         pd: number;
-      }
-    }
+      };
+    };
     rightEye: {
       near: {
         sph: number;
         cyl: number;
         axis: number;
         pd: number;
-      },
+      };
       far: {
         sph: number;
         cyl: number;
         axis: number;
         pd: number;
-      }
-    }
-  }
+      };
+    };
+  };
+  totalPrice: number;
+  createdAt: Date;
+  updatedAt: Date;
 }
 ```
 
@@ -261,27 +271,39 @@ cd apps/frontend
 npm run dev
 ```
 
-### Testes do Backend
+### Testes Implementados
+
+- ✅ Testes unitários para Models
+
+  - User Model
+  - Product Model
+  - Order Model
+
+- ✅ Testes unitários para Services
+
+  - User Service
+  - Product Service
+  - Order Service
+  - Auth Service
+
+- ✅ Testes de integração para Controllers
+
+  - User Controller
+  - Product Controller
+  - Order Controller
+  - Auth Controller
+
+- Ferramentas e práticas
+  - Jest para execução dos testes
+  - Supertest para testes de API
+  - MongoDB Memory Server para banco de dados em memória
+  - Mocks e stubs para isolamento de testes
+  - Testes para fluxos de sucesso e erro
 
 ```bash
-# Roda apenas os testes do backend
+# Roda os testes do backend
 cd apps/backend
 npm test
-```
-
-#### 🔄 Estrutura de Testes do Backend
-
-```bash
-oticas-queiroz-monorepo/
-├── apps/
-│   ├── backend/
-│     ├── src/
-│       ├── tests/
-│         ├── unit/
-│            ├── models/       # Testes da camada Model
-│            └── services/     # Testes da camada Service
-│         └── integration/
-│            └──controllers/   # Testes da camada Controller
 ```
 
 ### Testes do Frontend
@@ -292,29 +314,50 @@ cd apps/frontend
 npm test
 ```
 
-#### 🔄 Estrutura de Testes do Frontend
+## 🔄 Melhorias Sugeridas
 
-```bash
-oticas-queiroz-monorepo/
-├── apps/
-│   ├── frontend/
-│     ├── src/
-│       ├── tests/
-│          └── unit/
+### Performance
 
-```
+- [ ] Implementar Redis para cache
+  - Cache de produtos mais acessados
+  - Cache de resultados de queries frequentes
+  - Cache de sessões de usuário
 
-### Tratamento de Erros
+### Segurança
 
-- Implementado tratamento consistente de erros em todas as camadas
-- Validação de dados com tipagem forte
-- Mensagens de erro claras e específicas
+- [ ] Implementar rate limiting
+- [ ] Adicionar helmet para headers de segurança
+- [ ] Melhorar validação de senhas
+- [ ] Configurar CORS por ambiente
+- [ ] Implementar refresh tokens
 
-### URLs
+### Monitoramento e Logs
 
-- Backend: http://localhost:3333
-- Swagger: http://localhost:3333/api-docs
-- Frontend: http://localhost:3000
+- [ ] Implementar Winston para logs estruturados
+- [ ] Adicionar Sentry para monitoramento de erros
+- [ ] Criar middleware de log para requisições
+- [ ] Implementar métricas de performance
+
+### Otimizações de Banco
+
+- [ ] Implementar paginação com cursor
+- [ ] Adicionar índices compostos
+- [ ] Otimizar queries de agregação
+- [ ] Implementar soft delete
+
+### Testes
+
+- [ ] Adicionar testes de carga com k6
+- [ ] Implementar testes E2E
+- [ ] Aumentar cobertura de testes
+- [ ] Adicionar testes de regressão
+
+### Documentação
+
+- [ ] Melhorar documentação Swagger
+- [ ] Adicionar exemplos de uso
+- [ ] Documentar erros possíveis
+- [ ] Criar guia de contribuição
 
 ## 📈 Próximos Passos
 
@@ -343,6 +386,18 @@ oticas-queiroz-monorepo/
   - [ ] Relatórios
 
 - [ ] Melhorias técnicas
+  - [ ] Implementação de Cache
+    - [ ] Configuração do Redis
+    - [ ] Cache de produtos
+    - [ ] Cache de autenticação
+  - [ ] Sistema de Logs e Monitoramento
+    - [ ] Implementação do Winston
+    - [ ] Configuração do Sentry
+    - [ ] Dashboard de monitoramento
+  - [ ] Melhorias de Performance
+    - [ ] Otimização de queries
+    - [ ] Implementação de índices
+    - [ ] Compressão de respostas
   - [ ] CI/CD
   - [ ] Monitoramento
   - [ ] Logs

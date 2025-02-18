@@ -32,7 +32,11 @@ router.post("/login", asyncHandler(authController.login.bind(authController)));
  * @swagger
  * /api/auth/register:
  *   post:
- *     summary: Registro de usuário
+ *     summary: Registro de novo usuário
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Users]
+ *     description: Apenas administradores podem criar novos usuários
  *     requestBody:
  *       required: true
  *       content:
@@ -52,6 +56,10 @@ router.post("/login", asyncHandler(authController.login.bind(authController)));
  *     responses:
  *       201:
  *         description: Usuário criado com sucesso
+ *       401:
+ *         description: Não autorizado
+ *       403:
+ *         description: Acesso proibido
  */
 router.post(
   "/register",

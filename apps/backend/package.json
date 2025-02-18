@@ -6,9 +6,13 @@
   "scripts": {
     "dev": "nodemon src/server.ts",
     "test": "jest",
+    "test:auth-user": "jest \"(User|Auth)\" --detectOpenHandles --forceExit",
+    "test:product": "jest \"Product\" --detectOpenHandles --forceExit",
+    "test:order": "jest \"Order\" --detectOpenHandles --forceExit",
     "test:watch": "jest --watch",
     "lint": "eslint . --ext .ts",
-    "lint:fix": "eslint . --ext .ts --fix"
+    "lint:fix": "eslint . --ext .ts --fix",
+    "create-admin": "ts-node src/scripts/createAdmin.ts"
   },
   "keywords": [],
   "author": "",
@@ -19,12 +23,14 @@
     "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
+    "@types/jest": "^29.5.14",
     "@types/jsonwebtoken": "^9.0.8",
     "@types/mocha": "^10.0.10",
     "@types/node": "^22.13.1",
     "@types/supertest": "^6.0.2",
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.7",
+    "mongodb-memory-server": "^10.1.3",
     "nodemon": "^3.1.9",
     "supertest": "^7.0.0",
     "ts-jest": "^29.2.5",
@@ -32,7 +38,6 @@
     "typescript": "^5.7.3"
   },
   "dependencies": {
-    "@types/jest": "^29.5.14",
     "bcrypt": "^5.1.1",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
