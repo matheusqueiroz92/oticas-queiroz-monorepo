@@ -5,6 +5,7 @@ import authRoutes from "./routes/authRoutes";
 import userRoutes from "./routes/userRoutes";
 import productRoutes from "./routes/productRoutes";
 import orderRoutes from "./routes/orderRoutes";
+import laboratoryRoutes from "./routes/laboratoryRoutes";
 import connectDB from "./config/db";
 
 class App {
@@ -28,6 +29,7 @@ class App {
     this.app.use("/api", userRoutes);
     this.app.use("/api", productRoutes);
     this.app.use("/api", orderRoutes);
+    this.app.use("/api", laboratoryRoutes);
   }
 
   private database(): void {

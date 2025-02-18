@@ -9,6 +9,8 @@
     "test:auth-user": "jest \"(User|Auth)\" --detectOpenHandles --forceExit",
     "test:product": "jest \"Product\" --detectOpenHandles --forceExit",
     "test:order": "jest \"Order\" --detectOpenHandles --forceExit",
+    "test:laboratory": "jest \"Laboratory\" --detectOpenHandles --forceExit",
+    "coverage": "jest --coverage",
     "test:watch": "jest --watch",
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix",

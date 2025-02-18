@@ -5,10 +5,8 @@ import { beforeAll, beforeEach, afterAll } from "@jest/globals";
 let mongoServer: MongoMemoryServer;
 
 beforeAll(async () => {
-  // Fecha qualquer conexão existente
-  if (mongoose.connection.readyState !== 0) {
-    await mongoose.disconnect();
-  }
+  // Força o fechamento de qualquer conexão existente
+  await mongoose.disconnect();
 
   mongoServer = await MongoMemoryServer.create();
   const mongoUri = mongoServer.getUri();

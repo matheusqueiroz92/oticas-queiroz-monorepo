@@ -1,7 +1,8 @@
+// src/controllers/OrderController.ts
 import type { Request, Response } from "express";
 import { OrderService, OrderError } from "../services/OrderService";
 import { z } from "zod";
-import { Order } from "../schemas/OrderSchema";
+import type { IOrder } from "../interfaces/IOrder";
 
 const eyeDataSchema = z.object({
   sph: z.number(),
@@ -48,6 +49,20 @@ const updateOrderSchema = z.object({
   status: z.enum(["pending", "in_production", "ready", "delivered"]),
 });
 
+const querySchema = z.object({
+  page: z
+    .string()
+    .optional()
+    .transform((val) => Number(val) || 1),
+  limit: z
+    .string()
+    .optional()
+    .transform((val) => Number(val) || 10),
+  status: z.enum(["pending", "in_production", "ready", "delivered"]).optional(),
+  clientId: z.string().optional(),
+  laboratoryId: z.string().optional(),
+});
+
 type CreateOrderInput = z.infer<typeof createOrderSchema>;
 type UpdateOrderInput = z.infer<typeof updateOrderSchema>;
 
@@ -80,63 +95,100 @@ export class OrderController {
     }
   }
 
-  async getOrderById(req: Request, res: Response): Promise<void> {
+  async getAllOrders(req: Request, res: Response): Promise<void> {
     try {
-      // Buscar a ordem e popular os campos em uma única query
-      const order = await Order.findById(req.params.id)
-        .populate("clientId", "name email role") // Campos específicos do cliente
-        .populate("products", "name description price category") // Campos específicos do produto
-        .exec();
-
-      if (!order) {
-        res.status(404).json({ message: "Pedido não encontrado" });
-        return;
-      }
-
-      // Log para debug
-      console.log(
-        "Found order with populated fields:",
-        JSON.stringify(order.toObject(), null, 2)
+      const { page, limit, status, clientId, laboratoryId } = querySchema.parse(
+        req.query
       );
 
-      // Verificar se os campos populados existem
-      if (!order.clientId || !order.products) {
-        console.error("Population failed:", {
-          hasClient: !!order.clientId,
-          productsLength: order.products?.length,
+      const filters: Partial<IOrder> = {};
+
+      if (status) filters.status = status;
+      if (clientId) filters.clientId = clientId;
+      if (laboratoryId) filters.laboratoryId = laboratoryId;
+
+      const result = await this.orderService.getAllOrders(page, limit, filters);
+
+      res.status(200).json({
+        orders: result.orders,
+        pagination: {
+          page,
+          limit,
+          total: result.total,
+          totalPages: Math.ceil(result.total / limit),
+        },
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({
+          message: "Parâmetros de consulta inválidos",
+          errors: error.errors,
         });
-        res.status(500).json({ message: "Erro ao buscar relações do pedido" });
         return;
       }
+      if (error instanceof OrderError) {
+        res.status(404).json({ message: error.message });
+        return;
+      }
+      console.error("Error getting orders:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  }
 
+  async getOrderById(req: Request, res: Response): Promise<void> {
+    try {
+      const order = await this.orderService.getOrderById(req.params.id);
       res.status(200).json(order);
     } catch (error) {
-      console.error("Error fetching order:", error);
-      res.status(500).json({ message: "Erro ao buscar pedido" });
+      if (error instanceof OrderError) {
+        res.status(404).json({ message: error.message });
+        return;
+      }
+      console.error("Error getting order:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
     }
   }
 
   async updateOrderStatus(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
-      const { status } = req.body;
-
-      const order = await Order.findByIdAndUpdate(
-        id,
-        { status },
-        { new: true }
-      ).populate("clientId products laboratoryId");
-      if (order) {
-        res.status(200).json(order);
-      } else {
-        res.status(404).json({ message: "Order not found" });
-      }
+      const validatedData = updateOrderSchema.parse(req.body);
+      const order = await this.orderService.updateOrderStatus(
+        req.params.id,
+        validatedData.status,
+        req.params.userId,
+        req.params.userRole
+      );
+      res.status(200).json(order);
     } catch (error) {
-      if (error instanceof Error) {
-        res.status(500).json({ message: error.message });
-      } else {
-        res.status(500).json({ message: "An unknown error occurred" });
+      if (error instanceof z.ZodError) {
+        res.status(400).json({
+          message: "Dados inválidos",
+          errors: error.errors,
+        });
+        return;
       }
+      if (error instanceof OrderError) {
+        res.status(400).json({ message: error.message });
+        return;
+      }
+      console.error("Error updating order status:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  }
+
+  async getOrdersByClient(req: Request, res: Response): Promise<void> {
+    try {
+      const orders = await this.orderService.getOrdersByClientId(
+        req.params.clientId
+      );
+      res.status(200).json(orders);
+    } catch (error) {
+      if (error instanceof OrderError) {
+        res.status(404).json({ message: error.message });
+        return;
+      }
+      console.error("Error getting client orders:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
     }
   }
 }

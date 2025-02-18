@@ -57,7 +57,7 @@ export class LaboratoryService {
   async getAllLaboratories(
     page?: number,
     limit?: number,
-    filters?: Partial<ILaboratory>
+    filters: Partial<ILaboratory> = {}
   ): Promise<{ laboratories: ILaboratory[]; total: number }> {
     const result = await this.laboratoryModel.findAll(page, limit, filters);
     if (!result.laboratories.length) {
