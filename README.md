@@ -61,7 +61,7 @@ oticas-queiroz-monorepo/
 │       ├── __tests__/    # Testes da aplicação
 │       ├── types/        # Tipagens Express
 │       └── utils/        # Arquivos auxiliares
-│   ├── frontend/     # Next.js
+│   ├── web/     # Next.js
 │   ├── mobile/       # React Native
 │   └── desktop/      # Electron
 ├── packages/
