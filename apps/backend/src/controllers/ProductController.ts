@@ -110,6 +110,7 @@ export class ProductController {
         req.params.id,
         validatedData
       );
+
       res.status(200).json(product);
     } catch (error) {
       if (error instanceof z.ZodError) {

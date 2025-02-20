@@ -13,15 +13,25 @@ type LoginResponse = {
   };
 };
 
+type ApiResponse = {
+  products: Product[]; // A resposta da API contém um array de produtos
+  pagination: {
+    limit: number;
+    page: number;
+    total: number;
+    totalPages: number;
+  };
+};
+
 // Função para fazer login
 export const login = async (
-  login: string,
+  email: string,
   password: string
 ): Promise<LoginResponse> => {
   const response = await axios.post<LoginResponse>(
     `${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`,
     {
-      login,
+      email,
       password,
     }
   );
@@ -29,9 +39,9 @@ export const login = async (
 };
 
 // Função para buscar os produtos (com autenticação)
-export const fetchProducts = async (): Promise<Product[]> => {
+export const fetchProducts = async (): Promise<ApiResponse> => {
   const token = Cookies.get("token"); // Busca o token dos cookies
-  const response = await axios.get<Product[]>(
+  const response = await axios.get<ApiResponse>(
     `${process.env.NEXT_PUBLIC_API_URL}/api/products`,
     {
       headers: {
@@ -39,5 +49,5 @@ export const fetchProducts = async (): Promise<Product[]> => {
       },
     }
   );
-  return response.data;
+  return response.data; // Retorna o objeto completo da API
 };

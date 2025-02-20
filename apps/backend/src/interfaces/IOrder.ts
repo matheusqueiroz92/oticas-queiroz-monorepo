@@ -8,7 +8,7 @@ export interface IOrder {
   paymentEntry?: number;
   installments?: number;
   deliveryDate: Date;
-  status: "pending" | "in_production" | "ready" | "delivered";
+  status: "pending" | "in_production" | "ready" | "delivered" | "cancelled";
   laboratoryId?: string;
   lensType: string;
   prescriptionData: {

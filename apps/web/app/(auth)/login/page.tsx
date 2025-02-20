@@ -1,4 +1,4 @@
-"use client"; // Marca o componente como Client Component
+"use client";
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -6,11 +6,14 @@ import { z } from "zod";
 import { useMutation } from "@tanstack/react-query";
 import { login } from "../../services/auth";
 import { useRouter } from "next/navigation";
-import Cookies from "js-cookie"; // Importe a biblioteca js-cookie
+import Cookies from "js-cookie";
+import { Button } from "../../../components/ui/button";
+import { Input } from "../../../components/ui/input";
+import { Card } from "../../../components/ui/card";
 
 // Definindo o schema de validação com Zod
 const schema = z.object({
-  login: z.string().min(1, "Campo obrigatório"),
+  email: z.string().email("Email inválido").min(1, "Campo obrigatório"),
   password: z.string().min(1, "Campo obrigatório"),
 });
 
@@ -31,7 +34,7 @@ export default function Login() {
 
   // Configurando o useMutation para a função de login
   const mutation = useMutation({
-    mutationFn: (data: FormData) => login(data.login, data.password),
+    mutationFn: (data: FormData) => login(data.email, data.password),
     onSuccess: (data) => {
       console.log("Login successful:", data);
       // Armazene o token em um cookie
@@ -39,12 +42,14 @@ export default function Login() {
         expires: 1,
         secure: true,
         sameSite: "strict",
-      }); // Expira em 1 dia
+      });
       // Redirecione para o dashboard
       router.push("/dashboard");
     },
-    onError: (error: Error) => {
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    onError: (error: { message: string; response?: { data: any } }) => {
       console.error("Login failed:", error.message);
+      console.error("Detalhes do erro:", error.response?.data);
     },
   });
 
@@ -54,14 +59,95 @@ export default function Login() {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
-      <input {...register("login")} placeholder="Email ou Username" />
-      {errors.login && <span>{errors.login.message}</span>}
-      <input {...register("password")} type="password" placeholder="Senha" />
-      {errors.password && <span>{errors.password.message}</span>}
-      <button type="submit" disabled={mutation.isPending}>
-        {mutation.isPending ? "Carregando..." : "Entrar"}
-      </button>
-    </form>
+    <div className="min-h-screen flex flex-col lg:flex-row">
+      {/* Parte Esquerda: Imagem de Fundo */}
+      <div
+        className="lg:w-1/2 bg-cover bg-center hidden lg:block"
+        style={{ backgroundImage: "url('/images/login-bg.jpg')" }}
+      >
+        <div className="h-full bg-black bg-opacity-50 flex items-center justify-center">
+          <h1 className="text-white text-4xl font-bold">Óticas Queiroz</h1>
+        </div>
+      </div>
+
+      {/* Parte Direita: Formulário de Login */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-[var(--accent-white)]">
+        <Card className="w-full max-w-md p-6">
+          <h2 className="text-2xl font-bold mb-6 text-center text-[var(--primary-blue)]">
+            Login
+          </h2>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            <div>
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Email
+              </label>
+              <Input
+                id="email"
+                type="email"
+                {...register("email")}
+                className="mt-1 w-full"
+                placeholder="Digite seu email"
+              />
+              {errors.email && (
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.email.message}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Senha
+              </label>
+              <Input
+                id="password"
+                type="password"
+                {...register("password")}
+                className="mt-1 w-full"
+                placeholder="Digite sua senha"
+              />
+              {errors.password && (
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.password.message}
+                </p>
+              )}
+            </div>
+
+            <Button
+              type="submit"
+              className="w-full bg-[var(--primary-blue)] hover:bg-blue-800"
+              disabled={mutation.isPending}
+            >
+              {mutation.isPending ? "Carregando..." : "Entrar"}
+            </Button>
+
+            <div className="text-center">
+              <a
+                href="/forgot-password"
+                className="text-sm text-[var(--primary-blue)] hover:underline"
+              >
+                Esqueci minha senha
+              </a>
+            </div>
+
+            <div className="text-center">
+              <span className="text-sm text-gray-600">Não tem uma conta? </span>
+              <a
+                href="/register"
+                className="text-sm text-[var(--primary-blue)] hover:underline"
+              >
+                Cadastrar-se
+              </a>
+            </div>
+          </form>
+        </Card>
+      </div>
+    </div>
   );
 }

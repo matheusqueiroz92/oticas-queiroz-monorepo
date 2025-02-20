@@ -136,6 +136,7 @@ export class OrderService {
       in_production: ["ready"],
       ready: ["delivered"],
       delivered: [],
+      cancelled: [],
     };
 
     if (!validTransitions[order.status].includes(status)) {

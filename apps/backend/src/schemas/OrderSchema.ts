@@ -16,7 +16,7 @@ const orderSchema = new Schema(
     deliveryDate: { type: Date, required: true },
     status: {
       type: String,
-      enum: ["pending", "in_production", "ready", "delivered"],
+      enum: ["pending", "in_production", "ready", "delivered", "cancelled"],
       default: "pending",
     },
     laboratoryId: { type: Schema.Types.ObjectId, ref: "Laboratory" },

@@ -6,7 +6,11 @@ import userRoutes from "./routes/userRoutes";
 import productRoutes from "./routes/productRoutes";
 import orderRoutes from "./routes/orderRoutes";
 import laboratoryRoutes from "./routes/laboratoryRoutes";
+import paymentRoutes from "./routes/paymentRoutes";
+import cashRegisterRoutes from "./routes/cashRegisterRoutes";
+import legacyClientRoutes from "./routes/legacyClientRoutes";
 import connectDB from "./config/db";
+import cors from "cors"; // Já importado
 
 class App {
   public app: express.Application;
@@ -21,6 +25,15 @@ class App {
   }
 
   private config(): void {
+    // Configuração do CORS
+    this.app.use(
+      cors({
+        origin: "http://localhost:3000", // Permite requisições do frontend
+        credentials: true, // Permite o envio de cookies e headers de autenticação
+      })
+    );
+
+    // Outras configurações
     this.app.use(express.json());
   }
 
@@ -30,6 +43,9 @@ class App {
     this.app.use("/api", productRoutes);
     this.app.use("/api", orderRoutes);
     this.app.use("/api", laboratoryRoutes);
+    this.app.use("/api", paymentRoutes);
+    this.app.use("/api", cashRegisterRoutes);
+    this.app.use("/api", legacyClientRoutes);
   }
 
   private database(): void {

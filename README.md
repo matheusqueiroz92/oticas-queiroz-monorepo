@@ -269,6 +269,102 @@ oticas-queiroz-monorepo/
 }
 ```
 
+## 💵 Pagamentos
+
+### Rotas
+
+- POST `/api/payments`: Criar pagamento
+- GET `/api/payments`: Listar todos os pagamentos
+- GET `/api/payments/daily`: Buscar pagamentos do dia
+- GET `/api/payments/:id`: Buscar pagamento por id
+- POST `/api/payments/:id/cancel`: Cancelar pagamento
+
+### Schema
+
+```typescript
+
+{
+  _id?: string;
+  amount: number;
+  date: Date;
+  type: "sale" | "debt_payment";
+  paymentMethod: "credit" | "debit" | "cash" | "pix";
+  installments?: number;
+  status: "pending" | "completed" | "cancelled";
+  orderId?: string;
+  userId?: string;
+  legacyClientId?: string;
+  description?: string;
+  cashRegisterId: string;
+  createdBy: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+```
+
+## 🏧 Cash Register
+
+### Rotas
+
+- POST `/api/cash-registers/open`: Abrir o caixa do dia
+- POST `/api/cash-registers/close`: Fechar o caixa do dia
+- GET `/api/cash-registers/current`: Buscar o caixa do dia
+- GET `/api/cash-registers/:id`: Buscar Caixa diário por id
+- GET `/api/cash-registers/:id/summary`: Buscar o resumo do caixa diário pelo id
+- GET `/api/cash-registers/summary/daily`: Abrir o resumo do caixa do dia atual
+
+### Schema
+
+```typescript
+{
+  _id?: string;
+  date: Date;
+  openingBalance: number;
+  currentBalance: number;
+  closingBalance?: number;
+  status: "open" | "closed";
+  openedBy: string;
+  closedBy?: string;
+  totalSales: number;
+  totalPayments: number;
+  observations?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+```
+
+## 🚫 Legacy Client
+
+### Rotas
+
+- POST `/api/legacy-clients`: Cadastrar cliente legado
+- GET `/api/legacy-clients`: Listar todos os cliente legados
+- GET `/api/legacy-clients/search`: Buscar cliente legado pelo documento
+- GET `/api/legacy-clients/debtors`: Listar os clientes com dívidas
+- GET `/api/legacy-clients/:id`: Buscar um cliente legado pelo id
+- PUT `/api/legacy-clients/:id`: Atualizar um cliente legado
+- GET `/api/legacy-clients/:id/payment-history`: Buscar o histórico de pagmendo de um cliente legado
+- PATCH `/api/legacy-clients/:id/toggle-status`: Alterar o status de um cliente legado
+
+### Schema
+
+```typescript
+
+{
+  _id?: string;
+  name: string;
+  identifier: string; // CPF/CNPJ
+  phone?: string;
+  address?: string;
+  totalDebt: number;
+  lastPaymentDate?: Date;
+  status: "active" | "inactive";
+  observations?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+```
+
 ## 🛠️ Setup
 
 ### Pré-requisitos
@@ -322,6 +418,9 @@ npm run dev
   - Product Model
   - Order Model
   - Laboratory Model
+  - Payment Model
+  - Register Cash Model
+  - Legacy Client Model
 
 - ✅ Testes unitários para Services
 
@@ -330,6 +429,9 @@ npm run dev
   - Product Service
   - Order Service
   - Laboratory Service
+  - Payment Service
+  - Register Cash Service
+  - Legacy Client Service
 
 - ✅ Testes de integração para Controllers
 
@@ -338,6 +440,9 @@ npm run dev
   - Product Controller
   - Order Controller
   - Laboratory Controller
+  - Payment Controller
+  - Register Cash Controller
+  - Legacy Client Controller
 
 - Ferramentas e práticas
   - Jest para execução dos testes
@@ -475,3 +580,44 @@ docker-compose up --build
 
 - CI/CD
   O projeto utiliza GitHub Actions para CI/CD. O workflow está configurado em .github/workflows/ci.yml.
+
+---
+
+Novas Implementações
+
+💰 Sistema de Pagamentos
+
+Gestão de pagamentos para clientes cadastrados e não cadastrados
+Suporte a múltiplas formas de pagamento (crédito, débito, dinheiro, PIX)
+Controle de parcelamento
+Integração com caixa diário
+Histórico de transações
+
+👥 Clientes Legados
+
+Sistema para gerenciar clientes antigos e seus débitos pendentes.
+
+💵 Caixa Diário
+
+Sistema para controle de fluxo de caixa diário.
+
+Testes Implementados
+
+✅ Testes de integração para Pagamentos
+
+Criação de pagamentos
+Atualização de status
+Validações de regras de negócio
+
+✅ Testes de integração para Clientes Legados
+
+Cadastro de clientes
+Atualização de débitos
+Validações de identificador único
+
+✅ Testes de integração para Caixa Diário
+
+Abertura de caixa
+Fechamento de caixa
+Atualização de saldo
+Validações de operações

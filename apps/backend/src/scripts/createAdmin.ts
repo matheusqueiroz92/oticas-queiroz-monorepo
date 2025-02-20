@@ -11,7 +11,7 @@ export const createAdminUser = async () => {
 
     const adminData = {
       name: "Admin",
-      email: "admin@oticasqueiroz.com",
+      email: "admin@oticasqueiroz.com.br",
       password: "admin123",
       role: "admin" as const,
     };

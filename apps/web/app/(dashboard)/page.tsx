@@ -1,30 +1,34 @@
-"use client"; // Marca o componente como Client Component
+"use client";
 
-import { useQuery } from "@tanstack/react-query";
-import axios from "axios";
-
-// Função para buscar os dados do dashboard
-const fetchDashboardData = async () => {
-  const response = await axios.get(
-    `${process.env.NEXT_PUBLIC_API_URL}/api/dashboard`
-  );
-  return response.data;
-};
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Cookies from "js-cookie";
+import { DashboardHeader } from "../../components/DashBoardHeader";
+import { AdminPanel } from "../../components/roles/AdminPanel";
+import { EmployeePanel } from "../../components/roles/EmployeePanel";
+import { CustomerPanel } from "../../components/roles/CustomerPanel";
 
 export default function Dashboard() {
-  // Usando useQuery com a nova API
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ["dashboard"], // Chave da query
-    queryFn: fetchDashboardData, // Função para buscar os dados
-  });
+  const router = useRouter();
+  const token = Cookies.get("token");
+  const userRole = Cookies.get("role"); // Supondo que o role é armazenado no cookie após o login
 
-  if (isLoading) return <div>Carregando...</div>;
-  if (isError) return <div>Erro ao carregar dados</div>;
+  // Redirecionar se não estiver autenticado
+  useEffect(() => {
+    if (!token) {
+      router.push("/auth/login");
+    }
+  }, [token, router]);
 
   return (
-    <div>
-      <h1>Dashboard</h1>
-      <pre>{JSON.stringify(data, null, 2)}</pre>
+    <div className="min-h-screen bg-gray-50">
+      <DashboardHeader />
+
+      <main className="p-6">
+        {userRole === "admin" && <AdminPanel />}
+        {userRole === "employee" && <EmployeePanel />}
+        {userRole === "customer" && <CustomerPanel />}
+      </main>
     </div>
   );
 }
