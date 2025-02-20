@@ -114,7 +114,7 @@ oticas-queiroz-monorepo/
 ### Rotas
 
 - POST `/api/users`: Criar usuário
-- GET `/api/users`: Listar usuários
+- GET `/api/users`: Listar todos os usuários
 - GET `/api/users/:id`: Buscar usuário
 - PUT `/api/users/:id`: Atualizar usuário
 - DELETE `/api/users/:id`: Remover usuário
@@ -148,7 +148,7 @@ oticas-queiroz-monorepo/
 ### Rotas
 
 - POST `/api/products`: Criar produto
-- GET `/api/products`: Listar produtos
+- GET `/api/products`: Listar todos os produtos
 - GET `/api/products/:id`: Buscar produto
 - PUT `/api/products/:id`: Atualizar produto
 - DELETE `/api/products/:id`: Remover produto
@@ -175,7 +175,7 @@ oticas-queiroz-monorepo/
 ### Rotas
 
 - POST `/api/orders`: Criar pedido
-- GET `/api/orders`: Listar pedidos
+- GET `/api/orders`: Listar todos os pedidos
 - GET `/api/orders/:id`: Buscar pedido
 - PUT `/api/orders/:id/status`: Atualizar status do pedido
 
@@ -239,8 +239,8 @@ oticas-queiroz-monorepo/
 ### Rotas
 
 - POST `/api/laboratories`: Criar laboratório
-- GET `/api/laboratories`: Listar laboratórios
-- GET `/api/laboratories/:id`: Buscar laboratórios
+- GET `/api/laboratories`: Listar todos os laboratórios
+- GET `/api/laboratories/:id`: Buscar laboratório
 - PUT `/api/laboratories/:id`: Atualizar laboratório
 - DELETE `/api/laboratories/:id`: Remover laboratório
 - PATCH `/api/laboratories/:id/toggle-status` : Atualizar status do laboratório
@@ -276,7 +276,7 @@ oticas-queiroz-monorepo/
 - POST `/api/payments`: Criar pagamento
 - GET `/api/payments`: Listar todos os pagamentos
 - GET `/api/payments/daily`: Buscar pagamentos do dia
-- GET `/api/payments/:id`: Buscar pagamento por id
+- GET `/api/payments/:id`: Buscar pagamento
 - POST `/api/payments/:id/cancel`: Cancelar pagamento
 
 ### Schema
@@ -306,12 +306,12 @@ oticas-queiroz-monorepo/
 
 ### Rotas
 
-- POST `/api/cash-registers/open`: Abrir o caixa do dia
-- POST `/api/cash-registers/close`: Fechar o caixa do dia
-- GET `/api/cash-registers/current`: Buscar o caixa do dia
-- GET `/api/cash-registers/:id`: Buscar Caixa diário por id
-- GET `/api/cash-registers/:id/summary`: Buscar o resumo do caixa diário pelo id
-- GET `/api/cash-registers/summary/daily`: Abrir o resumo do caixa do dia atual
+- POST `/api/cash-registers/open`: Abrir o registro de caixa atual
+- POST `/api/cash-registers/close`: Fechar o registro de caixa atual
+- GET `/api/cash-registers/current`: Buscar o registro de caixa atual
+- GET `/api/cash-registers/:id`: Buscar um registro de caixa específico
+- GET `/api/cash-registers/:id/summary`: Buscar o resumo de um registro de caixa específico
+- GET `/api/cash-registers/summary/daily`: Abrir o resumo diário dos registros de caixa
 
 ### Schema
 
