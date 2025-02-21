@@ -1,8 +1,8 @@
-"use client";
-
 import { Button } from "./ui/button";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
+import Image from "next/image";
+import LogoOticasQueiroz from "@/public/logo-oticas-queiroz-branca.png";
 
 export const DashboardHeader = () => {
   const router = useRouter();
@@ -16,16 +16,21 @@ export const DashboardHeader = () => {
   return (
     <header className="bg-[var(--primary-blue)] text-white p-4 flex justify-between items-center">
       <div className="flex items-center space-x-4">
-        <img
-          src="/logo-oticas-queiroz.png"
-          alt="Logo Óticas Queiroz"
-          className="h-12 w-auto"
-        />
+        <div className="relative h-12 w-32">
+          <Image
+            src={LogoOticasQueiroz}
+            alt="Logo Óticas Queiroz"
+            fill
+            style={{ objectFit: "contain" }}
+            priority
+          />
+        </div>
         <h1 className="text-xl font-bold">Painel de Controle</h1>
       </div>
 
       <Button
         onClick={handleLogout}
+        variant="destructive"
         className="bg-[var(--secondary-red)] hover:bg-red-700"
       >
         Sair
