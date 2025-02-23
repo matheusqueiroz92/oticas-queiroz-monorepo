@@ -4,6 +4,7 @@ export interface IUser {
   email: string;
   password: string;
   role: "admin" | "employee" | "customer";
+  image?: string; // Novo campo para imagem
   address?: string;
   phone?: string;
   prescription?: {

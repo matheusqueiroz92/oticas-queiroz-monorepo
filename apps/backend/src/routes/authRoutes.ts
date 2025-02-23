@@ -2,6 +2,7 @@ import express from "express";
 import { AuthController } from "../controllers/AuthController";
 import { authenticate, authorize } from "../middlewares/authMiddleware";
 import { asyncHandler } from "../utils/asyncHandler";
+import upload from "../config/multerConfig";
 
 const router = express.Router();
 const authController = new AuthController();
@@ -65,6 +66,7 @@ router.post(
   "/register",
   authenticate,
   authorize(["admin", "employee"]),
+  upload.single("image"),
   asyncHandler(authController.register.bind(authController))
 );
 

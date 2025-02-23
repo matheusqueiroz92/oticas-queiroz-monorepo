@@ -1,6 +1,7 @@
 import express from "express";
 import { UserController } from "../controllers/UserController";
 import { authenticate, authorize } from "../middlewares/authMiddleware";
+import upload from "../config/multerConfig";
 
 const router = express.Router();
 const userController = new UserController();
@@ -73,8 +74,11 @@ router.get("/users/profile", authenticate, (req, res) =>
  *       401:
  *         description: Não autorizado
  */
-router.put("/users/profile", authenticate, (req, res) =>
-  userController.updateProfile(req, res)
+router.put(
+  "/users/profile",
+  authenticate,
+  upload.single("userImage"),
+  (req, res) => userController.updateProfile(req, res)
 );
 
 /**
@@ -150,6 +154,7 @@ router.get(
 router.put(
   "/users/:id",
   authenticate,
+  upload.single("userImage"),
   authorize(["admin", "employee"]),
   (req, res) => userController.updateUser(req, res)
 );

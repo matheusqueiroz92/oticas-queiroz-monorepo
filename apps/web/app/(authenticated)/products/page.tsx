@@ -86,10 +86,17 @@ export default function ProductsPage() {
               {data?.products.map((product) => (
                 <Card key={product._id} className="overflow-hidden">
                   <div className="aspect-square relative bg-muted">
-                    {/* Placeholder para imagem do produto */}
-                    <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                      Imagem do Produto
-                    </div>
+                    {product.image ? (
+                      <img
+                        src={`http://localhost:3333${product.image}`} // Use o caminho da imagem como src
+                        alt={product.name} // Texto alternativo para acessibilidade
+                        className="w-full h-full object-cover" // Estilos para a imagem
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+                        Sem imagem
+                      </div>
+                    )}
                   </div>
                   <CardContent className="p-4">
                     <h3 className="font-semibold truncate">{product.name}</h3>

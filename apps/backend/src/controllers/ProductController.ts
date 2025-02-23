@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import { ProductService, ProductError } from "../services/ProductService";
 import { z } from "zod";
 import type { ICreateProductDTO } from "../interfaces/IProduct";
+// import upload from "../config/multerConfig"; // Importe o multer
 
 const createProductSchema = z.object({
   name: z.string().min(2, "Nome deve ter no mínimo 2 caracteres"),
@@ -13,10 +14,33 @@ const createProductSchema = z.object({
   modelGlasses: z.string().min(2, "Modelo deve ter no mínimo 2 caracteres"),
   price: z.number().positive("Preço deve ser positivo"),
   stock: z.number().min(0, "Estoque não pode ser negativo"),
+  image: z.string().optional(),
 });
 
-const updateProductSchema = createProductSchema
-  .partial()
+const updateProductSchema = z
+  .object({
+    name: z.string().min(2, "Nome deve ter no mínimo 2 caracteres").optional(),
+    category: z
+      .enum(["solar", "grau"], {
+        errorMap: () => ({ message: "Categoria deve ser 'solar' ou 'grau'" }),
+      })
+      .optional(),
+    description: z
+      .string()
+      .min(10, "Descrição deve ter no mínimo 10 caracteres")
+      .optional(),
+    brand: z
+      .string()
+      .min(2, "Marca deve ter no mínimo 2 caracteres")
+      .optional(),
+    modelGlasses: z
+      .string()
+      .min(2, "Modelo deve ter no mínimo 2 caracteres")
+      .optional(),
+    price: z.number().positive("Preço deve ser positivo").optional(),
+    stock: z.number().min(0, "Estoque não pode ser negativo").optional(),
+    image: z.string().optional(),
+  })
   .refine(
     (data) => Object.keys(data).length > 0,
     "Pelo menos um campo deve ser fornecido para atualização"
@@ -34,8 +58,26 @@ export class ProductController {
 
   async createProduct(req: Request, res: Response): Promise<void> {
     try {
-      const validatedData = createProductSchema.parse(req.body);
-      const product = await this.productService.createProduct(validatedData);
+      const { name, category, description, brand, modelGlasses, price, stock } =
+        req.body;
+
+      // Verifique se o arquivo de imagem foi enviado
+      const image = req.file
+        ? `/images/products/${req.file.filename}`
+        : undefined;
+
+      const productData: ICreateProductDTO = {
+        name,
+        category,
+        description,
+        image, // Inclua a imagem no DTO
+        brand,
+        modelGlasses,
+        price: Number(price),
+        stock: Number(stock),
+      };
+
+      const product = await this.productService.createProduct(productData);
       res.status(201).json(product);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -105,7 +147,28 @@ export class ProductController {
 
   async updateProduct(req: Request, res: Response): Promise<void> {
     try {
-      const validatedData = updateProductSchema.parse(req.body);
+      // Pega apenas os campos que foram enviados
+      const updateData: Partial<ICreateProductDTO> = {};
+
+      if (req.body.name) updateData.name = req.body.name;
+      if (req.body.category) updateData.category = req.body.category;
+      if (req.body.description) updateData.description = req.body.description;
+      if (req.body.brand) updateData.brand = req.body.brand;
+      if (req.body.modelGlasses)
+        updateData.modelGlasses = req.body.modelGlasses;
+      if (req.body.price !== undefined)
+        updateData.price = Number(req.body.price);
+      if (req.body.stock !== undefined)
+        updateData.stock = Number(req.body.stock);
+
+      // Adiciona imagem se existir
+      if (req.file) {
+        updateData.image = `/images/products/${req.file.filename}`;
+      }
+
+      // Valida os dados
+      const validatedData = updateProductSchema.parse(updateData);
+
       const product = await this.productService.updateProduct(
         req.params.id,
         validatedData

@@ -16,14 +16,18 @@ export const authenticate = (
     const token = req.header("Authorization")?.replace("Bearer ", "");
 
     if (!token) {
-      throw new AuthError("Token não fornecido");
+      throw new AuthError("Token não fornecido", 401);
     }
 
     const decoded = verifyToken(token) as JwtPayload;
     req.user = decoded;
     next();
   } catch (error) {
-    next(error);
+    if (error instanceof AuthError) {
+      next(error);
+    } else {
+      next(new AuthError("Token inválido", 401));
+    }
   }
 };
 
@@ -34,11 +38,17 @@ export const authorize = (roles: string[]) => {
         throw new AuthError("Token não fornecido", 401);
       }
 
-      if (!roles.includes(req.user.role)) {
-        // Garantir que o erro é do tipo AuthError
-        const error = new AuthError("Acesso não autorizado", 403);
-        throw error;
+      // Se for rota de profile, permite qualquer usuário autenticado
+      if (req.path.includes("/profile")) {
+        next();
+        return;
       }
+
+      // Para outras rotas, verifica as roles permitidas
+      if (!roles.includes(req.user.role)) {
+        throw new AuthError("Acesso não autorizado", 403);
+      }
+
       next();
     } catch (error) {
       next(error);

@@ -211,4 +211,80 @@ describe("UserService", () => {
       ).rejects.toThrow("Não é permitido alterar a role do usuário");
     });
   });
+
+  describe("User image handling", () => {
+    it("should create user with image", async () => {
+      const mockUserWithImage = {
+        ...mockUserData,
+        image: "/images/users/test-image.jpg",
+      };
+
+      userModel.findByEmail.mockResolvedValue(null);
+      userModel.create.mockResolvedValue({
+        _id: "123",
+        ...mockUserWithImage,
+      } as IUser);
+
+      const result = await userService.createUser(mockUserWithImage);
+
+      expect(result._id).toBe("123");
+      expect(result.image).toBe("/images/users/test-image.jpg");
+      expect(userModel.create).toHaveBeenCalledWith(mockUserWithImage);
+    });
+
+    it("should update user image", async () => {
+      userModel.findByEmail.mockResolvedValue(null);
+      userModel.update.mockResolvedValue({
+        _id: "123",
+        ...mockUserData,
+        image: "/images/users/new-image.jpg",
+      } as IUser);
+
+      const result = await userService.updateUser("123", {
+        image: "/images/users/new-image.jpg",
+      });
+
+      expect(result.image).toBe("/images/users/new-image.jpg");
+      expect(userModel.update).toHaveBeenCalledWith("123", {
+        image: "/images/users/new-image.jpg",
+      });
+    });
+
+    it("should remove user image", async () => {
+      userModel.findByEmail.mockResolvedValue(null);
+      userModel.update.mockResolvedValue({
+        _id: "123",
+        ...mockUserData,
+        image: undefined,
+      } as IUser);
+
+      const result = await userService.updateUser("123", {
+        image: undefined, // Usando undefined em vez de null
+      });
+
+      expect(result.image).toBeUndefined();
+    });
+
+    it("should update other fields while keeping image", async () => {
+      const userWithImage = {
+        _id: "123",
+        ...mockUserData,
+        image: "/images/users/existing-image.jpg",
+      } as IUser;
+
+      userModel.findById.mockResolvedValue(userWithImage);
+      userModel.findByEmail.mockResolvedValue(null);
+      userModel.update.mockResolvedValue({
+        ...userWithImage,
+        name: "Updated Name",
+      } as IUser);
+
+      const result = await userService.updateUser("123", {
+        name: "Updated Name",
+      });
+
+      expect(result.name).toBe("Updated Name");
+      expect(result.image).toBe("/images/users/existing-image.jpg");
+    });
+  });
 });

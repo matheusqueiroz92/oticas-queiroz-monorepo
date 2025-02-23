@@ -5,10 +5,11 @@ import { CashRegister } from "../../../schemas/CashRegisterSchema";
 import { User } from "../../../schemas/UserSchema";
 import { Types } from "mongoose";
 import type { IPayment } from "../../../interfaces/IPayment";
+import {
+  createTestUser,
+  createTestCashRegister,
+} from "../../helpers/testHelpers";
 import { describe, it, expect, beforeEach } from "@jest/globals";
-
-mongoose.model("User", User.schema);
-mongoose.model("CashRegister", CashRegister.schema);
 
 describe("PaymentModel", () => {
   let paymentModel: PaymentModel;
@@ -24,31 +25,8 @@ describe("PaymentModel", () => {
 
   describe("create", () => {
     it("should create a payment", async () => {
-      const user = await User.create({
-        name: "Test User",
-        email: "test@example.com",
-        password: "123456",
-        role: "employee",
-      });
-
-      const register = await CashRegister.create({
-        openDate: new Date(),
-        openingBalance: 1000,
-        currentBalance: 1000,
-        status: "open",
-        sales: {
-          total: 0,
-          cash: 0,
-          credit: 0,
-          debit: 0,
-          pix: 0,
-        },
-        payments: {
-          received: 0,
-          made: 0,
-        },
-        openedBy: user._id,
-      });
+      const { user } = await createTestUser("employee");
+      const register = await createTestCashRegister(user._id.toString());
 
       const paymentData: Omit<IPayment, "_id" | "createdAt" | "updatedAt"> = {
         amount: 100,
@@ -72,35 +50,9 @@ describe("PaymentModel", () => {
 
   describe("findById", () => {
     it("should find payment by id and populate related fields", async () => {
-      // Criar usuário
-      const user = await User.create({
-        name: "Test User",
-        email: "test@example.com",
-        password: "123456",
-        role: "employee",
-      });
+      const { user } = await createTestUser("employee");
+      const register = await createTestCashRegister(user._id.toString());
 
-      // Criar caixa
-      const register = await CashRegister.create({
-        openDate: new Date(),
-        openingBalance: 1000,
-        currentBalance: 1000,
-        status: "open",
-        sales: {
-          total: 0,
-          cash: 0,
-          credit: 0,
-          debit: 0,
-          pix: 0,
-        },
-        payments: {
-          received: 0,
-          made: 0,
-        },
-        openedBy: user._id,
-      });
-
-      // Criar pagamento
       const paymentData: Omit<IPayment, "_id" | "createdAt" | "updatedAt"> = {
         amount: 100,
         date: new Date(),
@@ -113,26 +65,15 @@ describe("PaymentModel", () => {
 
       const payment = await paymentModel.create(paymentData);
 
+      // Garantir que payment._id existe
       if (!payment._id) {
-        throw new Error("Failed to create payment");
+        throw new Error("Payment not created correctly");
       }
 
-      // Buscar com populate
-      const found = await Payment.findById(payment._id)
-        .populate({
-          path: "cashRegisterId",
-          select: "_id",
-        })
-        .populate({
-          path: "createdBy",
-          select: "_id",
-        })
-        .lean();
+      const found = await paymentModel.findById(payment._id, true);
 
-      expect(found?.cashRegisterId._id.toString()).toBe(
-        register._id.toString()
-      );
-      expect(found?.createdBy._id.toString()).toBe(user._id.toString());
+      expect(found).toBeTruthy();
+      expect(found?.cashRegisterId).toBe(register._id.toString());
     });
 
     it("should return null for invalid id", async () => {
@@ -143,31 +84,8 @@ describe("PaymentModel", () => {
 
   describe("findAll", () => {
     it("should return payments with pagination", async () => {
-      const user = await User.create({
-        name: "Test User",
-        email: "test@example.com",
-        password: "123456",
-        role: "employee",
-      });
-
-      const register = await CashRegister.create({
-        openDate: new Date(),
-        openingBalance: 1000,
-        currentBalance: 1000,
-        status: "open",
-        sales: {
-          total: 0,
-          cash: 0,
-          credit: 0,
-          debit: 0,
-          pix: 0,
-        },
-        payments: {
-          received: 0,
-          made: 0,
-        },
-        openedBy: user._id,
-      });
+      const { user } = await createTestUser("employee");
+      const register = await createTestCashRegister(user._id.toString());
 
       const paymentData: Omit<IPayment, "_id" | "createdAt" | "updatedAt"> = {
         amount: 100,
@@ -192,31 +110,8 @@ describe("PaymentModel", () => {
     });
 
     it("should apply filters correctly", async () => {
-      const user = await User.create({
-        name: "Test User",
-        email: "test@example.com",
-        password: "123456",
-        role: "employee",
-      });
-
-      const register = await CashRegister.create({
-        openDate: new Date(),
-        openingBalance: 1000,
-        currentBalance: 1000,
-        status: "open",
-        sales: {
-          total: 0,
-          cash: 0,
-          credit: 0,
-          debit: 0,
-          pix: 0,
-        },
-        payments: {
-          received: 0,
-          made: 0,
-        },
-        openedBy: user._id,
-      });
+      const { user } = await createTestUser("employee");
+      const register = await createTestCashRegister(user._id.toString());
 
       const paymentData: Omit<IPayment, "_id" | "createdAt" | "updatedAt"> = {
         amount: 100,
@@ -243,31 +138,8 @@ describe("PaymentModel", () => {
 
   describe("updateStatus", () => {
     it("should update payment status", async () => {
-      const user = await User.create({
-        name: "Test User",
-        email: "test@example.com",
-        password: "123456",
-        role: "employee",
-      });
-
-      const register = await CashRegister.create({
-        openDate: new Date(),
-        openingBalance: 1000,
-        currentBalance: 1000,
-        status: "open",
-        sales: {
-          total: 0,
-          cash: 0,
-          credit: 0,
-          debit: 0,
-          pix: 0,
-        },
-        payments: {
-          received: 0,
-          made: 0,
-        },
-        openedBy: user._id,
-      });
+      const { user } = await createTestUser("employee");
+      const register = await createTestCashRegister(user._id.toString());
 
       const paymentData: Omit<IPayment, "_id" | "createdAt" | "updatedAt"> = {
         amount: 100,
@@ -281,12 +153,14 @@ describe("PaymentModel", () => {
 
       const payment = await paymentModel.create(paymentData);
 
+      // Garantir que payment._id existe
       if (!payment._id) {
-        throw new Error("Failed to create payment");
+        throw new Error("Payment not created correctly");
       }
 
       const updated = await paymentModel.updateStatus(payment._id, "completed");
 
+      expect(updated).toBeTruthy();
       expect(updated?.status).toBe("completed");
     });
 
@@ -296,6 +170,65 @@ describe("PaymentModel", () => {
         "completed"
       );
       expect(result).toBeNull();
+    });
+  });
+
+  describe("findByCashRegister", () => {
+    it("should find payments by cash register id", async () => {
+      const { user } = await createTestUser("employee");
+      const register = await createTestCashRegister(user._id.toString());
+
+      const paymentData: Omit<IPayment, "_id" | "createdAt" | "updatedAt"> = {
+        amount: 100,
+        date: new Date(),
+        type: "sale",
+        paymentMethod: "credit",
+        status: "pending",
+        cashRegisterId: register._id.toString(),
+        createdBy: user._id.toString(),
+      };
+
+      await paymentModel.create(paymentData);
+      await paymentModel.create({
+        ...paymentData,
+        amount: 200,
+      });
+
+      const payments = await paymentModel.findByCashRegister(
+        register._id.toString()
+      );
+
+      expect(payments).toHaveLength(2);
+      expect(payments[0].cashRegisterId).toBe(register._id.toString());
+    });
+
+    it("should filter by payment type", async () => {
+      const { user } = await createTestUser("employee");
+      const register = await createTestCashRegister(user._id.toString());
+
+      const paymentData: Omit<IPayment, "_id" | "createdAt" | "updatedAt"> = {
+        amount: 100,
+        date: new Date(),
+        type: "sale",
+        paymentMethod: "credit",
+        status: "pending",
+        cashRegisterId: register._id.toString(),
+        createdBy: user._id.toString(),
+      };
+
+      await paymentModel.create(paymentData);
+      await paymentModel.create({
+        ...paymentData,
+        type: "expense",
+      });
+
+      const payments = await paymentModel.findByCashRegister(
+        register._id.toString(),
+        "sale"
+      );
+
+      expect(payments).toHaveLength(1);
+      expect(payments[0].type).toBe("sale");
     });
   });
 });

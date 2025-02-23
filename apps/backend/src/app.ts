@@ -10,7 +10,8 @@ import paymentRoutes from "./routes/paymentRoutes";
 import cashRegisterRoutes from "./routes/cashRegisterRoutes";
 import legacyClientRoutes from "./routes/legacyClientRoutes";
 import connectDB from "./config/db";
-import cors from "cors"; // Já importado
+import cors from "cors";
+import path from "node:path"; // Importe o módulo 'path'
 
 class App {
   public app: express.Application;
@@ -28,13 +29,17 @@ class App {
     // Configuração do CORS
     this.app.use(
       cors({
-        origin: "http://localhost:3000", // Permite requisições do frontend
+        origin: "http://localhost:3003", // Permite requisições do frontend
         credentials: true, // Permite o envio de cookies e headers de autenticação
       })
     );
 
     // Outras configurações
     this.app.use(express.json());
+
+    // Servir arquivos estáticos da pasta 'public/images'
+    const imagesPath = path.join(__dirname, "../../public/images");
+    this.app.use("/images", express.static(imagesPath));
   }
 
   private routes(): void {

@@ -6,6 +6,7 @@ import { CashRegisterModel } from "../../../models/CashRegisterModel";
 import { PaymentModel } from "../../../models/PaymentModel";
 import { Types } from "mongoose";
 import type { ICashRegister } from "../../../interfaces/ICashRegister";
+import type { IPayment } from "../../../interfaces/IPayment";
 import { describe, it, expect, beforeEach, jest } from "@jest/globals";
 
 jest.mock("../../../models/CashRegisterModel");
@@ -36,9 +37,10 @@ describe("CashRegisterService", () => {
   });
 
   const mockUserId = new Types.ObjectId().toString();
+  const mockCashRegisterId = new Types.ObjectId().toString();
 
   const mockRegister: ICashRegister = {
-    _id: new Types.ObjectId().toString(),
+    _id: mockCashRegisterId,
     openingDate: new Date(),
     openingBalance: 1000,
     currentBalance: 1000,
@@ -55,6 +57,19 @@ describe("CashRegisterService", () => {
       made: 0,
     },
     openedBy: mockUserId,
+  };
+
+  const mockPayment: IPayment = {
+    _id: new Types.ObjectId().toString(),
+    type: "sale",
+    amount: 100,
+    paymentMethod: "cash",
+    date: new Date(),
+    status: "completed",
+    cashRegisterId: mockCashRegisterId,
+    createdBy: mockUserId,
+    createdAt: new Date(),
+    updatedAt: new Date(),
   };
 
   describe("openRegister", () => {
@@ -129,19 +144,24 @@ describe("CashRegisterService", () => {
 
   describe("getRegisterSummary", () => {
     it("should return register summary with payments", async () => {
+      const mockPaymentWithDebt: IPayment = {
+        ...mockPayment,
+        _id: new Types.ObjectId().toString(),
+        type: "debt_payment",
+        amount: 50,
+        paymentMethod: "credit",
+      };
+
       cashRegisterModel.findById.mockResolvedValue(mockRegister);
       paymentModel.findByCashRegister.mockResolvedValue([
-        {
-          type: "sale",
-          amount: 100,
-          paymentMethod: "cash",
-        },
-        {
-          type: "debt_payment",
-          amount: 50,
-          paymentMethod: "credit",
-        },
+        mockPayment,
+        mockPaymentWithDebt,
       ]);
+
+      // Verifica se mockRegister._id existe antes de usar
+      if (!mockRegister._id) {
+        throw new Error("Mock register ID is required for this test");
+      }
 
       const result = await cashRegisterService.getRegisterSummary(
         mockRegister._id
@@ -164,15 +184,22 @@ describe("CashRegisterService", () => {
   describe("getDailySummary", () => {
     it("should return daily summary", async () => {
       const date = new Date();
+      const mockExpensePayment: IPayment = {
+        _id: new Types.ObjectId().toString(),
+        type: "expense",
+        amount: 50, // Mudando de -50 para 50 para corresponder à expectativa do teste
+        paymentMethod: "cash",
+        date: new Date(),
+        status: "completed",
+        cashRegisterId: mockCashRegisterId,
+        createdBy: mockUserId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
       cashRegisterModel.findByDateRange.mockResolvedValue([mockRegister]);
       paymentModel.findAll.mockResolvedValue({
-        payments: [
-          {
-            type: "expense",
-            amount: 50,
-            categoryId: "supplies",
-          },
-        ],
+        payments: [mockExpensePayment],
         total: 1,
       });
 

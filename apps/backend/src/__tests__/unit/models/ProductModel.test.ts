@@ -31,6 +31,7 @@ describe("ProductModel", () => {
     name: "Óculos de Sol Ray-Ban",
     category: "solar",
     description: "Óculos de sol estiloso",
+    image: "src/public/images/ray-ban-aviator.png",
     brand: "Ray-Ban",
     modelGlasses: "Aviador",
     price: 599.99,

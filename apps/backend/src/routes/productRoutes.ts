@@ -1,6 +1,7 @@
 import express from "express";
 import { ProductController } from "../controllers/ProductController";
 import { authenticate, authorize } from "../middlewares/authMiddleware";
+import upload from "../config/multerConfig";
 
 const router = express.Router();
 const productController = new ProductController();
@@ -35,6 +36,7 @@ router.post(
   "/products",
   authenticate,
   authorize(["admin", "employee"]),
+  upload.single("productImage"), // Middleware para upload de imagem
   (req, res) => productController.createProduct(req, res)
 );
 
@@ -118,6 +120,7 @@ router.put(
   "/products/:id",
   authenticate,
   authorize(["admin", "employee"]),
+  upload.single("productImage"),
   (req, res) => productController.updateProduct(req, res)
 );
 

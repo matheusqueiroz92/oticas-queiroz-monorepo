@@ -116,7 +116,24 @@ export class UserService {
       throw new UserError("Não é permitido alterar a role do usuário");
     }
 
-    return this.updateUser(userId, userData);
+    // Validar os dados antes de atualizar
+    this.validateUserData(userData);
+
+    const updatedData = {
+      ...userData,
+      image: userData.image
+        ? userData.image.startsWith("/")
+          ? userData.image
+          : `/images/users/${userData.image}`
+        : userData.image,
+    };
+
+    const user = await this.userModel.update(userId, updatedData);
+    if (!user) {
+      throw new UserError("Usuário não encontrado");
+    }
+
+    return user;
   }
 
   async verifyPassword(userId: string, password: string): Promise<boolean> {

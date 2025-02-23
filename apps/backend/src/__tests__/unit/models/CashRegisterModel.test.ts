@@ -18,7 +18,7 @@ describe("CashRegisterModel", () => {
     ICashRegister,
     "_id" | "createdAt" | "updatedAt"
   > = {
-    openingDate: new Date(),
+    openingDate: new Date(), // Usando openingDate ao invés de openDate
     openingBalance: 1000,
     currentBalance: 1000,
     status: "open",
@@ -45,6 +45,20 @@ describe("CashRegisterModel", () => {
       expect(register.currentBalance).toBe(1000);
       expect(register.status).toBe("open");
       expect(register.sales.total).toBe(0);
+      expect(register.openingDate).toBeDefined();
+    });
+  });
+
+  describe("create", () => {
+    it("should create a cash register", async () => {
+      const register = await cashRegisterModel.create(mockCashRegister);
+
+      expect(register).toHaveProperty("_id");
+      expect(register.openingBalance).toBe(1000);
+      expect(register.currentBalance).toBe(1000);
+      expect(register.status).toBe("open");
+      expect(register.sales.total).toBe(0);
+      expect(register.openingDate).toBeDefined();
     });
   });
 

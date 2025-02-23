@@ -4,9 +4,11 @@ import { Payment } from "../../../schemas/PaymentSchema";
 import { CashRegister } from "../../../schemas/CashRegisterSchema";
 import { LegacyClient } from "../../../schemas/LegacyClientSchema";
 import { User } from "../../../schemas/UserSchema";
-import { generateToken } from "../../../utils/jwt";
-import bcrypt from "bcrypt";
 import { Types } from "mongoose";
+import {
+  createTestUser,
+  createTestCashRegister,
+} from "../../helpers/testHelpers";
 import { describe, it, expect, beforeEach } from "@jest/globals";
 
 describe("PaymentController", () => {
@@ -19,62 +21,23 @@ describe("PaymentController", () => {
     ]);
   });
 
-  // função auxiliar para criar usuário e gerar token
-  const createAuthUser = async (role: "admin" | "employee" | "customer") => {
-    const password = "123456";
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const email = `${role}${Date.now()}@test.com`;
-
-    const user = await User.create({
-      name: `Test ${role}`,
-      email,
-      password: hashedPassword,
-      role,
-    });
-
-    const token = generateToken(user._id.toString(), role);
-    return { user, token };
-  };
-
-  // função auxiliar para criar caixa
-  const createCashRegister = async (adminId: string) => {
-    return await CashRegister.create({
-      openDate: new Date(),
-      openingBalance: 1000,
-      currentBalance: 1000,
-      status: "open",
-      sales: {
-        total: 0,
-        cash: 0,
-        credit: 0,
-        debit: 0,
-        pix: 0,
-      },
-      payments: {
-        received: 0,
-        made: 0,
-      },
-      openedBy: adminId,
-    });
-  };
-
+  // função auxiliar para criar cliente legado
   const createLegacyClient = async () => {
-    const client = await LegacyClient.create({
+    return await LegacyClient.create({
       name: "Legacy Client Test",
       documentId: "123.456.789-00",
       totalDebt: 1000,
       status: "active",
       paymentHistory: [],
     });
-    return client;
   };
 
   describe("POST /api/payments", () => {
     it("should create a payment when employee", async () => {
-      const { user: admin } = await createAuthUser("admin");
+      const { user: admin } = await createTestUser("admin");
       const { user: employee, token: employeeToken } =
-        await createAuthUser("employee");
-      const register = await createCashRegister(admin._id.toString());
+        await createTestUser("employee");
+      const register = await createTestCashRegister(admin._id.toString());
 
       const paymentData = {
         amount: 100,
@@ -97,10 +60,10 @@ describe("PaymentController", () => {
     });
 
     it("should create a debt payment for legacy client", async () => {
-      const { user: admin } = await createAuthUser("admin");
+      const { user: admin } = await createTestUser("admin");
       const { user: employee, token: employeeToken } =
-        await createAuthUser("employee");
-      const register = await createCashRegister(admin._id.toString());
+        await createTestUser("employee");
+      const register = await createTestCashRegister(admin._id.toString());
       const legacyClient = await createLegacyClient();
 
       const paymentData = {
@@ -136,9 +99,9 @@ describe("PaymentController", () => {
 
   describe("GET /api/payments", () => {
     it("should get all payments with pagination", async () => {
-      const { user: admin, token: adminToken } = await createAuthUser("admin");
-      const { user: employee } = await createAuthUser("employee");
-      const register = await createCashRegister(admin._id.toString());
+      const { user: admin, token: adminToken } = await createTestUser("admin");
+      const { user: employee } = await createTestUser("employee");
+      const register = await createTestCashRegister(admin._id.toString());
 
       await Payment.create({
         amount: 100,
@@ -165,9 +128,9 @@ describe("PaymentController", () => {
     });
 
     it("should filter payments by type", async () => {
-      const { user: admin, token: adminToken } = await createAuthUser("admin");
-      const { user: employee } = await createAuthUser("employee");
-      const register = await createCashRegister(admin._id.toString());
+      const { user: admin, token: adminToken } = await createTestUser("admin");
+      const { user: employee } = await createTestUser("employee");
+      const register = await createTestCashRegister(admin._id.toString());
 
       await Payment.create({
         amount: 100,
@@ -201,9 +164,9 @@ describe("PaymentController", () => {
 
   describe("GET /api/payments/:id", () => {
     it("should get payment by id", async () => {
-      const { user: admin, token: adminToken } = await createAuthUser("admin");
-      const { user: employee } = await createAuthUser("employee");
-      const register = await createCashRegister(admin._id.toString());
+      const { user: admin, token: adminToken } = await createTestUser("admin");
+      const { user: employee } = await createTestUser("employee");
+      const register = await createTestCashRegister(admin._id.toString());
 
       const payment = await Payment.create({
         amount: 100,
@@ -224,7 +187,7 @@ describe("PaymentController", () => {
     });
 
     it("should return 404 for non-existent payment", async () => {
-      const { token: adminToken } = await createAuthUser("admin");
+      const { token: adminToken } = await createTestUser("admin");
 
       const res = await request(app)
         .get(`/api/payments/${new Types.ObjectId()}`)
@@ -236,9 +199,9 @@ describe("PaymentController", () => {
 
   describe("POST /api/payments/:id/cancel", () => {
     it("should cancel a payment when admin", async () => {
-      const { user: admin, token: adminToken } = await createAuthUser("admin");
-      const { user: employee } = await createAuthUser("employee");
-      const register = await createCashRegister(admin._id.toString());
+      const { user: admin, token: adminToken } = await createTestUser("admin");
+      const { user: employee } = await createTestUser("employee");
+      const register = await createTestCashRegister(admin._id.toString());
 
       const payment = await Payment.create({
         amount: 100,
@@ -266,10 +229,10 @@ describe("PaymentController", () => {
     });
 
     it("should not cancel payment when employee", async () => {
-      const { user: admin } = await createAuthUser("admin");
+      const { user: admin } = await createTestUser("admin");
       const { user: employee, token: employeeToken } =
-        await createAuthUser("employee");
-      const register = await createCashRegister(admin._id.toString());
+        await createTestUser("employee");
+      const register = await createTestCashRegister(admin._id.toString());
 
       const payment = await Payment.create({
         amount: 100,
@@ -290,9 +253,9 @@ describe("PaymentController", () => {
     });
 
     it("should not cancel already cancelled payment", async () => {
-      const { user: admin, token: adminToken } = await createAuthUser("admin");
-      const { user: employee } = await createAuthUser("employee");
-      const register = await createCashRegister(admin._id.toString());
+      const { user: admin, token: adminToken } = await createTestUser("admin");
+      const { user: employee } = await createTestUser("employee");
+      const register = await createTestCashRegister(admin._id.toString());
 
       const payment = await Payment.create({
         amount: 100,
@@ -313,9 +276,9 @@ describe("PaymentController", () => {
     });
 
     it("should not cancel payment without token", async () => {
-      const { user: admin } = await createAuthUser("admin");
-      const { user: employee } = await createAuthUser("employee");
-      const register = await createCashRegister(admin._id.toString());
+      const { user: admin } = await createTestUser("admin");
+      const { user: employee } = await createTestUser("employee");
+      const register = await createTestCashRegister(admin._id.toString());
 
       const payment = await Payment.create({
         amount: 100,

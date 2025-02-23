@@ -5,6 +5,7 @@ import {
 } from "../services/LegacyClientService";
 import type { ILegacyClient } from "../interfaces/ILegacyClient";
 import { z } from "zod";
+import { Types } from "mongoose";
 
 const addressSchema = z
   .object({
@@ -189,14 +190,37 @@ export class LegacyClientController {
         ? new Date(String(req.query.endDate))
         : undefined;
 
+      // Validar se o ID é válido primeiro
+      if (!Types.ObjectId.isValid(req.params.id)) {
+        res.status(400).json({ message: "ID inválido" });
+        return;
+      }
+
+      // Validar as datas se fornecidas
+      if (startDate && Number.isNaN(startDate.getTime())) {
+        res.status(400).json({ message: "Data inicial inválida" });
+        return;
+      }
+      if (endDate && Number.isNaN(endDate.getTime())) {
+        res.status(400).json({ message: "Data final inválida" });
+        return;
+      }
+
       const history = await this.legacyClientService.getPaymentHistory(
         req.params.id,
         startDate,
         endDate
       );
 
+      // Se não encontrar histórico, retornar array vazio ao invés de erro
+      if (!history || history.length === 0) {
+        res.status(200).json([]);
+        return;
+      }
+
       res.status(200).json(history);
     } catch (error) {
+      console.error("Erro ao buscar histórico de pagamentos:", error);
       if (error instanceof LegacyClientError) {
         res.status(404).json({ message: error.message });
         return;

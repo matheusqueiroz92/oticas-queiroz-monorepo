@@ -2,9 +2,12 @@ import type { Request, Response } from "express";
 import { UserService, UserError } from "../services/UserService";
 import type { JwtPayload } from "jsonwebtoken";
 import { z } from "zod";
+import { MulterError } from "multer";
+import { AuthError } from "../services/AuthService";
 
 interface AuthRequest extends Request {
   user?: JwtPayload;
+  file?: Express.Multer.File;
 }
 
 const userUpdateSchema = z.object({
@@ -23,6 +26,7 @@ const userUpdateSchema = z.object({
     .optional(),
   purchases: z.array(z.string()).optional(),
   debts: z.number().optional(),
+  image: z.string().optional(),
 });
 
 export class UserController {
@@ -60,7 +64,15 @@ export class UserController {
 
   async updateUser(req: AuthRequest, res: Response): Promise<void> {
     try {
-      const userData = userUpdateSchema.parse(req.body);
+      let userData = userUpdateSchema.parse(req.body);
+
+      // Adicionar imagem se existir
+      if (req.file) {
+        userData = {
+          ...userData,
+          image: `/images/users/${req.file.filename}`,
+        };
+      }
 
       // Se for employee tentando mudar role
       if (req.user?.role === "employee" && userData.role) {
@@ -82,6 +94,27 @@ export class UserController {
       const user = await this.userService.updateUser(req.params.id, userData);
       res.status(200).json(user);
     } catch (error) {
+      if (error instanceof MulterError) {
+        if (error.code === "LIMIT_FILE_SIZE") {
+          res
+            .status(400)
+            .json({ message: "Arquivo muito grande. Tamanho máximo: 5MB" });
+          return;
+        }
+        res.status(400).json({ message: error.message });
+        return;
+      }
+
+      if (
+        error instanceof Error &&
+        error.message.includes("Tipo de arquivo não suportado")
+      ) {
+        res.status(400).json({
+          message: "Tipo de arquivo não suportado. Use JPEG, PNG ou WebP.",
+        });
+        return;
+      }
+
       if (error instanceof z.ZodError) {
         res.status(400).json({
           message: "Dados inválidos",
@@ -116,8 +149,13 @@ export class UserController {
         res.status(401).json({ message: "Usuário não autenticado" });
         return;
       }
-      const user = await this.userService.getProfile(req.user.id);
-      res.status(200).json(user);
+
+      // Buscar usuário pelo ID
+      const user = await this.userService.getUserById(req.user.id);
+
+      // Remover dados sensíveis
+      const { password, ...userWithoutPassword } = user;
+      res.status(200).json(userWithoutPassword);
     } catch (error) {
       if (error instanceof UserError) {
         res.status(404).json({ message: error.message });
@@ -134,18 +172,20 @@ export class UserController {
         return;
       }
 
-      const userData = userUpdateSchema.parse(req.body);
+      const validatedData = userUpdateSchema.parse(req.body);
 
-      // Não permitir atualização de role no perfil
-      if (userData.role) {
-        res
-          .status(400)
-          .json({ message: "Não é permitido alterar a role do usuário" });
-        return;
-      }
+      const userData = {
+        ...validatedData,
+        image: req.file
+          ? `/images/users/${req.file.filename}`
+          : validatedData.image,
+      };
 
-      const user = await this.userService.updateProfile(req.user.id, userData);
-      res.status(200).json(user);
+      const updatedUser = await this.userService.updateProfile(
+        req.user.id,
+        userData
+      );
+      res.status(200).json(updatedUser);
     } catch (error) {
       if (error instanceof z.ZodError) {
         res.status(400).json({
@@ -154,11 +194,17 @@ export class UserController {
         });
         return;
       }
+
       if (error instanceof UserError) {
         res.status(400).json({ message: error.message });
         return;
       }
+
       res.status(500).json({ message: "Erro interno do servidor" });
     }
   }
+}
+
+function next(error: unknown) {
+  throw new Error("Function not implemented.");
 }

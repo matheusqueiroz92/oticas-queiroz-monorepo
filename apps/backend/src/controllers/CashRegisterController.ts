@@ -7,12 +7,13 @@ import type { JwtPayload } from "jsonwebtoken";
 import { z } from "zod";
 
 interface AuthRequest extends Request {
-  user?: JwtPayload;
+  user?: JwtPayload & { role?: string };
 }
 
 const openRegisterSchema = z.object({
   openingBalance: z.number().min(0, "Valor inicial não pode ser negativo"),
   observations: z.string().optional(),
+  openingDate: z.date().optional(),
 });
 
 const closeRegisterSchema = z.object({
@@ -34,7 +35,17 @@ export class CashRegisterController {
         return;
       }
 
-      const validatedData = openRegisterSchema.parse(req.body);
+      if (req.user.role !== "admin") {
+        res.status(403).json({ message: "Acesso não autorizado" });
+        return;
+      }
+
+      const validatedData = openRegisterSchema.parse({
+        ...req.body,
+        openingDate: req.body.openingDate
+          ? new Date(req.body.openingDate)
+          : new Date(),
+      });
 
       const register = await this.cashRegisterService.openRegister({
         ...validatedData,
@@ -65,6 +76,11 @@ export class CashRegisterController {
         return;
       }
 
+      if (req.user.role !== "admin") {
+        res.status(403).json({ message: "Acesso não autorizado" });
+        return;
+      }
+
       const validatedData = closeRegisterSchema.parse(req.body);
 
       const register = await this.cashRegisterService.closeRegister({
@@ -82,6 +98,10 @@ export class CashRegisterController {
         return;
       }
       if (error instanceof CashRegisterError) {
+        if (error.message === "Não há caixa aberto") {
+          res.status(404).json({ message: error.message });
+          return;
+        }
         res.status(400).json({ message: error.message });
         return;
       }
@@ -132,8 +152,13 @@ export class CashRegisterController {
     }
   }
 
-  async getDailySummary(req: Request, res: Response): Promise<void> {
+  async getDailySummary(req: AuthRequest, res: Response): Promise<void> {
     try {
+      if (!req.user?.id) {
+        res.status(401).json({ message: "Usuário não autenticado" });
+        return;
+      }
+
       const date = req.query.date
         ? new Date(String(req.query.date))
         : new Date();

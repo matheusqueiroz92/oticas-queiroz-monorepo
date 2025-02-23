@@ -1,17 +1,17 @@
 import { UserModel } from "../../../models/UserModel";
 import { User } from "../../../schemas/UserSchema";
-import mongoose from "mongoose";
+// import mongoose from "mongoose";
 import { config } from "dotenv";
-import type { IUser } from "../../../interfaces/IUser";
+// import type { IUser } from "../../../interfaces/IUser";
 import bcrypt from "bcrypt";
 import {
   describe,
   it,
   expect,
   beforeEach,
-  beforeAll,
+  // beforeAll,
   // afterEach,
-  afterAll,
+  // afterAll,
 } from "@jest/globals";
 
 config();
@@ -164,6 +164,88 @@ describe("UserModel", () => {
         "wrongpassword"
       );
       expect(result).toBe(false);
+    });
+  });
+
+  describe("User image operations", () => {
+    it("should create user with image path", async () => {
+      const userWithImage = {
+        ...mockUser,
+        image: "/images/users/test-image.jpg",
+      };
+
+      const user = await userModel.create(userWithImage);
+
+      expect(user).toHaveProperty("image");
+      expect(user.image).toBe("/images/users/test-image.jpg");
+    });
+
+    it("should update user image path", async () => {
+      const createdUser = await userModel.create(mockUser);
+      if (!createdUser._id) {
+        throw new Error("Created user has no ID");
+      }
+
+      const updatedUser = await userModel.update(createdUser._id, {
+        image: "/images/users/new-image.jpg",
+      });
+
+      expect(updatedUser?.image).toBe("/images/users/new-image.jpg");
+    });
+
+    it("should remove image field when setting to undefined", async () => {
+      const userWithImage = {
+        ...mockUser,
+        image: "/images/users/test-image.jpg",
+      };
+
+      const createdUser = await userModel.create(userWithImage);
+      if (!createdUser._id) {
+        throw new Error("Created user has no ID");
+      }
+
+      const updatedUser = await userModel.update(createdUser._id, {
+        image: undefined, // Usando undefined em vez de null
+      });
+
+      expect(updatedUser?.image).toBeUndefined();
+    });
+
+    it("should clear image by setting to undefined", async () => {
+      const userWithImage = {
+        ...mockUser,
+        image: "/images/users/test-image.jpg",
+      };
+
+      const createdUser = await userModel.create(userWithImage);
+      if (!createdUser._id) {
+        throw new Error("Created user has no ID");
+      }
+
+      const updatedUser = await userModel.update(createdUser._id, {
+        image: undefined,
+      });
+
+      expect(updatedUser?.image).toBeUndefined();
+    });
+
+    it("should keep image when updating other fields", async () => {
+      const userWithImage = {
+        ...mockUser,
+        image: "/images/users/test-image.jpg",
+      };
+
+      const createdUser = await userModel.create(userWithImage);
+      if (!createdUser._id) {
+        throw new Error("Created user has no ID");
+      }
+
+      const updatedUser = await userModel.update(createdUser._id, {
+        name: "New Name",
+      });
+
+      expect(updatedUser?.name).toBe("New Name");
+      expect(updatedUser?.image).toBe("/images/users/test-image.jpg");
     });
   });
 });

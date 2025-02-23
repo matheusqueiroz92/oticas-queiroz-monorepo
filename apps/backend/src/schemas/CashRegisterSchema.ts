@@ -2,8 +2,8 @@ import { Schema, model } from "mongoose";
 
 const cashRegisterSchema = new Schema(
   {
-    openDate: { type: Date, required: true },
-    closeDate: { type: Date },
+    openingDate: { type: Date, required: true },
+    closingDate: { type: Date },
     openingBalance: { type: Number, required: true },
     currentBalance: { type: Number, required: true },
     closingBalance: { type: Number },

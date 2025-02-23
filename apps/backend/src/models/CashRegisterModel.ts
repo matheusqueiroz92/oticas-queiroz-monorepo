@@ -2,10 +2,10 @@ import { CashRegister } from "../schemas/CashRegisterSchema";
 import type { ICashRegister } from "../interfaces/ICashRegister";
 import { type Document, Types } from "mongoose";
 
-interface CashRegisterDocument extends Document {
+interface CashRegisterBaseDocument {
   _id: Types.ObjectId;
   openingDate: Date;
-  closingDate?: Date;
+  closingDate?: Date | null;
   openingBalance: number;
   currentBalance: number;
   closingBalance?: number;
@@ -21,12 +21,24 @@ interface CashRegisterDocument extends Document {
     received: number;
     made: number;
   };
-  openedBy: Types.ObjectId;
-  closedBy?: Types.ObjectId;
+  openedBy:
+    | Types.ObjectId
+    | { _id: Types.ObjectId; name: string; email: string };
+  closedBy?:
+    | Types.ObjectId
+    | { _id: Types.ObjectId; name: string; email: string }
+    | null;
   observations?: string;
   createdAt: Date;
   updatedAt: Date;
 }
+
+type ReferenceField =
+  | Types.ObjectId
+  | { _id: Types.ObjectId; name: string; email: string }
+  | string
+  | undefined
+  | null;
 
 interface DateRangeQuery {
   $gte: Date;
@@ -55,16 +67,15 @@ export class CashRegisterModel {
     registerData: Omit<ICashRegister, "_id">
   ): Promise<ICashRegister> {
     const register = new CashRegister(registerData);
-    const savedRegister =
-      (await register.save()) as unknown as CashRegisterDocument;
+    const savedRegister = await register.save();
     return this.convertToICashRegister(savedRegister);
   }
 
   async findOpenRegister(): Promise<ICashRegister | null> {
-    const register = (await CashRegister.findOne({ status: "open" })
+    const register = await CashRegister.findOne({ status: "open" })
       .populate("openedBy", "name email")
       .populate("closedBy", "name email")
-      .exec()) as CashRegisterDocument | null;
+      .exec();
 
     return register ? this.convertToICashRegister(register) : null;
   }
@@ -72,10 +83,10 @@ export class CashRegisterModel {
   async findById(id: string): Promise<ICashRegister | null> {
     if (!this.isValidId(id)) return null;
 
-    const register = (await CashRegister.findById(id)
+    const register = await CashRegister.findById(id)
       .populate("openedBy", "name email")
       .populate("closedBy", "name email")
-      .exec()) as CashRegisterDocument | null;
+      .exec();
 
     return register ? this.convertToICashRegister(register) : null;
   }
@@ -91,10 +102,10 @@ export class CashRegisterModel {
       },
     };
 
-    const registers = (await CashRegister.find(query)
+    const registers = await CashRegister.find(query)
       .populate("openedBy", "name email")
       .populate("closedBy", "name email")
-      .exec()) as unknown as CashRegisterDocument[];
+      .exec();
 
     return registers.map((register) => this.convertToICashRegister(register));
   }
@@ -120,13 +131,13 @@ export class CashRegisterModel {
       updateData.$inc["payments.made"] = Math.abs(amount);
     }
 
-    const register = (await CashRegister.findByIdAndUpdate(id, updateData, {
+    const register = await CashRegister.findByIdAndUpdate(id, updateData, {
       new: true,
       runValidators: true,
     })
       .populate("openedBy", "name email")
       .populate("closedBy", "name email")
-      .exec()) as CashRegisterDocument | null;
+      .exec();
 
     return register ? this.convertToICashRegister(register) : null;
   }
@@ -141,13 +152,15 @@ export class CashRegisterModel {
   ): Promise<ICashRegister | null> {
     if (!this.isValidId(id)) return null;
 
-    const register = (await CashRegister.findByIdAndUpdate(
+    const register = await CashRegister.findByIdAndUpdate(
       id,
       {
         $set: {
-          ...closeData,
           status: "closed",
+          closingBalance: closeData.closingBalance,
+          closedBy: closeData.closedBy,
           closingDate: new Date(),
+          observations: closeData.observations,
         },
       },
       {
@@ -157,18 +170,40 @@ export class CashRegisterModel {
     )
       .populate("openedBy", "name email")
       .populate("closedBy", "name email")
-      .exec()) as CashRegisterDocument | null;
+      .exec();
 
-    return register ? this.convertToICashRegister(register) : null;
+    if (!register) return null;
+
+    const result = this.convertToICashRegister(register);
+    return {
+      ...result,
+      closedBy: closeData.closedBy,
+    };
   }
 
-  private convertToICashRegister(doc: CashRegisterDocument): ICashRegister {
-    const register = doc.toObject();
+  private convertToICashRegister(
+    doc: Document & { _id: Types.ObjectId }
+  ): ICashRegister {
+    const result = doc.toObject();
+
+    const getIdString = (field: ReferenceField): string => {
+      if (!field) return "";
+      if (field instanceof Types.ObjectId) {
+        return field.toString();
+      }
+      if (typeof field === "object" && "_id" in field) {
+        return field._id.toString();
+      }
+      return field.toString();
+    };
+
     return {
-      ...register,
+      ...result,
       _id: doc._id.toString(),
-      openedBy: doc.openedBy.toString(),
-      closedBy: doc.closedBy?.toString(),
+      openedBy: getIdString(doc.get("openedBy")),
+      closedBy: doc.get("closedBy")
+        ? getIdString(doc.get("closedBy"))
+        : undefined,
     };
   }
 }

@@ -35,6 +35,7 @@ export class AuthModel {
       ...userWithoutPassword,
       _id: doc._id.toString(),
       comparePassword: doc.comparePassword.bind(doc),
+      image: user.image, // Garantir que a imagem seja incluída
     };
   }
 }

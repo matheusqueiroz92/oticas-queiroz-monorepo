@@ -269,7 +269,7 @@ oticas-queiroz-monorepo/
 }
 ```
 
-## 💵 Pagamentos
+## 💰 Pagamentos
 
 ### Rotas
 
@@ -286,23 +286,24 @@ oticas-queiroz-monorepo/
 {
   _id?: string;
   amount: number;
-  date: Date;
-  type: "sale" | "debt_payment";
+  paymentDate: Date;
+  type: "sale" | "debt_payment" | "expense";
   paymentMethod: "credit" | "debit" | "cash" | "pix";
   installments?: number;
   status: "pending" | "completed" | "cancelled";
   orderId?: string;
-  userId?: string;
+  customerId?: string;
+  employeeId?: string;
   legacyClientId?: string;
-  description?: string;
   cashRegisterId: string;
-  createdBy: string;
+  description?: string;
+  category?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
 ```
 
-## 🏧 Cash Register
+## 💵 Cash Register
 
 ### Rotas
 
@@ -459,6 +460,9 @@ npm run test:auth-user # roda os testes de autenticação e de usuário
 npm run test:product # roda os testes de produto
 npm run test:order # roda os testes de pedido
 npm run test:laboratory # roda os testes de laboratório
+npm run test:payment # roda os testes de pagamento
+npm run test:cash-register # roda os testes de registro de caixa
+npm run test:legacy-client # roda os testes de clientes legados
 npm run coverage # verifica a cobertura dos testes
 ```
 
@@ -516,12 +520,6 @@ npm test
 - [ ] Criar guia de contribuição
 
 ## 📈 Próximos Passos
-
-- [ ] Sistema de laboratório ótico
-
-  - [ ] Cadastro de laboratórios
-  - [ ] Gestão de pedidos
-  - [ ] Acompanhamento de produção
 
 - [ ] Gestão de fornecedores
 
@@ -585,7 +583,7 @@ docker-compose up --build
 
 Novas Implementações
 
-💰 Sistema de Pagamentos
+Sistema de Pagamentos
 
 Gestão de pagamentos para clientes cadastrados e não cadastrados
 Suporte a múltiplas formas de pagamento (crédito, débito, dinheiro, PIX)

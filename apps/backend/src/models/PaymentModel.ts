@@ -25,6 +25,41 @@ interface PaymentDocument extends Document {
   updatedAt: Date;
 }
 
+interface PopulatedDocument {
+  _id: Types.ObjectId;
+}
+
+interface PopulatedUser extends PopulatedDocument {
+  name: string;
+  email: string;
+}
+
+interface PopulatedCashRegister extends PopulatedDocument {
+  date: Date;
+  openingBalance: number;
+  currentBalance: number;
+  closingBalance?: number;
+  status: "open" | "closed";
+  openedBy: Types.ObjectId;
+  closedBy?: Types.ObjectId;
+  totalSales: number;
+  totalPayments: number;
+  sales: {
+    total: number;
+    cash: number;
+    credit: number;
+    debit: number;
+    pix: number;
+  };
+  payments: {
+    received: number;
+    made: number;
+  };
+  observations?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export class PaymentModel {
   private isValidId(id: string): boolean {
     return Types.ObjectId.isValid(id);
@@ -133,8 +168,14 @@ export class PaymentModel {
       userId: doc.userId?.toString(),
       legacyClientId: doc.legacyClientId?.toString(),
       categoryId: doc.categoryId?.toString(),
-      cashRegisterId: doc.cashRegisterId.toString(),
-      createdBy: doc.createdBy.toString(),
+      cashRegisterId:
+        doc.cashRegisterId instanceof Types.ObjectId
+          ? doc.cashRegisterId.toString()
+          : (doc.cashRegisterId as PopulatedCashRegister)._id.toString(),
+      createdBy:
+        doc.createdBy instanceof Types.ObjectId
+          ? doc.createdBy.toString()
+          : (doc.createdBy as PopulatedUser)._id.toString(),
     };
   }
 }

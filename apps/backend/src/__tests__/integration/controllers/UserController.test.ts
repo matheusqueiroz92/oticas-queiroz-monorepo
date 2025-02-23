@@ -14,6 +14,8 @@ import {
   afterAll,
   // jest,
 } from "@jest/globals";
+import path from "node:path";
+import fs from "node:fs";
 
 describe("UserController", () => {
   let adminToken: string;
@@ -21,6 +23,20 @@ describe("UserController", () => {
   let customerToken: string;
   let customerId: string;
   let employeeId: string;
+
+  const uploadsPath = path.join(__dirname, "../../../../uploads/users");
+
+  const cleanUploads = () => {
+    if (fs.existsSync(uploadsPath)) {
+      const files = fs.readdirSync(uploadsPath);
+      for (const file of files) {
+        const filePath = path.join(uploadsPath, file);
+        if (fs.statSync(filePath).isFile()) {
+          fs.unlinkSync(filePath);
+        }
+      }
+    }
+  };
 
   const mockUser = {
     name: "Test User",

@@ -3,6 +3,7 @@ export interface IProduct {
   name: string;
   category: string;
   description: string;
+  image?: string;
   brand: string;
   modelGlasses: string;
   price: number;
@@ -15,6 +16,7 @@ export interface ICreateProductDTO {
   name: string;
   category: string;
   description: string;
+  image?: string;
   brand: string;
   modelGlasses: string;
   price: number;

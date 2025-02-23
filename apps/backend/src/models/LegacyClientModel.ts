@@ -40,9 +40,9 @@ interface PaymentHistoryEntry {
 }
 
 interface PaymentHistoryDocument {
-  date: Date;
-  amount: number;
-  paymentId: Types.ObjectId;
+  date: Date | null;
+  amount: number | null;
+  paymentId: Types.ObjectId | null;
 }
 
 interface UpdateDebtOperation {
@@ -192,39 +192,47 @@ export class LegacyClientModel {
   ): Promise<PaymentHistoryEntry[]> {
     if (!this.isValidId(id)) return [];
 
-    const client = (await LegacyClient.findById(id).populate(
-      "paymentHistory.paymentId"
-    )) as LegacyClientDocument | null;
+    const client = await LegacyClient.findById(id).lean();
 
-    if (!client) return [];
+    if (!client || !client.paymentHistory) return [];
 
-    let history = client.paymentHistory;
+    const history =
+      client.paymentHistory as unknown as PaymentHistoryDocument[];
 
-    if (startDate) {
-      history = history.filter((payment) => payment.date >= startDate);
-    }
-    if (endDate) {
-      history = history.filter((payment) => payment.date <= endDate);
-    }
+    const filteredHistory = history.filter(
+      (payment): payment is PaymentHistoryDocument & { date: Date } => {
+        if (!payment.date) return false;
 
-    return history.map((payment) => ({
-      date: payment.date,
-      amount: payment.amount,
-      paymentId: payment.paymentId.toString(),
-    }));
+        const paymentDate = new Date(payment.date);
+
+        if (startDate && paymentDate < startDate) return false;
+        if (endDate && paymentDate > endDate) return false;
+
+        return true;
+      }
+    );
+
+    return filteredHistory.map(
+      (payment): PaymentHistoryEntry => ({
+        date: new Date(payment.date), // Type guard garante que date existe
+        amount: payment.amount || 0,
+        paymentId: payment.paymentId?.toString() || "",
+      })
+    );
   }
 
   private convertToILegacyClient(doc: LegacyClientDocument): ILegacyClient {
     const client = doc.toObject();
+    const paymentHistory = client.paymentHistory || [];
+
     return {
       ...client,
       _id: doc._id.toString(),
-      paymentHistory: client.paymentHistory?.map(
-        (payment: PaymentHistoryDocument) => ({
-          ...payment,
-          paymentId: payment.paymentId.toString(),
-        })
-      ),
+      paymentHistory: paymentHistory.map((payment: PaymentHistoryEntry) => ({
+        date: new Date(payment.date || new Date()),
+        amount: payment.amount || 0,
+        paymentId: payment.paymentId?.toString() || "",
+      })),
     };
   }
 }

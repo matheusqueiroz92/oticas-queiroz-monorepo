@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/card";
 import { useToast } from "../../../../hooks/use-toast";
 import { api } from "../../../services/auth";
+import { useRef } from "react";
 // import { useRouteGuard } from "@/hooks/useRouteGuard";
 // import { Loader2 } from "lucide-react";
 
@@ -41,6 +42,7 @@ const productFormSchema = z.object({
     required_error: "Selecione uma categoria",
   }),
   description: z.string().min(10, "Descrição muito curta"),
+  image: z.string(),
   brand: z.string().min(2, "Marca inválida"),
   modelGlasses: z.string().min(2, "Modelo inválido"),
   price: z.number().min(0, "Preço inválido"),
@@ -53,6 +55,7 @@ export default function NewProductPage() {
   // const { isAuthorized, isLoading } = useRouteGuard(["admin", "employee"]);
   const router = useRouter();
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null); // Referência para o input de arquivo
 
   const form = useForm<ProductFormData>({
     resolver: zodResolver(productFormSchema),
@@ -69,7 +72,24 @@ export default function NewProductPage() {
 
   const createProduct = useMutation({
     mutationFn: async (data: ProductFormData) => {
-      return api.post("/api/products", data);
+      const formData = new FormData(); // Crie um FormData
+
+      // Adicione os campos do formulário ao FormData
+      // biome-ignore lint/complexity/noForEach: <explanation>
+      Object.entries(data).forEach(([key, value]) => {
+        formData.append(key, value.toString());
+      });
+
+      // Adicione o arquivo de imagem ao FormData, se existir
+      if (fileInputRef.current?.files?.[0]) {
+        formData.append("image", fileInputRef.current.files[0]);
+      }
+
+      return api.post("/api/products", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data", // Defina o tipo de conteúdo como multipart/form-data
+        },
+      });
     },
     onSuccess: () => {
       toast({
@@ -163,6 +183,28 @@ export default function NewProductPage() {
                         placeholder="Descrição detalhada do produto"
                         className="resize-none"
                         {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="image"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Imagem</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="file"
+                        placeholder="Selecione a imagem do produto"
+                        ref={fileInputRef} // Use a referência aqui
+                        onChange={(e) => {
+                          // Atualize o valor do campo no react-hook-form
+                          field.onChange(e.target.files?.[0]?.name || "");
+                        }}
                       />
                     </FormControl>
                     <FormMessage />

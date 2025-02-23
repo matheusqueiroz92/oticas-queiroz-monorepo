@@ -7,6 +7,7 @@ interface ProductDocument extends Document {
   name: string;
   category: string;
   description: string;
+  image?: string | null; // Aceita string, null ou undefined
   brand: string;
   modelGlasses: string;
   price: number;
@@ -106,6 +107,7 @@ export class ProductModel {
       _id: doc._id.toString(),
       name: doc.name,
       description: doc.description,
+      image: doc.image || undefined, // Converte null para undefined
       brand: doc.brand,
       modelGlasses: doc.modelGlasses,
       price: doc.price,
