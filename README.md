@@ -113,10 +113,12 @@ oticas-queiroz-monorepo/
 
 ### Rotas
 
-- POST `/api/users`: Criar usuário
+- POST `/api/auth/register`: Registra um novo usuário
 - GET `/api/users`: Listar todos os usuários
-- GET `/api/users/:id`: Buscar usuário
-- PUT `/api/users/:id`: Atualizar usuário
+- GET `/api/users/profile`: Obtém o perfil do usário logado
+- PUT `/api/users/profile`: Atualiza o perfil do usário logado
+- GET `/api/users/:id`: Obtém um usuário pelo ID
+- PUT `/api/users/:id`: Atualiza um usuário
 - DELETE `/api/users/:id`: Remover usuário
 
 ### Schema
@@ -127,6 +129,7 @@ oticas-queiroz-monorepo/
   name: string;
   email: string;
   password: string;
+  image: string;
   role: "admin" | "employee" | "customer";
   address?: string;
   phone?: string;
@@ -162,6 +165,7 @@ oticas-queiroz-monorepo/
   category: string;
   description: string;
   brand: string;
+  image: string;
   modelGlasses: string;
   price: number;
   stock: number;
@@ -310,9 +314,9 @@ oticas-queiroz-monorepo/
 - POST `/api/cash-registers/open`: Abrir o registro de caixa atual
 - POST `/api/cash-registers/close`: Fechar o registro de caixa atual
 - GET `/api/cash-registers/current`: Buscar o registro de caixa atual
+- GET `/api/cash-registers/summary/daily`: Abrir o resumo diário dos registros de caixa
 - GET `/api/cash-registers/:id`: Buscar um registro de caixa específico
 - GET `/api/cash-registers/:id/summary`: Buscar o resumo de um registro de caixa específico
-- GET `/api/cash-registers/summary/daily`: Abrir o resumo diário dos registros de caixa
 
 ### Schema
 

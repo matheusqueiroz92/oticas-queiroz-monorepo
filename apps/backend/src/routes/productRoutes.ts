@@ -42,6 +42,24 @@ router.post(
 
 /**
  * @swagger
+ * /api/products:
+ *   get:
+ *     summary: Obtém todos os produtos
+ *     responses:
+ *       200:
+ *         description: Produtos encontrados
+ *       404:
+ *         description: Nenhum produto encontrado
+ */
+router.get(
+  "/products",
+  authenticate,
+  authorize(["admin", "employee"]),
+  (req, res) => productController.getAllProducts(req, res)
+);
+
+/**
+ * @swagger
  * /api/products/{id}:
  *   get:
  *     summary: Obtém um produto pelo ID
@@ -62,24 +80,6 @@ router.get(
   authenticate,
   authorize(["admin", "employee"]),
   (req, res) => productController.getProductById(req, res)
-);
-
-/**
- * @swagger
- * /api/products:
- *   get:
- *     summary: Obtém todos os produtos
- *     responses:
- *       200:
- *         description: Produtos encontrados
- *       404:
- *         description: Nenhum produto encontrado
- */
-router.get(
-  "/products",
-  authenticate,
-  authorize(["admin", "employee"]),
-  (req, res) => productController.getAllProducts(req, res)
 );
 
 /**

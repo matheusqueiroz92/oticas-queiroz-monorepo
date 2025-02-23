@@ -112,6 +112,36 @@ router.get(
 
 /**
  * @swagger
+ * /api/cash-registers/summary/daily:
+ *   get:
+ *     summary: Retorna o resumo diário dos caixas
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Cash Register]
+ *     parameters:
+ *       - in: query
+ *         name: date
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Data para consulta (default é a data atual)
+ *     responses:
+ *       200:
+ *         description: Resumo diário dos caixas
+ *       404:
+ *         description: Nenhum caixa encontrado para a data
+ */
+router.get(
+  "/cash-registers/summary/daily",
+  authenticate,
+  authorize(["admin", "employee"]),
+  asyncHandler(
+    cashRegisterController.getDailySummary.bind(cashRegisterController)
+  )
+);
+
+/**
+ * @swagger
  * /api/cash-registers/{id}:
  *   get:
  *     summary: Retorna um caixa específico
@@ -167,36 +197,6 @@ router.get(
   authorize(["admin", "employee"]),
   asyncHandler(
     cashRegisterController.getRegisterSummary.bind(cashRegisterController)
-  )
-);
-
-/**
- * @swagger
- * /api/cash-registers/summary/daily:
- *   get:
- *     summary: Retorna o resumo diário dos caixas
- *     security:
- *       - bearerAuth: []
- *     tags: [Cash Register]
- *     parameters:
- *       - in: query
- *         name: date
- *         schema:
- *           type: string
- *           format: date
- *         description: Data para consulta (default é a data atual)
- *     responses:
- *       200:
- *         description: Resumo diário dos caixas
- *       404:
- *         description: Nenhum caixa encontrado para a data
- */
-router.get(
-  "/cash-registers/summary/daily",
-  authenticate,
-  authorize(["admin", "employee"]),
-  asyncHandler(
-    cashRegisterController.getDailySummary.bind(cashRegisterController)
   )
 );
 
