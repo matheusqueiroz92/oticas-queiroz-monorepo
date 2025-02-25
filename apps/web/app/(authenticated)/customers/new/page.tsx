@@ -30,15 +30,11 @@ import { api } from "../../../services/auth";
 const customerFormSchema = z.object({
   name: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
   email: z.string().email("Email inválido"),
-  phone: z.string().min(10, "Telefone inválido"),
+  password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
+  confirmPassword: z.string(),
+  phone: z.string().regex(/^\d{10,11}$/, "Telefone inválido"),
   address: z.string().min(10, "Endereço muito curto"),
-  prescription: z
-    .object({
-      leftEye: z.number().min(-20).max(20),
-      rightEye: z.number().min(-20).max(20),
-      addition: z.number().min(0).max(4).optional(),
-    })
-    .optional(),
+  image: z.string().optional(),
 });
 
 type CustomerFormData = z.infer<typeof customerFormSchema>;
@@ -53,6 +49,8 @@ export default function NewCustomerPage() {
     defaultValues: {
       name: "",
       email: "",
+      password: "",
+      confirmPassword: "",
       phone: "",
       address: "",
     },
@@ -60,8 +58,9 @@ export default function NewCustomerPage() {
 
   const createCustomer = useMutation({
     mutationFn: async (data: CustomerFormData) => {
+      const { confirmPassword, ...customerData } = data;
       return api.post("/api/auth/register", {
-        ...data,
+        ...customerData,
         role: "customer",
       });
     },
@@ -135,6 +134,40 @@ export default function NewCustomerPage() {
                 )}
               />
 
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Senha</FormLabel>
+                      <FormControl>
+                        <Input type="password" placeholder="Senha" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="confirmPassword"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Confirmar Senha</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="password"
+                          placeholder="Confirme a senha"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
               <FormField
                 control={form.control}
                 name="phone"
@@ -162,71 +195,6 @@ export default function NewCustomerPage() {
                   </FormItem>
                 )}
               />
-
-              <div className="grid grid-cols-3 gap-4">
-                <FormField
-                  control={form.control}
-                  name="prescription.leftEye"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Olho Esquerdo</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="0.25"
-                          {...field}
-                          onChange={(e) =>
-                            field.onChange(Number.parseFloat(e.target.value))
-                          }
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="prescription.rightEye"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Olho Direito</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="0.25"
-                          {...field}
-                          onChange={(e) =>
-                            field.onChange(Number.parseFloat(e.target.value))
-                          }
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="prescription.addition"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Adição</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="0.25"
-                          {...field}
-                          onChange={(e) =>
-                            field.onChange(Number.parseFloat(e.target.value))
-                          }
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
 
               <div className="flex justify-end space-x-4">
                 <Button

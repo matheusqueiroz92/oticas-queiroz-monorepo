@@ -6,19 +6,17 @@ interface OrderDocument extends Document {
   _id: Types.ObjectId;
   clientId: Types.ObjectId;
   employeeId: Types.ObjectId;
-  products: Types.ObjectId[];
-  description?: string;
+  product: string;
   paymentMethod: string;
   paymentEntry?: number;
   installments?: number;
-  deliveryDate: Date;
+  deliveryDate?: Date;
   status: "pending" | "in_production" | "ready" | "delivered";
   laboratoryId?: Types.ObjectId;
-  lensType: string;
-  prescriptionData: {
+  prescriptionData?: {
     doctorName: string;
     clinicName: string;
-    appointmentdate: Date;
+    appointmentDate: Date;
     leftEye: {
       near: {
         sph: number;
@@ -48,6 +46,8 @@ interface OrderDocument extends Document {
       };
     };
   };
+  lensType?: string;
+  observations?: string;
   totalPrice: number;
   createdAt: Date;
   updatedAt: Date;
@@ -73,7 +73,7 @@ export class OrderModel {
       query = query
         .populate("clientId", "name email role")
         .populate("employeeId", "name email")
-        .populate("products", "name description price category")
+        // .populate("products", "name description price category")
         .populate("laboratoryId");
     }
 
@@ -100,7 +100,7 @@ export class OrderModel {
       orderQuery = orderQuery
         .populate("clientId", "name email role")
         .populate("employeeId", "name email")
-        .populate("products", "name description price category")
+        // .populate("products", "name description price category")
         .populate("laboratoryId");
     }
 
@@ -132,7 +132,7 @@ export class OrderModel {
       query = query
         .populate("clientId", "name email role")
         .populate("employeeId", "name email")
-        .populate("products", "name description price category")
+        // .populate("products", "name description price category")
         .populate("laboratoryId");
     }
 
@@ -156,7 +156,7 @@ export class OrderModel {
       query = query
         .populate("clientId", "name email role")
         .populate("employeeId", "name email")
-        .populate("products", "name description price category")
+        // .populate("products", "name description price category")
         .populate("laboratoryId");
     }
 
@@ -179,7 +179,7 @@ export class OrderModel {
       _id: doc._id.toString(),
       clientId: doc.clientId.toString(),
       employeeId: doc.employeeId.toString(),
-      products: doc.products.map((id) => id.toString()),
+      // products: doc.products.map((id) => id.toString()),
       laboratoryId: doc.laboratoryId?.toString(),
     };
   }

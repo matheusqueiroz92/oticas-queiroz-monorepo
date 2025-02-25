@@ -2,19 +2,17 @@ export interface IOrder {
   _id: string;
   clientId: string;
   employeeId: string;
-  products: string[];
-  description?: string;
+  product: string;
   paymentMethod: string;
   paymentEntry?: number;
   installments?: number;
-  deliveryDate: Date;
+  deliveryDate?: Date;
   status: "pending" | "in_production" | "ready" | "delivered" | "cancelled";
   laboratoryId?: string;
-  lensType: string;
-  prescriptionData: {
+  prescriptionData?: {
     doctorName: string;
     clinicName: string;
-    appointmentdate: Date;
+    appointmentDate: Date;
     leftEye: {
       near: {
         sph: number;
@@ -44,6 +42,8 @@ export interface IOrder {
       };
     };
   };
+  lensType?: string;
+  description?: string;
   totalPrice: number;
   createdAt?: Date;
   updatedAt?: Date;
@@ -52,19 +52,17 @@ export interface IOrder {
 export interface ICreateOrderDTO {
   clientId: string;
   employeeId: string;
-  products: string[];
-  description?: string;
+  product: string;
   paymentMethod: string;
   paymentEntry?: number;
   installments?: number;
   deliveryDate: Date;
   status: "pending" | "in_production" | "ready" | "delivered";
   laboratoryId?: string;
-  lensType: string;
   prescriptionData: {
     doctorName: string;
     clinicName: string;
-    appointmentdate: Date;
+    appointmentDate: Date;
     leftEye: {
       near: {
         sph: number;
@@ -94,6 +92,8 @@ export interface ICreateOrderDTO {
       };
     };
   };
+  lensType?: string;
+  observations?: string;
   totalPrice: number;
   createdAt?: Date;
   updatedAt?: Date;

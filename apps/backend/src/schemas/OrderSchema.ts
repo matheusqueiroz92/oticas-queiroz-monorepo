@@ -8,8 +8,7 @@ const orderSchema = new Schema(
       ref: "User",
       required: true,
     },
-    products: [{ type: Schema.Types.ObjectId, ref: "Product", required: true }],
-    description: String,
+    product: { type: String, required: true }, // futura implementação -> [{ type: Schema.Types.ObjectId, ref: "Product", required: true }],
     paymentMethod: { type: String, required: true },
     paymentEntry: Number,
     installments: Number,
@@ -21,9 +20,9 @@ const orderSchema = new Schema(
     },
     laboratoryId: { type: Schema.Types.ObjectId, ref: "Laboratory" },
     prescriptionData: {
-      doctorName: { type: String, required: true },
-      clinicName: { type: String, required: true },
-      appointmentdate: { type: Date, required: true },
+      doctorName: { type: String },
+      clinicName: { type: String },
+      appointmentDate: { type: Date },
       leftEye: {
         near: {
           sph: Number,
@@ -53,6 +52,8 @@ const orderSchema = new Schema(
         },
       },
     },
+    lensType: String,
+    observations: String,
     totalPrice: { type: Number, required: true },
     createdAt: { type: Date, default: Date.now },
   },

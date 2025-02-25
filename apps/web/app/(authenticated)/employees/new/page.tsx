@@ -31,8 +31,9 @@ const employeeFormSchema = z
     email: z.string().email("Email inválido"),
     password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
     confirmPassword: z.string(),
-    phone: z.string().min(10, "Telefone inválido"),
+    phone: z.string().regex(/^\d{10,11}$/, "Telefone inválido"),
     address: z.string().min(10, "Endereço muito curto"),
+    image: z.string().optional(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Senhas não conferem",

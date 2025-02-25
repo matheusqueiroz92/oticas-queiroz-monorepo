@@ -1,20 +1,13 @@
 export type UserRole = "admin" | "employee" | "customer";
 
 export interface User {
-  _id?: string;
+  _id: string;
   name: string;
   email: string;
-  password: string;
+  phone?: string;
   role: UserRole;
   address?: string;
-  phone?: string;
-  prescription?: {
-    leftEye: number;
-    rightEye: number;
-    addition?: number;
-  };
-  purchases?: string[];
-  debts?: number;
+  image?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }

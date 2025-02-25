@@ -1,6 +1,6 @@
 import { OrderModel } from "../models/OrderModel";
 import { UserModel } from "../models/UserModel";
-import { ProductModel } from "../models/ProductModel";
+// import { ProductModel } from "../models/ProductModel";
 import type { IOrder } from "../interfaces/IOrder";
 
 export class OrderError extends Error {
@@ -13,12 +13,12 @@ export class OrderError extends Error {
 export class OrderService {
   private orderModel: OrderModel;
   private userModel: UserModel;
-  private productModel: ProductModel;
+  // private productModel: ProductModel;
 
   constructor() {
     this.orderModel = new OrderModel();
     this.userModel = new UserModel();
-    this.productModel = new ProductModel();
+    // this.productModel = new ProductModel();
   }
 
   private async validateOrder(orderData: Omit<IOrder, "_id">): Promise<void> {
@@ -41,15 +41,15 @@ export class OrderService {
     }
 
     // Validar produtos
-    for (const productId of orderData.products) {
-      const product = await this.productModel.findById(productId);
-      if (!product) {
-        throw new OrderError(`Produto não encontrado: ${productId}`);
-      }
-      if (product.stock <= 0) {
-        throw new OrderError(`Produto sem estoque: ${product.name}`);
-      }
-    }
+    // for (const productId of orderData.product) {
+    //   const product = await this.productModel.findById(productId);
+    //   if (!product) {
+    //     throw new OrderError(`Produto não encontrado: ${productId}`);
+    //   }
+    //   if (product.stock <= 0) {
+    //     throw new OrderError(`Produto sem estoque: ${product.name}`);
+    //   }
+    // }
 
     // Validar dados básicos
     if (orderData.totalPrice <= 0) {
@@ -64,14 +64,18 @@ export class OrderService {
       throw new OrderError("Valor de entrada não pode ser negativo");
     }
 
-    if (new Date(orderData.deliveryDate) < new Date()) {
-      throw new OrderError("Data de entrega deve ser futura");
+    if (orderData.deliveryDate) {
+      if (new Date(orderData.deliveryDate) < new Date()) {
+        throw new OrderError("Data de entrega deve ser futura");
+      }
     }
 
     // Validar dados da prescrição
     const { prescriptionData } = orderData;
-    if (new Date(prescriptionData.appointmentdate) > new Date()) {
-      throw new OrderError("Data da consulta não pode ser futura");
+    if (prescriptionData) {
+      if (new Date(prescriptionData.appointmentDate) > new Date()) {
+        throw new OrderError("Data da consulta não pode ser futura");
+      }
     }
   }
 
@@ -79,9 +83,9 @@ export class OrderService {
     await this.validateOrder(orderData);
 
     // Reduzir estoque dos produtos
-    for (const productId of orderData.products) {
-      await this.productModel.updateStock(productId, -1);
-    }
+    // for (const productId of orderData.products) {
+    //   await this.productModel.updateStock(productId, -1);
+    // }
 
     return this.orderModel.create(orderData);
   }
@@ -177,9 +181,9 @@ export class OrderService {
     }
 
     // Restaurar estoque dos produtos
-    for (const productId of order.products) {
-      await this.productModel.updateStock(productId, 1);
-    }
+    // for (const productId of order.products) {
+    //   await this.productModel.updateStock(productId, 1);
+    // }
 
     await this.orderModel.delete(id);
     return order;

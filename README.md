@@ -370,6 +370,40 @@ oticas-queiroz-monorepo/
 }
 ```
 
+## 📊 Relatórios
+
+### Rotas
+
+- POST `/api/reports`: Criar novo relatório
+- GET `/api/reports`: Listar relatórios do usuário
+- GET `/api/reports/:id`: Buscar relatório específico
+
+### Schema
+
+```typescript
+{
+  _id?: string;
+  name: string;
+  type: "sales" | "inventory" | "customers" | "orders" | "financial";
+  filters: {
+    startDate?: Date;
+    endDate?: Date;
+    status?: string[];
+    paymentMethod?: string[];
+    productCategory?: string[];
+    minValue?: number;
+    maxValue?: number;
+  };
+  data: any;
+  createdBy: string;
+  format: "json" | "pdf" | "excel";
+  status: "pending" | "processing" | "completed" | "error";
+  errorMessage?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+```
+
 ## 🛠️ Setup
 
 ### Pré-requisitos

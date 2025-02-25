@@ -18,7 +18,7 @@ const prescriptionDataSchema = z.object({
   clinicName: z
     .string()
     .min(2, "Nome da clínica deve ter no mínimo 2 caracteres"),
-  appointmentdate: z.coerce.date(),
+  appointmentDate: z.coerce.date(),
   leftEye: z.object({
     near: eyeDataSchema,
     far: eyeDataSchema,
@@ -32,17 +32,17 @@ const prescriptionDataSchema = z.object({
 const createOrderSchema = z.object({
   clientId: z.string().min(1, "ID do cliente é obrigatório"),
   employeeId: z.string().min(1, "ID do funcionário é obrigatório"),
-  products: z.array(z.string()).min(1, "Pelo menos um produto é obrigatório"),
-  description: z.string().optional(),
+  product: z.string().min(1, "Produto é obrigatório"), // futura implementação -> z.array(z.string()).min(1, "Pelo menos um produto é obrigatório"),
   paymentMethod: z.string().min(1, "Método de pagamento é obrigatório"),
   paymentEntry: z.number().min(0).optional(),
   installments: z.number().min(1).optional(),
   deliveryDate: z.coerce.date(),
   status: z.enum(["pending", "in_production", "ready", "delivered"]),
   laboratoryId: z.string().optional(),
-  lensType: z.string().min(1, "Tipo de lente é obrigatório"),
   prescriptionData: prescriptionDataSchema,
+  lensType: z.string().min(1, "Tipo de lente é obrigatório"),
   totalPrice: z.number().positive("Preço total deve ser positivo"),
+  observations: z.string().optional(),
 });
 
 const updateOrderSchema = z.object({

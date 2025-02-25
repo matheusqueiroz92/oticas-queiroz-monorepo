@@ -38,12 +38,17 @@ const laboratoryFormSchema = z.object({
     state: z.string().length(2, "Estado deve ter 2 caracteres"),
     zipCode: z.string().min(8, "CEP inválido"),
   }),
-  phone: z.string().min(10, "Telefone inválido"),
+  phone: z.string().regex(/^\d{10,11}$/, "Telefone inválido"),
   email: z.string().email("Email inválido"),
+  // .refine(async (email) => {
+  //   const response = await api.get(`/api/laboratories/check-email?email=${email}`);
+  //   return response.data.available;
+  // }, "Email já cadastrado"),
   contactName: z
     .string()
     .min(3, "Nome do contato deve ter pelo menos 3 caracteres"),
   isActive: z.boolean().default(true),
+  image: z.string().optional(),
 });
 
 type LaboratoryFormData = z.infer<typeof laboratoryFormSchema>;
