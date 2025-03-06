@@ -685,6 +685,7 @@ npm test
   - [ ] Relatórios
 
 - [ ] Melhorias técnicas
+
   - [ ] Implementação de Cache
     - [ ] Configuração do Redis
     - [ ] Cache de produtos
@@ -701,6 +702,13 @@ npm test
   - [ ] Monitoramento
   - [ ] Logs
   - [ ] Cache
+
+  - [ ] Relatórios interativos
+  - [ ] Integração com impressoras para receitas
+  - [ ] Dashboard com métricas em tempo real
+  - [ ] Sistema de notificações
+  - [ ] Modo offline para operação sem internet
+  - [ ] Testes de integração da interface
 
 ## 📝 Licença
 
