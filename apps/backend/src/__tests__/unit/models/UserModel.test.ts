@@ -1,23 +1,20 @@
 import { UserModel } from "../../../models/UserModel";
 import { User } from "../../../schemas/UserSchema";
-// import mongoose from "mongoose";
 import { config } from "dotenv";
-// import type { IUser } from "../../../interfaces/IUser";
 import bcrypt from "bcrypt";
-import {
-  describe,
-  it,
-  expect,
-  beforeEach,
-  // beforeAll,
-  // afterEach,
-  // afterAll,
-} from "@jest/globals";
+import { describe, it, expect, beforeEach } from "@jest/globals";
 
 config();
 
 describe("UserModel", () => {
   let userModel: UserModel;
+
+  // CPFs válidos para testes
+  const validCPFs = {
+    user: "52998224725",
+    updatedUser: "87748248800",
+    anotherUser: "71428793860",
+  };
 
   beforeEach(async () => {
     await User.deleteMany({});
@@ -30,6 +27,9 @@ describe("UserModel", () => {
     email: "test@example.com",
     password: mockPassword,
     role: "customer" as const,
+    cpf: validCPFs.user,
+    rg: "987654321",
+    birthDate: new Date("1990-01-01"),
   };
 
   describe("checkPassword", () => {
@@ -56,6 +56,9 @@ describe("UserModel", () => {
       expect(user).toHaveProperty("_id");
       expect(user.name).toBe(mockUser.name);
       expect(user.email).toBe(mockUser.email);
+      expect(user.cpf).toBe(mockUser.cpf);
+      expect(user.rg).toBe(mockUser.rg);
+      expect(new Date(user.birthDate as Date)).toEqual(mockUser.birthDate);
       expect(user).not.toHaveProperty("password");
     });
   });
@@ -80,6 +83,34 @@ describe("UserModel", () => {
     it("should return null if user not found", async () => {
       const user = await userModel.findByEmail("nonexistent@example.com");
       expect(user).toBeNull();
+    });
+  });
+
+  describe("findByCpf", () => {
+    it("should find a user by CPF", async () => {
+      const createdUser = await userModel.create(mockUser);
+      const user = await userModel.findByCpf(mockUser.cpf);
+
+      expect(user).toBeTruthy();
+      expect(user?.cpf).toBe(mockUser.cpf);
+    });
+
+    it("should return null if CPF not found", async () => {
+      const user = await userModel.findByCpf("99999999999");
+      expect(user).toBeNull();
+    });
+
+    it("should find CPF with formatting", async () => {
+      await userModel.create(mockUser);
+      // Format CPF with dots and dash
+      const formattedCpf = validCPFs.user.replace(
+        /(\d{3})(\d{3})(\d{3})(\d{2})/,
+        "$1.$2.$3-$4"
+      );
+      const user = await userModel.findByCpf(formattedCpf);
+
+      expect(user).toBeTruthy();
+      expect(user?.cpf).toBe(mockUser.cpf);
     });
   });
 
@@ -110,6 +141,27 @@ describe("UserModel", () => {
       });
 
       expect(updatedUser?.name).toBe("Updated Name");
+    });
+
+    it("should update CPF, RG and birthDate", async () => {
+      const createdUser = await userModel.create(mockUser);
+      if (!createdUser._id) {
+        throw new Error("Created user has no ID");
+      }
+
+      const updatedData = {
+        cpf: validCPFs.updatedUser,
+        rg: "123456789",
+        birthDate: new Date("1995-05-15"),
+      };
+
+      const updatedUser = await userModel.update(createdUser._id, updatedData);
+
+      expect(updatedUser?.cpf).toBe(updatedData.cpf);
+      expect(updatedUser?.rg).toBe(updatedData.rg);
+      expect(new Date(updatedUser?.birthDate as Date)).toEqual(
+        updatedData.birthDate
+      );
     });
 
     it("should hash password when updating password", async () => {

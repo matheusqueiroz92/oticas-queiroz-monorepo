@@ -9,6 +9,12 @@ const orderSchema = new Schema(
       required: true,
     },
     product: { type: String, required: true }, // futura implementação -> [{ type: Schema.Types.ObjectId, ref: "Product", required: true }],
+    glassesType: {
+      type: String,
+      enum: ["prescription", "sunglasses"],
+      default: "prescription",
+      required: true,
+    },
     paymentMethod: { type: String, required: true },
     paymentEntry: Number,
     installments: Number,

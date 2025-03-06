@@ -23,8 +23,11 @@ const userController = new UserController();
  *       403:
  *         description: Acesso proibido
  */
-router.get("/users", authenticate, authorize(["admin"]), (req, res) =>
-  userController.getAllUsers(req, res)
+router.get(
+  "/users",
+  authenticate,
+  authorize(["admin", "employee"]),
+  (req, res) => userController.getAllUsers(req, res)
 );
 
 /**

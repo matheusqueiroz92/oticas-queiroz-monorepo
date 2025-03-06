@@ -9,12 +9,18 @@ export const createTestUser = async (
   const password = "123456";
   const hashedPassword = await bcrypt.hash(password, 10);
   const email = `${role}${Date.now()}@test.com`;
+  const cpf = "12345678901";
+  const rg = "987654321";
+  const birthDate = new Date("1990-01-01");
 
   const user = await User.create({
     name: `Test ${role}`,
     email,
     password: hashedPassword,
     role,
+    cpf,
+    rg,
+    birthDate,
   });
 
   const token = generateToken(user._id.toString(), role);

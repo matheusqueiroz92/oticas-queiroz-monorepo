@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { api } from "../../../services/auth";
+import { UserDetailsCard } from "../../../../components/UserDetails";
 import type { Employee } from "../../../types/employee";
 
 export default function EmployeeDetailsPage() {
@@ -27,21 +27,24 @@ export default function EmployeeDetailsPage() {
     return <div>Carregando...</div>;
   }
 
+  // Defina os campos específicos para funcionários
+  const employeeFields = [
+    { key: "email", label: "Email" },
+    { key: "phone", label: "Telefone" },
+    { key: "address", label: "Endereço" },
+    { key: "role", label: "Função" },
+    {
+      key: "sales",
+      label: "Vendas Realizadas",
+      render: (employee: Employee) => employee.sales?.length || 0,
+    },
+  ];
+
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Detalhes do Funcionário</h1>
-      <Card>
-        <CardHeader>
-          <CardTitle>{employee.name}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p>Email: {employee.email}</p>
-          <p>Telefone: {employee.phone}</p>
-          <p>Endereço: {employee.address}</p>
-          <p>Função: {employee.role}</p>
-          <p>Vendas Realizadas: {employee.sales?.length || 0}</p>
-        </CardContent>
-      </Card>
-    </div>
+    <UserDetailsCard
+      user={employee}
+      title="Detalhes do Funcionário"
+      fields={employeeFields}
+    />
   );
 }

@@ -6,7 +6,10 @@ interface OrderDocument extends Document {
   _id: Types.ObjectId;
   clientId: Types.ObjectId;
   employeeId: Types.ObjectId;
+  productType: "glasses" | "lensCleaner";
   product: string;
+  glassesType: "prescription" | "sunglasses";
+  glassesFrame: "with" | "no";
   paymentMethod: string;
   paymentEntry?: number;
   installments?: number;
@@ -172,15 +175,22 @@ export class OrderModel {
     return this.update(id, { status }, populate);
   }
 
+  async updateLaboratory(
+    id: string,
+    laboratoryId: IOrder["laboratoryId"],
+    populate = false
+  ): Promise<IOrder | null> {
+    return this.update(id, { laboratoryId }, populate);
+  }
+
   private convertToIOrder(doc: OrderDocument): IOrder {
     const order = doc.toObject();
     return {
       ...order,
       _id: doc._id.toString(),
-      clientId: doc.clientId.toString(),
-      employeeId: doc.employeeId.toString(),
-      // products: doc.products.map((id) => id.toString()),
-      laboratoryId: doc.laboratoryId?.toString(),
+      clientId: doc.clientId ? doc.clientId.toString() : null,
+      employeeId: doc.employeeId ? doc.employeeId.toString() : null,
+      laboratoryId: doc.laboratoryId ? doc.laboratoryId.toString() : undefined,
     };
   }
 }

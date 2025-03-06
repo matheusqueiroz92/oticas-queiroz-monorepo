@@ -1,33 +1,50 @@
-import { useCallback } from "react";
-import { useAuth } from "../hooks/useAuth";
-import type { UserRole } from "../app/types/user";
+"use client";
+
+import { useAuth } from "./useAuth";
 
 export function usePermissions() {
-  const { user, hasPermission } = useAuth();
+  const { user } = useAuth();
 
-  const can = useCallback(
-    (roles: UserRole[]) => {
-      return hasPermission(roles);
-    },
-    [hasPermission]
-  );
+  const isAdmin = user?.role === "admin";
+  const isEmployee = user?.role === "employee";
+  const isCustomer = user?.role === "customer";
 
-  const isAdmin = useCallback(() => {
-    return user?.role === "admin";
-  }, [user]);
+  // Verifica se o usuário tem uma das funções especificadas
+  const hasRole = (roles: string[]) => {
+    if (!user) return false;
+    return roles.includes(user.role);
+  };
 
-  const isEmployee = useCallback(() => {
-    return user?.role === "employee";
-  }, [user]);
+  // Verifica permissões específicas para certas funcionalidades
+  const canViewEmployees = isAdmin;
+  const canViewReports = isAdmin;
+  const canManageLaboratories = isAdmin; // Apenas admin pode gerenciar (adicionar/editar/excluir)
+  const canViewLaboratories = isAdmin || isEmployee; // Admin e employee podem visualizar
 
-  const isCustomer = useCallback(() => {
-    return user?.role === "customer";
-  }, [user]);
+  // Permissões de cliente
+  const canViewDebts = isCustomer;
+
+  // Permissões gerais
+  const canViewAllOrders = isAdmin || isEmployee;
+  const canViewOwnOrders = isCustomer;
+
+  // Permissões de produtos
+  const canManageProducts = isAdmin;
+  const canViewProducts = isAdmin || isEmployee;
 
   return {
-    can,
     isAdmin,
     isEmployee,
     isCustomer,
+    hasRole,
+    canViewEmployees,
+    canViewReports,
+    canManageLaboratories,
+    canViewLaboratories,
+    canViewDebts,
+    canViewAllOrders,
+    canViewOwnOrders,
+    canManageProducts,
+    canViewProducts,
   };
 }

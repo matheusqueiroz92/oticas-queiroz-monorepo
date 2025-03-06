@@ -32,26 +32,30 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { api, getLoggedUser } from "../../../services/auth";
+import { api } from "../../../services/auth";
 import type { Customer } from "../../../types/customer";
+import Cookies from "js-cookie";
 
 // Componentes
 import ClientSearch from "../../../../components/forms/OrderForm/ClientSearch";
 import PrescriptionForm from "../../../../components/forms/OrderForm/PrescriptionForm";
-import OrderPdfGenerator from "../../../../components/OrderPdfGenerator";
+import OrderPdfGenerator from "../../../../components/exports/OrderPdfGenerator";
 
 // Schema atualizado de acordo com o backend
 const orderFormSchema = z.object({
   clientId: z.string().min(1, "Cliente é obrigatório"),
-  customClientName: z.string().optional(),
+  // customClientName: z.string().optional(),
   employeeId: z.string().min(1, "ID do funcionário é obrigatório"),
+  productType: z.enum(["glasses", "lensCleaner"]),
   product: z.string().min(1, "Descrição do produto é obrigatória"),
   glassesType: z.enum(["prescription", "sunglasses"]),
+  glassesFrame: z.enum(["with", "no"]),
   paymentMethod: z.string().min(1, "Forma de pagamento é obrigatória"),
   paymentEntry: z.number().min(0).optional(),
   installments: z.number().min(1).optional(),
   deliveryDate: z.string().optional(),
   status: z.string().min(1, "Status é obrigatório"),
+  laboratoryId: z.string().optional(),
   lensType: z.string().optional(),
   observations: z.string().optional(),
   totalPrice: z.number().min(0, "O preço total deve ser maior ou igual a zero"),
@@ -120,17 +124,19 @@ export default function NewOrderPage() {
   const form = useForm<OrderFormData>({
     resolver: zodResolver(orderFormSchema),
     defaultValues: {
-      clientId: "",
-      customClientName: "",
       employeeId: "",
+      clientId: "",
+      // customClientName: "",
+      productType: "glasses",
       product: "",
-      glassesType: "sunglasses",
+      glassesType: "prescription",
+      glassesFrame: "with",
       paymentMethod: "",
       paymentEntry: 0,
       installments: undefined,
-      // Data padrão para hoje
       deliveryDate: getTomorrowDate(), // Formato YYYY-MM-DD
       status: "pending",
+      laboratoryId: "",
       lensType: "",
       observations: "",
       totalPrice: 0,
@@ -192,10 +198,22 @@ export default function NewOrderPage() {
     return () => subscription.unsubscribe();
   }, [form.watch]);
 
-  // Carregar dados do funcionário logado
+  // Carregar dados do funcionário logado dos cookies
   useEffect(() => {
-    const userData = getLoggedUser();
-    if (userData) {
+    // Usar cookies em vez da função getLoggedUser
+    const userId = Cookies.get("userId");
+    const name = Cookies.get("name");
+    const email = Cookies.get("email");
+    const role = Cookies.get("role");
+
+    if (userId && name && role) {
+      const userData = {
+        id: userId,
+        name,
+        email: email || "",
+        role,
+      };
+
       setLoggedEmployee(userData);
       form.setValue("employeeId", userData.id);
     }
@@ -223,13 +241,15 @@ export default function NewOrderPage() {
 
   const handleClientSelect = (clientId: string, name: string) => {
     form.setValue("clientId", clientId);
-    if (clientId === "custom") {
-      form.setValue("customClientName", name);
-      setSelectedCustomer(null);
-    } else {
-      const customer = customers.find((c) => c._id === clientId);
-      setSelectedCustomer(customer || null);
-    }
+    const customer = customers.find((c) => c._id === clientId);
+    setSelectedCustomer(customer || null);
+    // if (clientId === "custom") {
+    //   form.setValue("customClientName", name);
+    //   setSelectedCustomer(null);
+    // } else {
+    //   const customer = customers.find((c) => c._id === clientId);
+    //   setSelectedCustomer(customer || null);
+    // }
   };
 
   // Função para calcular valor das parcelas
@@ -252,48 +272,84 @@ export default function NewOrderPage() {
   // Mutação para criar um novo pedido
   const createOrder = useMutation({
     mutationFn: async (data: OrderFormData) => {
-      // Valores padrão para campos obrigatórios
-      const defaultDoctorName = "Não aplicável";
-      const defaultClinicName = "Não aplicável";
+      try {
+        // Valores padrão para campos obrigatórios
+        const defaultDoctorName = "Não aplicável";
+        const defaultClinicName = "Não aplicável";
 
-      // Preparar dados para o backend
-      const orderData = {
-        ...data,
-        clientId: data.clientId === "custom" ? undefined : data.clientId,
-        customClientName:
-          data.clientId === "custom" ? data.customClientName : undefined,
-        // Garantir que os campos obrigatórios sejam sempre enviados com valores válidos
-        deliveryDate: data.deliveryDate || getTomorrowDate(),
-        prescriptionData: {
-          doctorName:
+        // Preparar dados para o backend
+        const orderData = {
+          ...data,
+          clientId: data.clientId === "custom" ? undefined : data.clientId,
+          // customClientName:
+          //   data.clientId === "custom" ? data.customClientName : undefined,
+          // Garantir que os campos obrigatórios sejam sempre enviados com valores válidos
+          deliveryDate: data.deliveryDate || getTomorrowDate(),
+          prescriptionData:
             data.glassesType === "prescription"
-              ? data.prescriptionData?.doctorName
-              : defaultDoctorName,
-          clinicName:
+              ? {
+                  // Usar os dados da receita do formulário quando for óculos de grau
+                  doctorName:
+                    data.prescriptionData?.doctorName || defaultDoctorName,
+                  clinicName:
+                    data.prescriptionData?.clinicName || defaultClinicName,
+                  appointmentDate:
+                    data.prescriptionData?.appointmentDate ||
+                    new Date().toISOString().split("T")[0],
+                  // IMPORTANTE: usar os dados de prescrição reais do formulário
+                  leftEye: data.prescriptionData?.leftEye || {
+                    near: { sph: 0, cyl: 0, axis: 0, pd: 0 },
+                    far: { sph: 0, cyl: 0, axis: 0, pd: 0 },
+                  },
+                  rightEye: data.prescriptionData?.rightEye || {
+                    near: { sph: 0, cyl: 0, axis: 0, pd: 0 },
+                    far: { sph: 0, cyl: 0, axis: 0, pd: 0 },
+                  },
+                }
+              : {
+                  // Valores padrão para óculos solar
+                  doctorName: defaultDoctorName,
+                  clinicName: defaultClinicName,
+                  appointmentDate: new Date().toISOString().split("T")[0],
+                  leftEye: {
+                    near: { sph: 0, cyl: 0, axis: 0, pd: 0 },
+                    far: { sph: 0, cyl: 0, axis: 0, pd: 0 },
+                  },
+                  rightEye: {
+                    near: { sph: 0, cyl: 0, axis: 0, pd: 0 },
+                    far: { sph: 0, cyl: 0, axis: 0, pd: 0 },
+                  },
+                },
+          // Enviar campos opcionais normalmente
+          lensType:
             data.glassesType === "prescription"
-              ? data.prescriptionData?.clinicName
-              : defaultClinicName,
-          appointmentDate:
-            data.glassesType === "prescription"
-              ? data.prescriptionData?.appointmentDate
-              : new Date().toISOString().split("T")[0],
-          leftEye: {
-            near: { sph: 0, cyl: 0, axis: 0, pd: 0 },
-            far: { sph: 0, cyl: 0, axis: 0, pd: 0 },
-          },
-          rightEye: {
-            near: { sph: 0, cyl: 0, axis: 0, pd: 0 },
-            far: { sph: 0, cyl: 0, axis: 0, pd: 0 },
-          },
-        },
-        // Enviar campos opcionais normalmente
-        lensType:
-          data.glassesType === "prescription" ? data.lensType : "Não aplicável",
-      };
+              ? data.lensType
+              : "Não aplicável",
+        };
 
-      console.log("Dados enviados para API:", orderData);
+        console.log("Dados enviados para API:", orderData);
+        console.log("Dados da receita:", orderData.prescriptionData);
 
-      return api.post("/api/orders", orderData);
+        return api.post("/api/orders", orderData);
+      } catch (error: unknown) {
+        // Correção do erro de linting usando 'unknown' em vez de 'any'
+        let errorMessage = "Erro ao criar pedido. Tente novamente.";
+
+        // Tratamento seguro do tipo desconhecido
+        if (error && typeof error === "object" && "response" in error) {
+          const axiosError = error as {
+            response?: { data?: { message?: string } };
+          };
+          if (axiosError.response?.data?.message) {
+            errorMessage = axiosError.response.data.message;
+          }
+        } else if (error instanceof Error) {
+          errorMessage = error.message;
+        }
+
+        // Lançar um erro personalizado
+        throw new Error(errorMessage);
+      }
     },
     onSuccess: () => {
       toast({
@@ -304,12 +360,13 @@ export default function NewOrderPage() {
       // Mostrar opção de download do PDF
       setShowPdfDownload(true);
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       console.error("Erro ao criar pedido:", error);
+
       toast({
         variant: "destructive",
         title: "Erro",
-        description: "Erro ao criar pedido. Tente novamente.",
+        description: error.message,
       });
     },
   });
@@ -348,6 +405,37 @@ export default function NewOrderPage() {
                   customers={customers}
                   form={form}
                   onClientSelect={handleClientSelect}
+                />
+
+                {/* Tipo de produto */}
+                <FormField
+                  control={form.control}
+                  name="productType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo de produto</FormLabel>
+                      <Select
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          setShowPrescription(value === "glasses");
+                        }}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione o tipo de produto" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="glasses">Óculos</SelectItem>
+                          <SelectItem value="lensCleaner">
+                            Limpa Lentes
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
 
                 {/* Tipo de Óculos */}
@@ -393,6 +481,35 @@ export default function NewOrderPage() {
                       <FormControl>
                         <Input placeholder="Descreva o produto" {...field} />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Armação de Óculos */}
+                <FormField
+                  control={form.control}
+                  name="glassesFrame"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Armação</FormLabel>
+                      <Select
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          setShowPrescription(value === "with");
+                        }}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Armação de óculos" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="with">Com</SelectItem>
+                          <SelectItem value="no">Sem</SelectItem>
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -518,36 +635,6 @@ export default function NewOrderPage() {
                     </p>
                   </div>
                 )}
-
-                {/* Status do Pedido */}
-                <FormField
-                  control={form.control}
-                  name="status"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Status</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value || ""}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione o status" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="pending">Pendente</SelectItem>
-                          <SelectItem value="in_production">
-                            Em Produção
-                          </SelectItem>
-                          <SelectItem value="ready">Pronto</SelectItem>
-                          <SelectItem value="delivered">Entregue</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
 
                 {/* Campos condicionais para óculos de grau */}
                 {showPrescription && (

@@ -1,4 +1,3 @@
-import { DashboardLayout } from "@/components/layouts/DashboardLayout";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -6,10 +5,10 @@ export const metadata: Metadata = {
   description: "Painel de controle do sistema das Óticas Queiroz",
 };
 
-export default function DashboardRootLayout({
+export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <DashboardLayout>{children}</DashboardLayout>;
+  return children;
 }

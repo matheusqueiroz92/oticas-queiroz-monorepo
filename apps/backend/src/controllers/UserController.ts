@@ -3,7 +3,8 @@ import { UserService, UserError } from "../services/UserService";
 import type { JwtPayload } from "jsonwebtoken";
 import { z } from "zod";
 import { MulterError } from "multer";
-import { AuthError } from "../services/AuthService";
+import { isValidCPF } from "../utils/validators";
+import type { IUser } from "../interfaces/IUser";
 
 interface AuthRequest extends Request {
   user?: JwtPayload;
@@ -17,16 +18,37 @@ const userUpdateSchema = z.object({
   role: z.enum(["admin", "employee", "customer"]).optional(),
   address: z.string().optional(),
   phone: z.string().optional(),
-  prescription: z
-    .object({
-      leftEye: z.number(),
-      rightEye: z.number(),
-      addition: z.number().optional(),
+  image: z.string().optional(),
+  cpf: z
+    .string()
+    .min(11, "CPF deve ter pelo menos 11 dígitos")
+    .refine((cpf) => isValidCPF(cpf), { message: "CPF inválido" })
+    .optional(),
+  rg: z
+    .string()
+    .min(6, "RG deve ter pelo menos 6 dígitos")
+    .refine((rg) => /^\d{6,14}$/.test(rg.replace(/[^\d]/g, "")), {
+      message: "RG inválido",
     })
+    .optional(),
+  birthDate: z
+    .string()
+    .refine(
+      (date) => {
+        const parsedDate = new Date(date);
+        return (
+          parsedDate instanceof Date &&
+          !Number.isNaN(parsedDate.getTime()) &&
+          parsedDate <= new Date()
+        );
+      },
+      { message: "Data de nascimento inválida ou no futuro" }
+    )
+    .transform((date) => new Date(date))
     .optional(),
   purchases: z.array(z.string()).optional(),
   debts: z.number().optional(),
-  image: z.string().optional(),
+  sales: z.array(z.string()).optional(),
 });
 
 export class UserController {
@@ -36,9 +58,33 @@ export class UserController {
     this.userService = new UserService();
   }
 
-  async getAllUsers(_req: Request, res: Response): Promise<void> {
+  async getAllUsers(req: Request, res: Response): Promise<void> {
     try {
-      const users = await this.userService.getAllUsers();
+      // Extrair parâmetros da query
+      const { role, search, cpf } = req.query;
+
+      // Obter usuários com base nos filtros
+      let users: IUser[];
+
+      if (search) {
+        // Busca por termo geral (nome, email, etc.)
+        users = await this.userService.searchUsers(search as string);
+      } else if (cpf) {
+        // Busca específica por CPF
+        try {
+          const user = await this.userService.getUserByCpf(cpf as string);
+          users = user ? [user] : [];
+        } catch (error) {
+          users = [];
+        }
+      } else if (role) {
+        // Filtrar por role
+        users = await this.userService.getUsersByRole(role as string);
+      } else {
+        // Sem filtros, retornar todos os usuários
+        users = await this.userService.getAllUsers();
+      }
+
       res.status(200).json(users);
     } catch (error) {
       if (error instanceof UserError) {
@@ -62,11 +108,30 @@ export class UserController {
     }
   }
 
+  async getUserByCpf(req: Request, res: Response): Promise<void> {
+    try {
+      const { cpf } = req.params;
+
+      if (!cpf) {
+        res.status(400).json({ message: "CPF é obrigatório" });
+        return;
+      }
+
+      const user = await this.userService.getUserByCpf(cpf);
+      res.status(200).json(user);
+    } catch (error) {
+      if (error instanceof UserError) {
+        res.status(404).json({ message: error.message });
+        return;
+      }
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  }
+
   async updateUser(req: AuthRequest, res: Response): Promise<void> {
     try {
       let userData = userUpdateSchema.parse(req.body);
 
-      // Adicionar imagem se existir
       if (req.file) {
         userData = {
           ...userData,
@@ -74,15 +139,13 @@ export class UserController {
         };
       }
 
-      // Se for employee tentando mudar role
       if (req.user?.role === "employee" && userData.role) {
         res
           .status(403)
-          .json({ message: "Funcionários não podem alterar roles" });
+          .json({ message: "Funcionários não podem alterar 'roles'" });
         return;
       }
 
-      // Se for employee tentando atualizar não-customer
       const targetUser = await this.userService.getUserById(req.params.id);
       if (req.user?.role === "employee" && targetUser.role !== "customer") {
         res.status(403).json({
@@ -150,10 +213,8 @@ export class UserController {
         return;
       }
 
-      // Buscar usuário pelo ID
       const user = await this.userService.getUserById(req.user.id);
 
-      // Remover dados sensíveis
       const { password, ...userWithoutPassword } = user;
       res.status(200).json(userWithoutPassword);
     } catch (error) {

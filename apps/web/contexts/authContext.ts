@@ -2,18 +2,19 @@
 
 import { createContext } from "react";
 
-interface User {
-  id: string;
+export interface User {
+  _id: string;
   name: string;
+  cpf: string;
   email: string;
   role: string;
 }
 
-interface AuthContextData {
+export interface AuthContextData {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (login: string, password: string) => Promise<void>;
   signOut: () => void;
   hasPermission: (requiredRoles: string[]) => boolean;
 }

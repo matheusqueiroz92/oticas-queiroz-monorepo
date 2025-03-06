@@ -157,6 +157,34 @@ export class OrderService {
     return updatedOrder;
   }
 
+  async updateOrderLaboratory(
+    id: string,
+    laboratoryId: IOrder["laboratoryId"],
+    userId: string,
+    userRole: string
+  ): Promise<IOrder> {
+    const order = await this.orderModel.findById(id);
+    if (!order) {
+      throw new OrderError("Pedido não encontrado");
+    }
+
+    // Verificar permissões
+    if (userRole === "customer" && userId !== order.clientId) {
+      throw new OrderError("Sem permissão para atualizar este pedido");
+    }
+
+    const updatedOrder = await this.orderModel.updateLaboratory(
+      id,
+      laboratoryId,
+      true
+    );
+    if (!updatedOrder) {
+      throw new OrderError("Erro ao atualizar o laboratório do pedido");
+    }
+
+    return updatedOrder;
+  }
+
   async cancelOrder(
     id: string,
     userId: string,

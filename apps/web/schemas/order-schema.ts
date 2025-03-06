@@ -4,15 +4,8 @@ export const orderFormSchema = z.object({
   clientId: z.string().min(1, "Cliente é obrigatório"),
   customClientName: z.string().optional(),
   employeeId: z.string().min(1, "ID do funcionário é obrigatório"),
-  products: z
-    .array(
-      z.object({
-        _id: z.string().optional(),
-        name: z.string().min(1, "Nome do produto é obrigatório"),
-        price: z.number().min(0, "Preço deve ser maior que zero"),
-      })
-    )
-    .min(1, "Selecione pelo menos um produto"),
+  product: z.string().min(1, "O produto é obrigatório"),
+  glassesType: z.string().min(1, "Tipo de óculos é obrigatório"),
   paymentMethod: z.string().min(1, "Forma de pagamento é obrigatória"),
   installments: z.number().optional(),
   paymentEntry: z.number().optional(),
@@ -51,7 +44,7 @@ export const orderFormSchema = z.object({
       }),
     }),
   }),
-  totalPrice: z.number().min(0, "O preço total deve ser maior que zero"),
   lensType: z.string().min(1, "O nome da lente é obrigatório"),
   observations: z.string().optional(),
+  totalPrice: z.number().min(0, "O preço total deve ser maior que zero"),
 });

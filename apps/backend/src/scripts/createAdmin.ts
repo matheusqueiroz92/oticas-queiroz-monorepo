@@ -10,10 +10,16 @@ export const createAdminUser = async () => {
     const userModel = new UserModel();
 
     const adminData = {
-      name: "Admin",
-      email: "admin@oticasqueiroz.com.br",
+      name: "Matheus Queiroz",
+      email: "matheus@oticasqueiroz.com.br",
       password: "admin123",
+      address: "Rua Ana Nery, nº 121, Alto Maron. Vitória da Conquista-BA",
+      phone: "(77)98833-4370",
+      image: "/images/users/matheus.png",
       role: "admin" as const,
+      cpf: "85804688502",
+      rg: "1299106781",
+      birthDate: new Date("1992-05-13"),
     };
 
     // Verifica se já existe um admin

@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { api } from "../../../services/auth";
+import { UserDetailsCard } from "../../../../components/UserDetails";
 import type { Customer } from "../../../types/customer";
 
 export default function CustomerDetailsPage() {
@@ -27,21 +27,29 @@ export default function CustomerDetailsPage() {
     return <div>Carregando...</div>;
   }
 
+  // Defina os campos específicos para clientes
+  const customerFields = [
+    { key: "email", label: "Email" },
+    { key: "phone", label: "Telefone" },
+    { key: "address", label: "Endereço" },
+    {
+      key: "debts",
+      label: "Débitos",
+      render: (customer: Customer) =>
+        `R$ ${customer.debts?.toFixed(2) || "0.00"}`,
+    },
+    {
+      key: "purchases",
+      label: "Compras",
+      render: (customer: Customer) => customer.purchases?.length || 0,
+    },
+  ];
+
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Detalhes do Cliente</h1>
-      <Card>
-        <CardHeader>
-          <CardTitle>{customer.name}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p>Email: {customer.email}</p>
-          <p>Telefone: {customer.phone}</p>
-          <p>Endereço: {customer.address}</p>
-          <p>Débitos: R$ {customer.debts}</p>
-          <p>Compras: {customer.purchases?.length || 0}</p>
-        </CardContent>
-      </Card>
-    </div>
+    <UserDetailsCard
+      user={customer}
+      title="Detalhes do Cliente"
+      fields={customerFields}
+    />
   );
 }

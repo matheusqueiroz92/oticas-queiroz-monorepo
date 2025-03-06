@@ -8,6 +8,12 @@ interface UserDocument extends Omit<Document, "_id"> {
   email: string;
   password: string;
   role: "admin" | "employee" | "customer";
+  cpf: string;
+  rg: string;
+  birthDate?: Date;
+  image?: string;
+  address?: string;
+  phone?: string;
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
@@ -15,6 +21,14 @@ export class AuthModel {
   async findUserByEmail(email: string): Promise<UserDocument | null> {
     return (await User.findOne({
       email: { $regex: new RegExp(`^${email}$`, "i") },
+    })) as unknown as UserDocument | null;
+  }
+
+  async findUserByCpf(cpf: string): Promise<UserDocument | null> {
+    const sanitizedCpf = cpf.replace(/[^\d]/g, "");
+
+    return (await User.findOne({
+      cpf: sanitizedCpf,
     })) as unknown as UserDocument | null;
   }
 
@@ -36,6 +50,9 @@ export class AuthModel {
       _id: doc._id.toString(),
       comparePassword: doc.comparePassword.bind(doc),
       image: user.image, // Garantir que a imagem seja incluída
+      cpf: user.cpf,
+      rg: user.rg,
+      birthDate: user.birthDate,
     };
   }
 }

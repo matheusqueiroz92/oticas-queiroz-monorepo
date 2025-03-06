@@ -4,16 +4,15 @@ export interface IUser {
   email: string;
   password: string;
   role: "admin" | "employee" | "customer";
-  image?: string; // Novo campo para imagem
+  image?: string;
   address?: string;
   phone?: string;
-  prescription?: {
-    leftEye: number;
-    rightEye: number;
-    addition?: number;
-  };
+  cpf: string;
+  rg: string;
+  birthDate?: Date;
   purchases?: string[];
   debts?: number;
+  sales?: string[];
   createdAt?: Date;
   updatedAt?: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;

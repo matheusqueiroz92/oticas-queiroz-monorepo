@@ -28,6 +28,12 @@ Este repositório contém um sistema de gerenciamento para ótica que integra co
 - Shadcn UI
 - TypeScript
 - Zod
+- React Query
+- React Hook Form
+- Axios
+- Cookies-js
+- Lucide React
+- React-PDF
 
 ### Mobile
 
@@ -49,7 +55,7 @@ Este repositório contém um sistema de gerenciamento para ótica que integra co
 ```bash
 oticas-queiroz-monorepo/
 ├── apps/
-│   ├── backend/      # API Node.js
+│   ├── backend/  # API Node.js
 │     ├── src/
 │       ├── config/       # Configurações de conexão ao banco de dados e documentação da API
 │       ├── controllers/  # Camada de controle HTTP
@@ -61,7 +67,23 @@ oticas-queiroz-monorepo/
 │       ├── __tests__/    # Testes da aplicação
 │       ├── types/        # Tipagens Express
 │       └── utils/        # Arquivos auxiliares
-│   ├── web/          # Next.js
+│   ├── web/      # Next.js
+│     ├── app/        # Rotas e páginas da aplicação
+│       ├── (authenticated)/ # Rotas com páginas protegidas
+│       ├── auth/            # Páginas de autenticação
+│       ├── services/        # Serviços e integrações
+│       └── types/           # Definições de tipos e interfaces
+│     ├── components/  # Componentes reutilizáveis
+│       ├── ui/              # Componentes de UI básicos (Shadcn)
+│       ├── forms/           # Componentes de formulários
+│       ├── tables/          # Componentes de tabelas
+│       └── exports/         # Componentes de exportação (PDF, etc)
+│     ├── hooks/       # Hooks personalizados
+│     ├── lib/         # Utilitários e funções auxiliares
+│     ├── contexts/
+│     ├── providers/
+│     ├── public/
+│     └── schemas/
 │   ├── mobile/       # React Native
 │   └── desktop/      # Electron
 ├── packages/
@@ -93,7 +115,7 @@ oticas-queiroz-monorepo/
   ```typescript
   // Request
   {
-    "login": string,    // email ou username
+    "login": string,    // email ou cpf
     "password": string
   }
 
@@ -104,6 +126,7 @@ oticas-queiroz-monorepo/
       "id": string,
       "name": string,
       "email": string,
+      "cpf": string,
       "role": "admin" | "employee" | "customer"
     }
   }
@@ -128,6 +151,7 @@ oticas-queiroz-monorepo/
   _id?: string;
   name: string;
   email: string;
+  cpf: string;
   password: string;
   image: string;
   role: "admin" | "employee" | "customer";
@@ -138,6 +162,7 @@ oticas-queiroz-monorepo/
     rightEye: number;
     addition?: number;
   };
+  sales?: string[];
   purchases?: string[];
   debts?: number;
   createdAt?: Date;
@@ -162,6 +187,7 @@ oticas-queiroz-monorepo/
 {
   _id: string;
   name: string;
+  productType: string;
   category: string;
   description: string;
   brand: string;
@@ -182,6 +208,7 @@ oticas-queiroz-monorepo/
 - GET `/api/orders`: Listar todos os pedidos
 - GET `/api/orders/:id`: Buscar pedido
 - PUT `/api/orders/:id/status`: Atualizar status do pedido
+- PUT `/api/orders/:id/laboratory`: Atualizar laboratório do pedido
 
 ### Schema
 
@@ -190,16 +217,18 @@ oticas-queiroz-monorepo/
   _id: string;
   clientId: string;
   employeeId: string;
-  products: string[];
-  description?: string;
+  productType: "glasses" | "lensCleaner";
+  products: string;
+  glassType: "prescription" | "sunglasses";
+  glassFrame: "with" | "no";
   paymentMethod: string;
   paymentEntry?: number;
   installments?: number;
-  deliveryDate: Date;
+  deliveryDate?: Date;
   status: "pending" | "in_production" | "ready" | "delivered";
   laboratoryId?: string;
-  lensType: string;
-  prescriptionData: {
+  lensType?: string;
+  prescriptionData?: {
     doctorName: string;
     clinicName: string;
     appointmentdate: Date;
@@ -233,6 +262,7 @@ oticas-queiroz-monorepo/
     };
   };
   totalPrice: number;
+  description?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -292,7 +322,7 @@ oticas-queiroz-monorepo/
   amount: number;
   paymentDate: Date;
   type: "sale" | "debt_payment" | "expense";
-  paymentMethod: "credit" | "debit" | "cash" | "pix";
+  paymentMethod: "credit" | "debit" | "cash" | "pix" | "check";
   installments?: number;
   status: "pending" | "completed" | "cancelled";
   orderId?: string;
@@ -448,6 +478,83 @@ npm run dev
 cd apps/frontend
 npm run dev
 ```
+
+## 📱 Recursos Frontend Implementados
+
+### Autenticação
+
+- Login com diferentes tipos de usuário
+- Proteção de rotas baseado em perfis
+- Gerenciamento de sessão com cookies
+
+### Dashboard
+
+- Visão geral personalizada para cada tipo de usuário
+- Exibição de métricas relevantes por perfil
+- Acesso rápido às principais funcionalidades
+
+### Gestão de Usuários
+
+- Cadastro, edição e visualização de funcionários
+- Cadastro, edição e visualização de clientes
+- Perfil de usuário com informações detalhadas
+
+### Gestão de Produtos
+
+- Cadastro, edição e visualização de produtos
+- Listagem com filtros e paginação
+- Detalhes com características e estoque
+
+### Gestão de Laboratórios
+
+- Cadastro, edição e visualização de laboratórios
+- Ativação/desativação de laboratórios
+- Associação de laboratórios a pedidos
+
+### Gestão de Pedidos
+
+- Fluxo completo de criação de pedidos
+- Associação com laboratórios
+- Atualização de status independente
+- Informações específicas para óculos de grau
+- Suporte a dados de prescrição médica
+
+### Exportação de dados
+
+- Exportação de pedidos em PDF
+- Visualização de detalhes completos
+
+### Estrutura de Componentes
+
+- **Formulários**
+
+  - Validação com Zod
+  - Feedback visual de erros
+  - Campos dinâmicos baseados em contexto
+
+- **Tabelas**
+
+  - Exibição de dados com paginação
+  - Ações contextuais por tipo de registro
+  - Estados vazios informativos
+
+- **Modais e Diálogos**
+
+  - Confirmação de ações importantes
+  - Formulários de edição rápida
+
+- **Tratamento de Erros**
+
+  - Feedback visual para o usuário
+  - Estados vazios para listas sem dados
+  - Manipulação robusta de erros da API
+
+### Padrões de Interface
+
+- Design system consistente com Shadcn UI
+- Responsividade para diferentes tamanhos de tela
+- Feedback visual para operações assíncronas
+- Temas claros e escuros (suporte parcial)
 
 ### Testes Implementados
 
@@ -618,42 +725,3 @@ docker-compose up --build
   O projeto utiliza GitHub Actions para CI/CD. O workflow está configurado em .github/workflows/ci.yml.
 
 ---
-
-Novas Implementações
-
-Sistema de Pagamentos
-
-Gestão de pagamentos para clientes cadastrados e não cadastrados
-Suporte a múltiplas formas de pagamento (crédito, débito, dinheiro, PIX)
-Controle de parcelamento
-Integração com caixa diário
-Histórico de transações
-
-👥 Clientes Legados
-
-Sistema para gerenciar clientes antigos e seus débitos pendentes.
-
-💵 Caixa Diário
-
-Sistema para controle de fluxo de caixa diário.
-
-Testes Implementados
-
-✅ Testes de integração para Pagamentos
-
-Criação de pagamentos
-Atualização de status
-Validações de regras de negócio
-
-✅ Testes de integração para Clientes Legados
-
-Cadastro de clientes
-Atualização de débitos
-Validações de identificador único
-
-✅ Testes de integração para Caixa Diário
-
-Abertura de caixa
-Fechamento de caixa
-Atualização de saldo
-Validações de operações

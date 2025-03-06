@@ -2,7 +2,10 @@ export interface IOrder {
   _id: string;
   clientId: string;
   employeeId: string;
+  productType: "glasses" | "lensCleaner";
   product: string;
+  glassesType: "prescription" | "sunglasses";
+  glassesFrame: "with" | "no";
   paymentMethod: string;
   paymentEntry?: number;
   installments?: number;
@@ -52,7 +55,10 @@ export interface IOrder {
 export interface ICreateOrderDTO {
   clientId: string;
   employeeId: string;
+  productType: "glasses" | "lensCleaner";
   product: string;
+  glassesType: "prescription" | "sunglasses";
+  glassesFrame: "with" | "no";
   paymentMethod: string;
   paymentEntry?: number;
   installments?: number;

@@ -12,13 +12,11 @@ interface UserDocument extends Document {
   image?: string;
   address?: string;
   phone?: string;
-  prescription?: {
-    leftEye: number;
-    rightEye: number;
-    addition?: number;
-  };
+  cpf: number;
+  rg: number;
   purchases?: Types.ObjectId[];
   debts?: number;
+  sales?: Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -86,6 +84,15 @@ export class UserModel {
     return user ? this.convertToIUser(user) : null;
   }
 
+  async findByCpf(cpf: string): Promise<IUser | null> {
+    const sanitizedCpf = cpf.replace(/[^\d]/g, "");
+
+    const user = (await User.findOne({
+      cpf: sanitizedCpf,
+    }).exec()) as UserDocument | null;
+    return user ? this.convertToIUser(user) : null;
+  }
+
   async findById(id: string): Promise<IUser | null> {
     if (!this.isValidId(id)) return null;
     const user = (await User.findById(id).exec()) as UserDocument | null;
@@ -94,6 +101,31 @@ export class UserModel {
 
   async findAll(): Promise<IUser[]> {
     const users = (await User.find().exec()) as unknown as UserDocument[];
+    return users.map((user) => this.convertToIUser(user));
+  }
+
+  async search(searchTerm: string): Promise<IUser[]> {
+    // Criar uma expressão regular para busca case-insensitive
+    const searchRegex = new RegExp(searchTerm, "i");
+
+    // Buscar por vários campos
+    const users = (await User.find({
+      $or: [
+        { name: searchRegex },
+        { email: searchRegex },
+        { cpf: { $regex: searchTerm.replace(/\D/g, "") } }, // Busca por CPF removendo caracteres não numéricos
+        { address: searchRegex },
+        { phone: searchRegex },
+      ],
+    }).exec()) as unknown as UserDocument[];
+
+    return users.map((user) => this.convertToIUser(user));
+  }
+
+  async findByRole(role: string): Promise<IUser[]> {
+    const users = (await User.find({
+      role,
+    }).exec()) as unknown as UserDocument[];
     return users.map((user) => this.convertToIUser(user));
   }
 

@@ -32,7 +32,10 @@ const prescriptionDataSchema = z.object({
 const createOrderSchema = z.object({
   clientId: z.string().min(1, "ID do cliente é obrigatório"),
   employeeId: z.string().min(1, "ID do funcionário é obrigatório"),
+  productType: z.enum(["glasses", "lensCleaner"]),
   product: z.string().min(1, "Produto é obrigatório"), // futura implementação -> z.array(z.string()).min(1, "Pelo menos um produto é obrigatório"),
+  glassesType: z.enum(["prescription", "sunglasses"]),
+  glassesFrame: z.enum(["with", "no"]),
   paymentMethod: z.string().min(1, "Método de pagamento é obrigatório"),
   paymentEntry: z.number().min(0).optional(),
   installments: z.number().min(1).optional(),
@@ -45,8 +48,12 @@ const createOrderSchema = z.object({
   observations: z.string().optional(),
 });
 
-const updateOrderSchema = z.object({
+const updateOrderStatusSchema = z.object({
   status: z.enum(["pending", "in_production", "ready", "delivered"]),
+});
+
+const updateOrderLaboratorySchema = z.object({
+  laboratoryId: z.string().min(1, "ID do laboratório é obrigatório"),
 });
 
 const querySchema = z.object({
@@ -64,7 +71,8 @@ const querySchema = z.object({
 });
 
 type CreateOrderInput = z.infer<typeof createOrderSchema>;
-type UpdateOrderInput = z.infer<typeof updateOrderSchema>;
+type UpdateOrderStatusInput = z.infer<typeof updateOrderStatusSchema>;
+type UpdateOrderLaboratoryInput = z.infer<typeof updateOrderLaboratorySchema>;
 
 export class OrderController {
   private orderService: OrderService;
@@ -151,7 +159,7 @@ export class OrderController {
 
   async updateOrderStatus(req: Request, res: Response): Promise<void> {
     try {
-      const validatedData = updateOrderSchema.parse(req.body);
+      const validatedData = updateOrderStatusSchema.parse(req.body);
       const order = await this.orderService.updateOrderStatus(
         req.params.id,
         validatedData.status,
@@ -172,6 +180,33 @@ export class OrderController {
         return;
       }
       console.error("Error updating order status:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  }
+
+  async updateOrderLaboratory(req: Request, res: Response): Promise<void> {
+    try {
+      const validatedData = updateOrderLaboratorySchema.parse(req.body);
+      const order = await this.orderService.updateOrderLaboratory(
+        req.params.id,
+        validatedData.laboratoryId,
+        req.params.userId,
+        req.params.userRole
+      );
+      res.status(200).json(order);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({
+          message: "Dados inválidos",
+          errors: error.errors,
+        });
+        return;
+      }
+      if (error instanceof OrderError) {
+        res.status(400).json({ message: error.message });
+        return;
+      }
+      console.error("Error updating order laboratory:", error);
       res.status(500).json({ message: "Erro interno do servidor" });
     }
   }

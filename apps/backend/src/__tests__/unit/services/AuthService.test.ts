@@ -7,19 +7,26 @@ import type { Document } from "mongoose";
 import type { IUser } from "../../../interfaces/IUser";
 import type { JwtPayload } from "jsonwebtoken";
 
+// Interface que representa o documento de usuário no Mongoose
 interface UserDocument extends Document {
   _id: Types.ObjectId;
   name: string;
   email: string;
   password: string;
   role: "admin" | "employee" | "customer";
+  cpf: string;
+  rg: string;
+  birthDate: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
+// Mock do AuthModel
 jest.mock("../../../models/AuthModel");
 
+// Definir segredo JWT para testes
 process.env.JWT_SECRET = "test-secret";
 
+// Tipo que permite acessar o modelo mockado dentro do serviço
 type AuthServiceWithModel = {
   authModel: jest.Mocked<AuthModel>;
 };
@@ -36,21 +43,29 @@ describe("AuthService", () => {
     (authService as unknown as AuthServiceWithModel).authModel = authModel;
   });
 
+  // Mock do documento de usuário que simula um documento do Mongoose
   const mockUserDocument: UserDocument = {
     _id: new Types.ObjectId(),
     name: "Test User",
     email: "test@example.com",
     password: "hashedPassword123",
     role: "customer",
+    cpf: "85804688502",
+    rg: "1299106781",
+    birthDate: new Date("1990-01-01"),
     comparePassword: jest.fn().mockImplementation(async () => true),
   } as unknown as UserDocument;
 
+  // Mock do objeto de interface IUser que é retornado pelo serviço
   const mockUserResponse: IUser = {
     _id: mockUserDocument._id.toString(),
     name: mockUserDocument.name,
     email: mockUserDocument.email,
     password: mockUserDocument.password,
     role: mockUserDocument.role,
+    cpf: mockUserDocument.cpf,
+    rg: mockUserDocument.rg,
+    birthDate: mockUserDocument.birthDate,
     comparePassword: mockUserDocument.comparePassword,
   };
 
@@ -109,7 +124,7 @@ describe("AuthService", () => {
       // Act & Assert
       await expect(
         authService.login("nonexistent@example.com", "123456")
-      ).rejects.toThrow("Credenciais inválidas");
+      ).rejects.toThrow("E-mail não cadastrado");
       expect(authModel.verifyPassword).not.toHaveBeenCalled();
     });
 
@@ -121,7 +136,7 @@ describe("AuthService", () => {
       // Act & Assert
       await expect(
         authService.login("test@example.com", "wrongpass")
-      ).rejects.toThrow("Credenciais inválidas");
+      ).rejects.toThrow("Senha inválida");
     });
 
     it("should return a valid JWT token with correct payload", async () => {

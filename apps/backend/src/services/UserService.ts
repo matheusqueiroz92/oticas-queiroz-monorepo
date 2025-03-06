@@ -19,6 +19,7 @@ export class UserService {
   }
 
   private validateUserData(userData: CreateUserInput | UpdateUserInput): void {
+    // Validações existentes
     if (
       "email" in userData &&
       (!userData.email?.trim() || !userData.email.includes("@"))
@@ -38,6 +39,29 @@ export class UserService {
     ) {
       throw new UserError("Role inválida");
     }
+
+    // Validações para CPF
+    if ("cpf" in userData && userData.cpf !== undefined) {
+      const cpfString = userData.cpf.toString();
+      // Verificar se o CPF tem 11 dígitos
+      if (!/^\d{11}$/.test(cpfString)) {
+        throw new UserError("CPF inválido. Deve conter 11 dígitos numéricos");
+      }
+
+      // Aqui você poderia adicionar uma validação mais completa do CPF
+      // para verificar os dígitos verificadores, por exemplo
+    }
+
+    // Validações para RG
+    if ("rg" in userData && userData.rg !== undefined) {
+      const rgString = userData.rg.toString();
+      // Verificar se o RG tem entre 6 e 14 dígitos
+      if (!/^\d{6,14}$/.test(rgString)) {
+        throw new UserError(
+          "RG inválido. Deve conter entre 6 e 14 dígitos numéricos"
+        );
+      }
+    }
   }
 
   async createUser(
@@ -54,8 +78,17 @@ export class UserService {
       throw new UserError("Funcionários só podem cadastrar clientes");
     }
 
-    const existingUser = await this.userModel.findByEmail(userData.email);
-    if (existingUser?.email) {
+    // Verificar CPF primeiro
+    const existingUserByCpf = await this.userModel.findByCpf(userData.cpf);
+    if (existingUserByCpf) {
+      throw new UserError("CPF já cadastrado");
+    }
+
+    // Depois verificar email
+    const existingUserByEmail = await this.userModel.findByEmail(
+      userData.email
+    );
+    if (existingUserByEmail?.email) {
       throw new UserError("Email já cadastrado");
     }
 
@@ -70,11 +103,58 @@ export class UserService {
     return users;
   }
 
+  async searchUsers(searchTerm: string): Promise<IUser[]> {
+    // Remover caracteres especiais e espaços extras
+    const sanitizedSearch = searchTerm.trim().toLowerCase();
+
+    // Verificar se está vazio após sanitização
+    if (!sanitizedSearch) {
+      return this.getAllUsers();
+    }
+
+    const users = await this.userModel.search(sanitizedSearch);
+    if (!users.length) {
+      throw new UserError(
+        "Nenhum usuário encontrado com os critérios de busca"
+      );
+    }
+
+    return users;
+  }
+
+  async getUsersByRole(role: string): Promise<IUser[]> {
+    if (!["admin", "employee", "customer"].includes(role)) {
+      throw new UserError("Role inválida");
+    }
+
+    const users = await this.userModel.findByRole(role);
+    if (!users.length) {
+      throw new UserError(`Nenhum usuário com role '${role}' encontrado`);
+    }
+
+    return users;
+  }
+
   async getUserById(id: string): Promise<IUser> {
     const user = await this.userModel.findById(id);
     if (!user) {
       throw new UserError("Usuário não encontrado");
     }
+    return user;
+  }
+
+  async getUserByCpf(cpf: string): Promise<IUser> {
+    const sanitizedCpf = cpf.replace(/[^\d]/g, "");
+
+    if (sanitizedCpf.length !== 11) {
+      throw new UserError("Formato de CPF inválido");
+    }
+
+    const user = await this.userModel.findByCpf(sanitizedCpf);
+    if (!user) {
+      throw new UserError("Usuário não encontrado");
+    }
+
     return user;
   }
 
@@ -85,6 +165,13 @@ export class UserService {
       const existingUser = await this.userModel.findByEmail(userData.email);
       if (existingUser?.email && existingUser?._id !== id) {
         throw new UserError("Email já cadastrado");
+      }
+    }
+
+    if (userData.cpf) {
+      const existingUser = await this.userModel.findByCpf(userData.cpf);
+      if (existingUser && existingUser._id !== id) {
+        throw new UserError("CPF já cadastrado");
       }
     }
 

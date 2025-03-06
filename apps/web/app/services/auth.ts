@@ -1,18 +1,21 @@
 import axios from "axios";
 import Cookies from "js-cookie";
 
+export interface User {
+  _id: string;
+  name: string;
+  email: string;
+  cpf: string;
+  role: string;
+}
+
 export interface LoginResponse {
   token: string;
-  user: {
-    _id: string;
-    name: string;
-    email: string;
-    role: string;
-  };
+  user: User;
 }
 
 export const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333",
   headers: {
     "Content-Type": "application/json",
   },
@@ -31,81 +34,116 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      // Token expirado, redirecionar para a página de login
+    if (error.response?.status === 401 && typeof window !== "undefined") {
+      console.log("Erro 401 detectado, limpando cookies e redirecionando");
+
+      // Limpar cookies de autenticação
       clearAuthCookies();
-      window.location.href = "/auth/login";
+
+      // Redirecionar para a página de login somente se não estivermos já na página de login
+      const currentPath = window.location.pathname;
+      if (!currentPath.includes("/auth/login")) {
+        // Usar window.location para garantir o recarregamento da página
+        window.location.href = "/auth/login";
+      }
     }
     return Promise.reject(error);
   }
 );
 
-// Função para salvar os dados de autenticação nos cookies
-export const saveAuthData = (data: LoginResponse) => {
-  // Salvando token
-  Cookies.set("token", data.token, { expires: 7 }); // Expira em 7 dias
+export const loginWithCredentials = async (
+  login: string,
+  password: string
+): Promise<LoginResponse> => {
+  try {
+    console.log(
+      `Enviando requisição de login para ${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333"}/api/auth/login`
+    );
 
-  // Salvando dados do usuário
-  Cookies.set("userId", data.user._id, { expires: 7 });
-  Cookies.set("userName", data.user.name, { expires: 7 });
-  Cookies.set("userEmail", data.user.email, { expires: 7 });
-  Cookies.set("userRole", data.user.role, { expires: 7 });
+    const response = await api.post<LoginResponse>("/api/auth/login", {
+      login,
+      password,
+    });
+
+    console.log("Resposta completa da API:", response.data);
+
+    // Se chegou aqui, o login foi bem-sucedido
+    // Vamos salvar os cookies
+    if (response.data.token) {
+      // Definir cookie token
+      Cookies.set("token", response.data.token, {
+        expires: 1,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+      });
+
+      // Outros cookies
+      if (response.data.user) {
+        Cookies.set("userId", response.data.user._id, { expires: 1 });
+        Cookies.set("name", response.data.user.name, { expires: 1 });
+        Cookies.set("role", response.data.user.role, { expires: 1 });
+
+        if (response.data.user.email) {
+          Cookies.set("email", response.data.user.email, { expires: 1 });
+        }
+        if (response.data.user.cpf) {
+          Cookies.set("cpf", response.data.user.cpf, { expires: 1 });
+        }
+      }
+
+      console.log("Login bem-sucedido, cookies definidos");
+    }
+
+    return response.data;
+  } catch (error) {
+    console.error("Erro detalhado na requisição de login:", error);
+
+    if (axios.isAxiosError(error)) {
+      console.error("Detalhes da resposta de erro:", {
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+
+      const message =
+        error.response?.data?.message ||
+        "Falha na autenticação. Verifique suas credenciais.";
+      throw new Error(message);
+    }
+    throw new Error("Erro ao fazer login. Tente novamente.");
+  }
 };
 
 // Função para limpar os cookies de autenticação
 export const clearAuthCookies = () => {
-  Cookies.remove("token");
-  Cookies.remove("userId");
-  Cookies.remove("userName");
-  Cookies.remove("userEmail");
-  Cookies.remove("userRole");
+  const allCookies = ["token", "name", "role", "userId", "email", "cpf"];
+
+  for (const cookieName of allCookies) {
+    Cookies.remove(cookieName);
+  }
+
+  console.log("Todos os cookies de autenticação foram removidos");
 };
 
-// Função para obter os dados do usuário logado dos cookies
-export const getLoggedUser = () => {
-  const id = Cookies.get("userId");
-  const name = Cookies.get("userName");
-  const email = Cookies.get("userEmail");
-  const role = Cookies.get("userRole");
-
-  if (!id || !name || !email || !role) return null;
-
-  return {
-    id,
-    name,
-    email,
-    role,
-  };
+// Função para verificar se o usuário está autenticado
+export const isAuthenticated = (): boolean => {
+  return !!Cookies.get("token");
 };
 
-export const login = async (
-  email: string,
-  password: string
-): Promise<LoginResponse> => {
-  try {
-    const response = await api.post<LoginResponse>("/api/auth/login", {
-      email,
-      password,
-    });
+// Função para obter o papel (role) do usuário
+export const getUserRole = (): string | undefined => {
+  return Cookies.get("role");
+};
 
-    // Salvar os dados nos cookies
-    saveAuthData(response.data);
-
-    return response.data;
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      throw new Error(error.response?.data?.message || "Erro ao fazer login");
-    }
-    throw error;
+// Função para redirecionar após o login
+export const redirectAfterLogin = () => {
+  if (typeof window !== "undefined") {
+    window.location.href = "/dashboard";
   }
 };
 
-export const logout = () => {
-  clearAuthCookies();
-  window.location.href = "/auth/login";
-};
-
-// Verificar se o usuário está autenticado
-export const isAuthenticated = (): boolean => {
-  return !!Cookies.get("token");
+// Função para redirecionar após o logout
+export const redirectAfterLogout = () => {
+  if (typeof window !== "undefined") {
+    window.location.href = "/auth/login";
+  }
 };

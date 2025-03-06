@@ -30,7 +30,7 @@ class App {
     // Configuração do CORS
     this.app.use(
       cors({
-        origin: "http://localhost:3003", // Permite requisições do frontend
+        origin: "http://localhost:3000", // Permite requisições do frontend
         credentials: true, // Permite o envio de cookies e headers de autenticação
       })
     );

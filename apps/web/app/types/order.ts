@@ -3,18 +3,17 @@ export interface Order {
   clientId: string;
   employeeId: string;
   product: string;
-  description?: string;
+  glassesType: string;
   paymentMethod: string;
   paymentEntry?: number;
   installments?: number;
-  deliveryDate: Date;
+  deliveryDate?: string | Date;
   status: "pending" | "in_production" | "ready" | "delivered";
   laboratoryId?: string;
-  lensType: string;
-  prescriptionData: {
+  prescriptionData?: {
     doctorName: string;
     clinicName: string;
-    appointmentdate: Date;
+    appointmentDate: string | Date;
     leftEye: {
       near: {
         sph: number;
@@ -44,7 +43,9 @@ export interface Order {
       };
     };
   };
+  lensType?: string;
+  observations?: string;
   totalPrice: number;
-  createdAt?: Date;
-  updatedAt?: Date;
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
 }

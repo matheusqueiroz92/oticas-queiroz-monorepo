@@ -36,10 +36,19 @@ const storage = multer.diskStorage({
     cb: (error: Error | null, destination: string) => void
   ) => {
     const baseDir = path.join(__dirname, "../../../public/images");
-    const uploadDir =
-      file.fieldname === "productImage"
-        ? path.join(baseDir, "products")
-        : path.join(baseDir, "users");
+
+    // Determinar o diretório com base no campo de upload
+    let uploadDir: string;
+
+    if (file.fieldname === "productImage") {
+      uploadDir = path.join(baseDir, "products");
+    } else if (file.fieldname === "image" || file.fieldname === "userImage") {
+      // Suporta tanto "image" (para registro) quanto "userImage" (para atualização de perfil)
+      uploadDir = path.join(baseDir, "users");
+    } else {
+      // Diretório padrão
+      uploadDir = path.join(baseDir, "users");
+    }
 
     cb(null, uploadDir);
   },
@@ -69,13 +78,21 @@ const fileFilter = (
   cb(null, true);
 };
 
-const upload = multer({
+// Configuração base para uploads
+const uploadBase = multer({
   storage,
   limits: {
     fileSize: MAX_SIZE,
   },
   fileFilter,
-}) as unknown as {
+});
+
+// Exporta diferentes configurações para diferentes casos de uso
+export const uploadUserImage = uploadBase.single("userImage");
+export const uploadProductImage = uploadBase.single("productImage");
+
+// Para compatibilidade com código existente
+const upload = uploadBase as unknown as {
   single: (fieldName: string) => RequestHandler;
 };
 

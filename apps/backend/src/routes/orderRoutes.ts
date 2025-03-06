@@ -112,4 +112,34 @@ router.put(
   (req, res) => orderController.updateOrderStatus(req, res)
 );
 
+/**
+ * @swagger
+ * /api/orders/{id}/laboratory:
+ *   put:
+ *     summary: Atualiza o laboratório de um pedido
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: string
+ *     responses:
+ *       200:
+ *         description: Laboratório do pedido atualizado com sucesso
+ *       404:
+ *         description: Pedido não encontrado
+ */
+router.put(
+  "/orders/:id/laboratory",
+  authenticate,
+  authorize(["admin", "employee"]),
+  (req, res) => orderController.updateOrderLaboratory(req, res)
+);
+
 export default router;

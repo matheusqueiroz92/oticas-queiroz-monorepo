@@ -8,6 +8,9 @@ export const createTestAdmin = async () => {
     email: "admin@test.com",
     password: "admin123",
     role: "admin" as const,
+    cpf: "12345678901",
+    rg: "987654321",
+    birthDate: new Date("1990-01-01"),
   };
 
   const admin = await userModel.create(adminData);

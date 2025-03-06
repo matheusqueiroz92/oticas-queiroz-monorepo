@@ -2,7 +2,6 @@ import type { Request, Response } from "express";
 import { ProductService, ProductError } from "../services/ProductService";
 import { z } from "zod";
 import type { ICreateProductDTO } from "../interfaces/IProduct";
-// import upload from "../config/multerConfig"; // Importe o multer
 
 const createProductSchema = z.object({
   name: z.string().min(2, "Nome deve ter no mínimo 2 caracteres"),

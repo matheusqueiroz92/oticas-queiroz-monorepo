@@ -24,26 +24,32 @@ export class AuthService {
     this.authModel = new AuthModel();
   }
 
-  async login(email: string, password: string): Promise<LoginResponse> {
-    // Primeiro, validamos se os campos foram fornecidos
-    if (!email?.trim() || !password?.trim()) {
-      throw new AuthError("Email e senha são obrigatórios");
+  async login(login: string, password: string): Promise<LoginResponse> {
+    // Validação básica
+    if (!login?.trim() || !password?.trim()) {
+      throw new AuthError("Login e senha são obrigatórios");
     }
 
-    // Depois, validamos o formato do email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      throw new AuthError("Email inválido");
+    // Verificamos se o login é um email ou CPF
+    let user = null;
+    const isCPF = /^\d{11}$/.test(login.replace(/[^\d]/g, "")); // Verificar se é um CPF (apenas números e exatamente 11 dígitos)
+
+    if (isCPF) {
+      // Buscar por CPF
+      const sanitizedCPF = login.replace(/[^\d]/g, ""); // Remover caracteres não numéricos
+      user = await this.authModel.findUserByCpf(sanitizedCPF);
+    } else {
+      // Buscar por email
+      user = await this.authModel.findUserByEmail(login);
     }
 
-    const user = await this.authModel.findUserByEmail(email);
     if (!user) {
-      throw new AuthError("Credenciais inválidas");
+      throw new AuthError("Usuário não encontrado");
     }
 
     const isValidPassword = await this.authModel.verifyPassword(user, password);
     if (!isValidPassword) {
-      throw new AuthError("Credenciais inválidas");
+      throw new AuthError("Senha inválida");
     }
 
     const token = generateToken(user._id.toString(), user.role);

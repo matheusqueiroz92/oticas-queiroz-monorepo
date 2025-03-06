@@ -1,4 +1,3 @@
-// components/OrderPdfGenerator.tsx
 import {
   PDFDownloadLink,
   Document,
@@ -9,7 +8,8 @@ import {
   Image,
 } from "@react-pdf/renderer";
 import { Button } from "@/components/ui/button";
-import type { Customer } from "../app/types/customer";
+import LogoImage from "../../public/logo-oticas-queiroz.png";
+import type { Customer } from "../../app/types/customer";
 
 // Interface para os dados do formulário
 interface OrderFormData {
@@ -28,9 +28,9 @@ interface OrderFormData {
   observations?: string;
   totalPrice: number;
   prescriptionData?: {
-    doctorName: string;
-    clinicName: string;
-    appointmentDate: string;
+    doctorName?: string; // Mudado para opcional
+    clinicName?: string; // Mudado para opcional
+    appointmentDate?: string; // Mudado para opcional
     leftEye: {
       near: { sph: number; cyl: number; axis: number; pd: number };
       far: { sph: number; cyl: number; axis: number; pd: number };
@@ -45,13 +45,12 @@ interface OrderFormData {
 // Dados da empresa
 const companyInfo = {
   name: "Óticas Queiroz",
-  logo: "/logo.png", // Substitua pelo caminho correto da sua logo
-  address: "Av. Principal, 123 - Centro",
-  city: "Sua Cidade - Estado",
-  zipCode: "CEP: 12345-678",
-  phone: "(11) 1234-5678",
-  email: "contato@oticasqueiroz.com",
-  website: "www.oticasqueiroz.com",
+  logo: LogoImage.src,
+  address: "Rua J. J. Seabra, 116 - Centro. Itapetinga-Bahia. CEP: 45700-000",
+  phone: "(77) 3262-1344",
+  whatsapp: "(77) 98801-8192",
+  email: "contato@oticasqueiroz.com.br",
+  website: "www.oticasqueiroz.com.br",
 };
 
 const styles = StyleSheet.create({
@@ -66,15 +65,15 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#CCCCCC",
     borderBottomStyle: "solid",
-    paddingBottom: 10,
+    paddingBottom: 5,
   },
   logoContainer: {
-    width: 150,
-    marginRight: 20,
+    width: 80,
+    marginRight: 10,
   },
   logo: {
-    maxWidth: 150,
-    maxHeight: 60,
+    maxWidth: 80,
+    maxHeight: 70,
   },
   companyInfo: {
     flex: 1,
@@ -265,9 +264,9 @@ const OrderPDF = ({ data, customer }: OrderPDFProps) => {
           <View style={styles.companyInfo}>
             <Text style={styles.companyName}>{companyInfo.name}</Text>
             <Text style={styles.companyDetail}>{companyInfo.address}</Text>
-            <Text style={styles.companyDetail}>{companyInfo.city}</Text>
-            <Text style={styles.companyDetail}>{companyInfo.zipCode}</Text>
-            <Text style={styles.companyDetail}>Tel: {companyInfo.phone}</Text>
+            <Text style={styles.companyDetail}>
+              Telefone: {companyInfo.phone}/ WhatsApp: {companyInfo.whatsapp}
+            </Text>
             <Text style={styles.companyDetail}>Email: {companyInfo.email}</Text>
             <Text style={styles.companyDetail}>
               Site: {companyInfo.website}
