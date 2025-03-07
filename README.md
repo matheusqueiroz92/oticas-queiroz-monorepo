@@ -413,6 +413,29 @@ oticas-queiroz-monorepo/
 }
 ```
 
+## 👓 Tipos de Lente
+
+### Rotas
+
+- POST `/api/lens-type`: Criar tipo de lente
+- GET `/api/lens-type`: Listar todos os tipos de lente
+- GET `/api/lens-type/:id`: Buscar tipo de lente
+- PUT `/api/lens-type/:id`: Atualizar tipo de lente
+- DELETE `/api/lens-type/:id`: Remover tipo de lente
+
+### Schema
+
+```typescript
+{
+  _id: string;
+  name: string;
+  description: string;
+  brand: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+```
+
 ## 🛠️ Setup
 
 ### Pré-requisitos
