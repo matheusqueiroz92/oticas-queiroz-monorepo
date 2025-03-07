@@ -15,33 +15,17 @@ export interface Order {
     clinicName: string;
     appointmentDate: string | Date;
     leftEye: {
-      near: {
-        sph: number;
-        cyl: number;
-        axis: number;
-        pd: number;
-      };
-      far: {
-        sph: number;
-        cyl: number;
-        axis: number;
-        pd: number;
-      };
+      sph: number;
+      cyl: number;
+      axis: number;
     };
     rightEye: {
-      near: {
-        sph: number;
-        cyl: number;
-        axis: number;
-        pd: number;
-      };
-      far: {
-        sph: number;
-        cyl: number;
-        axis: number;
-        pd: number;
-      };
+      sph: number;
+      cyl: number;
+      axis: number;
     };
+    nd: number;
+    addition: number;
   };
   lensType?: string;
   observations?: string;

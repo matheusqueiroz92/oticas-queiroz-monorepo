@@ -4,13 +4,6 @@ import { OrderService, OrderError } from "../services/OrerService";
 import { z } from "zod";
 import type { IOrder } from "../interfaces/IOrder";
 
-const eyeDataSchema = z.object({
-  sph: z.number(),
-  cyl: z.number(),
-  axis: z.number(),
-  pd: z.number(),
-});
-
 const prescriptionDataSchema = z.object({
   doctorName: z
     .string()
@@ -20,13 +13,17 @@ const prescriptionDataSchema = z.object({
     .min(2, "Nome da clínica deve ter no mínimo 2 caracteres"),
   appointmentDate: z.coerce.date(),
   leftEye: z.object({
-    near: eyeDataSchema,
-    far: eyeDataSchema,
+    sph: z.number(),
+    cyl: z.number(),
+    axis: z.number(),
   }),
   rightEye: z.object({
-    near: eyeDataSchema,
-    far: eyeDataSchema,
+    sph: z.number(),
+    cyl: z.number(),
+    axis: z.number(),
   }),
+  nd: z.number(),
+  addition: z.number(),
 });
 
 const createOrderSchema = z.object({

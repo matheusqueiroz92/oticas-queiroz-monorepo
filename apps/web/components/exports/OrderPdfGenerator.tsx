@@ -31,14 +31,10 @@ interface OrderFormData {
     doctorName?: string; // Mudado para opcional
     clinicName?: string; // Mudado para opcional
     appointmentDate?: string; // Mudado para opcional
-    leftEye: {
-      near: { sph: number; cyl: number; axis: number; pd: number };
-      far: { sph: number; cyl: number; axis: number; pd: number };
-    };
-    rightEye: {
-      near: { sph: number; cyl: number; axis: number; pd: number };
-      far: { sph: number; cyl: number; axis: number; pd: number };
-    };
+    leftEye: { sph: number; cyl: number; axis: number };
+    rightEye: { sph: number; cyl: number; axis: number };
+    nd: number;
+    addition: number;
   };
 }
 
@@ -415,10 +411,9 @@ const OrderPDF = ({ data, customer }: OrderPDFProps) => {
                 <Text style={styles.prescriptionTableCell}>SPH</Text>
                 <Text style={styles.prescriptionTableCell}>CYL</Text>
                 <Text style={styles.prescriptionTableCell}>AXIS</Text>
-                <Text style={styles.prescriptionTableCell}>PD</Text>
               </View>
 
-              {/* Olho Esquerdo - Visão de Perto */}
+              {/* Olho Esquerdo */}
               <View style={styles.prescriptionTableRow}>
                 <Text
                   style={[
@@ -426,27 +421,20 @@ const OrderPDF = ({ data, customer }: OrderPDFProps) => {
                     { width: 80, fontWeight: "bold" },
                   ]}
                 >
-                  Esq. (Perto)
+                  Esquerdo
                 </Text>
                 <Text style={styles.prescriptionTableCell}>
-                  {formatRefractionValue(
-                    data.prescriptionData.leftEye.near.sph
-                  )}
+                  {formatRefractionValue(data.prescriptionData.leftEye.sph)}
                 </Text>
                 <Text style={styles.prescriptionTableCell}>
-                  {formatRefractionValue(
-                    data.prescriptionData.leftEye.near.cyl
-                  )}
+                  {formatRefractionValue(data.prescriptionData.leftEye.cyl)}
                 </Text>
                 <Text style={styles.prescriptionTableCell}>
-                  {data.prescriptionData.leftEye.near.axis}°
-                </Text>
-                <Text style={styles.prescriptionTableCell}>
-                  {data.prescriptionData.leftEye.near.pd}mm
+                  {data.prescriptionData.leftEye.axis}°
                 </Text>
               </View>
 
-              {/* Olho Esquerdo - Visão de Longe */}
+              {/* Olho Direito */}
               <View style={styles.prescriptionTableRow}>
                 <Text
                   style={[
@@ -454,23 +442,19 @@ const OrderPDF = ({ data, customer }: OrderPDFProps) => {
                     { width: 80, fontWeight: "bold" },
                   ]}
                 >
-                  Esq. (Longe)
+                  Direito
                 </Text>
                 <Text style={styles.prescriptionTableCell}>
-                  {formatRefractionValue(data.prescriptionData.leftEye.far.sph)}
+                  {formatRefractionValue(data.prescriptionData.rightEye.sph)}
                 </Text>
                 <Text style={styles.prescriptionTableCell}>
-                  {formatRefractionValue(data.prescriptionData.leftEye.far.cyl)}
+                  {formatRefractionValue(data.prescriptionData.rightEye.cyl)}
                 </Text>
                 <Text style={styles.prescriptionTableCell}>
-                  {data.prescriptionData.leftEye.far.axis}°
-                </Text>
-                <Text style={styles.prescriptionTableCell}>
-                  {data.prescriptionData.leftEye.far.pd}mm
+                  {data.prescriptionData.rightEye.axis}°
                 </Text>
               </View>
 
-              {/* Olho Direito - Visão de Perto */}
               <View style={styles.prescriptionTableRow}>
                 <Text
                   style={[
@@ -478,27 +462,13 @@ const OrderPDF = ({ data, customer }: OrderPDFProps) => {
                     { width: 80, fontWeight: "bold" },
                   ]}
                 >
-                  Dir. (Perto)
+                  DNP
                 </Text>
                 <Text style={styles.prescriptionTableCell}>
-                  {formatRefractionValue(
-                    data.prescriptionData.rightEye.near.sph
-                  )}
-                </Text>
-                <Text style={styles.prescriptionTableCell}>
-                  {formatRefractionValue(
-                    data.prescriptionData.rightEye.near.cyl
-                  )}
-                </Text>
-                <Text style={styles.prescriptionTableCell}>
-                  {data.prescriptionData.rightEye.near.axis}°
-                </Text>
-                <Text style={styles.prescriptionTableCell}>
-                  {data.prescriptionData.rightEye.near.pd}mm
+                  {data.prescriptionData.nd}mm
                 </Text>
               </View>
 
-              {/* Olho Direito - Visão de Longe */}
               <View style={styles.prescriptionTableRow}>
                 <Text
                   style={[
@@ -506,23 +476,10 @@ const OrderPDF = ({ data, customer }: OrderPDFProps) => {
                     { width: 80, fontWeight: "bold" },
                   ]}
                 >
-                  Dir. (Longe)
+                  Adição
                 </Text>
                 <Text style={styles.prescriptionTableCell}>
-                  {formatRefractionValue(
-                    data.prescriptionData.rightEye.far.sph
-                  )}
-                </Text>
-                <Text style={styles.prescriptionTableCell}>
-                  {formatRefractionValue(
-                    data.prescriptionData.rightEye.far.cyl
-                  )}
-                </Text>
-                <Text style={styles.prescriptionTableCell}>
-                  {data.prescriptionData.rightEye.far.axis}°
-                </Text>
-                <Text style={styles.prescriptionTableCell}>
-                  {data.prescriptionData.rightEye.far.pd}mm
+                  {data.prescriptionData.addition}
                 </Text>
               </View>
             </View>

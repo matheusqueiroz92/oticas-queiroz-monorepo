@@ -11,39 +11,25 @@ export const orderFormSchema = z.object({
   paymentEntry: z.number().optional(),
   status: z.string().min(1, "Status é obrigatório"),
   deliveryDate: z.string().min(1, "Data de entrega é obrigatória"),
-  prescriptionData: z.object({
-    doctorName: z.string().min(1, "Nome do médico é obrigatório"),
-    clinicName: z.string().min(1, "Nome da clínica é obrigatório"),
-    appointmentDate: z.string().min(1, "Data da consulta é obrigatória"),
-    leftEye: z.object({
-      near: z.object({
+  prescriptionData: z
+    .object({
+      doctorName: z.string().min(1, "Nome do médico é obrigatório"),
+      clinicName: z.string().min(1, "Nome da clínica é obrigatório"),
+      appointmentDate: z.string().min(1, "Data da consulta é obrigatória"),
+      leftEye: z.object({
         sph: z.number(),
         cyl: z.number(),
         axis: z.number(),
-        pd: z.number(),
       }),
-      far: z.object({
+      rightEye: z.object({
         sph: z.number(),
         cyl: z.number(),
         axis: z.number(),
-        pd: z.number(),
       }),
-    }),
-    rightEye: z.object({
-      near: z.object({
-        sph: z.number(),
-        cyl: z.number(),
-        axis: z.number(),
-        pd: z.number(),
-      }),
-      far: z.object({
-        sph: z.number(),
-        cyl: z.number(),
-        axis: z.number(),
-        pd: z.number(),
-      }),
-    }),
-  }),
+      nd: z.number(),
+      addition: z.number(),
+    })
+    .optional(),
   lensType: z.string().min(1, "O nome da lente é obrigatório"),
   observations: z.string().optional(),
   totalPrice: z.number().min(0, "O preço total deve ser maior que zero"),

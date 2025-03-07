@@ -661,32 +661,10 @@ export default function NewOrderPage() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Tipo de Lente</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            value={field.value || ""}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Selecione o tipo de lente" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="monofocal">
-                                Monofocal
-                              </SelectItem>
-                              <SelectItem value="bifocal">Bifocal</SelectItem>
-                              <SelectItem value="multifocal">
-                                Multifocal
-                              </SelectItem>
-                              <SelectItem value="progressiva">
-                                Progressiva
-                              </SelectItem>
-                              <SelectItem value="fotocromica">
-                                Fotocromática
-                              </SelectItem>
-                              <SelectItem value="outras">Outras</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <Input
+                            placeholder="Descreva o tipo da lente"
+                            {...field}
+                          />
                           <FormMessage />
                         </FormItem>
                       )}

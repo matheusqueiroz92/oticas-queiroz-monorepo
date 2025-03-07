@@ -67,6 +67,50 @@ export default function PrescriptionForm({ form }: PrescriptionFormProps) {
 
         <EyeFormSection eye="left" title="Olho Esquerdo" form={form} />
         <EyeFormSection eye="right" title="Olho Direito" form={form} />
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="presciptionData.nd"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>DNP</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    step="0.25"
+                    {...field}
+                    onChange={(e) =>
+                      field.onChange(Number.parseFloat(e.target.value))
+                    }
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="prescriptionData.addition"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Adição</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    step="0.25"
+                    {...field}
+                    onChange={(e) =>
+                      field.onChange(Number.parseFloat(e.target.value))
+                    }
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
       </CardContent>
     </Card>
   );

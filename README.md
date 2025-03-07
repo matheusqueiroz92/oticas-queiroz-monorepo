@@ -148,7 +148,7 @@ oticas-queiroz-monorepo/
 
 ```typescript
 {
-  _id?: string;
+  _id: string;
   name: string;
   email: string;
   cpf: string;
@@ -157,11 +157,6 @@ oticas-queiroz-monorepo/
   role: "admin" | "employee" | "customer";
   address?: string;
   phone?: string;
-  prescription?: {
-    leftEye: number;
-    rightEye: number;
-    addition?: number;
-  };
   sales?: string[];
   purchases?: string[];
   debts?: number;
@@ -233,33 +228,17 @@ oticas-queiroz-monorepo/
     clinicName: string;
     appointmentdate: Date;
     leftEye: {
-      near: {
-        sph: number;
-        cyl: number;
-        axis: number;
-        pd: number;
-      };
-      far: {
-        sph: number;
-        cyl: number;
-        axis: number;
-        pd: number;
-      };
+      sph: number;
+      cyl: number;
+      axis: number;
     };
     rightEye: {
-      near: {
-        sph: number;
-        cyl: number;
-        axis: number;
-        pd: number;
-      };
-      far: {
-        sph: number;
-        cyl: number;
-        axis: number;
-        pd: number;
-      };
+      sph: number;
+      cyl: number;
+      axis: number;
     };
+    nd: number;
+    addition: number;
   };
   totalPrice: number;
   description?: string;
@@ -283,7 +262,7 @@ oticas-queiroz-monorepo/
 
 ```typescript
 {
-  _id?: string;
+  _id: string;
   name: string;
   address: {
     street: string;
@@ -318,7 +297,7 @@ oticas-queiroz-monorepo/
 ```typescript
 
 {
-  _id?: string;
+  _id: string;
   amount: number;
   paymentDate: Date;
   type: "sale" | "debt_payment" | "expense";
@@ -352,7 +331,7 @@ oticas-queiroz-monorepo/
 
 ```typescript
 {
-  _id?: string;
+  _id: string;
   date: Date;
   openingBalance: number;
   currentBalance: number;
@@ -386,7 +365,7 @@ oticas-queiroz-monorepo/
 ```typescript
 
 {
-  _id?: string;
+  _id: string;
   name: string;
   identifier: string; // CPF/CNPJ
   phone?: string;
@@ -412,7 +391,7 @@ oticas-queiroz-monorepo/
 
 ```typescript
 {
-  _id?: string;
+  _id: string;
   name: string;
   type: "sales" | "inventory" | "customers" | "orders" | "financial";
   filters: {
@@ -675,29 +654,36 @@ npm test
 - [ ] Sistema de pagamentos
 
   - [ ] Integração com gateway
-  - [ ] Parcelamento
+  - [ ] Parcelamentos e boletos
   - [ ] Emissão de NF
+  - [ ] Geração de QR Code para Pix
 
 - [ ] Dashboard
 
   - [ ] Métricas de vendas
   - [ ] Controle de estoque
-  - [ ] Relatórios
+  - [ ] Relatórios avançados
 
 - [ ] Melhorias técnicas
 
   - [ ] Implementação de Cache
+
     - [ ] Configuração do Redis
     - [ ] Cache de produtos
     - [ ] Cache de autenticação
+
   - [ ] Sistema de Logs e Monitoramento
+
     - [ ] Implementação do Winston
     - [ ] Configuração do Sentry
     - [ ] Dashboard de monitoramento
+
   - [ ] Melhorias de Performance
+
     - [ ] Otimização de queries
     - [ ] Implementação de índices
     - [ ] Compressão de respostas
+
   - [ ] CI/CD
   - [ ] Monitoramento
   - [ ] Logs
@@ -705,7 +691,6 @@ npm test
 
   - [ ] Relatórios interativos
   - [ ] Integração com impressoras para receitas
-  - [ ] Dashboard com métricas em tempo real
   - [ ] Sistema de notificações
   - [ ] Modo offline para operação sem internet
   - [ ] Testes de integração da interface
