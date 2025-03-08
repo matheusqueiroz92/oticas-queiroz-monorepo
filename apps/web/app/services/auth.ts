@@ -42,7 +42,11 @@ api.interceptors.response.use(
 
       // Redirecionar para a página de login somente se não estivermos já na página de login
       const currentPath = window.location.pathname;
-      if (!currentPath.includes("/auth/login")) {
+      if (
+        !currentPath.includes("/auth/login") &&
+        !currentPath.includes("/auth/forgot-password") &&
+        !currentPath.includes("/auth/reset-password")
+      ) {
         // Usar window.location para garantir o recarregamento da página
         window.location.href = "/auth/login";
       }
@@ -110,6 +114,58 @@ export const loginWithCredentials = async (
       throw new Error(message);
     }
     throw new Error("Erro ao fazer login. Tente novamente.");
+  }
+};
+
+// Funções para recuperação de senha
+
+/**
+ * Solicita o envio de um email de recuperação de senha
+ */
+export const requestPasswordReset = async (email: string): Promise<void> => {
+  try {
+    await api.post("/api/auth/forgot-password", { email });
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const message =
+        error.response?.data?.message ||
+        "Falha ao enviar o email de recuperação. Tente novamente.";
+      throw new Error(message);
+    }
+    throw new Error("Erro ao solicitar recuperação de senha. Tente novamente.");
+  }
+};
+
+/**
+ * Valida se um token de redefinição de senha é válido
+ */
+export const validateResetToken = async (token: string): Promise<boolean> => {
+  try {
+    const response = await api.get(`/api/auth/validate-reset-token/${token}`);
+    return response.data.valid === true;
+  } catch (error) {
+    console.error("Erro ao validar token:", error);
+    return false;
+  }
+};
+
+/**
+ * Redefine a senha do usuário usando um token de recuperação
+ */
+export const resetPassword = async (
+  token: string,
+  password: string
+): Promise<void> => {
+  try {
+    await api.post("/api/auth/reset-password", { token, password });
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const message =
+        error.response?.data?.message ||
+        "Falha ao redefinir a senha. O token pode ter expirado.";
+      throw new Error(message);
+    }
+    throw new Error("Erro ao redefinir a senha. Tente novamente.");
   }
 };
 

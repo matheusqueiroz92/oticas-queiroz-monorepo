@@ -1,9 +1,8 @@
-"use client"; // Marca o componente como Client Component
+"use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 
-// Crie uma instância do QueryClient
 const queryClient = new QueryClient();
 
 export default function Providers({ children }: { children: ReactNode }) {

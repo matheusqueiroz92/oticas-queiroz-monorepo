@@ -38,6 +38,7 @@ import Cookies from "js-cookie";
 
 // Componentes
 import ClientSearch from "../../../../components/forms/OrderForm/ClientSearch";
+import LensTypeSelection from "../../../../components/forms/OrderForm/LensTypeSearch";
 import PrescriptionForm from "../../../../components/forms/OrderForm/PrescriptionForm";
 import OrderPdfGenerator from "../../../../components/exports/OrderPdfGenerator";
 
@@ -65,33 +66,17 @@ const orderFormSchema = z.object({
       clinicName: z.string().optional(),
       appointmentDate: z.string().optional(),
       leftEye: z.object({
-        near: z.object({
-          sph: z.number(),
-          cyl: z.number(),
-          axis: z.number(),
-          pd: z.number(),
-        }),
-        far: z.object({
-          sph: z.number(),
-          cyl: z.number(),
-          axis: z.number(),
-          pd: z.number(),
-        }),
+        sph: z.number(),
+        cyl: z.number(),
+        axis: z.number(),
       }),
       rightEye: z.object({
-        near: z.object({
-          sph: z.number(),
-          cyl: z.number(),
-          axis: z.number(),
-          pd: z.number(),
-        }),
-        far: z.object({
-          sph: z.number(),
-          cyl: z.number(),
-          axis: z.number(),
-          pd: z.number(),
-        }),
+        sph: z.number(),
+        cyl: z.number(),
+        axis: z.number(),
       }),
+      nd: z.number(),
+      addition: z.number(),
     })
     .optional(),
 });
@@ -109,7 +94,7 @@ export default function NewOrderPage() {
     role: string;
   } | null>(null);
   const [showInstallments, setShowInstallments] = useState(false);
-  const [showPrescription, setShowPrescription] = useState(false);
+  const [showPrescription, setShowPrescription] = useState(true);
   const [showPdfDownload, setShowPdfDownload] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
     null
@@ -144,14 +129,10 @@ export default function NewOrderPage() {
         doctorName: "",
         clinicName: "",
         appointmentDate: new Date().toISOString().split("T")[0],
-        leftEye: {
-          near: { sph: 0, cyl: 0, axis: 0, pd: 0 },
-          far: { sph: 0, cyl: 0, axis: 0, pd: 0 },
-        },
-        rightEye: {
-          near: { sph: 0, cyl: 0, axis: 0, pd: 0 },
-          far: { sph: 0, cyl: 0, axis: 0, pd: 0 },
-        },
+        leftEye: { sph: 0, cyl: 0, axis: 0 },
+        rightEye: { sph: 0, cyl: 0, axis: 0 },
+        nd: 0,
+        addition: 0,
       },
     },
   });
@@ -298,27 +279,27 @@ export default function NewOrderPage() {
                     new Date().toISOString().split("T")[0],
                   // IMPORTANTE: usar os dados de prescrição reais do formulário
                   leftEye: data.prescriptionData?.leftEye || {
-                    near: { sph: 0, cyl: 0, axis: 0, pd: 0 },
-                    far: { sph: 0, cyl: 0, axis: 0, pd: 0 },
+                    sph: 0,
+                    cyl: 0,
+                    axis: 0,
                   },
                   rightEye: data.prescriptionData?.rightEye || {
-                    near: { sph: 0, cyl: 0, axis: 0, pd: 0 },
-                    far: { sph: 0, cyl: 0, axis: 0, pd: 0 },
+                    sph: 0,
+                    cyl: 0,
+                    axis: 0,
                   },
+                  nd: data.prescriptionData?.nd || 0,
+                  addition: data.prescriptionData?.addition || 0,
                 }
               : {
                   // Valores padrão para óculos solar
                   doctorName: defaultDoctorName,
                   clinicName: defaultClinicName,
                   appointmentDate: new Date().toISOString().split("T")[0],
-                  leftEye: {
-                    near: { sph: 0, cyl: 0, axis: 0, pd: 0 },
-                    far: { sph: 0, cyl: 0, axis: 0, pd: 0 },
-                  },
-                  rightEye: {
-                    near: { sph: 0, cyl: 0, axis: 0, pd: 0 },
-                    far: { sph: 0, cyl: 0, axis: 0, pd: 0 },
-                  },
+                  leftEye: { sph: 0, cyl: 0, axis: 0 },
+                  rightEye: { sph: 0, cyl: 0, axis: 0 },
+                  nd: 0,
+                  addition: 0,
                 },
           // Enviar campos opcionais normalmente
           lensType:
@@ -661,10 +642,9 @@ export default function NewOrderPage() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Tipo de Lente</FormLabel>
-                          <Input
-                            placeholder="Descreva o tipo da lente"
-                            {...field}
-                          />
+                          <FormControl>
+                            <LensTypeSelection form={form} />
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}

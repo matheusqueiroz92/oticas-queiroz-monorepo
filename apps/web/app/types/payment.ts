@@ -3,7 +3,7 @@ export type PaymentType = "sale" | "debt_payment" | "expense";
 export type PaymentStatus = "pending" | "completed" | "cancelled";
 
 export interface Payment {
-  _id?: string;
+  _id: string;
   amount: number;
   paymentDate: Date;
   type: "sale" | "debt_payment" | "expense";

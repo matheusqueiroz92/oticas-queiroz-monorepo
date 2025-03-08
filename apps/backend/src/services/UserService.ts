@@ -19,7 +19,6 @@ export class UserService {
   }
 
   private validateUserData(userData: CreateUserInput | UpdateUserInput): void {
-    // Validações existentes
     if (
       "email" in userData &&
       (!userData.email?.trim() || !userData.email.includes("@"))
@@ -47,9 +46,6 @@ export class UserService {
       if (!/^\d{11}$/.test(cpfString)) {
         throw new UserError("CPF inválido. Deve conter 11 dígitos numéricos");
       }
-
-      // Aqui você poderia adicionar uma validação mais completa do CPF
-      // para verificar os dígitos verificadores, por exemplo
     }
 
     // Validações para RG
@@ -78,13 +74,11 @@ export class UserService {
       throw new UserError("Funcionários só podem cadastrar clientes");
     }
 
-    // Verificar CPF primeiro
     const existingUserByCpf = await this.userModel.findByCpf(userData.cpf);
     if (existingUserByCpf) {
       throw new UserError("CPF já cadastrado");
     }
 
-    // Depois verificar email
     const existingUserByEmail = await this.userModel.findByEmail(
       userData.email
     );
@@ -104,10 +98,8 @@ export class UserService {
   }
 
   async searchUsers(searchTerm: string): Promise<IUser[]> {
-    // Remover caracteres especiais e espaços extras
     const sanitizedSearch = searchTerm.trim().toLowerCase();
 
-    // Verificar se está vazio após sanitização
     if (!sanitizedSearch) {
       return this.getAllUsers();
     }
@@ -203,7 +195,6 @@ export class UserService {
       throw new UserError("Não é permitido alterar a role do usuário");
     }
 
-    // Validar os dados antes de atualizar
     this.validateUserData(userData);
 
     const updatedData = {
@@ -225,5 +216,26 @@ export class UserService {
 
   async verifyPassword(userId: string, password: string): Promise<boolean> {
     return this.userModel.checkPassword(userId, password);
+  }
+
+  async updatePassword(userId: string, newPassword: string): Promise<void> {
+    if (!newPassword || newPassword.length < 6) {
+      throw new UserError("Senha deve ter pelo menos 6 caracteres");
+    }
+
+    const user = await this.userModel.findById(userId);
+    if (!user) {
+      throw new UserError("Usuário não encontrado");
+    }
+
+    await this.userModel.update(userId, { password: newPassword });
+  }
+
+  async getUserByEmail(email: string): Promise<IUser> {
+    const user = await this.userModel.findByEmail(email);
+    if (!user) {
+      throw new UserError("Usuário não encontrado");
+    }
+    return user;
   }
 }

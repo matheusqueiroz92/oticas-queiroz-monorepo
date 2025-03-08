@@ -10,6 +10,7 @@ import paymentRoutes from "./routes/paymentRoutes";
 import cashRegisterRoutes from "./routes/cashRegisterRoutes";
 import legacyClientRoutes from "./routes/legacyClientRoutes";
 import reportRoutes from "./routes/reportRoutes";
+import lensTypeRoutes from "./routes/lensTypeRoutes";
 import connectDB from "./config/db";
 import cors from "cors";
 import path from "node:path"; // Importe o módulo 'path'
@@ -53,6 +54,7 @@ class App {
     this.app.use("/api", cashRegisterRoutes);
     this.app.use("/api", legacyClientRoutes);
     this.app.use("/api", reportRoutes);
+    this.app.use("/api", lensTypeRoutes);
   }
 
   private database(): void {

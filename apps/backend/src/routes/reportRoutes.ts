@@ -90,7 +90,7 @@ const reportController = new ReportController();
  *         description: Acesso negado
  */
 router.post(
-  "/",
+  "/report",
   authenticate,
   authorize(["admin", "employee"]),
   reportController.createReport.bind(reportController)
@@ -122,7 +122,7 @@ router.post(
  *         description: Não autorizado
  */
 router.get(
-  "/",
+  "/report",
   authenticate,
   reportController.getUserReports.bind(reportController)
 );
@@ -148,7 +148,7 @@ router.get(
  *         description: Relatório não encontrado
  */
 router.get(
-  "/:id",
+  "/report/:id",
   authenticate,
   reportController.getReport.bind(reportController)
 );

@@ -15,7 +15,7 @@ export default function EyeFormSection({
   return (
     <div>
       <h3 className="text-lg font-medium mb-2">{title}</h3>
-      <VisionSection eye={eye} title="Visão de Perto" form={form} />
+      <VisionSection eye={eye} form={form} />
     </div>
   );
 }

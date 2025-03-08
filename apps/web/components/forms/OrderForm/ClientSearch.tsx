@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import {
-  // FormControl,
   FormField,
   FormItem,
   FormLabel,
@@ -23,7 +22,6 @@ export default function ClientSearch({
 }: ClientSearchProps) {
   const [customerSearch, setCustomerSearch] = useState("");
   const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
-  const [customClientSelected, setCustomClientSelected] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const suggestionsRef = useRef<HTMLDivElement>(null);
 
@@ -64,15 +62,6 @@ export default function ClientSearch({
     onClientSelect(customer._id ?? "", customer.name ?? "");
     setCustomerSearch(customer.name ?? "");
     setShowSuggestions(false);
-    setCustomClientSelected(false);
-  };
-
-  const handleSelectCustomClient = () => {
-    if (!customerSearch.trim()) return;
-
-    onClientSelect("custom", customerSearch);
-    setShowSuggestions(false);
-    setCustomClientSelected(true);
   };
 
   return (
@@ -98,40 +87,30 @@ export default function ClientSearch({
                 ref={suggestionsRef}
                 className="absolute z-10 w-full bg-white border rounded-md shadow-lg mt-1"
               >
-                <ul className="py-1">
-                  {filteredCustomers.map((customer) => (
-                    <li key={customer._id} className="p-0">
-                      <button
-                        type="button"
-                        className="w-full text-left px-3 py-2 hover:bg-slate-100 cursor-pointer"
-                        onClick={() => handleSelectCustomer(customer)}
-                        aria-label={`Selecionar cliente ${customer.name}`}
-                      >
-                        {customer.name}
-                      </button>
-                    </li>
-                  ))}
-                  <li className="p-0">
-                    <button
-                      type="button"
-                      className="w-full text-left px-3 py-2 hover:bg-slate-100 cursor-pointer text-blue-600"
-                      onClick={handleSelectCustomClient}
-                      aria-label={`Adicionar cliente novo: ${customerSearch}`}
-                    >
-                      + Adicionar cliente novo: "{customerSearch}"
-                    </button>
-                  </li>
-                </ul>
+                {filteredCustomers.length > 0 ? (
+                  <ul className="py-1">
+                    {filteredCustomers.map((customer) => (
+                      <li key={customer._id} className="p-0">
+                        <button
+                          type="button"
+                          className="w-full text-left px-3 py-2 hover:bg-slate-100 cursor-pointer"
+                          onClick={() => handleSelectCustomer(customer)}
+                          aria-label={`Selecionar cliente ${customer.name}`}
+                        >
+                          {customer.name}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="p-3 text-sm text-gray-500">
+                    Nenhum cliente encontrado com este nome. Por favor, cadastre
+                    o cliente.
+                  </div>
+                )}
               </div>
             )}
           </div>
-          {customClientSelected && (
-            <div className="mt-2 p-2 bg-blue-50 rounded-md">
-              <p className="text-sm text-blue-800">
-                Novo cliente: {customerSearch}
-              </p>
-            </div>
-          )}
           <FormMessage />
         </FormItem>
       )}
