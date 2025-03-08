@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -35,10 +35,13 @@ type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
 export default function ResetPasswordPage({
   params,
 }: {
-  params: { token: string };
+  params: Promise<{ token: string }> | { token: string };
 }) {
   const router = useRouter();
-  const { token } = params;
+  const resolvedParams =
+    typeof params === "object" && !("then" in params) ? params : use(params);
+
+  const { token } = resolvedParams;
 
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -58,16 +61,28 @@ export default function ResetPasswordPage({
     },
   });
 
-  // Validar o token quando a página carregar
   useEffect(() => {
     const validateToken = async () => {
       try {
         setIsValidating(true);
+
+        if (!token || token.length < 10) {
+          console.error("Token inválido ou muito curto:", token);
+          setIsTokenValid(false);
+          setError("O token fornecido é inválido");
+          return;
+        }
+
         const isValid = await validateResetToken(token);
         setIsTokenValid(isValid);
+
+        if (!isValid) {
+          setError("O token fornecido é inválido ou expirou");
+        }
       } catch (error) {
         console.error("Erro ao validar token:", error);
         setIsTokenValid(false);
+        setError("Não foi possível validar o token");
       } finally {
         setIsValidating(false);
       }
@@ -104,15 +119,20 @@ export default function ResetPasswordPage({
 
   // Renderizar estados diferentes baseados na validação do token
   const renderContent = () => {
+    // Estado de carregamento
     if (isValidating) {
       return (
         <div className="flex flex-col items-center justify-center p-6">
           <Loader2 className="h-8 w-8 animate-spin text-[#2f67ff] mb-4" />
           <p className="text-center">Verificando seu link de redefinição...</p>
+          <p className="text-xs text-muted-foreground mt-2">
+            Token: {token.substring(0, 6)}...{token.substring(token.length - 6)}
+          </p>
         </div>
       );
     }
 
+    // Token inválido
     if (!isTokenValid) {
       return (
         <div className="flex flex-col items-center justify-center p-6">
@@ -120,10 +140,21 @@ export default function ResetPasswordPage({
           <h3 className="text-lg font-semibold mb-2">
             Link inválido ou expirado
           </h3>
-          <p className="text-center text-muted-foreground mb-6">
+          <p className="text-center text-muted-foreground mb-3">
             O link para redefinição de senha é inválido ou já expirou. Por
             favor, solicite um novo link.
           </p>
+
+          {error && (
+            <Alert variant="destructive" className="mb-4 mt-2 text-sm">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          <p className="text-xs text-muted-foreground mb-4">
+            Token: {token.substring(0, 6)}...{token.substring(token.length - 6)}
+          </p>
+
           <Button
             asChild
             className="bg-[#2f67ff] hover:bg-[#1e40af] text-white"
@@ -226,6 +257,7 @@ export default function ResetPasswordPage({
                 src={LogoOticasQueiroz}
                 alt="Óticas Queiroz Logo"
                 fill
+                sizes="(max-width: 768px) 100vw, 300px"
                 className="object-contain"
                 priority
               />

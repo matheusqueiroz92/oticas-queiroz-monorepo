@@ -101,6 +101,7 @@ oticas-queiroz-monorepo/
 - Autorização baseada em roles
 - Middleware de proteção de rotas
 - Middleware para tratamento de erros
+- Recuperação de senha via email
 
 ### Roles
 
@@ -131,6 +132,44 @@ oticas-queiroz-monorepo/
     }
   }
   ```
+
+  - POST `/api/auth/forgot-password`
+
+  ```typescript
+  // Request
+  {
+    "email": string    // email cadastrado do usuário
+  }
+
+  // Response 200
+  {
+    "message": string  // Mensagem de sucesso (mesmo se o email não existir, por segurança)
+  }
+  ```
+
+- POST `/api/auth/reset-password`
+
+```typescript
+// Request
+{
+  "token": string,    // token recebido por email
+  "password": string  // nova senha
+}
+
+// Response 200
+{
+  "message": string   // Confirmação de redefinição
+}
+```
+
+- GET `/api/auth/validate-reset-token/{token}`
+
+```typescript
+// Response 200
+{
+  "valid": boolean // Indica se o token é válido e não expirou
+}
+```
 
 ## 👥 Usuários
 

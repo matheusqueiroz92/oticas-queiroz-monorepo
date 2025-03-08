@@ -43,7 +43,7 @@ export class PasswordResetService {
 
       // Construir link de redefinição
       const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
-      const resetLink = `${frontendUrl}/reset-password/${token}`;
+      const resetLink = `${frontendUrl}/auth/reset-password/${token}`;
 
       // Enviar email
       await this.emailService.sendPasswordResetEmail(email, resetLink);

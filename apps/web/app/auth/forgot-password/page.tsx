@@ -79,6 +79,7 @@ export default function ForgotPasswordPage() {
                 src={LogoOticasQueiroz}
                 alt="Óticas Queiroz Logo"
                 fill
+                sizes="(max-width: 768px) 100vw, 300px"
                 className="object-contain"
                 priority
               />

@@ -120,8 +120,8 @@ export default function LoginPage() {
               <Image
                 src={LogoOticasQueiroz}
                 alt="Óticas Queiroz Logo"
-                width={200}
-                height={200}
+                fill
+                sizes="(max-width: 768px) 100vw, 300px"
                 className="object-contain"
                 priority
               />

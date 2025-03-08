@@ -34,21 +34,26 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Tratamos erros 401 somente se não estivermos em páginas relacionadas à autenticação
+    // Isso evita redirecionamentos indesejados em rotas públicas como reset-password
     if (error.response?.status === 401 && typeof window !== "undefined") {
-      console.log("Erro 401 detectado, limpando cookies e redirecionando");
-
-      // Limpar cookies de autenticação
-      clearAuthCookies();
-
-      // Redirecionar para a página de login somente se não estivermos já na página de login
       const currentPath = window.location.pathname;
-      if (
-        !currentPath.includes("/auth/login") &&
-        !currentPath.includes("/auth/forgot-password") &&
-        !currentPath.includes("/auth/reset-password")
-      ) {
-        // Usar window.location para garantir o recarregamento da página
+      const isAuthRelatedPage =
+        currentPath.includes("/auth/login") ||
+        currentPath.includes("/auth/forgot-password") ||
+        currentPath.includes("/auth/reset-password");
+
+      // Só redirecionamos em caso de 401 em páginas protegidas
+      if (!isAuthRelatedPage) {
+        console.log("Erro 401 detectado em página protegida, redirecionando");
+
+        // Limpar cookies de autenticação
+        clearAuthCookies();
+
+        // Redirecionar para página de login
         window.location.href = "/auth/login";
+      } else {
+        console.log("Erro 401 em página de autenticação, sem redirecionamento");
       }
     }
     return Promise.reject(error);
@@ -141,10 +146,25 @@ export const requestPasswordReset = async (email: string): Promise<void> => {
  */
 export const validateResetToken = async (token: string): Promise<boolean> => {
   try {
-    const response = await api.get(`/api/auth/validate-reset-token/${token}`);
+    // Criamos uma instância separada do axios para não usar interceptors que possam redirecionar
+    const validationApi = axios.create({
+      baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333",
+      headers: { "Content-Type": "application/json" },
+    });
+
+    const response = await validationApi.get(
+      `/api/auth/validate-reset-token/${token}`
+    );
     return response.data.valid === true;
   } catch (error) {
     console.error("Erro ao validar token:", error);
+    // Exibir detalhes para facilitar a depuração
+    if (axios.isAxiosError(error)) {
+      console.error("Detalhes do erro:", {
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+    }
     return false;
   }
 };
@@ -157,9 +177,23 @@ export const resetPassword = async (
   password: string
 ): Promise<void> => {
   try {
-    await api.post("/api/auth/reset-password", { token, password });
+    // Usando axios diretamente para evitar interceptors que possam causar redirecionamentos
+    const resetApi = axios.create({
+      baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333",
+      headers: { "Content-Type": "application/json" },
+    });
+
+    await resetApi.post("/api/auth/reset-password", { token, password });
+    console.log("Senha redefinida com sucesso");
   } catch (error) {
+    console.error("Erro ao redefinir senha:", error);
+
     if (axios.isAxiosError(error)) {
+      console.error("Detalhes do erro:", {
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+
       const message =
         error.response?.data?.message ||
         "Falha ao redefinir a senha. O token pode ter expirado.";
