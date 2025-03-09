@@ -24,9 +24,9 @@ Este repositório contém um sistema de gerenciamento para ótica que integra co
 ### Frontend
 
 - Next.js
+- TypeScript
 - Tailwind CSS
 - Shadcn UI
-- TypeScript
 - Zod
 - React Query
 - React Hook Form
@@ -62,7 +62,7 @@ oticas-queiroz-monorepo/
 │       ├── interfaces/   # Definições de tipos
 │       ├── middlewares/  # Definições dos middlewares
 │       ├── models/       # Camada de acesso ao banco
-│       ├── services/     # Camada de regras de negócio
+│       ├── services/     # Camada das regras de negócio da aplicação
 │       ├── schemas/      # Schemas do Mongoose
 │       ├── __tests__/    # Testes da aplicação
 │       ├── types/        # Tipagens Express
@@ -80,12 +80,16 @@ oticas-queiroz-monorepo/
 │       └── exports/         # Componentes de exportação (PDF, etc)
 │     ├── hooks/       # Hooks personalizados
 │     ├── lib/         # Utilitários e funções auxiliares
-│     ├── contexts/
-│     ├── providers/
-│     ├── public/
+│     ├── contexts/    # Contexts
+│     ├── providers/   # Providers
+│     ├── public/      # Arquivos públicos do frontend web
 │     └── schemas/
 │   ├── mobile/       # React Native
-│   └── desktop/      # Electron
+│   ├── desktop/      # Electron
+│   └── public/       # Arquivo públicos da aplicação
+│     ├── images/       # Arquivos de imagem
+│       ├── users/       # Imagens de usuários
+│       └── products/    # Imagens de produtos
 ├── packages/
 │   ├── config/       # Configurações (ESLint, TS, Tailwind)
 │   ├── ui/           # Componentes UI (Shadcn UI)
