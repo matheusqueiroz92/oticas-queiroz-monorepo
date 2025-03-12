@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   Card,
@@ -23,10 +23,6 @@ import {
   ArrowLeft,
   CheckCircle,
 } from "lucide-react";
-import { api } from "../../../services/auth";
-import { useToast } from "@/hooks/use-toast";
-import { useMutation } from "@tanstack/react-query";
-import type { Payment } from "@/app/types/payment";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,222 +35,65 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-import type { User } from "../../../types/user";
-import type { Order } from "../../../types/order";
-import type { LegacyClient } from "../../../types/legacy-client";
+import { usePayments } from "../../../..//hooks/usePayments";
+import {
+  formatCurrency,
+  formatDate,
+  formatDateTime,
+  translatePaymentType,
+  translatePaymentMethod,
+  translatePaymentStatus,
+  getPaymentStatusClass,
+} from "@/app/utils/formatters";
+import type { IPayment } from "@/app/types/payment";
+import type { User } from "@/app/types/user";
+import type { Order } from "@/app/types/order";
+import type { LegacyClient } from "@/app/types/legacy-client";
 
 export default function PaymentDetailsPage() {
-  const { id } = useParams();
-  const [payment, setPayment] = useState<Payment | null>(null);
+  const { id } = useParams<{ id: string }>();
+  const [payment, setPayment] = useState<IPayment | null>(null);
   const [customer, setCustomer] = useState<User | null>(null);
   const [employee, setEmployee] = useState<User | null>(null);
   const [order, setOrder] = useState<Order | null>(null);
   const [legacyClient, setLegacyClient] = useState<LegacyClient | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   const router = useRouter();
-  const { toast } = useToast();
+  const { fetchPaymentById, handleCancelPayment, loading, error } =
+    usePayments();
 
+  // Buscar dados do pagamento
   useEffect(() => {
-    const fetchPaymentDetails = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+    const loadPaymentData = async () => {
+      if (!id) return;
 
-        // Obter detalhes do pagamento
-        const response = await api.get(`/api/payments/${id}`);
-        setPayment(response.data);
+      const paymentData = await fetchPaymentById(id as string);
+      if (paymentData) {
+        setPayment(paymentData);
 
-        // Se o pagamento tiver um cliente associado, buscar seus detalhes
-        if (response.data.customerId) {
-          try {
-            const customerResponse = await api.get(
-              `/api/users/${response.data.customerId}`
-            );
-            setCustomer(customerResponse.data);
-          } catch (customerError) {
-            console.error("Erro ao buscar dados do cliente:", customerError);
-          }
-        }
-
-        // Se o pagamento tiver um funcionário associado, buscar seus detalhes
-        if (response.data.employeeId) {
-          try {
-            const employeeResponse = await api.get(
-              `/api/users/${response.data.employeeId}`
-            );
-            setEmployee(employeeResponse.data);
-          } catch (employeeError) {
-            console.error(
-              "Erro ao buscar dados do funcionário:",
-              employeeError
-            );
-          }
-        }
-
-        // Se o pagamento estiver relacionado a um pedido, buscar seus detalhes
-        if (response.data.orderId) {
-          try {
-            const orderResponse = await api.get(
-              `/api/orders/${response.data.orderId}`
-            );
-            setOrder(orderResponse.data);
-          } catch (orderError) {
-            console.error("Erro ao buscar dados do pedido:", orderError);
-          }
-        }
-
-        // Se o pagamento estiver relacionado a um cliente legado, buscar seus detalhes
-        if (response.data.legacyClientId) {
-          try {
-            const legacyClientResponse = await api.get(
-              `/api/legacy-clients/${response.data.legacyClientId}`
-            );
-            setLegacyClient(legacyClientResponse.data);
-          } catch (legacyClientError) {
-            console.error(
-              "Erro ao buscar dados do cliente legado:",
-              legacyClientError
-            );
-          }
-        }
-      } catch (error) {
-        console.error("Erro ao buscar detalhes do pagamento:", error);
-        setError("Não foi possível carregar os detalhes do pagamento.");
-      } finally {
-        setLoading(false);
+        // Aqui poderia buscar dados relacionados como cliente, funcionário, etc.
+        // Isso depende da API retornar ou não esses dados já populados
       }
     };
 
-    if (id) {
-      fetchPaymentDetails();
-    }
-  }, [id]);
-
-  // Mutation para cancelar pagamento
-  const cancelPayment = useMutation({
-    mutationFn: async () => {
-      if (!payment) throw new Error("Pagamento não encontrado");
-      return api.post(`/api/payments/${payment._id}/cancel`);
-    },
-    onSuccess: () => {
-      toast({
-        title: "Pagamento cancelado",
-        description: "O pagamento foi cancelado com sucesso.",
-      });
-
-      // Atualizar o status do pagamento na interface
-      if (payment) {
-        setPayment({
-          ...payment,
-          status: "cancelled",
-        });
-      }
-    },
-    onError: (error) => {
-      console.error("Erro ao cancelar pagamento:", error);
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Não foi possível cancelar o pagamento. Tente novamente.",
-      });
-    },
-  });
+    loadPaymentData();
+  }, [id, fetchPaymentById]);
 
   // Função para imprimir comprovante
   const handlePrintReceipt = () => {
     window.print();
-    // Alternativa: criar uma nova janela com o conteúdo formatado para impressão
-    // const printWindow = window.open('', '_blank');
-    // if (printWindow) {
-    //   printWindow.document.write('<html><head><title>Comprovante de Pagamento</title>');
-    //   printWindow.document.write('</head><body>');
-    //   printWindow.document.write(`<h1>Comprovante de Pagamento #${payment?._id}</h1>`);
-    //   // Adicionar mais conteúdo do comprovante aqui
-    //   printWindow.document.write('</body></html>');
-    //   printWindow.document.close();
-    //   printWindow.print();
-    // }
   };
 
-  // Função para formatar data
-  const formatDate = (dateInput?: string | Date) => {
-    if (!dateInput) return "N/A";
+  // Função para cancelar pagamento
+  const confirmCancelPayment = async () => {
+    if (!id) return;
 
-    const date =
-      typeof dateInput === "string" ? new Date(dateInput) : dateInput;
-
-    return date.toLocaleDateString("pt-BR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
-  };
-
-  // Função para formatar data e hora
-  const formatDateTime = (dateInput?: string | Date) => {
-    if (!dateInput) return "N/A";
-
-    const date =
-      typeof dateInput === "string" ? new Date(dateInput) : dateInput;
-
-    return date.toLocaleDateString("pt-BR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  // Traduzir tipo de pagamento
-  const translatePaymentType = (type: string): string => {
-    const typeMap: Record<string, string> = {
-      sale: "Venda",
-      debt_payment: "Pagamento de Débito",
-      expense: "Despesa",
-    };
-
-    return typeMap[type] || type;
-  };
-
-  // Traduzir método de pagamento
-  const translatePaymentMethod = (method: string): string => {
-    const methodMap: Record<string, string> = {
-      credit: "Cartão de Crédito",
-      debit: "Cartão de Débito",
-      cash: "Dinheiro",
-      pix: "PIX",
-      check: "Cheque",
-    };
-
-    return methodMap[method] || method;
-  };
-
-  // Traduzir status
-  const translateStatus = (status: string): string => {
-    const statusMap: Record<string, string> = {
-      completed: "Concluído",
-      pending: "Pendente",
-      cancelled: "Cancelado",
-    };
-
-    return statusMap[status] || status;
-  };
-
-  // Função para obter a classe de status
-  const getStatusClass = (status: string) => {
-    switch (status) {
-      case "completed":
-        return "bg-green-100 text-green-800";
-      case "pending":
-        return "bg-yellow-100 text-yellow-800";
-      case "cancelled":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
+    const result = await handleCancelPayment(id as string);
+    if (result) {
+      setPayment(result);
     }
+    setShowConfirmDialog(false);
   };
 
   // Função para obter o ícone de status
@@ -308,9 +147,9 @@ export default function PaymentDetailsPage() {
           {getStatusIcon(payment.status)}
           <Badge
             variant="outline"
-            className={`text-sm px-3 py-1 ${getStatusClass(payment.status)}`}
+            className={`text-sm px-3 py-1 ${getPaymentStatusClass(payment.status)}`}
           >
-            {translateStatus(payment.status)}
+            {translatePaymentStatus(payment.status)}
           </Badge>
         </div>
       </div>
@@ -320,7 +159,7 @@ export default function PaymentDetailsPage() {
           <div className="flex justify-between items-center">
             <CardTitle>Pagamento #{payment._id.substring(0, 8)}</CardTitle>
             <div className="text-2xl font-bold text-green-700">
-              R$ {payment.amount.toFixed(2)}
+              {formatCurrency(payment.amount)}
             </div>
           </div>
           <CardDescription>
@@ -348,18 +187,23 @@ export default function PaymentDetailsPage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="font-medium">Data:</span>
-                  <span>{formatDate(payment.paymentDate)}</span>
+                  <span>{formatDate(payment.date)}</span>
                 </div>
-                {payment.installments && payment.installments > 1 && (
+                {payment.installments && payment.installments.total > 1 && (
                   <div className="flex items-center justify-between">
                     <span className="font-medium">Parcelas:</span>
-                    <span>{payment.installments}x</span>
+                    <span>
+                      {payment.installments.total}x de{" "}
+                      {formatCurrency(payment.installments.value)}
+                    </span>
                   </div>
                 )}
-                <div className="flex items-center justify-between">
-                  <span className="font-medium">Categoria:</span>
-                  <span>{payment.category || "Não especificada"}</span>
-                </div>
+                {payment.category && (
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">Categoria:</span>
+                    <span>{payment.category}</span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between">
                   <span className="font-medium">Criado em:</span>
                   <span>{formatDateTime(payment.createdAt)}</span>
@@ -405,19 +249,19 @@ export default function PaymentDetailsPage() {
                     </Button>
                   </div>
                 )}
-                {employee && (
+                {payment.createdBy && (
                   <div className="flex items-center justify-between">
-                    <span className="font-medium">Funcionário:</span>
-                    <span>{employee.name}</span>
+                    <span className="font-medium">Registrado por:</span>
+                    <span>{employee?.name || payment.createdBy}</span>
                   </div>
                 )}
-                {order && (
+                {payment.orderId && (
                   <div className="flex items-center justify-between">
                     <span className="font-medium">Pedido:</span>
                     <Button
                       variant="link"
                       className="p-0 h-auto"
-                      onClick={() => router.push(`/orders/${order._id}`)}
+                      onClick={() => router.push(`/orders/${payment.orderId}`)}
                     >
                       Ver Pedido
                     </Button>
@@ -454,7 +298,7 @@ export default function PaymentDetailsPage() {
             </>
           )}
 
-          {/* Histórico de Alterações - Mock */}
+          {/* Histórico de Alterações */}
           <Separator />
           <div className="space-y-2">
             <h3 className="font-medium text-lg flex items-center gap-2">
@@ -502,7 +346,10 @@ export default function PaymentDetailsPage() {
           </div>
 
           {payment.status !== "cancelled" && (
-            <AlertDialog>
+            <AlertDialog
+              open={showConfirmDialog}
+              onOpenChange={setShowConfirmDialog}
+            >
               <AlertDialogTrigger asChild>
                 <Button variant="destructive">
                   <Ban className="h-4 w-4 mr-2" />
@@ -520,10 +367,10 @@ export default function PaymentDetailsPage() {
                 <AlertDialogFooter>
                   <AlertDialogCancel>Voltar</AlertDialogCancel>
                   <AlertDialogAction
-                    onClick={() => cancelPayment.mutate()}
+                    onClick={confirmCancelPayment}
                     className="bg-red-600 hover:bg-red-700"
                   >
-                    {cancelPayment.isPending ? (
+                    {loading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         Cancelando...

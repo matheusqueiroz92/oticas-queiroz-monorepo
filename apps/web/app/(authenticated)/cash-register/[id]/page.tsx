@@ -4,8 +4,6 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { api } from "../../../services/auth";
-import { useToast } from "@/hooks/use-toast";
 
 import {
   Card,
@@ -42,101 +40,92 @@ import {
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
-import type { CashRegister } from "@/app/types/cash-register";
-import type { Payment } from "@/app/types/payment";
+import { useCashRegister } from "../../../../hooks/useCashRegister";
+import { usePayments } from "../../../../hooks/usePayments";
+import {
+  formatCurrency,
+  formatDate,
+  translatePaymentType,
+  translatePaymentMethod,
+  getPaymentTypeClass,
+} from "@/app/utils/formatters";
+import type { IPayment } from "@/app/types/payment";
+
+interface RegisterSummary {
+  register: {
+    _id: string;
+    openingDate: string | Date;
+    status: string;
+    openingBalance: number;
+    currentBalance: number;
+    closingBalance?: number;
+    // Outros campos possíveis
+  };
+  payments: {
+    sales: {
+      total: number;
+      byMethod: Record<string, number>;
+    };
+    debts: {
+      received: number;
+      byMethod: Record<string, number>;
+    };
+    expenses: {
+      total: number;
+      byCategory: Record<string, number>;
+    };
+  };
+}
 
 export default function CashRegisterDetailsPage() {
-  const params = useParams();
+  const params = useParams<{ id: string }>();
   const router = useRouter();
-  const { toast } = useToast();
-  const [cashRegister, setCashRegister] = useState<CashRegister | null>(null);
-  const [payments, setPayments] = useState<Payment[]>([]);
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-  const [summary, setSummary] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [summary, setSummary] = useState<RegisterSummary | null>(null);
+  const [payments, setPayments] = useState<IPayment[]>([]);
+
+  const {
+    fetchCashRegisterById,
+    fetchCashRegisterSummary,
+    navigateToCloseRegister,
+    currentRegister,
+    loading,
+    error,
+  } = useCashRegister();
+
+  const { fetchPaymentsByCashRegister } = usePayments();
 
   // Buscar dados do caixa
   useEffect(() => {
-    const fetchCashRegisterDetails = async () => {
+    const fetchDetails = async () => {
+      if (!params.id) return;
+
+      // Buscar detalhes do caixa
+      await fetchCashRegisterById(params.id);
+
+      // Buscar o resumo do caixa
       try {
-        setLoading(true);
-        setError(null);
+        const summaryData = await fetchCashRegisterSummary(params.id);
+        setSummary(summaryData);
+      } catch (e) {
+        console.error("Erro ao buscar resumo do caixa:", e);
+      }
 
-        // Buscar detalhes do caixa
-        const response = await api.get(`/api/cash-registers/${params.id}`);
-        setCashRegister(response.data);
-
-        // Buscar o resumo do caixa
-        try {
-          const summaryResponse = await api.get(
-            `/api/cash-registers/${params.id}/summary`
-          );
-          setSummary(summaryResponse.data);
-        } catch (e) {
-          console.error("Erro ao buscar resumo do caixa:", e);
-        }
-
-        // Buscar os pagamentos relacionados ao caixa
-        try {
-          const paymentsResponse = await api.get(
-            `/api/payments?cashRegisterId=${params.id}`
-          );
-          if (paymentsResponse.data?.payments) {
-            setPayments(paymentsResponse.data.payments);
-          } else if (Array.isArray(paymentsResponse.data)) {
-            setPayments(paymentsResponse.data);
-          } else {
-            setPayments([]);
-          }
-        } catch (e) {
-          console.error("Erro ao buscar pagamentos do caixa:", e);
-          setPayments([]);
-        }
-      } catch (error) {
-        console.error("Erro ao buscar detalhes do caixa:", error);
-        setError("Não foi possível carregar os detalhes do caixa.");
-      } finally {
-        setLoading(false);
+      // Buscar os pagamentos relacionados ao caixa
+      try {
+        const paymentsList = await fetchPaymentsByCashRegister(params.id);
+        setPayments(paymentsList);
+      } catch (e) {
+        console.error("Erro ao buscar pagamentos do caixa:", e);
       }
     };
 
-    if (params.id) {
-      fetchCashRegisterDetails();
-    }
-  }, [params.id]);
-
-  // Função para formatar valor monetário
-  const formatCurrency = (value: number): string => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(value);
-  };
-
-  // Função para traduzir o tipo de pagamento
-  const translatePaymentType = (type: string): string => {
-    const typeMap: Record<string, string> = {
-      sale: "Venda",
-      debt_payment: "Pagamento de Débito",
-      expense: "Despesa",
-    };
-
-    return typeMap[type] || type;
-  };
-
-  // Função para traduzir o método de pagamento
-  const translatePaymentMethod = (method: string): string => {
-    const methodMap: Record<string, string> = {
-      credit: "Cartão de Crédito",
-      debit: "Cartão de Débito",
-      cash: "Dinheiro",
-      pix: "PIX",
-      check: "Cheque",
-    };
-
-    return methodMap[method] || method;
-  };
+    fetchDetails();
+  }, [
+    params.id,
+    fetchCashRegisterById,
+    fetchCashRegisterSummary,
+    fetchPaymentsByCashRegister,
+  ]);
 
   // Função para imprimir relatório
   const handlePrint = () => {
@@ -151,7 +140,7 @@ export default function CashRegisterDetailsPage() {
     );
   }
 
-  if (error || !cashRegister) {
+  if (error || !currentRegister) {
     return (
       <div className="max-w-4xl mx-auto p-4">
         <Card className="bg-red-50 border-red-200">
@@ -173,11 +162,11 @@ export default function CashRegisterDetailsPage() {
 
   // Calcular diferença para caixas fechados
   const calculateDifference = () => {
-    if (cashRegister.status !== "closed" || !cashRegister.closingBalance)
+    if (currentRegister.status !== "closed" || !currentRegister.closingBalance)
       return null;
 
     const difference =
-      cashRegister.closingBalance - cashRegister.currentBalance;
+      currentRegister.closingBalance - currentRegister.currentBalance;
     return {
       value: difference,
       isPositive: difference >= 0,
@@ -205,11 +194,9 @@ export default function CashRegisterDetailsPage() {
             <Printer className="h-4 w-4 mr-2" />
             Imprimir
           </Button>
-          {cashRegister.status === "open" && (
+          {currentRegister.status === "open" && (
             <Button
-              onClick={() =>
-                router.push(`/cash-register/close/${cashRegister._id}`)
-              }
+              onClick={() => navigateToCloseRegister(currentRegister._id)}
             >
               Fechar Caixa
             </Button>
@@ -226,12 +213,12 @@ export default function CashRegisterDetailsPage() {
               Dados do Caixa
               <Badge
                 className={`ml-2 ${
-                  cashRegister.status === "open"
+                  currentRegister.status === "open"
                     ? "bg-green-100 text-green-800 hover:bg-green-100"
                     : "bg-gray-100 text-gray-800 hover:bg-gray-100"
                 }`}
               >
-                {cashRegister.status === "open" ? "Aberto" : "Fechado"}
+                {currentRegister.status === "open" ? "Aberto" : "Fechado"}
               </Badge>
             </CardTitle>
           </CardHeader>
@@ -245,9 +232,7 @@ export default function CashRegisterDetailsPage() {
                       Data de Abertura
                     </div>
                     <div className="font-medium">
-                      {format(new Date(cashRegister.date), "PPP", {
-                        locale: ptBR,
-                      })}
+                      {formatDate(currentRegister.openingDate)}
                     </div>
                   </div>
                 </div>
@@ -255,7 +240,9 @@ export default function CashRegisterDetailsPage() {
                   <User className="h-4 w-4 text-gray-500" />
                   <div>
                     <div className="text-sm text-gray-500">Aberto por</div>
-                    <div className="font-medium">{cashRegister.openedBy}</div>
+                    <div className="font-medium">
+                      {currentRegister.openedBy}
+                    </div>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -263,18 +250,18 @@ export default function CashRegisterDetailsPage() {
                   <div>
                     <div className="text-sm text-gray-500">Saldo Inicial</div>
                     <div className="font-medium">
-                      {formatCurrency(cashRegister.openingBalance)}
+                      {formatCurrency(currentRegister.openingBalance)}
                     </div>
                   </div>
                 </div>
 
-                {cashRegister.status === "open" ? (
+                {currentRegister.status === "open" ? (
                   <div className="flex items-center space-x-2">
                     <DollarSign className="h-4 w-4 text-green-500" />
                     <div>
                       <div className="text-sm text-gray-500">Saldo Atual</div>
                       <div className="font-medium text-green-600">
-                        {formatCurrency(cashRegister.currentBalance)}
+                        {formatCurrency(currentRegister.currentBalance)}
                       </div>
                     </div>
                   </div>
@@ -287,7 +274,7 @@ export default function CashRegisterDetailsPage() {
                           Saldo de Fechamento
                         </div>
                         <div className="font-medium">
-                          {formatCurrency(cashRegister.closingBalance || 0)}
+                          {formatCurrency(currentRegister.closingBalance || 0)}
                         </div>
                       </div>
                     </div>
@@ -315,7 +302,7 @@ export default function CashRegisterDetailsPage() {
                       <div>
                         <div className="text-sm text-gray-500">Fechado por</div>
                         <div className="font-medium">
-                          {cashRegister.closedBy || "-"}
+                          {currentRegister.closedBy || "-"}
                         </div>
                       </div>
                     </div>
@@ -323,11 +310,11 @@ export default function CashRegisterDetailsPage() {
                 )}
               </div>
 
-              {cashRegister.observations && (
+              {currentRegister.observations && (
                 <div className="mt-4">
                   <div className="text-sm text-gray-500">Observações</div>
                   <div className="p-3 bg-gray-50 rounded-md mt-1 text-sm">
-                    {cashRegister.observations}
+                    {currentRegister.observations}
                   </div>
                 </div>
               )}
@@ -349,24 +336,24 @@ export default function CashRegisterDetailsPage() {
                 <div className="flex justify-between border-b pb-2">
                   <span className="text-sm">Total de Vendas</span>
                   <span className="font-medium text-green-600">
-                    {formatCurrency(summary.totalSales || 0)}
+                    {formatCurrency(summary.payments?.sales?.total || 0)}
                   </span>
                 </div>
                 <div className="flex justify-between border-b pb-2">
                   <span className="text-sm">Total de Despesas</span>
                   <span className="font-medium text-red-600">
-                    {formatCurrency(summary.totalExpenses || 0)}
+                    {formatCurrency(summary.payments?.expenses?.total || 0)}
                   </span>
                 </div>
                 <div className="flex justify-between border-b pb-2">
                   <span className="text-sm">Pagamento de Débitos</span>
                   <span className="font-medium">
-                    {formatCurrency(summary.totalDebtPayments || 0)}
+                    {formatCurrency(summary.payments?.debts?.received || 0)}
                   </span>
                 </div>
                 <div className="flex justify-between font-medium">
                   <span>Saldo</span>
-                  <span>{formatCurrency(summary.balance || 0)}</span>
+                  <span>{formatCurrency(currentRegister.currentBalance)}</span>
                 </div>
               </div>
             ) : (
@@ -420,13 +407,7 @@ export default function CashRegisterDetailsPage() {
                         <TableCell>
                           <Badge
                             variant="outline"
-                            className={
-                              payment.type === "sale"
-                                ? "bg-green-100 text-green-800 hover:bg-green-100"
-                                : payment.type === "expense"
-                                  ? "bg-red-100 text-red-800 hover:bg-red-100"
-                                  : "bg-blue-100 text-blue-800 hover:bg-blue-100"
-                            }
+                            className={getPaymentTypeClass(payment.type)}
                           >
                             {translatePaymentType(payment.type)}
                           </Badge>
@@ -434,9 +415,7 @@ export default function CashRegisterDetailsPage() {
                         <TableCell>
                           {translatePaymentMethod(payment.paymentMethod)}
                         </TableCell>
-                        <TableCell>
-                          {format(new Date(payment.paymentDate), "dd/MM/yyyy")}
-                        </TableCell>
+                        <TableCell>{formatDate(payment.date)}</TableCell>
                         <TableCell
                           className={
                             payment.type === "expense"
@@ -508,11 +487,7 @@ export default function CashRegisterDetailsPage() {
                           <TableCell>
                             <Badge
                               variant="outline"
-                              className={
-                                payment.type === "sale"
-                                  ? "bg-green-100 text-green-800 hover:bg-green-100"
-                                  : "bg-blue-100 text-blue-800 hover:bg-blue-100"
-                              }
+                              className={getPaymentTypeClass(payment.type)}
                             >
                               {translatePaymentType(payment.type)}
                             </Badge>
@@ -520,12 +495,7 @@ export default function CashRegisterDetailsPage() {
                           <TableCell>
                             {translatePaymentMethod(payment.paymentMethod)}
                           </TableCell>
-                          <TableCell>
-                            {format(
-                              new Date(payment.paymentDate),
-                              "dd/MM/yyyy"
-                            )}
-                          </TableCell>
+                          <TableCell>{formatDate(payment.date)}</TableCell>
                           <TableCell className="text-green-600 font-medium">
                             +{formatCurrency(payment.amount)}
                           </TableCell>
@@ -588,12 +558,7 @@ export default function CashRegisterDetailsPage() {
                           <TableCell>
                             {translatePaymentMethod(payment.paymentMethod)}
                           </TableCell>
-                          <TableCell>
-                            {format(
-                              new Date(payment.paymentDate),
-                              "dd/MM/yyyy"
-                            )}
-                          </TableCell>
+                          <TableCell>{formatDate(payment.date)}</TableCell>
                           <TableCell className="text-red-600 font-medium">
                             -{formatCurrency(payment.amount)}
                           </TableCell>

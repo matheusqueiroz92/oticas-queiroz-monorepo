@@ -1,9 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import { api } from "../../services/auth";
-import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -32,242 +29,60 @@ import {
   FileText,
   Loader2,
   PlusCircle,
-  Search,
-  DollarSign,
   ClipboardList,
+  DollarSign,
 } from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Separator } from "@/components/ui/separator";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from "@/components/ui/card";
 
-import type { CashRegister } from "@/app/types/cash-register";
-
-interface SearchParams {
-  search?: string;
-  page?: number;
-  startDate?: string;
-  endDate?: string;
-  status?: string;
-}
+// Importar novo hook e componentes
+import { useCashRegister } from "../../../hooks/useCashRegister";
+import { formatCurrency, formatDate } from "@/app/utils/formatters";
 
 export default function CashRegisterPage() {
-  const [cashRegisters, setCashRegisters] = useState<CashRegister[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalRegisters, setTotalRegisters] = useState(0);
-  const [activeRegister, setActiveRegister] = useState<CashRegister | null>(
-    null
-  );
   const [date, setDate] = useState<Date | undefined>(undefined);
-  const [filter, setFilter] = useState<{
-    status?: string;
-    startDate?: Date;
-    endDate?: Date;
-  }>({});
 
-  const router = useRouter();
-  const { toast } = useToast();
-
-  const fetchCashRegisters = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const params: SearchParams = {
-        search,
-        page: currentPage,
-        status: filter.status,
-        startDate: filter.startDate
-          ? format(filter.startDate, "yyyy-MM-dd")
-          : undefined,
-        endDate: filter.endDate
-          ? format(filter.endDate, "yyyy-MM-dd")
-          : undefined,
-      };
-
-      try {
-        // Primeiro, tente buscar o caixa atual aberto
-        let activeCashRegister = null;
-        try {
-          const currentResponse = await api.get("/api/cash-registers/current");
-          if (currentResponse.data && currentResponse.data.status === "open") {
-            activeCashRegister = currentResponse.data;
-            setActiveRegister(activeCashRegister);
-          }
-        } catch (currentError) {
-          console.log("Não foi possível buscar o caixa atual:", currentError);
-        }
-
-        // Em seguida, tente buscar todos os registros de caixa
-        try {
-          const response = await api.get("/api/cash-registers", { params });
-
-          // Verificar se a resposta tem o formato esperado
-          if (response.data?.cashRegisters) {
-            setCashRegisters(response.data.cashRegisters);
-
-            // Extrair informações de paginação
-            if (response.data.pagination) {
-              setTotalPages(response.data.pagination.totalPages || 1);
-              setTotalRegisters(
-                response.data.pagination.total ||
-                  response.data.cashRegisters.length
-              );
-            }
-          } else if (Array.isArray(response.data)) {
-            // Caso a API retorne diretamente um array
-            setCashRegisters(response.data);
-            setTotalPages(1);
-            setTotalRegisters(response.data.length);
-          } else {
-            // Se chegou aqui e já temos o caixa ativo, mas nenhum registro
-            // então adicione o caixa ativo ao array
-            if (activeCashRegister) {
-              setCashRegisters([activeCashRegister]);
-              setTotalPages(1);
-              setTotalRegisters(1);
-            } else {
-              // Caso não tenha dados
-              setCashRegisters([]);
-              setTotalPages(1);
-              setTotalRegisters(0);
-            }
-          }
-
-          // Verificar se há um caixa aberto na listagem, se ainda não foi definido
-          if (!activeCashRegister) {
-            let active = null;
-            if (Array.isArray(response.data?.cashRegisters)) {
-              active = response.data.cashRegisters.find(
-                (reg: CashRegister) => reg.status === "open"
-              );
-            } else if (Array.isArray(response.data)) {
-              active = response.data.find(
-                (reg: CashRegister) => reg.status === "open"
-              );
-            }
-            setActiveRegister(active || null);
-          }
-        } catch (listError) {
-          console.log("Erro ao buscar lista de caixas:", listError);
-
-          // Se temos um caixa ativo, mas a listagem falhou
-          if (activeCashRegister) {
-            setCashRegisters([activeCashRegister]);
-            setTotalPages(1);
-            setTotalRegisters(1);
-          } else {
-            setCashRegisters([]);
-            setTotalPages(1);
-            setTotalRegisters(0);
-          }
-        }
-      } catch (apiError) {
-        console.error("Erro na chamada à API:", apiError);
-        // Caso específico de erro na API que não seja problema de conexão
-        const errorMessage =
-          apiError instanceof Error
-            ? apiError.message
-            : "Erro desconhecido ao carregar registros";
-
-        setError(`Erro ao carregar registros de caixa. ${errorMessage}`);
-        setCashRegisters([]);
-        setTotalPages(1);
-        setTotalRegisters(0);
-      }
-    } catch (error) {
-      console.error("Erro geral na função fetchCashRegisters:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : "Erro desconhecido";
-      setError(`Erro ao carregar registros de caixa. ${errorMessage}`);
-      setCashRegisters([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [
-    search,
+  const {
+    cashRegisters,
+    activeRegister,
+    loading,
+    error,
     currentPage,
-    filter,
-    setActiveRegister,
-    setCashRegisters,
-    setError,
-    setLoading,
-    setTotalPages,
-    setTotalRegisters,
-  ]);
-
-  // Adicione esta função à página para buscar apenas o caixa atual ativo (se houver)
-  const fetchActiveCashRegister = async () => {
-    try {
-      const response = await api.get("/api/cash-registers/current");
-      if (response.data && response.data.status === "open") {
-        setActiveRegister(response.data);
-        return true;
-      }
-      return false;
-    } catch (error) {
-      console.log("Não há caixa aberto no momento.");
-      return false;
-    }
-  };
-
-  const safeFormatDate = (
-    dateInput: string | Date | undefined,
-    formatString = "dd/MM/yyyy",
-    locale = ptBR
-  ) => {
-    if (!dateInput) return "Data não disponível";
-
-    try {
-      // Se for string, tenta converter para Date
-      const date =
-        typeof dateInput === "string" ? new Date(dateInput) : dateInput;
-
-      // Verificar se a data é válida
-      if (Number.isNaN(date.getTime())) {
-        return "Data inválida";
-      }
-
-      return format(date, formatString, { locale });
-    } catch (error) {
-      console.error("Erro ao formatar data:", error);
-      return "Data inválida";
-    }
-  };
-
-  // Função para formatar valor monetário
-  const formatCurrency = (value: number): string => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(value);
-  };
+    totalPages,
+    totalRegisters,
+    setCurrentPage,
+    updateFilters,
+    navigateToOpenRegister,
+    navigateToRegisterDetails,
+    navigateToCloseRegister,
+  } = useCashRegister();
 
   // Função para aplicar filtro de data
   const applyDateFilter = () => {
     if (date) {
-      setFilter({ ...filter, startDate: date, endDate: date });
+      updateFilters({
+        startDate: format(date, "yyyy-MM-dd"),
+        endDate: format(date, "yyyy-MM-dd"),
+      });
     }
   };
 
   // Função para limpar filtros
   const clearFilters = () => {
-    setFilter({});
+    updateFilters({});
     setDate(undefined);
     setSearch("");
   };
@@ -342,34 +157,21 @@ export default function CashRegisterPage() {
     }
 
     // Última página
-    items.push(
-      <PaginationItem key={totalPages}>
-        <PaginationLink
-          onClick={() => setCurrentPage(totalPages)}
-          isActive={currentPage === totalPages}
-        >
-          {totalPages}
-        </PaginationLink>
-      </PaginationItem>
-    );
+    if (totalPages > 1) {
+      items.push(
+        <PaginationItem key={totalPages}>
+          <PaginationLink
+            onClick={() => setCurrentPage(totalPages)}
+            isActive={currentPage === totalPages}
+          >
+            {totalPages}
+          </PaginationLink>
+        </PaginationItem>
+      );
+    }
 
     return items;
   };
-
-  // No useEffect original, adicione uma chamada para tentar buscar o caixa atual
-  // se a lista de caixas estiver vazia
-  useEffect(() => {
-    fetchCashRegisters();
-  }, [fetchCashRegisters]);
-
-  // Adicione outro useEffect para buscar apenas o caixa ativo quando necessário
-  useEffect(() => {
-    // Se não encontrou nenhum registro, mas não houve erro na API,
-    // tente buscar apenas o caixa atual
-    if (cashRegisters.length === 0 && !loading && !error) {
-      fetchActiveCashRegister();
-    }
-  }, [cashRegisters, loading, error]);
 
   // Verificar estado vazio
   const showEmptyState = !loading && !error && cashRegisters.length === 0;
@@ -387,10 +189,7 @@ export default function CashRegisterPage() {
               Caixa Aberto
             </CardTitle>
             <CardDescription>
-              Aberto em {safeFormatDate(activeRegister.date)} às{" "}
-              {activeRegister.date
-                ? safeFormatDate(activeRegister.date, "HH:mm")
-                : "Horário não disponível"}
+              Aberto em {formatDate(activeRegister.openingDate)}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -410,7 +209,7 @@ export default function CashRegisterPage() {
               <div className="bg-white p-3 rounded-md shadow-sm">
                 <div className="text-sm text-gray-500">Total de Vendas</div>
                 <div className="text-lg font-bold text-gray-700">
-                  {formatCurrency(activeRegister.totalSales || 0)}
+                  {formatCurrency(activeRegister.sales?.total || 0)}
                 </div>
               </div>
             </div>
@@ -418,18 +217,12 @@ export default function CashRegisterPage() {
           <CardFooter className="flex justify-end space-x-2">
             <Button
               variant="outline"
-              onClick={() =>
-                router.push(`/cash-register/${activeRegister._id}`)
-              }
+              onClick={() => navigateToRegisterDetails(activeRegister._id)}
             >
               <ClipboardList className="h-4 w-4 mr-2" />
               Detalhes
             </Button>
-            <Button
-              onClick={() =>
-                router.push(`/cash-register/close/${activeRegister._id}`)
-              }
-            >
+            <Button onClick={() => navigateToCloseRegister(activeRegister._id)}>
               Fechar Caixa
             </Button>
           </CardFooter>
@@ -481,7 +274,7 @@ export default function CashRegisterPage() {
         </div>
 
         {!activeRegister && (
-          <Button onClick={() => router.push("/cash-register/open")}>
+          <Button onClick={navigateToOpenRegister}>
             <PlusCircle className="h-4 w-4 mr-2" />
             Abrir Caixa
           </Button>
@@ -506,10 +299,7 @@ export default function CashRegisterPage() {
             Nenhum registro de caixa foi encontrado.
           </p>
           {!activeRegister && (
-            <Button
-              className="mt-4"
-              onClick={() => router.push("/cash-register/open")}
-            >
+            <Button className="mt-4" onClick={navigateToOpenRegister}>
               <PlusCircle className="h-4 w-4 mr-2" />
               Abrir Caixa
             </Button>
@@ -533,11 +323,7 @@ export default function CashRegisterPage() {
             <TableBody>
               {cashRegisters.map((register) => (
                 <TableRow key={register._id}>
-                  <TableCell>
-                    {format(new Date(register.date), "dd/MM/yyyy", {
-                      locale: ptBR,
-                    })}
-                  </TableCell>
+                  <TableCell>{formatDate(register.openingDate)}</TableCell>
                   <TableCell>{register.openedBy}</TableCell>
                   <TableCell>
                     {formatCurrency(register.openingBalance)}
@@ -559,15 +345,24 @@ export default function CashRegisterPage() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        router.push(`/cash-register/${register._id}`)
-                      }
-                    >
-                      Detalhes
-                    </Button>
+                    <div className="flex space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigateToRegisterDetails(register._id)}
+                      >
+                        <ClipboardList className="h-4 w-4 mr-1" />
+                        Detalhes
+                      </Button>
+                      {register.status === "open" && (
+                        <Button
+                          size="sm"
+                          onClick={() => navigateToCloseRegister(register._id)}
+                        >
+                          Fechar
+                        </Button>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

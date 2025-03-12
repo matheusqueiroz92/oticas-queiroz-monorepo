@@ -7,9 +7,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { useMutation } from "@tanstack/react-query";
-import { api } from "../../../../services/auth";
-import { useToast } from "@/hooks/use-toast";
 
 import {
   Form,
@@ -31,6 +28,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
 import {
   ArrowLeft,
   Loader2,
@@ -49,11 +47,44 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Separator } from "@/components/ui/separator";
 
-import type { CashRegister } from "@/app/types/cash-register";
+import { useCashRegister } from "../../../../../hooks/useCashRegister";
+import {
+  getCashRegisterById,
+  getCashRegisterSummary,
+} from "@/app/services/cashRegister";
+import { formatCurrency, formatDate } from "@/app/utils/formatters";
+import type {
+  ICashRegister,
+  CloseCashRegisterDTO,
+} from "@/app/types/cash-register";
+
+interface RegisterSummary {
+  register: {
+    _id: string;
+    openingDate: string | Date;
+    status: string;
+    openingBalance: number;
+    currentBalance: number;
+    closingBalance?: number;
+    // Outros campos possíveis
+  };
+  payments: {
+    sales: {
+      total: number;
+      byMethod: Record<string, number>;
+    };
+    debts: {
+      received: number;
+      byMethod: Record<string, number>;
+    };
+    expenses: {
+      total: number;
+      byCategory: Record<string, number>;
+    };
+  };
+}
 
 // Esquema de validação para o formulário
 const closeCashRegisterSchema = z.object({
@@ -70,15 +101,15 @@ const closeCashRegisterSchema = z.object({
 type CloseCashRegisterFormValues = z.infer<typeof closeCashRegisterSchema>;
 
 export default function CloseCashRegisterPage() {
-  const params = useParams();
+  const params = useParams<{ id: string }>();
   const router = useRouter();
-  const { toast } = useToast();
-  const [cashRegister, setCashRegister] = useState<CashRegister | null>(null);
+  const [cashRegister, setCashRegister] = useState<ICashRegister | null>(null);
+  const [summary, setSummary] = useState<RegisterSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-  const [summary, setSummary] = useState<any>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+
+  const { handleCloseCashRegister } = useCashRegister();
 
   // Inicializar o formulário
   const form = useForm<CloseCashRegisterFormValues>({
@@ -92,13 +123,19 @@ export default function CloseCashRegisterPage() {
   // Buscar dados do caixa
   useEffect(() => {
     const fetchCashRegister = async () => {
+      if (!params.id) return;
+
       try {
         setLoading(true);
         setError(null);
 
         // Buscar detalhes do caixa
-        const response = await api.get(`/api/cash-registers/${params.id}`);
-        const registerData = response.data;
+        const registerData = await getCashRegisterById(params.id);
+
+        if (!registerData) {
+          setError("Caixa não encontrado.");
+          return;
+        }
 
         // Verificar se o caixa está aberto
         if (registerData.status !== "open") {
@@ -113,10 +150,8 @@ export default function CloseCashRegisterPage() {
 
         // Buscar o resumo do caixa
         try {
-          const summaryResponse = await api.get(
-            `/api/cash-registers/${params.id}/summary`
-          );
-          setSummary(summaryResponse.data);
+          const summaryData = await getCashRegisterSummary(params.id);
+          setSummary(summaryData);
         } catch (e) {
           console.error("Erro ao buscar resumo do caixa:", e);
         }
@@ -130,35 +165,8 @@ export default function CloseCashRegisterPage() {
       }
     };
 
-    if (params.id) {
-      fetchCashRegister();
-    }
+    fetchCashRegister();
   }, [params.id, form]);
-
-  // Mutation para fechar caixa
-  const closeCashRegister = useMutation({
-    mutationFn: async (data: CloseCashRegisterFormValues) => {
-      return api.post("/api/cash-registers/close", {
-        cashRegisterId: params.id,
-        ...data,
-      });
-    },
-    onSuccess: (response) => {
-      toast({
-        title: "Caixa fechado",
-        description: "O caixa foi fechado com sucesso.",
-      });
-      router.push("/cash-register");
-    },
-    onError: (error) => {
-      console.error("Erro ao fechar caixa:", error);
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Não foi possível fechar o caixa. Tente novamente.",
-      });
-    },
-  });
 
   // Função para lidar com envio do formulário
   const onSubmit = (data: CloseCashRegisterFormValues) => {
@@ -166,17 +174,17 @@ export default function CloseCashRegisterPage() {
   };
 
   // Função para confirmar fechamento
-  const confirmClose = () => {
-    const data = form.getValues();
-    closeCashRegister.mutate(data);
-  };
+  const confirmClose = async () => {
+    if (!cashRegister || !params.id) return;
 
-  // Função para formatar valor monetário
-  const formatCurrency = (value: number): string => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(value);
+    const data = form.getValues();
+
+    try {
+      await handleCloseCashRegister(params.id, data);
+      router.push("/cash-register");
+    } catch (error) {
+      console.error("Erro ao fechar caixa:", error);
+    }
   };
 
   // Calcular diferença entre saldo esperado e informado
@@ -249,13 +257,7 @@ export default function CloseCashRegisterPage() {
                       Caixa aberto em
                     </div>
                     <div className="text-blue-700">
-                      {format(new Date(cashRegister.date), "PPP", {
-                        locale: ptBR,
-                      })}{" "}
-                      às{" "}
-                      {format(new Date(cashRegister.date), "HH:mm", {
-                        locale: ptBR,
-                      })}
+                      {formatDate(cashRegister.openingDate)}
                     </div>
                   </div>
                 </div>
@@ -279,7 +281,7 @@ export default function CloseCashRegisterPage() {
                       Total de Vendas
                     </div>
                     <div className="text-lg font-semibold text-green-700">
-                      {formatCurrency(summary.totalSales || 0)}
+                      {formatCurrency(summary.payments?.sales?.total || 0)}
                     </div>
                   </div>
                   <div className="bg-red-50 p-3 rounded-md">
@@ -287,7 +289,7 @@ export default function CloseCashRegisterPage() {
                       Total de Despesas
                     </div>
                     <div className="text-lg font-semibold text-red-700">
-                      {formatCurrency(summary.totalExpenses || 0)}
+                      {formatCurrency(summary.payments?.expenses?.total || 0)}
                     </div>
                   </div>
                   <div className="bg-purple-50 p-3 rounded-md">
@@ -295,7 +297,7 @@ export default function CloseCashRegisterPage() {
                       Pgtos. de Débitos
                     </div>
                     <div className="text-lg font-semibold text-purple-700">
-                      {formatCurrency(summary.totalDebtPayments || 0)}
+                      {formatCurrency(summary.payments?.debts?.received || 0)}
                     </div>
                   </div>
                 </div>
@@ -311,7 +313,9 @@ export default function CloseCashRegisterPage() {
                         Dinheiro
                       </div>
                       <div className="font-medium">
-                        {formatCurrency(summary.byMethod?.cash || 0)}
+                        {formatCurrency(
+                          summary.payments?.sales?.byMethod?.cash || 0
+                        )}
                       </div>
                     </div>
                     <div className="border p-3 rounded-md flex flex-col">
@@ -320,7 +324,9 @@ export default function CloseCashRegisterPage() {
                         Crédito
                       </div>
                       <div className="font-medium">
-                        {formatCurrency(summary.byMethod?.credit || 0)}
+                        {formatCurrency(
+                          summary.payments?.sales?.byMethod?.credit || 0
+                        )}
                       </div>
                     </div>
                     <div className="border p-3 rounded-md flex flex-col">
@@ -329,7 +335,9 @@ export default function CloseCashRegisterPage() {
                         Débito
                       </div>
                       <div className="font-medium">
-                        {formatCurrency(summary.byMethod?.debit || 0)}
+                        {formatCurrency(
+                          summary.payments?.sales?.byMethod?.debit || 0
+                        )}
                       </div>
                     </div>
                     <div className="border p-3 rounded-md flex flex-col">
@@ -338,7 +346,9 @@ export default function CloseCashRegisterPage() {
                         PIX
                       </div>
                       <div className="font-medium">
-                        {formatCurrency(summary.byMethod?.pix || 0)}
+                        {formatCurrency(
+                          summary.payments?.sales?.byMethod?.pix || 0
+                        )}
                       </div>
                     </div>
                   </div>
@@ -440,19 +450,8 @@ export default function CloseCashRegisterPage() {
           >
             Cancelar
           </Button>
-          <Button
-            type="submit"
-            form="closeCashRegisterForm"
-            disabled={closeCashRegister.isPending}
-          >
-            {closeCashRegister.isPending ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Processando...
-              </>
-            ) : (
-              "Fechar Caixa"
-            )}
+          <Button type="submit" form="closeCashRegisterForm">
+            Fechar Caixa
           </Button>
         </CardFooter>
       </Card>

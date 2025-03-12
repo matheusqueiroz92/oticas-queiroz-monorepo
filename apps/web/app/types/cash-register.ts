@@ -1,30 +1,58 @@
-import type { Payment } from "./payment";
+import type { IPayment } from "./payment";
 
-export interface CashRegister {
+export interface ICashRegister {
   _id: string;
-  date: Date | string;
+  openingDate: Date;
+  closingDate?: Date;
   openingBalance: number;
   currentBalance: number;
   closingBalance?: number;
   status: "open" | "closed";
+  sales: {
+    total: number;
+    cash: number;
+    credit: number;
+    debit: number;
+    pix: number;
+  };
+  payments: {
+    received: number;
+    made: number;
+  };
   openedBy: string;
   closedBy?: string;
-  totalSales: number;
-  totalPayments: number;
   observations?: string;
-  createdAt?: Date | string;
-  updatedAt?: Date | string;
-}
-
-// app/types/column.ts (adicione às interfaces existentes)
-export interface PaymentColumn {
-  key: keyof Payment | string;
-  header: string;
-  render?: (payment: Payment) => React.ReactNode;
+  createdAt?: Date;
+  updatedAt?: Date;
+  // Campos para soft delete
+  isDeleted?: boolean;
+  deletedAt?: Date;
+  deletedBy?: string;
 }
 
 export interface CashRegisterColumn {
-  key: keyof CashRegister | string;
+  key: keyof ICashRegister | string;
   header: string;
-  render?: (cashRegister: CashRegister) => React.ReactNode;
+  render?: (cashRegister: ICashRegister) => React.ReactNode;
+}
+
+export interface CashRegisterResponse {
+  cashRegisters: ICashRegister[];
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface OpenCashRegisterDTO {
+  openingBalance: number;
+  observations?: string;
+  openingDate?: Date;
+}
+
+export interface CloseCashRegisterDTO {
+  closingBalance: number;
+  observations?: string;
 }

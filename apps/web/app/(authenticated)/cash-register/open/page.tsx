@@ -7,9 +7,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { useMutation } from "@tanstack/react-query";
-import { api } from "../../../services/auth";
-import { useToast } from "@/hooks/use-toast";
 
 import {
   Form,
@@ -32,6 +29,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Loader2, DollarSign, Calendar } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+
+import { useCashRegister } from "../../../../hooks/useCashRegister";
+import type { OpenCashRegisterDTO } from "@/app/types/cash-register";
 
 // Esquema de validação para o formulário
 const openCashRegisterSchema = z.object({
@@ -49,9 +50,12 @@ type OpenCashRegisterFormValues = z.infer<typeof openCashRegisterSchema>;
 
 export default function OpenCashRegisterPage() {
   const router = useRouter();
-  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasCashRegisterOpen, setHasCashRegisterOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [isChecking, setIsChecking] = useState(true);
+  const { toast } = useToast();
+
+  const { handleOpenCashRegister, checkForOpenRegister } = useCashRegister();
 
   // Inicializar o formulário
   const form = useForm<OpenCashRegisterFormValues>({
@@ -62,57 +66,58 @@ export default function OpenCashRegisterPage() {
     },
   });
 
-  // Verificar se já existe um caixa aberto - CORRIGIDO: usando useEffect em vez de useState
+  // Verificar se já existe um caixa aberto
   useEffect(() => {
     const checkCashRegister = async () => {
+      setIsChecking(true);
       try {
-        setLoading(true);
-        const response = await api.get("/api/cash-registers/current");
-        if (response.data && response.data.status === "open") {
-          setHasCashRegisterOpen(true);
+        const hasOpenRegister = await checkForOpenRegister();
+        setHasCashRegisterOpen(hasOpenRegister);
+
+        if (hasOpenRegister) {
+          // Se já existe um caixa aberto, exibir aviso e impedir abertura de novo caixa
           toast({
             variant: "destructive",
             title: "Caixa já aberto",
             description:
               "Já existe um caixa aberto. Feche-o antes de abrir um novo.",
           });
+
+          form.setError("openingBalance", {
+            type: "manual",
+            message:
+              "Já existe um caixa aberto. Feche-o antes de abrir um novo.",
+          });
         }
       } catch (error) {
-        // Se retornar 404, significa que não há caixa aberto
-        console.log("Nenhum caixa aberto encontrado");
+        console.error("Erro ao verificar caixa aberto:", error);
       } finally {
-        setLoading(false);
+        setIsChecking(false);
       }
     };
 
     checkCashRegister();
-  }, [toast]); // Adicionando toast como dependência
-
-  // Mutation para abrir caixa
-  const openCashRegister = useMutation({
-    mutationFn: async (data: OpenCashRegisterFormValues) => {
-      return api.post("/api/cash-registers/open", data);
-    },
-    onSuccess: (response) => {
-      toast({
-        title: "Caixa aberto",
-        description: "O caixa foi aberto com sucesso.",
-      });
-      router.push("/cash-register");
-    },
-    onError: (error) => {
-      console.error("Erro ao abrir caixa:", error);
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Não foi possível abrir o caixa. Tente novamente.",
-      });
-    },
-  });
+  }, [form, toast, checkForOpenRegister]);
 
   // Função para lidar com envio do formulário
-  const onSubmit = (data: OpenCashRegisterFormValues) => {
-    openCashRegister.mutate(data);
+  const onSubmit = async (data: OpenCashRegisterFormValues) => {
+    setIsSubmitting(true);
+
+    try {
+      const newCashRegister = await handleOpenCashRegister({
+        openingBalance: data.openingBalance,
+        observations: data.observations,
+        openingDate: new Date(),
+      });
+
+      if (newCashRegister) {
+        router.push("/cash-register");
+      }
+    } catch (error) {
+      console.error("Erro ao abrir caixa:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -129,7 +134,7 @@ export default function OpenCashRegisterPage() {
         <h1 className="text-2xl font-bold">Abrir Caixa</h1>
       </div>
 
-      {loading ? (
+      {isChecking ? (
         <div className="flex justify-center items-center py-12">
           <Loader2 className="h-8 w-8 animate-spin" />
         </div>
@@ -160,25 +165,25 @@ export default function OpenCashRegisterPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            <div className="bg-blue-50 p-4 rounded-md mb-6 flex items-center space-x-3">
+              <Calendar className="h-5 w-5 text-blue-600" />
+              <div>
+                <div className="text-sm text-blue-600 font-medium">
+                  Data de Abertura
+                </div>
+                <div className="text-blue-700">
+                  {format(new Date(), "PPP", { locale: ptBR })} às{" "}
+                  {format(new Date(), "HH:mm", { locale: ptBR })}
+                </div>
+              </div>
+            </div>
+
             <Form {...form}>
               <form
                 id="openCashRegisterForm"
                 onSubmit={form.handleSubmit(onSubmit)}
                 className="space-y-6"
               >
-                <div className="bg-blue-50 p-4 rounded-md mb-6 flex items-center space-x-3">
-                  <Calendar className="h-5 w-5 text-blue-600" />
-                  <div>
-                    <div className="text-sm text-blue-600 font-medium">
-                      Data de Abertura
-                    </div>
-                    <div className="text-blue-700">
-                      {format(new Date(), "PPP", { locale: ptBR })} às{" "}
-                      {format(new Date(), "HH:mm", { locale: ptBR })}
-                    </div>
-                  </div>
-                </div>
-
                 <FormField
                   control={form.control}
                   name="openingBalance"
@@ -242,9 +247,9 @@ export default function OpenCashRegisterPage() {
             <Button
               type="submit"
               form="openCashRegisterForm"
-              disabled={openCashRegister.isPending}
+              disabled={isSubmitting}
             >
-              {openCashRegister.isPending ? (
+              {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Processando...

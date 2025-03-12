@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,229 +20,83 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { Loader2, FileText, Ban } from "lucide-react";
-import { api } from "../../services/auth";
+import { Loader2, FileText, Ban, CreditCard, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import type { Payment } from "../../types/payment";
-import axios from "axios";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-interface SearchParams {
-  search?: string;
-  page?: number;
-  status?: string;
-  type?: string;
-  startDate?: string;
-  endDate?: string;
-}
+import { CashRegisterStatus } from "@/components/CashRegisterStatus";
+import { usePayments } from "../../../hooks/usePayments";
+import {
+  formatCurrency,
+  formatDate,
+  translatePaymentType,
+  translatePaymentMethod,
+  translatePaymentStatus,
+  getPaymentTypeClass,
+  getPaymentStatusClass,
+} from "@/app/utils/formatters";
+import type { PaymentType, PaymentStatus, IPayment } from "@/app/types/payment";
 
 export default function PaymentsPage() {
-  const [payments, setPayments] = useState<Payment[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalPayments, setTotalPayments] = useState(0);
-  const [filter, setFilter] = useState<{
-    status?: string;
-    type?: string;
-    startDate?: string;
-    endDate?: string;
-  }>({});
+  const [typeFilter, setTypeFilter] = useState<PaymentType | "all">("all");
+  const [statusFilter, setStatusFilter] = useState<PaymentStatus | "all">(
+    "all"
+  );
 
-  const router = useRouter();
-
-  const fetchPayments = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const params: SearchParams = {
-        search,
-        page: currentPage,
-        ...filter,
-      };
-
-      try {
-        const response = await api.get("/api/payments", { params });
-
-        // Verificar se a resposta tem o formato esperado
-        if (response.data?.payments) {
-          setPayments(response.data.payments);
-
-          // Extrair informações de paginação
-          if (response.data.pagination) {
-            setTotalPages(response.data.pagination.totalPages || 1);
-            setTotalPayments(
-              response.data.pagination.total || response.data.payments.length
-            );
-          }
-        } else if (Array.isArray(response.data)) {
-          // Caso a API retorne diretamente um array
-          setPayments(response.data);
-          setTotalPages(1);
-          setTotalPayments(response.data.length);
-        } else {
-          // Caso não tenha dados
-          setPayments([]);
-          setTotalPages(1);
-          setTotalPayments(0);
-        }
-      } catch (apiError: any) {
-        console.error("Erro ao buscar pagamentos:", apiError);
-
-        // Se for erro 404, não tratar como erro crítico
-        if (apiError?.response?.status === 404) {
-          setPayments([]);
-          setTotalPages(1);
-          setTotalPayments(0);
-        } else {
-          // Para outros erros, mostrar mensagem adequada
-          let errorMessage = "Erro ao carregar pagamentos.";
-
-          if (apiError?.response?.status === 401) {
-            errorMessage = "Você não está autenticado. Faça login novamente.";
-          } else if (apiError?.response?.status === 403) {
-            errorMessage = "Você não tem permissão para acessar esses dados.";
-          } else if (apiError?.message) {
-            errorMessage += ` ${apiError.message}`;
-          }
-
-          setError(errorMessage);
-        }
-      }
-    } catch (error: any) {
-      console.error("Erro geral na função fetchPayments:", error);
-      setError("Erro ao carregar pagamentos. Tente novamente mais tarde.");
-    } finally {
-      setLoading(false);
-    }
-  }, [
-    search,
+  const {
+    payments,
+    loading,
+    error,
     currentPage,
-    filter,
-    setLoading,
-    setError,
-    setPayments,
-    setTotalPages,
-    setTotalPayments,
-  ]);
+    totalPages,
+    totalPayments,
+    setCurrentPage,
+    updateFilters,
+    fetchPayments,
+    handleCancelPayment,
+    navigateToPaymentDetails,
+    navigateToCreatePayment,
+  } = usePayments();
 
-  useEffect(() => {
-    fetchPayments();
-  }, [fetchPayments]);
+  // Aplicar filtros de busca
+  const applySearch = () => {
+    const filters: Record<string, unknown> = { search };
 
-  const checkForOpenCashRegister = async (): Promise<boolean> => {
-    try {
-      // Importar dinamicamente para evitar erros de ciclo
-      const { checkOpenCashRegister } = await import(
-        "../../../app/services/cashRegister"
-      );
-      const result = await checkOpenCashRegister();
-      return result.hasCashRegister;
-    } catch (error) {
-      console.error("Erro ao verificar caixa:", error);
-      return false;
+    if (typeFilter !== "all") {
+      filters.type = typeFilter;
     }
-  };
 
-  const handleNewPayment = async () => {
-    try {
-      // Verificar se há um caixa aberto
-      const hasOpenRegister = await checkForOpenCashRegister();
-
-      if (hasOpenRegister) {
-        router.push("/payments/new");
-      } else {
-        // Mostrar mensagem e oferecer opção de abrir caixa
-        toast({
-          variant: "destructive",
-          title: "Nenhum caixa aberto",
-          description:
-            "É necessário abrir um caixa antes de registrar pagamentos.",
-        });
-      }
-    } catch (error) {
-      console.error("Erro ao verificar status do caixa:", error);
-      // Permitir continuar mesmo com erro na verificação
-      router.push("/payments/new");
+    if (statusFilter !== "all") {
+      filters.status = statusFilter;
     }
+
+    updateFilters(filters);
   };
 
-  // Função para formatar data
-  const formatDate = (dateInput?: string | Date) => {
-    if (!dateInput) return "N/A";
-
-    const date =
-      typeof dateInput === "string" ? new Date(dateInput) : dateInput;
-
-    return date.toLocaleDateString("pt-BR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
+  // Limpar filtros
+  const clearFilters = () => {
+    setSearch("");
+    setTypeFilter("all");
+    setStatusFilter("all");
+    updateFilters({});
   };
 
-  // Função para obter a classe de tipo de pagamento
-  const getPaymentTypeClass = (type: string) => {
-    switch (type) {
-      case "sale":
-        return "text-green-600 bg-green-100 px-2 py-1 rounded";
-      case "debt_payment":
-        return "text-blue-600 bg-blue-100 px-2 py-1 rounded";
-      case "expense":
-        return "text-red-600 bg-red-100 px-2 py-1 rounded";
-      default:
-        return "text-gray-600 bg-gray-100 px-2 py-1 rounded";
+  // Função para confirmar cancelamento
+  const confirmCancelPayment = async (id: string) => {
+    const confirmed = window.confirm(
+      "Tem certeza que deseja cancelar este pagamento?"
+    );
+    if (confirmed) {
+      await handleCancelPayment(id);
     }
-  };
-
-  // Função para obter a classe de status
-  const getStatusClass = (status: string) => {
-    switch (status) {
-      case "completed":
-        return "text-green-600 bg-green-100 px-2 py-1 rounded";
-      case "pending":
-        return "text-yellow-600 bg-yellow-100 px-2 py-1 rounded";
-      case "cancelled":
-        return "text-red-600 bg-red-100 px-2 py-1 rounded";
-      default:
-        return "text-gray-600 bg-gray-100 px-2 py-1 rounded";
-    }
-  };
-
-  // Traduzir tipo de pagamento
-  const translatePaymentType = (type: string): string => {
-    const typeMap: Record<string, string> = {
-      sale: "Venda",
-      debt_payment: "Pagamento de Débito",
-      expense: "Despesa",
-    };
-
-    return typeMap[type] || type;
-  };
-
-  // Traduzir método de pagamento
-  const translatePaymentMethod = (method: string): string => {
-    const methodMap: Record<string, string> = {
-      credit: "Cartão de Crédito",
-      debit: "Cartão de Débito",
-      cash: "Dinheiro",
-      pix: "PIX",
-    };
-
-    return methodMap[method] || method;
-  };
-
-  // Traduzir status
-  const translateStatus = (status: string): string => {
-    const statusMap: Record<string, string> = {
-      completed: "Concluído",
-      pending: "Pendente",
-      cancelled: "Cancelado",
-    };
-
-    return statusMap[status] || status;
   };
 
   // Função para gerar itens de paginação
@@ -316,16 +169,18 @@ export default function PaymentsPage() {
     }
 
     // Última página
-    items.push(
-      <PaginationItem key={totalPages}>
-        <PaginationLink
-          onClick={() => setCurrentPage(totalPages)}
-          isActive={currentPage === totalPages}
-        >
-          {totalPages}
-        </PaginationLink>
-      </PaginationItem>
-    );
+    if (totalPages > 1) {
+      items.push(
+        <PaginationItem key={totalPages}>
+          <PaginationLink
+            onClick={() => setCurrentPage(totalPages)}
+            isActive={currentPage === totalPages}
+          >
+            {totalPages}
+          </PaginationLink>
+        </PaginationItem>
+      );
+    }
 
     return items;
   };
@@ -336,14 +191,71 @@ export default function PaymentsPage() {
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">Pagamentos</h1>
-      <div className="flex justify-between">
-        <Input
-          placeholder="Buscar pagamento..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="max-w-sm"
-        />
-        <Button onClick={handleNewPayment}>Novo Pagamento</Button>
+
+      {/* Componente de Status do Caixa */}
+      <CashRegisterStatus showOpenButton />
+
+      {/* Filtros e ações */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Filtros</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1">
+              <Input
+                placeholder="Buscar pagamento..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full"
+              />
+            </div>
+            <div className="grid grid-cols-2 sm:flex gap-2">
+              <Select
+                value={typeFilter}
+                onValueChange={(value) =>
+                  setTypeFilter(value as PaymentType | "all")
+                }
+              >
+                <SelectTrigger className="w-[120px]">
+                  <SelectValue placeholder="Tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="sale">Vendas</SelectItem>
+                  <SelectItem value="debt_payment">Débitos</SelectItem>
+                  <SelectItem value="expense">Despesas</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select
+                value={statusFilter}
+                onValueChange={(value) =>
+                  setStatusFilter(value as PaymentStatus | "all")
+                }
+              >
+                <SelectTrigger className="w-[120px]">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="completed">Concluídos</SelectItem>
+                  <SelectItem value="pending">Pendentes</SelectItem>
+                  <SelectItem value="cancelled">Cancelados</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Button onClick={applySearch}>Filtrar</Button>
+              <Button variant="outline" onClick={clearFilters}>
+                Limpar
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="flex justify-end">
+        <Button onClick={navigateToCreatePayment}>Novo Pagamento</Button>
       </div>
 
       {loading && (
@@ -365,6 +277,9 @@ export default function PaymentsPage() {
           <p className="text-muted-foreground mt-2">
             Nenhum pagamento foi registrado no sistema ainda.
           </p>
+          <Button className="mt-4" onClick={navigateToCreatePayment}>
+            Registrar Pagamento
+          </Button>
         </div>
       )}
 
@@ -383,47 +298,58 @@ export default function PaymentsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {payments.map((payment) => (
+              {payments.map((payment: IPayment) => (
                 <TableRow key={payment._id}>
                   <TableCell>
                     {payment.description || "Sem descrição"}
                   </TableCell>
                   <TableCell>
-                    <div className={getPaymentTypeClass(payment.type)}>
+                    <Badge className={getPaymentTypeClass(payment.type)}>
                       {translatePaymentType(payment.type)}
-                    </div>
+                    </Badge>
                   </TableCell>
                   <TableCell>
-                    {translatePaymentMethod(payment.paymentMethod)}
-                  </TableCell>
-                  <TableCell>{formatDate(payment.paymentDate)}</TableCell>
-                  <TableCell>R$ {payment.amount.toFixed(2)}</TableCell>
-                  <TableCell>
-                    <div className={getStatusClass(payment.status)}>
-                      {translateStatus(payment.status)}
+                    <div className="flex items-center">
+                      <CreditCard className="h-4 w-4 mr-1 text-muted-foreground" />
+                      {translatePaymentMethod(payment.paymentMethod)}
                     </div>
                   </TableCell>
-                  <TableCell className="flex space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => router.push(`/payments/${payment._id}`)}
-                    >
-                      Detalhes
-                    </Button>
-                    {payment.status !== "cancelled" && (
+                  <TableCell>{formatDate(payment.date)}</TableCell>
+                  <TableCell
+                    className={
+                      payment.type === "expense"
+                        ? "text-red-600 font-medium"
+                        : "text-green-600 font-medium"
+                    }
+                  >
+                    {formatCurrency(payment.amount)}
+                  </TableCell>
+                  <TableCell>
+                    <Badge className={getPaymentStatusClass(payment.status)}>
+                      {translatePaymentStatus(payment.status)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex space-x-2">
                       <Button
-                        variant="destructive"
+                        variant="outline"
                         size="sm"
-                        onClick={() => {
-                          // Implemente a lógica de cancelamento aqui
-                          console.log("Cancelar pagamento", payment._id);
-                        }}
+                        onClick={() => navigateToPaymentDetails(payment._id)}
                       >
-                        <Ban className="h-4 w-4 mr-1" />
-                        Cancelar
+                        <ExternalLink className="h-4 w-4 mr-1" />
+                        Detalhes
                       </Button>
-                    )}
+                      {payment.status !== "cancelled" && (
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => confirmCancelPayment(payment._id)}
+                        >
+                          <Ban className="h-4 w-4 mr-1" />
+                          Cancelar
+                        </Button>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
