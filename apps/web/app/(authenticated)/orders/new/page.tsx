@@ -39,47 +39,52 @@ import Cookies from "js-cookie";
 // Componentes
 import ClientSearch from "../../../../components/forms/OrderForm/ClientSearch";
 import LensTypeSelection from "../../../../components/forms/OrderForm/LensTypeSearch";
-import PrescriptionForm from "../../../../components/forms/OrderForm/PrescriptionForm";
 import OrderPdfGenerator from "../../../../components/exports/OrderPdfGenerator";
+import type { OrderFormValues } from "../../../../app/types/form-types";
+import PrescriptionForm from "../../../../components/forms/OrderForm/PrescriptionForm";
 
-// Schema atualizado de acordo com o backend
-const orderFormSchema = z.object({
-  clientId: z.string().min(1, "Cliente é obrigatório"),
-  // customClientName: z.string().optional(),
-  employeeId: z.string().min(1, "ID do funcionário é obrigatório"),
-  productType: z.enum(["glasses", "lensCleaner"]),
-  product: z.string().min(1, "Descrição do produto é obrigatória"),
-  glassesType: z.enum(["prescription", "sunglasses"]),
-  glassesFrame: z.enum(["with", "no"]),
-  paymentMethod: z.string().min(1, "Forma de pagamento é obrigatória"),
-  paymentEntry: z.number().min(0).optional(),
-  installments: z.number().min(1).optional(),
-  deliveryDate: z.string().optional(),
-  status: z.string().min(1, "Status é obrigatório"),
-  laboratoryId: z.string().optional(),
-  lensType: z.string().optional(),
-  observations: z.string().optional(),
-  totalPrice: z.number().min(0, "O preço total deve ser maior ou igual a zero"),
-  prescriptionData: z
-    .object({
-      doctorName: z.string().optional(),
-      clinicName: z.string().optional(),
-      appointmentDate: z.string().optional(),
-      leftEye: z.object({
-        sph: z.number(),
-        cyl: z.number(),
-        axis: z.number(),
-      }),
-      rightEye: z.object({
-        sph: z.number(),
-        cyl: z.number(),
-        axis: z.number(),
-      }),
-      nd: z.number(),
-      addition: z.number(),
-    })
-    .optional(),
+const prescriptionDataSchema = z.object({
+  doctorName: z.string().optional(),
+  clinicName: z.string().optional(),
+  appointmentDate: z.string().optional(),
+  leftEye: z.object({
+    sph: z.number(),
+    cyl: z.number(),
+    axis: z.number(),
+  }),
+  rightEye: z.object({
+    sph: z.number(),
+    cyl: z.number(),
+    axis: z.number(),
+  }),
+  nd: z.number(),
+  oc: z.number(),
+  addition: z.number(),
 });
+
+const orderFormSchema = z
+  .object({
+    clientId: z.string().min(1, "Cliente é obrigatório"),
+    employeeId: z.string().min(1, "ID do funcionário é obrigatório"),
+    productType: z.enum(["glasses", "lensCleaner"]),
+    product: z.string().min(1, "Descrição do produto é obrigatória"),
+    glassesType: z.enum(["prescription", "sunglasses"]),
+    glassesFrame: z.enum(["with", "no"]),
+    paymentMethod: z.string().min(1, "Forma de pagamento é obrigatória"),
+    paymentEntry: z.number().min(0).optional(),
+    installments: z.number().min(1).optional(),
+    deliveryDate: z.string().optional(),
+    status: z.string().min(1, "Status é obrigatório"),
+    laboratoryId: z.string().optional(),
+    lensType: z.string().optional(),
+    observations: z.string().optional(),
+    totalPrice: z
+      .number()
+      .min(0, "O preço total deve ser maior ou igual a zero"),
+    // Usando o esquema definido acima e garantindo que não é opcional
+    prescriptionData: prescriptionDataSchema,
+  })
+  .passthrough(); // Permite propriedades adicionais
 
 type OrderFormData = z.infer<typeof orderFormSchema>;
 
@@ -106,12 +111,11 @@ export default function NewOrderPage() {
     return tomorrow.toISOString().split("T")[0];
   };
 
-  const form = useForm<OrderFormData>({
+  const form = useForm<OrderFormValues>({
     resolver: zodResolver(orderFormSchema),
     defaultValues: {
       employeeId: "",
       clientId: "",
-      // customClientName: "",
       productType: "glasses",
       product: "",
       glassesType: "prescription",
@@ -121,7 +125,7 @@ export default function NewOrderPage() {
       installments: undefined,
       deliveryDate: getTomorrowDate(), // Formato YYYY-MM-DD
       status: "pending",
-      laboratoryId: "",
+      laboratoryId: "", // Valor vazio, será tratado no backend
       lensType: "",
       observations: "",
       totalPrice: 0,
@@ -132,6 +136,7 @@ export default function NewOrderPage() {
         leftEye: { sph: 0, cyl: 0, axis: 0 },
         rightEye: { sph: 0, cyl: 0, axis: 0 },
         nd: 0,
+        oc: 0,
         addition: 0,
       },
     },
@@ -289,6 +294,7 @@ export default function NewOrderPage() {
                     axis: 0,
                   },
                   nd: data.prescriptionData?.nd || 0,
+                  oc: data.prescriptionData?.oc || 0,
                   addition: data.prescriptionData?.addition || 0,
                 }
               : {
@@ -299,6 +305,7 @@ export default function NewOrderPage() {
                   leftEye: { sph: 0, cyl: 0, axis: 0 },
                   rightEye: { sph: 0, cyl: 0, axis: 0 },
                   nd: 0,
+                  oc: 0,
                   addition: 0,
                 },
           // Enviar campos opcionais normalmente
@@ -352,8 +359,39 @@ export default function NewOrderPage() {
     },
   });
 
-  const onSubmit = (data: OrderFormData) => {
-    createOrder.mutate(data);
+  const onSubmit = (data: OrderFormValues) => {
+    // Garantir que os campos da receita não sejam undefined
+    const orderData = {
+      ...data,
+      laboratoryId:
+        data.laboratoryId?.trim() === "" ? undefined : data.laboratoryId,
+      // Garantir que prescriptionData tem valores padrão mesmo se alguns campos não forem preenchidos
+      prescriptionData: {
+        doctorName: data.prescriptionData?.doctorName || "Não aplicável",
+        clinicName: data.prescriptionData?.clinicName || "Não aplicável",
+        appointmentDate:
+          data.prescriptionData?.appointmentDate ||
+          new Date().toISOString().split("T")[0],
+        leftEye: {
+          sph: data.prescriptionData?.leftEye?.sph ?? 0,
+          cyl: data.prescriptionData?.leftEye?.cyl ?? 0,
+          axis: data.prescriptionData?.leftEye?.axis ?? 0,
+        },
+        rightEye: {
+          sph: data.prescriptionData?.rightEye?.sph ?? 0,
+          cyl: data.prescriptionData?.rightEye?.cyl ?? 0,
+          axis: data.prescriptionData?.rightEye?.axis ?? 0,
+        },
+        nd: data.prescriptionData?.nd ?? 0,
+        oc: data.prescriptionData?.oc ?? 0,
+        addition: data.prescriptionData?.addition ?? 0,
+      },
+    };
+
+    // Log para depuração
+    console.log("Dados processados para envio:", orderData);
+
+    createOrder.mutate(orderData);
   };
 
   return (

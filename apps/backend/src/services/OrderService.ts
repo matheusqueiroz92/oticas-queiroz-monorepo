@@ -1,6 +1,5 @@
 import { OrderModel } from "../models/OrderModel";
 import { UserModel } from "../models/UserModel";
-// import { ProductModel } from "../models/ProductModel";
 import type { IOrder } from "../interfaces/IOrder";
 
 export class OrderError extends Error {
@@ -13,12 +12,10 @@ export class OrderError extends Error {
 export class OrderService {
   private orderModel: OrderModel;
   private userModel: UserModel;
-  // private productModel: ProductModel;
 
   constructor() {
     this.orderModel = new OrderModel();
     this.userModel = new UserModel();
-    // this.productModel = new ProductModel();
   }
 
   private async validateOrder(orderData: Omit<IOrder, "_id">): Promise<void> {
@@ -39,17 +36,6 @@ export class OrderService {
     if (employee.role !== "employee" && employee.role !== "admin") {
       throw new OrderError("ID fornecido não pertence a um funcionário");
     }
-
-    // Validar produtos
-    // for (const productId of orderData.product) {
-    //   const product = await this.productModel.findById(productId);
-    //   if (!product) {
-    //     throw new OrderError(`Produto não encontrado: ${productId}`);
-    //   }
-    //   if (product.stock <= 0) {
-    //     throw new OrderError(`Produto sem estoque: ${product.name}`);
-    //   }
-    // }
 
     // Validar dados básicos
     if (orderData.totalPrice <= 0) {
@@ -80,14 +66,25 @@ export class OrderService {
   }
 
   async createOrder(orderData: Omit<IOrder, "_id">): Promise<IOrder> {
-    await this.validateOrder(orderData);
+    try {
+      // Se laboratoryId for string vazia, definir como undefined
+      if (orderData.laboratoryId === "") {
+        orderData.laboratoryId = undefined;
+      }
 
-    // Reduzir estoque dos produtos
-    // for (const productId of orderData.products) {
-    //   await this.productModel.updateStock(productId, -1);
-    // }
-
-    return this.orderModel.create(orderData);
+      await this.validateOrder(orderData);
+      return this.orderModel.create(orderData);
+    } catch (error) {
+      if (error instanceof OrderError) {
+        throw error;
+      }
+      console.error("Erro ao criar pedido:", error);
+      throw new OrderError(
+        error instanceof Error
+          ? error.message
+          : "Erro desconhecido ao criar pedido"
+      );
+    }
   }
 
   async getAllOrders(
@@ -173,9 +170,12 @@ export class OrderService {
       throw new OrderError("Sem permissão para atualizar este pedido");
     }
 
+    // Garantir que laboratoryId não é uma string vazia
+    const validLaboratoryId = laboratoryId === "" ? undefined : laboratoryId;
+
     const updatedOrder = await this.orderModel.updateLaboratory(
       id,
-      laboratoryId,
+      validLaboratoryId,
       true
     );
     if (!updatedOrder) {
@@ -207,11 +207,6 @@ export class OrderService {
     if (order.status === "delivered") {
       throw new OrderError("Não é possível cancelar um pedido já entregue");
     }
-
-    // Restaurar estoque dos produtos
-    // for (const productId of order.products) {
-    //   await this.productModel.updateStock(productId, 1);
-    // }
 
     await this.orderModel.delete(id);
     return order;

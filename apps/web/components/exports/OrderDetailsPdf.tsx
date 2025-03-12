@@ -83,6 +83,17 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 2,
   },
+  additionalInfoSection: {
+    marginTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: "#eee",
+    borderTopStyle: "solid",
+  },
+  additionalInfoTitle: {
+    fontWeight: "bold",
+    padding: 4,
+    backgroundColor: "#f8f8f8",
+  },
   footer: {
     position: "absolute",
     bottom: 30,
@@ -281,95 +292,80 @@ const OrderPDFDocument = ({
                 <View style={styles.table}>
                   <View style={styles.tableHeader}>
                     <Text style={styles.tableCell}>Olho</Text>
-                    <Text style={styles.tableCell}>SPH</Text>
-                    <Text style={styles.tableCell}>CYL</Text>
-                    <Text style={styles.tableCell}>AXIS</Text>
-                    <Text style={styles.tableCell}>PD</Text>
+                    <Text style={styles.tableCell}>Esf.</Text>
+                    <Text style={styles.tableCell}>Cil.</Text>
+                    <Text style={styles.tableCell}>Eixo</Text>
                   </View>
-                  {order.prescriptionData.leftEye.near && (
+                  {order.prescriptionData.leftEye && (
                     <View style={styles.tableRow}>
-                      <Text style={styles.tableCell}>Esq. (Perto)</Text>
+                      <Text style={styles.tableCell}>Esquerdo</Text>
                       <Text style={styles.tableCell}>
                         {formatRefractionValue(
-                          order.prescriptionData.leftEye.near.sph
+                          order.prescriptionData.leftEye.sph
                         )}
                       </Text>
                       <Text style={styles.tableCell}>
                         {formatRefractionValue(
-                          order.prescriptionData.leftEye.near.cyl
+                          order.prescriptionData.leftEye.cyl
                         )}
                       </Text>
                       <Text style={styles.tableCell}>
-                        {order.prescriptionData.leftEye.near.axis || "N/A"}°
-                      </Text>
-                      <Text style={styles.tableCell}>
-                        {order.prescriptionData.leftEye.near.pd || "N/A"}mm
+                        {order.prescriptionData.leftEye.axis || "N/A"}°
                       </Text>
                     </View>
                   )}
-                  {order.prescriptionData.leftEye.far && (
+                  {order.prescriptionData.rightEye && (
                     <View style={styles.tableRow}>
-                      <Text style={styles.tableCell}>Esq. (Longe)</Text>
+                      <Text style={styles.tableCell}>Direito</Text>
                       <Text style={styles.tableCell}>
                         {formatRefractionValue(
-                          order.prescriptionData.leftEye.far.sph
+                          order.prescriptionData.rightEye.sph
                         )}
                       </Text>
                       <Text style={styles.tableCell}>
                         {formatRefractionValue(
-                          order.prescriptionData.leftEye.far.cyl
+                          order.prescriptionData.rightEye.cyl
                         )}
                       </Text>
                       <Text style={styles.tableCell}>
-                        {order.prescriptionData.leftEye.far.axis || "N/A"}°
-                      </Text>
-                      <Text style={styles.tableCell}>
-                        {order.prescriptionData.leftEye.far.pd || "N/A"}mm
+                        {order.prescriptionData.rightEye.axis || "N/A"}°
                       </Text>
                     </View>
                   )}
-                  {order.prescriptionData.rightEye.near && (
+
+                  {/* Informações adicionais */}
+                  <View style={styles.additionalInfoSection}>
+                    <Text style={styles.additionalInfoTitle}>
+                      Informações adicionais
+                    </Text>
+
                     <View style={styles.tableRow}>
-                      <Text style={styles.tableCell}>Dir. (Perto)</Text>
-                      <Text style={styles.tableCell}>
-                        {formatRefractionValue(
-                          order.prescriptionData.rightEye.near.sph
-                        )}
+                      <Text style={[styles.tableCell, { fontWeight: "bold" }]}>
+                        D.N.P.
                       </Text>
-                      <Text style={styles.tableCell}>
-                        {formatRefractionValue(
-                          order.prescriptionData.rightEye.near.cyl
-                        )}
-                      </Text>
-                      <Text style={styles.tableCell}>
-                        {order.prescriptionData.rightEye.near.axis || "N/A"}°
-                      </Text>
-                      <Text style={styles.tableCell}>
-                        {order.prescriptionData.rightEye.near.pd || "N/A"}mm
+                      <Text style={[styles.tableCell, { flex: 3 }]}>
+                        {order.prescriptionData.nd || "N/A"}
                       </Text>
                     </View>
-                  )}
-                  {order.prescriptionData.rightEye.far && (
+
                     <View style={styles.tableRow}>
-                      <Text style={styles.tableCell}>Dir. (Longe)</Text>
-                      <Text style={styles.tableCell}>
-                        {formatRefractionValue(
-                          order.prescriptionData.rightEye.far.sph
-                        )}
+                      <Text style={[styles.tableCell, { fontWeight: "bold" }]}>
+                        C.O.
                       </Text>
-                      <Text style={styles.tableCell}>
-                        {formatRefractionValue(
-                          order.prescriptionData.rightEye.far.cyl
-                        )}
-                      </Text>
-                      <Text style={styles.tableCell}>
-                        {order.prescriptionData.rightEye.far.axis || "N/A"}°
-                      </Text>
-                      <Text style={styles.tableCell}>
-                        {order.prescriptionData.rightEye.far.pd || "N/A"}mm
+                      <Text style={[styles.tableCell, { flex: 3 }]}>
+                        {order.prescriptionData.oc || "N/A"}
                       </Text>
                     </View>
-                  )}
+
+                    <View style={styles.tableRow}>
+                      <Text style={[styles.tableCell, { fontWeight: "bold" }]}>
+                        Adição
+                      </Text>
+                      <Text style={[styles.tableCell, { flex: 3 }]}>
+                        {order.prescriptionData.addition || "N/A"}
+                      </Text>
+                    </View>
+                  </View>
                 </View>
               )}
           </View>
@@ -378,8 +374,8 @@ const OrderPDFDocument = ({
         {/* Rodapé */}
         <View style={styles.footer}>
           <Text>
-            Este documento é uma cópia dos dados registrados no sistema Óticas
-            Queiroz.
+            Este documento é uma cópia dos dados registrados no sistema das
+            Óticas Queiroz.
           </Text>
           <Text>Documento gerado em {new Date().toLocaleString("pt-BR")}</Text>
         </View>

@@ -327,6 +327,19 @@ oticas-queiroz-monorepo/
 
 ## 💰 Pagamentos
 
+### Features
+
+- Registro de diferentes tipos de pagamentos (vendas, recebimentos, despesas)
+- Suporte a múltiplos métodos de pagamento
+- Controle de parcelamentos
+- Relatórios financeiros personalizados
+- Exportação em múltiplos formatos (Excel, PDF, CSV, JSON)
+- Cancelamento com estorno automático
+- Cache para consultas frequentes
+- Transações atômicas para garantir integridade
+- Soft delete para manter histórico completo
+- Validações robustas e modulares
+
 ### Rotas
 
 - POST `/api/payments`: Criar pagamento
@@ -334,18 +347,25 @@ oticas-queiroz-monorepo/
 - GET `/api/payments/daily`: Buscar pagamentos do dia
 - GET `/api/payments/:id`: Buscar pagamento
 - POST `/api/payments/:id/cancel`: Cancelar pagamento
+- POST `/api/payments/:id/delete`: Exclusão lógica (soft delete) de pagamento
+- GET `/api/payments/deleted`: Listar pagamentos excluídos logicamente
+- GET `/api/payments/export`: Exportar pagamentos em vários formatos
+- GET `/api/payments/report/daily`: Gerar relatório financeiro diário
 
 ### Schema
 
 ```typescript
-
 {
   _id: string;
   amount: number;
-  paymentDate: Date;
+  date: Date;
   type: "sale" | "debt_payment" | "expense";
-  paymentMethod: "credit" | "debit" | "cash" | "pix" | "check";
-  installments?: number;
+  paymentMethod: "credit" | "debit" | "cash" | "pix" | "installment";
+  installments?: {
+    current: number;
+    total: number;
+    value: number;
+  };
   status: "pending" | "completed" | "cancelled";
   orderId?: string;
   customerId?: string;
@@ -353,7 +373,10 @@ oticas-queiroz-monorepo/
   legacyClientId?: string;
   cashRegisterId: string;
   description?: string;
-  category?: string;
+  createdBy: string;
+  isDeleted?: boolean;
+  deletedAt?: Date;
+  deletedBy?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -361,30 +384,58 @@ oticas-queiroz-monorepo/
 
 ## 💵 Cash Register
 
+### Features
+
+- Controle de abertura e fechamento de caixa
+- Balanço detalhado por tipo de pagamento
+- Relatórios diários e por caixa específico
+- Exportação em múltiplos formatos (Excel, PDF, CSV, JSON)
+- Cache para consultas frequentes
+- Validações robustas e modulares
+- Soft delete para manter histórico completo
+- Resumos financeiros detalhados
+
 ### Rotas
 
 - POST `/api/cash-registers/open`: Abrir o registro de caixa atual
 - POST `/api/cash-registers/close`: Fechar o registro de caixa atual
 - GET `/api/cash-registers/current`: Buscar o registro de caixa atual
-- GET `/api/cash-registers/summary/daily`: Abrir o resumo diário dos registros de caixa
+- GET `/api/cash-registers/summary/daily`: Resumo diário dos registros de caixa
 - GET `/api/cash-registers/:id`: Buscar um registro de caixa específico
-- GET `/api/cash-registers/:id/summary`: Buscar o resumo de um registro de caixa específico
+- GET `/api/cash-registers/:id/summary`: Resumo de um registro de caixa específico
+- POST `/api/cash-registers/:id/delete`: Exclusão lógica de um registro
+- GET `/api/cash-registers/deleted`: Listar registros excluídos logicamente
+- GET `/api/cash-registers/:id/export`: Exportar resumo de um caixa específico
+- GET `/api/cash-registers/export/daily`: Exportar resumo diário dos caixas
 
 ### Schema
 
 ```typescript
 {
   _id: string;
-  date: Date;
+  openingDate: Date;
+  closingDate?: Date;
   openingBalance: number;
   currentBalance: number;
   closingBalance?: number;
   status: "open" | "closed";
+  sales: {
+    total: number;
+    cash: number;
+    credit: number;
+    debit: number;
+    pix: number;
+  };
+  payments: {
+    received: number;
+    made: number;
+  };
   openedBy: string;
   closedBy?: string;
-  totalSales: number;
-  totalPayments: number;
   observations?: string;
+  isDeleted?: boolean;
+  deletedAt?: Date;
+  deletedBy?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -406,7 +457,6 @@ oticas-queiroz-monorepo/
 ### Schema
 
 ```typescript
-
 {
   _id: string;
   name: string;
@@ -414,7 +464,15 @@ oticas-queiroz-monorepo/
   phone?: string;
   address?: string;
   totalDebt: number;
-  lastPaymentDate?: Date;
+  lastPayment?: {
+    date: Date;
+    amount: number;
+  };
+  paymentHistory: Array<{
+    date: Date;
+    amount: number;
+    paymentId: string;
+  }>;
   status: "active" | "inactive";
   observations?: string;
   createdAt?: Date;
@@ -567,6 +625,7 @@ npm run dev
 ### Exportação de dados
 
 - Exportação de pedidos em PDF
+- Exportação de relatórios financeiros em múltiplos formatos
 - Visualização de detalhes completos
 
 ### Estrutura de Componentes
@@ -664,11 +723,23 @@ cd apps/frontend
 npm test
 ```
 
+## ✨ Melhorias Recentes
+
+### Módulos de Pagamentos e Caixa
+
+- ✅ **Validação Modular**: Refatoração da validação em funções específicas para melhorar manutenção e testabilidade.
+- ✅ **Soft Delete**: Implementação de exclusão lógica para manter histórico completo de todas as operações.
+- ✅ **Cache Eficiente**: Adição de caching para consultas frequentes, melhorando performance do sistema.
+- ✅ **Swagger Aprimorado**: Documentação detalhada das APIs para facilitar integração com frontend.
+- ✅ **Exportação Flexível**: Suporte a exportação para Excel, PDF, CSV e JSON para relatórios financeiros.
+- ✅ **Relatórios Avançados**: Adição de relatórios personalizados para análise financeira detalhada.
+- ✅ **Correção de Bugs**: Resolução de inconsistências e bugs em ambos os módulos.
+
 ## 🔄 Melhorias Sugeridas
 
 ### Performance
 
-- [ ] Implementar Redis para cache
+- [ ] Implementar Redis para cache distribuído
   - Cache de produtos mais acessados
   - Cache de resultados de queries frequentes
   - Cache de sessões de usuário
@@ -693,7 +764,7 @@ npm test
 - [ ] Implementar paginação com cursor
 - [ ] Adicionar índices compostos
 - [ ] Otimizar queries de agregação
-- [ ] Implementar soft delete
+- [ ] Implementar soft delete para outras entidades
 
 ### Testes
 
@@ -704,7 +775,7 @@ npm test
 
 ### Documentação
 
-- [ ] Melhorar documentação Swagger
+- [ ] Melhorar documentação Swagger para todas as APIs
 - [ ] Adicionar exemplos de uso
 - [ ] Documentar erros possíveis
 - [ ] Criar guia de contribuição

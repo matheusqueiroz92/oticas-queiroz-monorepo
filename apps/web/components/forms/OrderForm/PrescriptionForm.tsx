@@ -8,10 +8,10 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import EyeFormSection from "./EyeFormSection";
+import type { OrderFormReturn } from "../../../app/types/form-types";
 
 interface PrescriptionFormProps {
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-  form: any;
+  form: OrderFormReturn;
 }
 
 export default function PrescriptionForm({ form }: PrescriptionFormProps) {
@@ -68,20 +68,41 @@ export default function PrescriptionForm({ form }: PrescriptionFormProps) {
         <EyeFormSection eye="left" title="Olho Esquerdo" form={form} />
         <EyeFormSection eye="right" title="Olho Direito" form={form} />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <FormField
             control={form.control}
-            name="presciptionData.nd"
+            name="prescriptionData.nd"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>DNP</FormLabel>
+                <FormLabel>D.N.P.</FormLabel>
                 <FormControl>
                   <Input
                     type="number"
                     step="0.25"
                     {...field}
                     onChange={(e) =>
-                      field.onChange(Number.parseFloat(e.target.value))
+                      field.onChange(Number.parseFloat(e.target.value) || 0)
+                    }
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="prescriptionData.oc"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>C.O.</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    step="0.25"
+                    {...field}
+                    onChange={(e) =>
+                      field.onChange(Number.parseFloat(e.target.value) || 0)
                     }
                   />
                 </FormControl>
@@ -102,7 +123,7 @@ export default function PrescriptionForm({ form }: PrescriptionFormProps) {
                     step="0.25"
                     {...field}
                     onChange={(e) =>
-                      field.onChange(Number.parseFloat(e.target.value))
+                      field.onChange(Number.parseFloat(e.target.value) || 0)
                     }
                   />
                 </FormControl>

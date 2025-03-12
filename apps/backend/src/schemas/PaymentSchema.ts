@@ -1,8 +1,16 @@
 import { Schema, model } from "mongoose";
-import type { IPayment } from "../interfaces/IPayment";
 
 const paymentSchema = new Schema(
   {
+    createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    customerId: { type: Schema.Types.ObjectId, ref: "User" },
+    legacyClientId: { type: Schema.Types.ObjectId, ref: "LegacyClient" },
+    orderId: { type: Schema.Types.ObjectId, ref: "Order" },
+    cashRegisterId: {
+      type: Schema.Types.ObjectId,
+      ref: "CashRegister",
+      required: true,
+    },
     amount: { type: Number, required: true },
     date: { type: Date, required: true },
     type: {
@@ -25,19 +33,16 @@ const paymentSchema = new Schema(
       total: { type: Number },
       value: { type: Number },
     },
-    orderId: { type: Schema.Types.ObjectId, ref: "Order" },
-    userId: { type: Schema.Types.ObjectId, ref: "User" },
-    legacyClientId: { type: Schema.Types.ObjectId, ref: "LegacyClient" },
-    categoryId: { type: Schema.Types.ObjectId, ref: "FinancialCategory" },
-    cashRegisterId: {
-      type: Schema.Types.ObjectId,
-      ref: "CashRegister",
-      required: true,
-    },
     description: { type: String },
-    createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    // Campos de soft delete
+    isDeleted: { type: Boolean, default: false },
+    deletedAt: { type: Date },
+    deletedBy: { type: Schema.Types.ObjectId, ref: "User" },
   },
   { timestamps: true }
 );
+
+// Adicionar um índice para consultas mais rápidas, excluindo documentos excluídos por padrão
+paymentSchema.index({ isDeleted: 1 });
 
 export const Payment = model("Payment", paymentSchema);

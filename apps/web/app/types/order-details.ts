@@ -11,45 +11,30 @@ export interface OrderDetail {
   installments?: number;
   deliveryDate?: string | Date;
   status: string;
-  lensType?: string;
-  observations?: string;
-  totalPrice: number;
-  createdAt?: string | Date;
-  updatedAt?: string | Date;
   laboratoryId?: string;
   prescriptionData?: {
     doctorName?: string;
     clinicName?: string;
     appointmentDate?: string | Date;
     leftEye?: {
-      near?: {
-        sph: number;
-        cyl: number;
-        axis: number;
-        pd: number;
-      };
-      far?: {
-        sph: number;
-        cyl: number;
-        axis: number;
-        pd: number;
-      };
+      sph: number;
+      cyl: number;
+      axis: number;
     };
     rightEye?: {
-      near?: {
-        sph: number;
-        cyl: number;
-        axis: number;
-        pd: number;
-      };
-      far?: {
-        sph: number;
-        cyl: number;
-        axis: number;
-        pd: number;
-      };
+      sph: number;
+      cyl: number;
+      axis: number;
     };
+    nd: number;
+    oc: number;
+    addition: number;
   };
+  lensType?: string;
+  observations?: string;
+  totalPrice: number;
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
 }
 
 // export interface OrderDetails {

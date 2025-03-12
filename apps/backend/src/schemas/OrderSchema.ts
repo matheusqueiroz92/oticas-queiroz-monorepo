@@ -40,7 +40,13 @@ const orderSchema = new Schema(
       enum: ["pending", "in_production", "ready", "delivered", "cancelled"],
       default: "pending",
     },
-    laboratoryId: { type: Schema.Types.ObjectId, ref: "Laboratory" },
+    // Permitir que o laboratoryId seja nulo ou indefinido
+    laboratoryId: {
+      type: Schema.Types.ObjectId,
+      ref: "Laboratory",
+      required: false, // Explicitamente indicar que não é obrigatório
+      default: null, // Valor padrão nulo
+    },
     prescriptionData: {
       doctorName: { type: String },
       clinicName: { type: String },
@@ -56,6 +62,7 @@ const orderSchema = new Schema(
         axis: Number,
       },
       nd: Number,
+      oc: Number,
       addition: Number,
     },
     lensType: String,

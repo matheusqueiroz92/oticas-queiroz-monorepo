@@ -264,6 +264,57 @@ export class UserController {
       res.status(500).json({ message: "Erro interno do servidor" });
     }
   }
+
+  async changePassword(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      if (!req.user?.id) {
+        res.status(401).json({ message: "Usuário não autenticado" });
+        return;
+      }
+
+      const { currentPassword, newPassword } = req.body;
+
+      // Validar dados
+      if (!currentPassword || !newPassword) {
+        res
+          .status(400)
+          .json({ message: "Senha atual e nova senha são obrigatórias" });
+        return;
+      }
+
+      if (newPassword.length < 6) {
+        res
+          .status(400)
+          .json({ message: "A nova senha deve ter pelo menos 6 caracteres" });
+        return;
+      }
+
+      // Verificar senha atual
+      const isPasswordValid = await this.userService.verifyPassword(
+        req.user.id,
+        currentPassword
+      );
+
+      if (!isPasswordValid) {
+        res.status(400).json({ message: "Senha atual incorreta" });
+        return;
+      }
+
+      // Atualizar para a nova senha usando o método existente
+      await this.userService.updatePassword(req.user.id, newPassword);
+
+      res.status(200).json({ message: "Senha alterada com sucesso" });
+    } catch (error) {
+      console.error("Erro ao alterar senha:", error);
+
+      if (error instanceof UserError) {
+        res.status(400).json({ message: error.message });
+        return;
+      }
+
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  }
 }
 
 function next(error: unknown) {

@@ -1,5 +1,6 @@
 import { User } from "../schemas/UserSchema";
 import type { IUser } from "../interfaces/IUser";
+import type mongoose from "mongoose";
 import { type Document, Types } from "mongoose";
 import bcrypt from "bcrypt";
 
@@ -39,37 +40,41 @@ export class UserModel {
     };
   }
 
-  async create(userData: Omit<IUser, "comparePassword">): Promise<IUser> {
-    const hashedPassword = await bcrypt.hash(userData.password, 10);
-    const user = new User({ ...userData, password: hashedPassword });
+  async create(updateData: Omit<IUser, "comparePassword">): Promise<IUser> {
+    const hashedPassword = await bcrypt.hash(updateData.password, 10);
+    const user = new User({ ...updateData, password: hashedPassword });
     const savedUser = (await user.save()) as unknown as UserDocument;
     return this.convertToIUser(savedUser);
   }
 
   async update(
     id: string,
-    userData: Partial<Omit<IUser, "comparePassword">>
+    updateData: Partial<IUser>,
+    session?: mongoose.ClientSession
   ): Promise<IUser | null> {
     if (!this.isValidId(id)) return null;
 
-    if (userData.password) {
-      userData.password = await bcrypt.hash(userData.password, 10);
+    if (updateData.password) {
+      updateData.password = await bcrypt.hash(updateData.password, 10);
     }
 
-    if (Object.prototype.hasOwnProperty.call(userData, "image")) {
-      if (userData.image === undefined) {
+    if (Object.prototype.hasOwnProperty.call(updateData, "image")) {
+      if (updateData.image === undefined) {
         await User.findByIdAndUpdate(id, { $unset: { image: "" } });
-        userData.image = undefined;
+        updateData.image = undefined;
       }
     }
+
+    const options = {
+      new: true,
+      runValidators: true,
+      ...(session ? { session } : {}),
+    };
 
     const user = await User.findByIdAndUpdate(
       id,
-      { $set: userData },
-      {
-        new: true,
-        runValidators: true,
-      }
+      { $set: updateData },
+      options
     ).exec();
 
     if (!user) return null;

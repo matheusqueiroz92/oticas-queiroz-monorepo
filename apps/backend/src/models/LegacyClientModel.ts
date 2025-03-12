@@ -1,5 +1,6 @@
 import { LegacyClient } from "../schemas/LegacyClientSchema";
 import type { ILegacyClient } from "../interfaces/ILegacyClient";
+import mongoose from "mongoose";
 import { type Document, Types, type FilterQuery } from "mongoose";
 
 interface LegacyClientDocument extends Document {
@@ -219,6 +220,64 @@ export class LegacyClientModel {
         paymentId: payment.paymentId?.toString() || "",
       })
     );
+  }
+
+  async updateDebtWithSession(
+    id: string,
+    debtAmount: number,
+    paymentId?: string,
+    session?: mongoose.ClientSession
+  ): Promise<ILegacyClient | null> {
+    if (!this.isValidId(id)) return null;
+
+    const legacyClient = (await LegacyClient.findById(
+      id
+    )) as LegacyClientDocument | null;
+    if (!legacyClient) return null;
+
+    const currentDebt = legacyClient.totalDebt || 0;
+    const newDebt = currentDebt + debtAmount;
+
+    // Corrigindo a estrutura de lastPayment para corresponder à interface
+    const updateData: Partial<ILegacyClient> = {
+      totalDebt: newDebt,
+      // Fornecendo um objeto completo para lastPayment em vez de apenas uma data
+      lastPayment: {
+        date: new Date(),
+        amount: Math.abs(debtAmount), // Armazenamos o valor absoluto para o histórico
+      },
+    };
+
+    const options = {
+      new: true,
+      runValidators: true,
+      ...(session ? { session } : {}),
+    };
+
+    const updatedClient = (await LegacyClient.findByIdAndUpdate(
+      id,
+      { $set: updateData },
+      options
+    )) as LegacyClientDocument | null;
+
+    // Se o pagamento for fornecido e o cliente existir, adicionar ao histórico
+    if (paymentId && updatedClient) {
+      await LegacyClient.findByIdAndUpdate(
+        id,
+        {
+          $push: {
+            paymentHistory: {
+              paymentId: new mongoose.Types.ObjectId(paymentId),
+              amount: Math.abs(debtAmount), // Valor absoluto
+              date: new Date(),
+            },
+          },
+        },
+        session ? { session } : {}
+      );
+    }
+
+    return updatedClient ? this.convertToILegacyClient(updatedClient) : null;
   }
 
   private convertToILegacyClient(doc: LegacyClientDocument): ILegacyClient {

@@ -4,17 +4,21 @@ export type PaymentStatus = "pending" | "completed" | "cancelled";
 
 export interface Payment {
   _id: string;
+  createdBy?: string;
+  customerId?: string;
+  legacyClientId?: string;
+  cashRegisterId: string;
+  orderId?: string;
   amount: number;
   paymentDate: Date;
   type: "sale" | "debt_payment" | "expense";
-  paymentMethod: "credit" | "debit" | "cash" | "pix";
-  installments?: number;
+  paymentMethod: "credit" | "debit" | "cash" | "pix" | "check";
+  installments?: {
+    current: number;
+    total: number;
+    value: number;
+  };
   status: "pending" | "completed" | "cancelled";
-  orderId?: string;
-  customerId?: string;
-  employeeId?: string;
-  legacyClientId?: string;
-  cashRegisterId: string;
   description?: string;
   category?: string;
   createdAt?: Date;

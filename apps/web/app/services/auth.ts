@@ -14,60 +14,152 @@ export interface LoginResponse {
   user: User;
 }
 
+// Definir a URL base da API e registrar no console para diagnóstico
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333";
+console.log(`API configurada para: ${API_URL}`);
+
 export const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333",
+  baseURL: API_URL,
   headers: {
     "Content-Type": "application/json",
   },
 });
 
 // Interceptor para adicionar token em todas as requisições
-api.interceptors.request.use((config) => {
-  const token = Cookies.get("token");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+api.interceptors.request.use(
+  (config) => {
+    const token = Cookies.get("token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    // Verificar e corrigir URLs
+    if (config.url) {
+      // Garantir que a URL comece com barra
+      if (!config.url.startsWith("/")) {
+        config.url = `/${config.url}`;
+      }
+
+      // Log apenas em ambiente de desenvolvimento
+      if (process.env.NODE_ENV === "development") {
+        console.log(`Requisição para: ${config.baseURL}${config.url}`);
+      }
+    }
+
+    return config;
+  },
+  (error) => {
+    console.error("Erro na preparação da requisição:", error);
+    return Promise.reject(error);
   }
-  return config;
-});
+);
 
 // Interceptor para tratamento de erros
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Tratamos erros 401 somente se não estivermos em páginas relacionadas à autenticação
-    // Isso evita redirecionamentos indesejados em rotas públicas como reset-password
-    if (error.response?.status === 401 && typeof window !== "undefined") {
-      const currentPath = window.location.pathname;
-      const isAuthRelatedPage =
-        currentPath.includes("/auth/login") ||
-        currentPath.includes("/auth/forgot-password") ||
-        currentPath.includes("/auth/reset-password");
+    // Log detalhado do erro para diagnóstico
+    if (axios.isAxiosError(error)) {
+      const errorDetails = {
+        status: error.response?.status,
+        url: error.config?.url,
+        method: error.config?.method?.toUpperCase(),
+        data: error.response?.data,
+      };
 
-      // Só redirecionamos em caso de 401 em páginas protegidas
-      if (!isAuthRelatedPage) {
-        console.log("Erro 401 detectado em página protegida, redirecionando");
-
-        // Limpar cookies de autenticação
-        clearAuthCookies();
-
-        // Redirecionar para página de login
-        window.location.href = "/auth/login";
+      // Log específico para erros 404
+      if (error.response?.status === 404) {
+        console.warn(`ERRO 404: URL não encontrada - ${error.config?.url}`);
+        console.warn("Detalhes do erro 404:", errorDetails);
       } else {
-        console.log("Erro 401 em página de autenticação, sem redirecionamento");
+        console.error(
+          `Erro ${error.response?.status || "de rede"} na API:`,
+          errorDetails
+        );
       }
+
+      // Tratamos erros 401 somente se não estivermos em páginas relacionadas à autenticação
+      if (error.response?.status === 401 && typeof window !== "undefined") {
+        const currentPath = window.location.pathname;
+        const isAuthRelatedPage =
+          currentPath.includes("/auth/login") ||
+          currentPath.includes("/auth/forgot-password") ||
+          currentPath.includes("/auth/reset-password");
+
+        // Só redirecionamos em caso de 401 em páginas protegidas
+        if (!isAuthRelatedPage) {
+          console.log("Erro 401 detectado em página protegida, redirecionando");
+
+          // Limpar cookies de autenticação
+          clearAuthCookies();
+
+          // Redirecionar para página de login
+          window.location.href = "/auth/login";
+        } else {
+          console.log(
+            "Erro 401 em página de autenticação, sem redirecionamento"
+          );
+        }
+      }
+    } else {
+      console.error("Erro não-Axios na resposta:", error);
     }
+
     return Promise.reject(error);
   }
 );
 
+// Função auxiliar para verificar disponibilidade da API
+export const checkApiAvailability = async (): Promise<boolean> => {
+  try {
+    // Tentar acessar um endpoint de health check ou similar
+    await axios.get(`${API_URL}/health`, { timeout: 5000 });
+    console.log("API está disponível.");
+    return true;
+  } catch (error) {
+    console.error("API não está disponível:", error);
+    return false;
+  }
+};
+
+// Função para teste de endpoints
+export const testEndpoint = async (
+  endpoint: string
+): Promise<{
+  success: boolean;
+  status?: number;
+  data?: unknown;
+  error?: string;
+}> => {
+  try {
+    const response = await api.get(endpoint);
+    return {
+      success: true,
+      status: response.status,
+      data: response.data,
+    };
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        status: error.response?.status,
+        error: error.message,
+      };
+    }
+    return {
+      success: false,
+      error: String(error),
+    };
+  }
+};
+
+// O resto do arquivo permanece o mesmo...
 export const loginWithCredentials = async (
   login: string,
   password: string
 ): Promise<LoginResponse> => {
   try {
-    console.log(
-      `Enviando requisição de login para ${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333"}/api/auth/login`
-    );
+    console.log(`Enviando requisição de login para ${API_URL}/api/auth/login`);
 
     const response = await api.post<LoginResponse>("/api/auth/login", {
       login,
@@ -148,7 +240,7 @@ export const validateResetToken = async (token: string): Promise<boolean> => {
   try {
     // Criamos uma instância separada do axios para não usar interceptors que possam redirecionar
     const validationApi = axios.create({
-      baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333",
+      baseURL: API_URL,
       headers: { "Content-Type": "application/json" },
     });
 
@@ -179,7 +271,7 @@ export const resetPassword = async (
   try {
     // Usando axios diretamente para evitar interceptors que possam causar redirecionamentos
     const resetApi = axios.create({
-      baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333",
+      baseURL: API_URL,
       headers: { "Content-Type": "application/json" },
     });
 

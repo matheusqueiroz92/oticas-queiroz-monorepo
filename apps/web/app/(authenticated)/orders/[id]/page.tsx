@@ -18,7 +18,6 @@ import OrderStatusUpdate from "../../../../components/OrderStatusUpdate";
 import type { OrderDetail } from "@/app/types/order-details";
 import { Beaker } from "lucide-react";
 
-// Adicione esta interface
 interface Laboratory {
   _id: string;
   name: string;
@@ -28,22 +27,11 @@ interface Laboratory {
   isActive: boolean;
 }
 
-// Interface para os usuários extraídos dos campos clientId e employeeId
 interface User {
   _id: string;
   name: string;
   email: string;
   role?: string;
-}
-
-// Interface para laboratório
-interface Laboratory {
-  _id: string;
-  name: string;
-  contactName?: string;
-  phone?: string;
-  email?: string;
-  isActive: boolean;
 }
 
 export default function OrderDetailsPage() {
@@ -250,22 +238,18 @@ export default function OrderDetailsPage() {
       // Se todos os valores da receita forem zero, isso pode indicar que a informação não foi preenchida
       const allZeros =
         order.prescriptionData &&
-        (!order.prescriptionData.leftEye?.near?.sph ||
-          order.prescriptionData.leftEye.near.sph === 0) &&
-        (!order.prescriptionData.leftEye?.near?.cyl ||
-          order.prescriptionData.leftEye.near.cyl === 0) &&
-        (!order.prescriptionData.leftEye?.far?.sph ||
-          order.prescriptionData.leftEye.far.sph === 0) &&
-        (!order.prescriptionData.leftEye?.far?.cyl ||
-          order.prescriptionData.leftEye.far.cyl === 0) &&
-        (!order.prescriptionData.rightEye?.near?.sph ||
-          order.prescriptionData.rightEye.near.sph === 0) &&
-        (!order.prescriptionData.rightEye?.near?.cyl ||
-          order.prescriptionData.rightEye.near.cyl === 0) &&
-        (!order.prescriptionData.rightEye?.far?.sph ||
-          order.prescriptionData.rightEye.far.sph === 0) &&
-        (!order.prescriptionData.rightEye?.far?.cyl ||
-          order.prescriptionData.rightEye.far.cyl === 0);
+        (!order.prescriptionData.leftEye?.sph ||
+          order.prescriptionData.leftEye.sph === 0) &&
+        (!order.prescriptionData.leftEye?.cyl ||
+          order.prescriptionData.leftEye.cyl === 0) &&
+        (!order.prescriptionData.rightEye?.sph ||
+          order.prescriptionData.rightEye.sph === 0) &&
+        (!order.prescriptionData.rightEye?.cyl ||
+          order.prescriptionData.rightEye.cyl === 0) &&
+        (!order.prescriptionData.nd || order.prescriptionData.nd === 0) &&
+        (!order.prescriptionData.oc || order.prescriptionData.oc === 0) &&
+        (!order.prescriptionData.addition ||
+          order.prescriptionData.addition === 0);
 
       // Se todos forem zero, mostrar "Neutro" ou "Plano" em vez de "0,00"
       if (allZeros) return "Neutro";
@@ -562,122 +546,82 @@ export default function OrderDetailsPage() {
                           <thead>
                             <tr className="bg-gray-100">
                               <th className="py-2 px-3 text-left">Olho</th>
-                              <th className="py-2 px-3 text-center">SPH</th>
-                              <th className="py-2 px-3 text-center">CYL</th>
-                              <th className="py-2 px-3 text-center">AXIS</th>
-                              <th className="py-2 px-3 text-center">PD</th>
+                              <th className="py-2 px-3 text-center">Esf.</th>
+                              <th className="py-2 px-3 text-center">Cil.</th>
+                              <th className="py-2 px-3 text-center">Eixo</th>
                             </tr>
                           </thead>
                           <tbody>
-                            {order.prescriptionData.leftEye.near && (
+                            {order.prescriptionData.leftEye && (
                               <tr className="border-t border-gray-200">
                                 <td className="py-2 px-3 font-medium">
-                                  Esq. (Perto)
+                                  Esquerdo
                                 </td>
                                 <td className="py-2 px-3 text-center">
                                   {formatRefractionValue(
-                                    order.prescriptionData.leftEye.near.sph
+                                    order.prescriptionData.leftEye.sph
                                   )}
                                 </td>
                                 <td className="py-2 px-3 text-center">
                                   {formatRefractionValue(
-                                    order.prescriptionData.leftEye.near.cyl
+                                    order.prescriptionData.leftEye.cyl
                                   )}
                                 </td>
                                 <td className="py-2 px-3 text-center">
-                                  {order.prescriptionData.leftEye.near.axis ||
-                                    "N/A"}
+                                  {order.prescriptionData.leftEye.axis || "N/A"}
                                   °
-                                </td>
-                                <td className="py-2 px-3 text-center">
-                                  {order.prescriptionData.leftEye.near.pd ||
-                                    "N/A"}
-                                  mm
                                 </td>
                               </tr>
                             )}
-                            {order.prescriptionData.leftEye.far && (
+
+                            {order.prescriptionData.rightEye && (
                               <tr className="border-t border-gray-200">
                                 <td className="py-2 px-3 font-medium">
-                                  Esq. (Longe)
+                                  Direito
                                 </td>
                                 <td className="py-2 px-3 text-center">
                                   {formatRefractionValue(
-                                    order.prescriptionData.leftEye.far.sph
+                                    order.prescriptionData.rightEye.sph
                                   )}
                                 </td>
                                 <td className="py-2 px-3 text-center">
                                   {formatRefractionValue(
-                                    order.prescriptionData.leftEye.far.cyl
+                                    order.prescriptionData.rightEye.cyl
                                   )}
                                 </td>
                                 <td className="py-2 px-3 text-center">
-                                  {order.prescriptionData.leftEye.far.axis ||
+                                  {order.prescriptionData.rightEye.axis ||
                                     "N/A"}
                                   °
-                                </td>
-                                <td className="py-2 px-3 text-center">
-                                  {order.prescriptionData.leftEye.far.pd ||
-                                    "N/A"}
-                                  mm
-                                </td>
-                              </tr>
-                            )}
-                            {order.prescriptionData.rightEye.near && (
-                              <tr className="border-t border-gray-200">
-                                <td className="py-2 px-3 font-medium">
-                                  Dir. (Perto)
-                                </td>
-                                <td className="py-2 px-3 text-center">
-                                  {formatRefractionValue(
-                                    order.prescriptionData.rightEye.near.sph
-                                  )}
-                                </td>
-                                <td className="py-2 px-3 text-center">
-                                  {formatRefractionValue(
-                                    order.prescriptionData.rightEye.near.cyl
-                                  )}
-                                </td>
-                                <td className="py-2 px-3 text-center">
-                                  {order.prescriptionData.rightEye.near.axis ||
-                                    "N/A"}
-                                  °
-                                </td>
-                                <td className="py-2 px-3 text-center">
-                                  {order.prescriptionData.rightEye.near.pd ||
-                                    "N/A"}
-                                  mm
-                                </td>
-                              </tr>
-                            )}
-                            {order.prescriptionData.rightEye.far && (
-                              <tr className="border-t border-gray-200">
-                                <td className="py-2 px-3 font-medium">
-                                  Dir. (Longe)
-                                </td>
-                                <td className="py-2 px-3 text-center">
-                                  {formatRefractionValue(
-                                    order.prescriptionData.rightEye.far.sph
-                                  )}
-                                </td>
-                                <td className="py-2 px-3 text-center">
-                                  {formatRefractionValue(
-                                    order.prescriptionData.rightEye.far.cyl
-                                  )}
-                                </td>
-                                <td className="py-2 px-3 text-center">
-                                  {order.prescriptionData.rightEye.far.axis ||
-                                    "N/A"}
-                                  °
-                                </td>
-                                <td className="py-2 px-3 text-center">
-                                  {order.prescriptionData.rightEye.far.pd ||
-                                    "N/A"}
-                                  mm
                                 </td>
                               </tr>
                             )}
                           </tbody>
+                          <tfoot>
+                            <tr className="bg-gray-100">
+                              <th className="py-2 px-3 text-left" colSpan={4}>
+                                Informações adicionais
+                              </th>
+                            </tr>
+                            <tr>
+                              <td className="py-2 px-3 font-medium">D.N.P.</td>
+                              <td className="py-2 px-3 text-center" colSpan={3}>
+                                {order.prescriptionData.nd || "N/A"}
+                              </td>
+                            </tr>
+                            <tr>
+                              <td className="py-2 px-3 font-medium">C.O.</td>
+                              <td className="py-2 px-3 text-center" colSpan={3}>
+                                {order.prescriptionData.oc || "N/A"}
+                              </td>
+                            </tr>
+                            <tr>
+                              <td className="py-2 px-3 font-medium">Adição</td>
+                              <td className="py-2 px-3 text-center" colSpan={3}>
+                                {order.prescriptionData.addition || "N/A"}
+                              </td>
+                            </tr>
+                          </tfoot>
                         </table>
                       </div>
                     )}

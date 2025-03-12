@@ -1,6 +1,6 @@
 // src/controllers/OrderController.ts
 import type { Request, Response } from "express";
-import { OrderService, OrderError } from "../services/OrerService";
+import { OrderService, OrderError } from "../services/OrderService";
 import { z } from "zod";
 import type { IOrder } from "../interfaces/IOrder";
 
@@ -23,6 +23,7 @@ const prescriptionDataSchema = z.object({
     axis: z.number(),
   }),
   nd: z.number(),
+  oc: z.number(),
   addition: z.number(),
 });
 
@@ -38,7 +39,7 @@ const createOrderSchema = z.object({
   installments: z.number().min(1).optional(),
   deliveryDate: z.coerce.date(),
   status: z.enum(["pending", "in_production", "ready", "delivered"]),
-  laboratoryId: z.string().optional(),
+  laboratoryId: z.string().optional().nullable(),
   prescriptionData: prescriptionDataSchema,
   lensType: z.string().min(1, "Tipo de lente é obrigatório"),
   totalPrice: z.number().positive("Preço total deve ser positivo"),
@@ -81,6 +82,12 @@ export class OrderController {
   async createOrder(req: Request, res: Response): Promise<void> {
     try {
       const validatedData = createOrderSchema.parse(req.body);
+
+      // Remover laboratoryId se for uma string vazia
+      if (validatedData.laboratoryId === "") {
+        validatedData.laboratoryId = undefined;
+      }
+
       const order = await this.orderService.createOrder(validatedData);
       res.status(201).json(order);
     } catch (error) {

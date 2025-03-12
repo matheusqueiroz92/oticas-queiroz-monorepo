@@ -426,7 +426,7 @@ export default function ProfilePage() {
             <CardFooter>
               <Button
                 variant="outline"
-                onClick={() => router.push("/auth/change-password")}
+                onClick={() => router.push("/change-password")}
               >
                 Alterar Senha
               </Button>

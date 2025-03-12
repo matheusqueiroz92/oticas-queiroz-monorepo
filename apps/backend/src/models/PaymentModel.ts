@@ -1,9 +1,15 @@
 import { Payment } from "../schemas/PaymentSchema";
 import type { IPayment } from "../interfaces/IPayment";
 import { type Document, Types, type FilterQuery } from "mongoose";
+import type mongoose from "mongoose";
 
 interface PaymentDocument extends Document {
   _id: Types.ObjectId;
+  createdBy: Types.ObjectId;
+  costumerId?: Types.ObjectId;
+  orderId?: Types.ObjectId;
+  legacyClientId?: Types.ObjectId;
+  cashRegisterId: Types.ObjectId;
   amount: number;
   date: Date;
   type: "sale" | "debt_payment" | "expense";
@@ -14,13 +20,7 @@ interface PaymentDocument extends Document {
     total: number;
     value: number;
   };
-  orderId?: Types.ObjectId;
-  userId?: Types.ObjectId;
-  legacyClientId?: Types.ObjectId;
-  categoryId?: Types.ObjectId;
-  cashRegisterId: Types.ObjectId;
   description?: string;
-  createdBy: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -65,54 +65,64 @@ export class PaymentModel {
     return Types.ObjectId.isValid(id);
   }
 
+  private convertToIPayment(doc: PaymentDocument): IPayment {
+    const payment = doc.toObject();
+    return {
+      ...payment,
+      _id: doc._id.toString(),
+      orderId: doc.orderId ? doc.orderId.toString() : undefined,
+      costumerId: doc.costumerId ? doc.costumerId.toString() : undefined,
+      legacyClientId: doc.legacyClientId
+        ? doc.legacyClientId.toString()
+        : undefined,
+      cashRegisterId:
+        doc.cashRegisterId instanceof Types.ObjectId
+          ? doc.cashRegisterId.toString()
+          : (doc.cashRegisterId as PopulatedCashRegister)._id.toString(),
+      createdBy:
+        doc.createdBy instanceof Types.ObjectId
+          ? doc.createdBy.toString()
+          : (doc.createdBy as PopulatedUser)._id.toString(),
+    };
+  }
+
   async create(paymentData: Omit<IPayment, "_id">): Promise<IPayment> {
     const payment = new Payment(paymentData);
     const savedPayment = (await payment.save()) as PaymentDocument;
     return this.convertToIPayment(savedPayment);
   }
 
-  async findById(id: string, populate = false): Promise<IPayment | null> {
-    if (!this.isValidId(id)) return null;
-
-    let query = Payment.findById(id);
-
-    if (populate) {
-      query = query
-        .populate("orderId")
-        .populate("userId", "name email")
-        .populate("legacyClientId")
-        .populate("categoryId")
-        .populate("cashRegisterId")
-        .populate("createdBy", "name email");
-    }
-
-    const payment = (await query.exec()) as PaymentDocument | null;
-    return payment ? this.convertToIPayment(payment) : null;
-  }
-
   async findAll(
     page = 1,
     limit = 10,
     filters: Partial<IPayment> = {},
-    populate = false
+    populate = false,
+    includeDeleted = false // Novo parâmetro
   ): Promise<{ payments: IPayment[]; total: number }> {
     const skip = (page - 1) * limit;
 
     const query = Object.entries(filters).reduce((acc, [key, value]) => {
-      if (value) acc[key] = value;
+      if (value !== undefined && value !== null) {
+        acc[key] = value;
+      }
       return acc;
     }, {} as FilterQuery<PaymentDocument>);
+
+    // Se não devemos incluir documentos excluídos, adicionar a condição isDeleted: false (ou isDeleted inexistente)
+    if (!includeDeleted) {
+      query.isDeleted = { $ne: true };
+    }
 
     let paymentQuery = Payment.find(query).skip(skip).limit(limit);
 
     if (populate) {
       paymentQuery = paymentQuery
         .populate("orderId")
-        .populate("userId", "name email")
+        .populate("customerId", "name email")
         .populate("legacyClientId")
-        .populate("categoryId")
         .populate("cashRegisterId")
-        .populate("createdBy", "name email");
+        .populate("createdBy", "name email")
+        .populate("deletedBy", "name email"); // Adicionar populate para deletedBy
     }
 
     const [payments, total] = await Promise.all([
@@ -124,6 +134,34 @@ export class PaymentModel {
       payments: payments.map((payment) => this.convertToIPayment(payment)),
       total,
     };
+  }
+
+  async findById(
+    id: string,
+    populate = false,
+    includeDeleted = false
+  ): Promise<IPayment | null> {
+    if (!this.isValidId(id)) return null;
+
+    let query = Payment.findById(id);
+
+    // Se não devemos incluir documentos excluídos, adicionar a condição isDeleted: false
+    if (!includeDeleted) {
+      query = query.where({ isDeleted: { $ne: true } });
+    }
+
+    if (populate) {
+      query = query
+        .populate("orderId")
+        .populate("customerId", "name email")
+        .populate("legacyClientId")
+        .populate("cashRegisterId")
+        .populate("createdBy", "name email")
+        .populate("deletedBy", "name email"); // Adicionar populate para deletedBy
+    }
+
+    const payment = (await query.exec()) as PaymentDocument | null;
+    return payment ? this.convertToIPayment(payment) : null;
   }
 
   async findByCashRegister(
@@ -159,23 +197,46 @@ export class PaymentModel {
     return payment ? this.convertToIPayment(payment) : null;
   }
 
-  private convertToIPayment(doc: PaymentDocument): IPayment {
-    const payment = doc.toObject();
-    return {
-      ...payment,
-      _id: doc._id.toString(),
-      orderId: doc.orderId?.toString(),
-      userId: doc.userId?.toString(),
-      legacyClientId: doc.legacyClientId?.toString(),
-      categoryId: doc.categoryId?.toString(),
-      cashRegisterId:
-        doc.cashRegisterId instanceof Types.ObjectId
-          ? doc.cashRegisterId.toString()
-          : (doc.cashRegisterId as PopulatedCashRegister)._id.toString(),
-      createdBy:
-        doc.createdBy instanceof Types.ObjectId
-          ? doc.createdBy.toString()
-          : (doc.createdBy as PopulatedUser)._id.toString(),
-    };
+  async softDelete(id: string, userId: string): Promise<IPayment | null> {
+    if (!this.isValidId(id)) return null;
+
+    const payment = (await Payment.findByIdAndUpdate(
+      id,
+      {
+        $set: {
+          isDeleted: true,
+          deletedAt: new Date(),
+          deletedBy: userId,
+        },
+      },
+      { new: true, runValidators: true }
+    )) as PaymentDocument | null;
+
+    return payment ? this.convertToIPayment(payment) : null;
+  }
+
+  async createWithSession(
+    paymentData: Omit<IPayment, "_id">,
+    session: mongoose.ClientSession
+  ): Promise<IPayment> {
+    const payment = new Payment(paymentData);
+    const savedPayment = (await payment.save({ session })) as PaymentDocument;
+    return this.convertToIPayment(savedPayment);
+  }
+
+  async updateStatusWithSession(
+    id: string,
+    status: IPayment["status"],
+    session: mongoose.ClientSession
+  ): Promise<IPayment | null> {
+    if (!this.isValidId(id)) return null;
+
+    const payment = (await Payment.findByIdAndUpdate(
+      id,
+      { $set: { status } },
+      { new: true, runValidators: true, session }
+    )) as PaymentDocument | null;
+
+    return payment ? this.convertToIPayment(payment) : null;
   }
 }

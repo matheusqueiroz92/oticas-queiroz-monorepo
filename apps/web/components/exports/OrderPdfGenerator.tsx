@@ -17,6 +17,7 @@ interface OrderFormData {
   clientId: string;
   customClientName?: string;
   employeeId: string;
+  productType: "glasses" | "lensCleaner";
   product: string;
   glassesType: "prescription" | "sunglasses";
   paymentMethod: string;
@@ -34,6 +35,7 @@ interface OrderFormData {
     leftEye: { sph: number; cyl: number; axis: number };
     rightEye: { sph: number; cyl: number; axis: number };
     nd: number;
+    oc: number;
     addition: number;
   };
 }
@@ -462,10 +464,24 @@ const OrderPDF = ({ data, customer }: OrderPDFProps) => {
                     { width: 80, fontWeight: "bold" },
                   ]}
                 >
-                  DNP
+                  D.N.P.
                 </Text>
                 <Text style={styles.prescriptionTableCell}>
                   {data.prescriptionData.nd}mm
+                </Text>
+              </View>
+
+              <View style={styles.prescriptionTableRow}>
+                <Text
+                  style={[
+                    styles.prescriptionTableCell,
+                    { width: 80, fontWeight: "bold" },
+                  ]}
+                >
+                  C.O.
+                </Text>
+                <Text style={styles.prescriptionTableCell}>
+                  {data.prescriptionData.oc}
                 </Text>
               </View>
 

@@ -1,10 +1,10 @@
 import VisionSection from "./VisionSection";
+import type { OrderFormReturn } from "../../../app/types/form-types";
 
 interface EyeFormSectionProps {
   eye: "left" | "right";
   title: string;
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-  form: any;
+  form: OrderFormReturn;
 }
 
 export default function EyeFormSection({

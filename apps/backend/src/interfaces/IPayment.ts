@@ -1,5 +1,10 @@
 export interface IPayment {
   _id?: string;
+  createdBy: string;
+  customerId?: string;
+  legacyClientId?: string;
+  cashRegisterId: string;
+  orderId?: string;
   amount: number;
   date: Date;
   type: "sale" | "debt_payment" | "expense";
@@ -10,15 +15,13 @@ export interface IPayment {
     total: number;
     value: number;
   };
-  orderId?: string;
-  userId?: string;
-  legacyClientId?: string;
-  categoryId?: string;
-  cashRegisterId: string;
   description?: string;
-  createdBy: string;
   createdAt?: Date;
   updatedAt?: Date;
+  // Campos de soft delete
+  isDeleted?: boolean;
+  deletedAt?: Date;
+  deletedBy?: string;
 }
 
 export type CreatePaymentDTO = Omit<

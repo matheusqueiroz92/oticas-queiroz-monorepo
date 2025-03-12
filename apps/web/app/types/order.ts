@@ -25,6 +25,7 @@ export interface Order {
       axis: number;
     };
     nd: number;
+    oc: number;
     addition: number;
   };
   lensType?: string;

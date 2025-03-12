@@ -2,6 +2,7 @@ import express from "express";
 import { UserController } from "../controllers/UserController";
 import { authenticate, authorize } from "../middlewares/authMiddleware";
 import upload from "../config/multerConfig";
+import { asyncHandler } from "../utils/asyncHandler";
 
 const router = express.Router();
 const userController = new UserController();
@@ -27,7 +28,7 @@ router.get(
   "/users",
   authenticate,
   authorize(["admin", "employee"]),
-  (req, res) => userController.getAllUsers(req, res)
+  asyncHandler((req, res) => userController.getAllUsers(req, res))
 );
 
 /**
@@ -45,8 +46,10 @@ router.get(
  *       401:
  *         description: Não autorizado
  */
-router.get("/users/profile", authenticate, (req, res) =>
-  userController.getProfile(req, res)
+router.get(
+  "/users/profile",
+  authenticate,
+  asyncHandler((req, res) => userController.getProfile(req, res))
 );
 
 /**
@@ -81,7 +84,41 @@ router.put(
   "/users/profile",
   authenticate,
   upload.single("userImage"),
-  (req, res) => userController.updateProfile(req, res)
+  asyncHandler((req, res) => userController.updateProfile(req, res))
+);
+
+/**
+ * @swagger
+ * /api/users/change-password:
+ *   post:
+ *     summary: Altera a senha do usuário logado
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Users]
+ *     description: Permite ao usuário logado alterar sua própria senha
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               currentPassword:
+ *                 type: string
+ *               newPassword:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Senha alterada com sucesso
+ *       400:
+ *         description: Dados inválidos ou senha atual incorreta
+ *       401:
+ *         description: Não autorizado
+ */
+router.post(
+  "/users/change-password",
+  authenticate,
+  asyncHandler((req, res) => userController.changePassword(req, res))
 );
 
 /**
@@ -113,7 +150,7 @@ router.get(
   "/users/:id",
   authenticate,
   authorize(["admin", "employee"]),
-  (req, res) => userController.getUserById(req, res)
+  asyncHandler((req, res) => userController.getUserById(req, res))
 );
 
 /**
@@ -159,7 +196,7 @@ router.put(
   authenticate,
   upload.single("userImage"),
   authorize(["admin", "employee"]),
-  (req, res) => userController.updateUser(req, res)
+  asyncHandler((req, res) => userController.updateUser(req, res))
 );
 
 /**
@@ -187,8 +224,11 @@ router.put(
  *       404:
  *         description: Usuário não encontrado
  */
-router.delete("/users/:id", authenticate, authorize(["admin"]), (req, res) =>
-  userController.deleteUser(req, res)
+router.delete(
+  "/users/:id",
+  authenticate,
+  authorize(["admin"]),
+  asyncHandler((req, res) => userController.deleteUser(req, res))
 );
 
 export default router;

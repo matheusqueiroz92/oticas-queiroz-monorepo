@@ -11,7 +11,7 @@ export interface IOrder {
   installments?: number;
   deliveryDate?: Date;
   status: "pending" | "in_production" | "ready" | "delivered" | "cancelled";
-  laboratoryId?: string;
+  laboratoryId?: string | null;
   prescriptionData?: {
     doctorName: string;
     clinicName: string;
@@ -27,6 +27,7 @@ export interface IOrder {
       axis: number;
     };
     nd: number;
+    oc: number;
     addition: number;
   };
   lensType?: string;
@@ -64,6 +65,7 @@ export interface ICreateOrderDTO {
       axis: number;
     };
     nd: number;
+    oc: number;
     addition: number;
   };
   lensType?: string;

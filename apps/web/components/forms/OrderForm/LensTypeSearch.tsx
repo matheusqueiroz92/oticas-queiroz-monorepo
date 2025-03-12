@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { UseFormReturn } from "react-hook-form";
 import {
   Dialog,
   DialogContent,
@@ -13,43 +12,7 @@ import {
 import { Loader2, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/app/services/auth";
-
-// Define o tipo exato para o OrderFormValues
-// Isso deve corresponder exatamente à definição no seu schema zod
-type OrderFormValues = {
-  clientId: string;
-  employeeId: string;
-  productType: "glasses" | "lensCleaner";
-  product: string;
-  glassesType: "prescription" | "sunglasses";
-  glassesFrame: "with" | "no";
-  paymentMethod: string;
-  paymentEntry?: number;
-  installments?: number;
-  deliveryDate?: string;
-  status: string;
-  laboratoryId?: string;
-  lensType?: string;
-  observations?: string;
-  totalPrice: number;
-  prescriptionData?: {
-    doctorName?: string;
-    clinicName?: string;
-    appointmentDate?: string;
-    leftEye: {
-      sph: number;
-      cyl: number;
-      axis: number;
-    };
-    rightEye: {
-      sph: number;
-      cyl: number;
-      axis: number;
-    };
-    nd: number;
-    addition: number;
-  };
-};
+import type { OrderFormReturn } from "../../../app/types/form-types";
 
 // Interface para tipos de lente
 interface LensType {
@@ -61,7 +24,7 @@ interface LensType {
 
 // Interface para as props do componente com tipagem específica
 interface LensTypeSelectionProps {
-  form: UseFormReturn<OrderFormValues, undefined, undefined>;
+  form: OrderFormReturn;
 }
 
 export default function LensTypeSelection({ form }: LensTypeSelectionProps) {

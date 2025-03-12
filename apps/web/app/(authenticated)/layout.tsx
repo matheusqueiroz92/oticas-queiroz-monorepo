@@ -9,11 +9,13 @@ import {
   DollarSign,
   BarChart,
   LogOut,
+  CircleUser,
+  User,
+  HandCoins,
+  FlaskConical,
   UserPlus,
   Building2,
-  Beaker,
   ShoppingCart,
-  User,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -54,59 +56,31 @@ const menuItems: MenuItem[] = [
   },
   {
     title: "Funcionários",
-    icon: Users,
+    icon: CircleUser,
     href: "/employees",
     roles: ["admin"],
-    subItems: [
-      {
-        title: "Novo Funcionário",
-        icon: UserPlus,
-        href: "/employees/new",
-        roles: ["admin"],
-      },
-    ],
+    // subItems: [
+    //   {
+    //     title: "Novo Funcionário",
+    //     icon: UserPlus,
+    //     href: "/employees/new",
+    //     roles: ["admin"],
+    //   },
+    // ],
   },
   {
     title: "Clientes",
     icon: Users,
     href: "/customers",
     roles: ["admin", "employee"],
-    subItems: [
-      {
-        title: "Novo Cliente",
-        icon: UserPlus,
-        href: "/customers/new",
-        roles: ["admin", "employee"],
-      },
-    ],
-  },
-  {
-    title: "Produtos",
-    icon: Package,
-    href: "/products",
-    roles: ["admin", "employee"],
-    subItems: [
-      {
-        title: "Novo Produto",
-        icon: ShoppingCart,
-        href: "/products/new",
-        roles: ["admin", "employee"],
-      },
-    ],
-  },
-  {
-    title: "Laboratórios",
-    icon: Beaker,
-    href: "/laboratories",
-    roles: ["admin", "employee"],
-    subItems: [
-      {
-        title: "Novo Laboratório",
-        icon: Building2,
-        href: "/laboratories/new",
-        roles: ["admin"],
-      },
-    ],
+    // subItems: [
+    //   {
+    //     title: "Novo Cliente",
+    //     icon: UserPlus,
+    //     href: "/customers/new",
+    //     roles: ["admin", "employee"],
+    //   },
+    // ],
   },
   {
     title: "Pedidos",
@@ -127,10 +101,44 @@ const menuItems: MenuItem[] = [
     roles: ["customer"],
   },
   {
+    title: "Pagamentos",
+    icon: HandCoins,
+    href: "/payments",
+    roles: ["admin", "employee"],
+  },
+  {
     title: "Caixa",
     icon: DollarSign,
     href: "/cash-register",
     roles: ["admin", "employee"],
+  },
+  {
+    title: "Produtos",
+    icon: Package,
+    href: "/products",
+    roles: ["admin", "employee"],
+    // subItems: [
+    //   {
+    //     title: "Novo Produto",
+    //     icon: ShoppingCart,
+    //     href: "/products/new",
+    //     roles: ["admin", "employee"],
+    //   },
+    // ],
+  },
+  {
+    title: "Laboratórios",
+    icon: FlaskConical,
+    href: "/laboratories",
+    roles: ["admin", "employee"],
+    // subItems: [
+    //   {
+    //     title: "Novo Laboratório",
+    //     icon: Building2,
+    //     href: "/laboratories/new",
+    //     roles: ["admin"],
+    //   },
+    // ],
   },
   {
     title: "Relatórios",

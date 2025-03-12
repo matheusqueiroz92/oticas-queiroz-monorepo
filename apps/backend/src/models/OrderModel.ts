@@ -31,6 +31,7 @@ interface OrderDocument extends Document {
       axis: number;
     };
     nd: number;
+    oc: number;
     addition: number;
   };
   lensType?: string;

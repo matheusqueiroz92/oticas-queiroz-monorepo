@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -53,18 +53,18 @@ export default function PaymentsPage() {
 
   const router = useRouter();
 
-  useEffect(() => {
-    const fetchPayments = async () => {
+  const fetchPayments = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const params: SearchParams = {
+        search,
+        page: currentPage,
+        ...filter,
+      };
+
       try {
-        setLoading(true);
-        setError(null);
-
-        const params: SearchParams = {
-          search,
-          page: currentPage,
-          ...filter,
-        };
-
         const response = await api.get("/api/payments", { params });
 
         // Verificar se a resposta tem o formato esperado
@@ -89,25 +89,86 @@ export default function PaymentsPage() {
           setTotalPages(1);
           setTotalPayments(0);
         }
-      } catch (error) {
-        console.error("Erro ao buscar pagamentos:", error);
+      } catch (apiError: any) {
+        console.error("Erro ao buscar pagamentos:", apiError);
 
-        // Verificar se é um erro 404 (não encontrado)
-        if (axios.isAxiosError(error) && error.response?.status === 404) {
+        // Se for erro 404, não tratar como erro crítico
+        if (apiError?.response?.status === 404) {
           setPayments([]);
           setTotalPages(1);
           setTotalPayments(0);
-          setError(null);
         } else {
-          setError("Erro ao carregar pagamentos. Tente novamente mais tarde.");
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
+          // Para outros erros, mostrar mensagem adequada
+          let errorMessage = "Erro ao carregar pagamentos.";
 
+          if (apiError?.response?.status === 401) {
+            errorMessage = "Você não está autenticado. Faça login novamente.";
+          } else if (apiError?.response?.status === 403) {
+            errorMessage = "Você não tem permissão para acessar esses dados.";
+          } else if (apiError?.message) {
+            errorMessage += ` ${apiError.message}`;
+          }
+
+          setError(errorMessage);
+        }
+      }
+    } catch (error: any) {
+      console.error("Erro geral na função fetchPayments:", error);
+      setError("Erro ao carregar pagamentos. Tente novamente mais tarde.");
+    } finally {
+      setLoading(false);
+    }
+  }, [
+    search,
+    currentPage,
+    filter,
+    setLoading,
+    setError,
+    setPayments,
+    setTotalPages,
+    setTotalPayments,
+  ]);
+
+  useEffect(() => {
     fetchPayments();
-  }, [search, currentPage, filter]);
+  }, [fetchPayments]);
+
+  const checkForOpenCashRegister = async (): Promise<boolean> => {
+    try {
+      // Importar dinamicamente para evitar erros de ciclo
+      const { checkOpenCashRegister } = await import(
+        "../../../app/services/cashRegister"
+      );
+      const result = await checkOpenCashRegister();
+      return result.hasCashRegister;
+    } catch (error) {
+      console.error("Erro ao verificar caixa:", error);
+      return false;
+    }
+  };
+
+  const handleNewPayment = async () => {
+    try {
+      // Verificar se há um caixa aberto
+      const hasOpenRegister = await checkForOpenCashRegister();
+
+      if (hasOpenRegister) {
+        router.push("/payments/new");
+      } else {
+        // Mostrar mensagem e oferecer opção de abrir caixa
+        toast({
+          variant: "destructive",
+          title: "Nenhum caixa aberto",
+          description:
+            "É necessário abrir um caixa antes de registrar pagamentos.",
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao verificar status do caixa:", error);
+      // Permitir continuar mesmo com erro na verificação
+      router.push("/payments/new");
+    }
+  };
 
   // Função para formatar data
   const formatDate = (dateInput?: string | Date) => {
@@ -282,9 +343,7 @@ export default function PaymentsPage() {
           onChange={(e) => setSearch(e.target.value)}
           className="max-w-sm"
         />
-        <Button onClick={() => router.push("/payments/new")}>
-          Novo Pagamento
-        </Button>
+        <Button onClick={handleNewPayment}>Novo Pagamento</Button>
       </div>
 
       {loading && (

@@ -61,7 +61,6 @@ export default function LaboratoriesPage() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { canManageLaboratories } = usePermissions();
 
   const router = useRouter();
 
@@ -161,11 +160,9 @@ export default function LaboratoriesPage() {
           onChange={(e) => setSearch(e.target.value)}
           className="max-w-sm"
         />
-        {canManageLaboratories && (
-          <Button onClick={() => router.push("/laboratories/new")}>
-            Novo Laboratório
-          </Button>
-        )}
+        <Button onClick={() => router.push("/laboratories/new")}>
+          Novo Laboratório
+        </Button>
       </div>
 
       {loading && (
@@ -184,11 +181,6 @@ export default function LaboratoriesPage() {
           <h3 className="text-lg font-semibold">
             Não há laboratórios cadastrados
           </h3>
-          <p className="text-muted-foreground mt-2">
-            {canManageLaboratories
-              ? 'Clique em "Novo Laboratório" para adicionar um laboratório ao sistema.'
-              : "Nenhum laboratório foi cadastrado no sistema ainda."}
-          </p>
         </div>
       )}
 
