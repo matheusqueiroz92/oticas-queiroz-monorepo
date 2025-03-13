@@ -4,6 +4,10 @@ import { Parser } from "json2csv";
 import type { IPayment } from "../interfaces/IPayment";
 import type { ICashRegister } from "src/interfaces/ICashRegister";
 import type { IOrder } from "../interfaces/IOrder";
+import type {
+  InventoryReportData,
+  SalesReportData,
+} from "../interfaces/IReport";
 
 export interface ExportOptions {
   format: "excel" | "pdf" | "csv" | "json";
@@ -240,6 +244,62 @@ export class ExportUtils {
     }
   }
 
+  async exportSalesReport(
+    reportData: SalesReportData,
+    options: ExportOptions
+  ): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
+    const filename = options.filename || `sales-report-${Date.now()}`;
+
+    switch (options.format) {
+      case "excel":
+        return this.generateSalesReportExcel(
+          reportData,
+          filename,
+          options.title
+        );
+      case "pdf":
+        return this.generateSalesReportPDF(reportData, filename, options.title);
+      case "csv":
+        return this.generateSalesReportCSV(reportData, filename);
+      default:
+        return {
+          buffer: Buffer.from(JSON.stringify(reportData, null, 2)),
+          contentType: "application/json",
+          filename: `${filename}.json`,
+        };
+    }
+  }
+
+  async exportInventoryReport(
+    reportData: InventoryReportData,
+    options: ExportOptions
+  ): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
+    const filename = options.filename || `inventory-report-${Date.now()}`;
+
+    switch (options.format) {
+      case "excel":
+        return this.generateInventoryReportExcel(
+          reportData,
+          filename,
+          options.title
+        );
+      case "pdf":
+        return this.generateInventoryReportPDF(
+          reportData,
+          filename,
+          options.title
+        );
+      case "csv":
+        return this.generateInventoryReportCSV(reportData, filename);
+      default:
+        return {
+          buffer: Buffer.from(JSON.stringify(reportData, null, 2)),
+          contentType: "application/json",
+          filename: `${filename}.json`,
+        };
+    }
+  }
+
   private translatePaymentType(type: IPayment["type"]): string {
     const types: Record<IPayment["type"], string> = {
       sale: "Venda",
@@ -267,6 +327,41 @@ export class ExportUtils {
       cancelled: "Cancelado",
     };
     return statuses[status] || status;
+  }
+
+  private translateProductType(type: string): string {
+    const types: Record<string, string> = {
+      glasses: "Óculos",
+      lensCleaner: "Limpa Lentes",
+    };
+    return types[type] || type;
+  }
+
+  private translateOrderStatus(status: string): string {
+    const statuses: Record<string, string> = {
+      pending: "Pendente",
+      in_production: "Em Produção",
+      ready: "Pronto",
+      delivered: "Entregue",
+      cancelled: "Cancelado",
+    };
+    return statuses[status] || status;
+  }
+
+  private translateGlassesType(type: string): string {
+    const types: Record<string, string> = {
+      prescription: "Grau",
+      sunglasses: "Sol",
+    };
+    return types[type] || type;
+  }
+
+  private translateGlassesFrame(frame: string): string {
+    const frames: Record<string, string> = {
+      with: "Com armação",
+      no: "Sem armação",
+    };
+    return frames[frame] || frame;
   }
 
   private async generateOrdersExcel(
@@ -1018,41 +1113,6 @@ export class ExportUtils {
       contentType: "text/csv",
       filename: `${filename}.csv`,
     };
-  }
-
-  private translateProductType(type: string): string {
-    const types: Record<string, string> = {
-      glasses: "Óculos",
-      lensCleaner: "Limpa Lentes",
-    };
-    return types[type] || type;
-  }
-
-  private translateOrderStatus(status: string): string {
-    const statuses: Record<string, string> = {
-      pending: "Pendente",
-      in_production: "Em Produção",
-      ready: "Pronto",
-      delivered: "Entregue",
-      cancelled: "Cancelado",
-    };
-    return statuses[status] || status;
-  }
-
-  private translateGlassesType(type: string): string {
-    const types: Record<string, string> = {
-      prescription: "Grau",
-      sunglasses: "Sol",
-    };
-    return types[type] || type;
-  }
-
-  private translateGlassesFrame(frame: string): string {
-    const frames: Record<string, string> = {
-      with: "Com armação",
-      no: "Sem armação",
-    };
-    return frames[frame] || frame;
   }
 
   private async generateOrdersPDF(
@@ -2279,6 +2339,422 @@ export class ExportUtils {
       buffer,
       contentType: "application/json",
       filename: `${filename}.json`,
+    };
+  }
+
+  private async generateSalesReportExcel(
+    reportData: SalesReportData,
+    filename: string,
+    title?: string
+  ): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
+    const workbook = new Excel.Workbook();
+    const worksheet = workbook.addWorksheet("Relatório de Vendas");
+
+    // Título do relatório
+    const reportTitle = title || "Relatório de Vendas";
+    worksheet.addRow([reportTitle]);
+    worksheet.mergeCells("A1:F1");
+    const titleCell = worksheet.getCell("A1");
+    titleCell.font = { size: 16, bold: true };
+    titleCell.alignment = { horizontal: "center" };
+    worksheet.addRow([]);
+
+    // Resumo geral
+    worksheet.addRow([
+      "Vendas Totais",
+      `R$ ${reportData.totalSales.toFixed(2)}`,
+    ]);
+    worksheet.addRow([
+      "Venda Média",
+      `R$ ${reportData.averageSale.toFixed(2)}`,
+    ]);
+    worksheet.addRow(["Número de Vendas", reportData.count]);
+    worksheet.addRow([]);
+
+    // Vendas por período
+    worksheet.addRow(["Vendas por Período"]);
+    worksheet.addRow(["Período", "Quantidade", "Valor Total"]);
+
+    for (const period of reportData.byPeriod) {
+      worksheet.addRow([
+        period.period,
+        period.count,
+        `R$ ${period.value.toFixed(2)}`,
+      ]);
+    }
+
+    worksheet.addRow([]);
+
+    // Vendas por método de pagamento
+    worksheet.addRow(["Vendas por Método de Pagamento"]);
+    worksheet.addRow(["Método", "Valor Total"]);
+
+    for (const [method, value] of Object.entries(reportData.byPaymentMethod)) {
+      worksheet.addRow([method, `R$ ${value.toFixed(2)}`]);
+    }
+
+    // Formatação
+    const buffer = await workbook.xlsx.writeBuffer();
+
+    return {
+      buffer: buffer as Buffer,
+      contentType:
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      filename: `${filename}.xlsx`,
+    };
+  }
+
+  private async generateSalesReportPDF(
+    reportData: SalesReportData,
+    filename: string,
+    title?: string
+  ): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
+    return new Promise((resolve, reject) => {
+      try {
+        const doc = new PDFDocument({ margin: 50 });
+        const chunks: Buffer[] = [];
+
+        doc.on("data", (chunk) => chunks.push(chunk));
+        doc.on("end", () => {
+          const buffer = Buffer.concat(chunks);
+          resolve({
+            buffer,
+            contentType: "application/pdf",
+            filename: `${filename}.pdf`,
+          });
+        });
+
+        // Título do relatório
+        const reportTitle = title || "Relatório de Vendas";
+        doc.fontSize(20).text(reportTitle, { align: "center" });
+        doc.moveDown();
+
+        // Data de geração
+        doc.fontSize(12).text(`Gerado em: ${new Date().toLocaleString()}`, {
+          align: "right",
+        });
+        doc.moveDown(2);
+
+        // Resumo geral
+        doc.fontSize(16).text("Resumo Geral", { underline: true });
+        doc.moveDown();
+
+        doc.fontSize(12);
+        doc.text(`Vendas Totais: R$ ${reportData.totalSales.toFixed(2)}`);
+        doc.text(`Venda Média: R$ ${reportData.averageSale.toFixed(2)}`);
+        doc.text(`Número de Vendas: ${reportData.count}`);
+        doc.moveDown(2);
+
+        // Vendas por período
+        doc.fontSize(16).text("Vendas por Período", { underline: true });
+        doc.moveDown();
+
+        const tableTop = doc.y;
+        const tableHeaders = ["Período", "Quantidade", "Valor Total"];
+        const columnWidth = 150;
+
+        // Cabeçalho da tabela
+        doc.fontSize(12).font("Helvetica-Bold");
+        tableHeaders.forEach((header, i) => {
+          doc.text(header, 50 + i * columnWidth, tableTop, {
+            width: columnWidth,
+            align: "left",
+          });
+        });
+
+        // Linha separadora
+        doc
+          .moveTo(50, tableTop + 20)
+          .lineTo(50 + tableHeaders.length * columnWidth, tableTop + 20)
+          .stroke();
+
+        // Dados
+        doc.font("Helvetica");
+        let y = tableTop + 30;
+
+        for (const period of reportData.byPeriod) {
+          doc.text(period.period, 50, y, { width: columnWidth, align: "left" });
+          doc.text(period.count.toString(), 50 + columnWidth, y, {
+            width: columnWidth,
+            align: "left",
+          });
+          doc.text(`R$ ${period.value.toFixed(2)}`, 50 + columnWidth * 2, y, {
+            width: columnWidth,
+            align: "left",
+          });
+
+          y += 20;
+
+          // Adicionar nova página se necessário
+          if (y > doc.page.height - 50) {
+            doc.addPage();
+            y = 50;
+          }
+        }
+
+        // Vendas por método de pagamento
+        doc.moveDown(2);
+        doc
+          .fontSize(16)
+          .text("Vendas por Método de Pagamento", { underline: true });
+        doc.moveDown();
+
+        for (const [method, value] of Object.entries(
+          reportData.byPaymentMethod
+        )) {
+          doc.text(`${method}: R$ ${value.toFixed(2)}`);
+        }
+
+        // Finalizar o documento
+        doc.end();
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
+  private async generateSalesReportCSV(
+    reportData: SalesReportData,
+    filename: string
+  ): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
+    // Criar CSV com resumo
+    let csv = `"Relatório de Vendas - ${new Date().toLocaleDateString()}"\n\n`;
+
+    // Resumo geral
+    csv += `"Resumo Geral"\n`;
+    csv += `"Vendas Totais","R$ ${reportData.totalSales.toFixed(2)}"\n`;
+    csv += `"Venda Média","R$ ${reportData.averageSale.toFixed(2)}"\n`;
+    csv += `"Número de Vendas","${reportData.count}"\n\n`;
+
+    // Vendas por período
+    csv += `"Vendas por Período"\n`;
+    csv += `"Período","Quantidade","Valor Total"\n`;
+
+    for (const period of reportData.byPeriod) {
+      csv += `"${period.period}","${period.count}","R$ ${period.value.toFixed(2)}"\n`;
+    }
+
+    csv += "\n";
+
+    // Vendas por método de pagamento
+    csv += `"Vendas por Método de Pagamento"\n`;
+    csv += `"Método","Valor Total"\n`;
+
+    for (const [method, value] of Object.entries(reportData.byPaymentMethod)) {
+      csv += `"${method}","R$ ${value.toFixed(2)}"\n`;
+    }
+
+    return {
+      buffer: Buffer.from(csv),
+      contentType: "text/csv",
+      filename: `${filename}.csv`,
+    };
+  }
+
+  private async generateInventoryReportExcel(
+    reportData: InventoryReportData,
+    filename: string,
+    title?: string
+  ): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
+    const workbook = new Excel.Workbook();
+    const worksheet = workbook.addWorksheet("Relatório de Inventário");
+
+    // Título do relatório
+    const reportTitle = title || "Relatório de Inventário";
+    worksheet.addRow([reportTitle]);
+    worksheet.mergeCells("A1:D1");
+    const titleCell = worksheet.getCell("A1");
+    titleCell.font = { size: 16, bold: true };
+    titleCell.alignment = { horizontal: "center" };
+    worksheet.addRow([]);
+
+    // Resumo geral
+    worksheet.addRow(["Total de Itens", reportData.totalItems]);
+    worksheet.addRow([
+      "Valor Total do Inventário",
+      `R$ ${reportData.totalValue.toFixed(2)}`,
+    ]);
+    worksheet.addRow([]);
+
+    // Produtos por categoria
+    worksheet.addRow(["Produtos por Categoria"]);
+    worksheet.addRow(["Categoria", "Quantidade", "Valor Total"]);
+
+    for (const category of reportData.byCategory) {
+      worksheet.addRow([
+        category.category,
+        category.count,
+        `R$ ${category.value.toFixed(2)}`,
+      ]);
+    }
+
+    worksheet.addRow([]);
+
+    // Produtos com estoque baixo
+    worksheet.addRow(["Produtos com Estoque Baixo"]);
+    worksheet.addRow(["ID", "Nome", "Estoque"]);
+
+    for (const product of reportData.lowStock) {
+      worksheet.addRow([product.productId, product.name, product.stock]);
+    }
+
+    // Formatação
+    const buffer = await workbook.xlsx.writeBuffer();
+
+    return {
+      buffer: buffer as Buffer,
+      contentType:
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      filename: `${filename}.xlsx`,
+    };
+  }
+
+  private async generateInventoryReportPDF(
+    reportData: InventoryReportData,
+    filename: string,
+    title?: string
+  ): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
+    return new Promise((resolve, reject) => {
+      try {
+        const doc = new PDFDocument({ margin: 50 });
+        const chunks: Buffer[] = [];
+
+        doc.on("data", (chunk) => chunks.push(chunk));
+        doc.on("end", () => {
+          const buffer = Buffer.concat(chunks);
+          resolve({
+            buffer,
+            contentType: "application/pdf",
+            filename: `${filename}.pdf`,
+          });
+        });
+
+        // Título do relatório
+        const reportTitle = title || "Relatório de Inventário";
+        doc.fontSize(20).text(reportTitle, { align: "center" });
+        doc.moveDown();
+
+        // Data de geração
+        doc.fontSize(12).text(`Gerado em: ${new Date().toLocaleString()}`, {
+          align: "right",
+        });
+        doc.moveDown(2);
+
+        // Resumo geral
+        doc.fontSize(16).text("Resumo Geral", { underline: true });
+        doc.moveDown();
+
+        doc.fontSize(12);
+        doc.text(`Total de Itens: ${reportData.totalItems}`);
+        doc.text(
+          `Valor Total do Inventário: R$ ${reportData.totalValue.toFixed(2)}`
+        );
+        doc.moveDown(2);
+
+        // Produtos por categoria
+        doc.fontSize(16).text("Produtos por Categoria", { underline: true });
+        doc.moveDown();
+
+        const tableTop = doc.y;
+        const tableHeaders = ["Categoria", "Quantidade", "Valor Total"];
+        const columnWidth = 150;
+
+        // Cabeçalho da tabela
+        doc.fontSize(12).font("Helvetica-Bold");
+        tableHeaders.forEach((header, i) => {
+          doc.text(header, 50 + i * columnWidth, tableTop, {
+            width: columnWidth,
+            align: "left",
+          });
+        });
+
+        // Linha separadora
+        doc
+          .moveTo(50, tableTop + 20)
+          .lineTo(50 + tableHeaders.length * columnWidth, tableTop + 20)
+          .stroke();
+
+        // Dados
+        doc.font("Helvetica");
+        let y = tableTop + 30;
+
+        for (const category of reportData.byCategory) {
+          doc.text(category.category, 50, y, {
+            width: columnWidth,
+            align: "left",
+          });
+          doc.text(category.count.toString(), 50 + columnWidth, y, {
+            width: columnWidth,
+            align: "left",
+          });
+          doc.text(`R$ ${category.value.toFixed(2)}`, 50 + columnWidth * 2, y, {
+            width: columnWidth,
+            align: "left",
+          });
+
+          y += 20;
+
+          // Adicionar nova página se necessário
+          if (y > doc.page.height - 50) {
+            doc.addPage();
+            y = 50;
+          }
+        }
+
+        // Produtos com estoque baixo
+        doc.moveDown(2);
+        doc
+          .fontSize(16)
+          .text("Produtos com Estoque Baixo", { underline: true });
+        doc.moveDown();
+
+        for (const product of reportData.lowStock) {
+          doc.text(
+            `${product.name} (ID: ${product.productId}): Estoque atual: ${product.stock}`
+          );
+        }
+
+        // Finalizar o documento
+        doc.end();
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
+  private async generateInventoryReportCSV(
+    reportData: InventoryReportData,
+    filename: string
+  ): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
+    let csv = `"Relatório de Inventário - ${new Date().toLocaleDateString()}"\n\n`;
+
+    // Resumo geral
+    csv += `"Resumo Geral"\n`;
+    csv += `"Total de Itens","${reportData.totalItems}"\n`;
+    csv += `"Valor Total do Inventário","R$ ${reportData.totalValue.toFixed(2)}"\n\n`;
+
+    // Produtos por categoria
+    csv += `"Produtos por Categoria"\n`;
+    csv += `"Categoria","Quantidade","Valor Total"\n`;
+
+    for (const category of reportData.byCategory) {
+      csv += `"${category.category}","${category.count}","R$ ${category.value.toFixed(2)}"\n`;
+    }
+
+    csv += "\n";
+
+    // Produtos com estoque baixo
+    csv += `"Produtos com Estoque Baixo"\n`;
+    csv += `"ID","Nome","Estoque"\n`;
+
+    for (const product of reportData.lowStock) {
+      csv += `"${product.productId}","${product.name}","${product.stock}"\n`;
+    }
+
+    return {
+      buffer: Buffer.from(csv),
+      contentType: "text/csv",
+      filename: `${filename}.csv`,
     };
   }
 }

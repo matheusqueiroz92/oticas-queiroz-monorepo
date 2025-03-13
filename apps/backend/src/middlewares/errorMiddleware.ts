@@ -1,92 +1,130 @@
+// src/middlewares/errorMiddleware.ts
 import type { Request, Response, NextFunction } from "express";
-import { AuthError } from "../services/AuthService";
-import { UserError } from "../services/UserService";
+import { AppError } from "../utils/AppError";
+import { ErrorCode } from "../utils/errorCodes";
+import { ZodError } from "zod";
 import type { MongoServerError } from "mongodb";
 import { MulterError } from "multer";
 
-interface CustomError extends Error {
-  code?: string | number;
-  statusCode?: number;
+// Interface para a resposta de erro
+interface ErrorResponse {
+  status: string;
+  code: ErrorCode;
+  message: string;
+  details?: unknown;
 }
 
 export const errorMiddleware = (
-  error: Error | CustomError | MulterError,
+  error: Error | AppError | MulterError | ZodError,
   _req: Request,
   res: Response,
   _next: NextFunction
 ): void => {
   console.error(`[Error] ${error.name}: ${error.message}`);
 
-  // Multer errors
-  if (error instanceof MulterError) {
-    if (error.code === "LIMIT_FILE_SIZE") {
-      res.status(400).json({
-        status: "error",
-        message: "Arquivo muito grande. Tamanho máximo: 5MB",
-      });
-      return;
+  // Erro já formatado pela aplicação
+  if (error instanceof AppError) {
+    const responseObj: ErrorResponse = {
+      status: "error",
+      code: error.code,
+      message: error.message,
+    };
+
+    // Adicionar detalhes apenas se existirem
+    if (error.details) {
+      responseObj.details = error.details;
     }
-    res.status(400).json({
-      status: "error",
-      message: error.message,
-    });
+
+    res.status(error.statusCode).json(responseObj);
     return;
   }
 
-  // File type error
+  // Erros do Zod (validação)
+  if (error instanceof ZodError) {
+    const responseObj: ErrorResponse = {
+      status: "error",
+      code: ErrorCode.VALIDATION_ERROR,
+      message: "Dados inválidos",
+      details: error.errors,
+    };
+    res.status(400).json(responseObj);
+    return;
+  }
+
+  // Erros do Multer (upload de arquivos)
+  if (error instanceof MulterError) {
+    const responseObj: ErrorResponse = {
+      status: "error",
+      code:
+        error.code === "LIMIT_FILE_SIZE"
+          ? ErrorCode.FILE_TOO_LARGE
+          : ErrorCode.VALIDATION_ERROR,
+      message:
+        error.code === "LIMIT_FILE_SIZE"
+          ? "Arquivo muito grande. Tamanho máximo: 5MB"
+          : error.message,
+    };
+    res.status(400).json(responseObj);
+    return;
+  }
+
+  // Erros de tipo de arquivo
   if (error.message?.includes("Tipo de arquivo não suportado")) {
-    res.status(400).json({
+    const responseObj: ErrorResponse = {
       status: "error",
+      code: ErrorCode.INVALID_FILE_TYPE,
       message: "Tipo de arquivo não suportado. Use JPEG, PNG ou WebP.",
-    });
+    };
+    res.status(400).json(responseObj);
     return;
   }
 
-  if (error instanceof AuthError) {
-    const status = error.statusCode || 401;
-    res.status(status).json({
-      status: "error",
-      message: error.message,
-      code: status,
-    });
-    return;
-  }
-
-  if (error instanceof UserError) {
-    res.status(400).json({
-      status: "error",
-      message: error.message,
-    });
-    return;
-  }
-
-  // MongoDB errors
+  // Erros do MongoDB
   if (
     error.name === "MongoServerError" &&
     (error as MongoServerError).code === 11000
   ) {
-    res.status(400).json({
+    // Tentar detectar qual campo está duplicado
+    const keyPattern = (error as MongoServerError).keyPattern;
+    let code = ErrorCode.VALIDATION_ERROR;
+    let message = "Dados duplicados encontrados";
+
+    if (keyPattern?.email) {
+      code = ErrorCode.DUPLICATE_EMAIL;
+      message = "Email já cadastrado";
+    } else if (keyPattern?.cpf) {
+      code = ErrorCode.DUPLICATE_CPF;
+      message = "CPF já cadastrado";
+    }
+
+    const responseObj: ErrorResponse = {
       status: "error",
-      message: "Dados duplicados encontrados",
-    });
+      code,
+      message,
+    };
+    res.status(400).json(responseObj);
     return;
   }
 
-  // JWT errors
+  // Erros do JWT
   if (
     error.name === "JsonWebTokenError" ||
     error.name === "TokenExpiredError"
   ) {
-    res.status(401).json({
+    const responseObj: ErrorResponse = {
       status: "error",
-      message: error.message,
-    });
+      code: ErrorCode.UNAUTHORIZED,
+      message: "Token inválido ou expirado",
+    };
+    res.status(401).json(responseObj);
     return;
   }
 
-  // Default error handler
-  res.status(500).json({
+  // Erro padrão
+  const responseObj: ErrorResponse = {
     status: "error",
+    code: ErrorCode.INTERNAL_ERROR,
     message: "Erro interno do servidor",
-  });
+  };
+  res.status(500).json(responseObj);
 };

@@ -23,11 +23,3 @@ export interface ICashRegister {
   createdAt?: Date;
   updatedAt?: Date;
 }
-
-export type CreateCashRegisterDTO = Omit<
-  ICashRegister,
-  "_id" | "createdAt" | "updatedAt"
->;
-export type UpdateCashRegisterDTO = Partial<
-  Omit<ICashRegister, "_id" | "createdAt" | "updatedAt">
->;

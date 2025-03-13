@@ -21,7 +21,7 @@ const addressSchema = z
 
 const createClientSchema = z.object({
   name: z.string().min(2, "Nome deve ter no mínimo 2 caracteres"),
-  documentId: z.string().min(11, "Documento deve ter no mínimo 11 dígitos"),
+  cpf: z.string().min(11, "Documento deve ter no mínimo 11 dígitos"),
   email: z.string().email("Email inválido").optional(),
   phone: z
     .string()

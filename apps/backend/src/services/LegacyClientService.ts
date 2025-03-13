@@ -18,8 +18,8 @@ export class LegacyClientService {
     this.legacyClientModel = new LegacyClientModel();
   }
 
-  private validateDocumentId(documentId: string): void {
-    const cleanDocument = documentId.replace(/\D/g, "");
+  private validateDocumentId(cpf: string): void {
+    const cleanDocument = cpf.replace(/\D/g, "");
 
     // Valida CPF ou CNPJ
     if (cleanDocument.length !== 11 && cleanDocument.length !== 14) {
@@ -28,7 +28,7 @@ export class LegacyClientService {
   }
 
   private validateClient(clientData: CreateLegacyClientDTO): void {
-    this.validateDocumentId(clientData.documentId);
+    this.validateDocumentId(clientData.cpf);
 
     if (clientData.email && !clientData.email.includes("@")) {
       throw new LegacyClientError("Email inválido");
@@ -52,7 +52,7 @@ export class LegacyClientService {
     this.validateClient(clientData);
 
     const existingClient = await this.legacyClientModel.findByDocument(
-      clientData.documentId
+      clientData.cpf
     );
     if (existingClient) {
       throw new LegacyClientError("Cliente já cadastrado com este documento");
@@ -75,8 +75,8 @@ export class LegacyClientService {
     return client;
   }
 
-  async findByDocument(documentId: string): Promise<ILegacyClient> {
-    const client = await this.legacyClientModel.findByDocument(documentId);
+  async findByDocument(cpf: string): Promise<ILegacyClient> {
+    const client = await this.legacyClientModel.findByDocument(cpf);
     if (!client) {
       throw new LegacyClientError("Cliente não encontrado");
     }
@@ -99,10 +99,10 @@ export class LegacyClientService {
     id: string,
     clientData: Partial<CreateLegacyClientDTO>
   ): Promise<ILegacyClient> {
-    if (clientData.documentId) {
-      this.validateDocumentId(clientData.documentId);
+    if (clientData.cpf) {
+      this.validateDocumentId(clientData.cpf);
       const existingClient = await this.legacyClientModel.findByDocument(
-        clientData.documentId
+        clientData.cpf
       );
       if (existingClient && existingClient._id !== id) {
         throw new LegacyClientError("Já existe um cliente com este documento");

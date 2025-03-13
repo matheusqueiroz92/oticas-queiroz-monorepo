@@ -1,9 +1,12 @@
+// src/controllers/AuthController.ts
 import type { Request, Response } from "express";
-import { AuthService, AuthError } from "../services/AuthService";
-import { UserError, UserService } from "../services/UserService";
+import { AuthService } from "../services/AuthService";
+import { UserService } from "../services/UserService";
 import type { JwtPayload } from "jsonwebtoken";
 import { z } from "zod";
 import { isValidCPF } from "../utils/validators";
+import { ValidationError, AuthError, PermissionError } from "../utils/AppError";
+import { ErrorCode } from "../utils/errorCodes";
 
 interface AuthRequest extends Request {
   user?: JwtPayload;
@@ -52,8 +55,6 @@ const registerSchema = z.object({
     .optional(),
 });
 
-const updateUserSchema = registerSchema.partial();
-
 type LoginInput = z.infer<typeof loginSchema>;
 type RegisterInput = z.infer<typeof registerSchema>;
 
@@ -68,127 +69,92 @@ export class AuthController {
 
   async login(req: Request, res: Response): Promise<void> {
     try {
+      // Validação dos dados de entrada
       const validatedData = loginSchema.parse(req.body);
 
+      // Tentativa de login
       const result = await this.authService.login(
         validatedData.login,
         validatedData.password
       );
+
+      // Resposta de sucesso
       res.status(200).json(result);
     } catch (error) {
+      // Lançando o erro para ser tratado pelo middleware
       if (error instanceof z.ZodError) {
-        res.status(400).json({
-          message: "Dados inválidos",
-          errors: error.errors,
-        });
-        return;
+        throw new ValidationError(
+          "Dados de login inválidos",
+          ErrorCode.VALIDATION_ERROR,
+          error.errors
+        );
       }
-      if (error instanceof AuthError) {
-        res.status(401).json({ message: error.message });
-        return;
-      }
-      console.error("Erro no login:", error);
-      res.status(500).json({ message: "Erro interno do servidor" });
+      // Para outros erros, apenas propagar
+      throw error;
     }
   }
 
   async register(req: AuthRequest, res: Response): Promise<void> {
+    // Definir o tipo explicitamente como RegisterInput
+    let validatedData: RegisterInput;
+
     try {
-      // Definir o tipo explicitamente como RegisterInput
-      let validatedData: RegisterInput;
-
-      try {
-        // Usar parse parcial para permitir campos adicionais como 'file'
-        validatedData = registerSchema.parse({
-          ...req.body,
-          // Tratar corretamente campos que podem vir como strings em formulários multipart
-          cpf: req.body.cpf,
-          rg: req.body.rg,
-          birthDate: req.body.birthDate,
-        });
-      } catch (e) {
-        if (e instanceof z.ZodError) {
-          res.status(400).json({
-            message: "Dados inválidos",
-            errors: e.errors,
-          });
-          return;
-        }
-        throw e;
+      // Usar parse para validar os dados
+      validatedData = registerSchema.parse({
+        ...req.body,
+        // Tratar corretamente campos que podem vir como strings em formulários multipart
+        cpf: req.body.cpf,
+        rg: req.body.rg,
+        birthDate: req.body.birthDate,
+      });
+    } catch (e) {
+      if (e instanceof z.ZodError) {
+        throw new ValidationError(
+          "Dados de registro inválidos",
+          ErrorCode.VALIDATION_ERROR,
+          (e as z.ZodError).errors
+        );
       }
-
-      const userData = {
-        ...validatedData,
-        image: req.file
-          ? `http://localhost:3333/images/users/${req.file.filename}`
-          : undefined,
-      };
-
-      if (!req.user?.role) {
-        throw new AuthError("Usuário não autenticado", 401);
-      }
-
-      if (req.user.role === "employee" && userData.role !== "customer") {
-        res.status(400).json({
-          message: "Funcionários só podem cadastrar clientes",
-        });
-        return;
-      }
-
-      try {
-        const user = await this.userService.createUser(userData, req.user.role);
-        const { password, ...userWithoutPassword } = user;
-        res.status(201).json(userWithoutPassword);
-      } catch (err) {
-        if (err instanceof UserError) {
-          // Verificar a mensagem de erro específica
-          if (err.message === "CPF já cadastrado") {
-            res.status(400).json({ message: "CPF já cadastrado" });
-            return;
-          }
-
-          if (err.message === "Email já cadastrado") {
-            res.status(400).json({ message: "Email já cadastrado" });
-            return;
-          }
-
-          res.status(400).json({ message: err.message });
-          return;
-        }
-        throw err;
-      }
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({
-          message: "Dados inválidos",
-          errors: error.errors,
-        });
-        return;
-      }
-      if (error instanceof AuthError) {
-        res.status(error.statusCode || 401).json({ message: error.message });
-        return;
-      }
-      console.error("Erro no registro:", error);
-      res.status(500).json({ message: "Erro interno do servidor" });
+      throw e;
     }
+
+    // Adicionar imagem ao usuário, se fornecida
+    const userData = {
+      ...validatedData,
+      image: req.file
+        ? `http://localhost:3333/images/users/${req.file.filename}`
+        : undefined,
+    };
+
+    // Verificar se o usuário está autenticado
+    if (!req.user?.role) {
+      throw new AuthError("Usuário não autenticado", ErrorCode.UNAUTHORIZED);
+    }
+
+    // Verificar permissões específicas para funcionários
+    if (req.user.role === "employee" && userData.role !== "customer") {
+      throw new PermissionError(
+        "Funcionários só podem cadastrar clientes",
+        ErrorCode.INSUFFICIENT_PERMISSIONS
+      );
+    }
+
+    // Criar o usuário
+    const user = await this.userService.createUser(userData, req.user.role);
+
+    // Remover a senha da resposta
+    const { password, ...userWithoutPassword } = user;
+
+    // Resposta de sucesso
+    res.status(201).json(userWithoutPassword);
   }
 
   async validateToken(req: AuthRequest, res: Response): Promise<void> {
-    try {
-      if (!req.user?.id) {
-        throw new AuthError("Token não fornecido");
-      }
-
-      const user = await this.authService.validateToken(req.user.id);
-      res.status(200).json(user);
-    } catch (error) {
-      if (error instanceof AuthError) {
-        res.status(401).json({ message: error.message });
-        return;
-      }
-      console.error("Erro na validação do token:", error);
-      res.status(500).json({ message: "Erro interno do servidor" });
+    if (!req.user?.id) {
+      throw new AuthError("Token não fornecido", ErrorCode.UNAUTHORIZED);
     }
+
+    const user = await this.authService.validateToken(req.user.id);
+    res.status(200).json(user);
   }
 }

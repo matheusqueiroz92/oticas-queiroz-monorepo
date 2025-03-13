@@ -1,7 +1,7 @@
 export interface ILegacyClient {
   _id?: string;
   name: string;
-  documentId: string; // CPF/CNPJ
+  cpf: string;
   email?: string;
   phone?: string;
   address?: {

@@ -7,8 +7,7 @@ export interface ILensType {
   updatedAt?: Date;
 }
 
-export interface ICreateLensTypeDTO {
-  name: string;
-  description?: string;
-  brand?: string;
-}
+export type ICreateLensTypeDTO = Omit<
+  ILensType,
+  "_id" | "createdAt" | "updatedAt"
+>;

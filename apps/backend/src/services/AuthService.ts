@@ -1,16 +1,9 @@
+// src/services/AuthService.ts
 import { AuthModel } from "../models/AuthModel";
 import { generateToken } from "../utils/jwt";
 import type { IUser } from "../interfaces/IUser";
-
-export class AuthError extends Error {
-  statusCode: number;
-
-  constructor(message: string, statusCode = 401) {
-    super(message);
-    this.name = "AuthError";
-    this.statusCode = statusCode;
-  }
-}
+import { AuthError, NotFoundError } from "../utils/AppError";
+import { ErrorCode } from "../utils/errorCodes";
 
 interface LoginResponse {
   token: string;
@@ -27,7 +20,10 @@ export class AuthService {
   async login(login: string, password: string): Promise<LoginResponse> {
     // Validação básica
     if (!login?.trim() || !password?.trim()) {
-      throw new AuthError("Login e senha são obrigatórios");
+      throw new AuthError(
+        "Login e senha são obrigatórios",
+        ErrorCode.VALIDATION_ERROR
+      );
     }
 
     // Verificamos se o login é um email ou CPF
@@ -44,12 +40,18 @@ export class AuthService {
     }
 
     if (!user) {
-      throw new AuthError("Usuário não encontrado");
+      throw new AuthError(
+        "Credenciais inválidas",
+        ErrorCode.INVALID_CREDENTIALS
+      );
     }
 
     const isValidPassword = await this.authModel.verifyPassword(user, password);
     if (!isValidPassword) {
-      throw new AuthError("Senha inválida");
+      throw new AuthError(
+        "Credenciais inválidas",
+        ErrorCode.INVALID_CREDENTIALS
+      );
     }
 
     const token = generateToken(user._id.toString(), user.role);
@@ -69,7 +71,7 @@ export class AuthService {
   async validateToken(userId: string): Promise<IUser> {
     const user = await this.authModel.findUserById(userId);
     if (!user) {
-      throw new AuthError("Token inválido");
+      throw new AuthError("Token inválido", ErrorCode.INVALID_TOKEN);
     }
 
     const userData = this.authModel.convertToIUser(user);

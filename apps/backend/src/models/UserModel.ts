@@ -1,5 +1,5 @@
 import { User } from "../schemas/UserSchema";
-import type { IUser } from "../interfaces/IUser";
+import type { ICreateUserDTO, IUser } from "../interfaces/IUser";
 import type mongoose from "mongoose";
 import { type Document, Types } from "mongoose";
 import bcrypt from "bcrypt";
@@ -40,7 +40,7 @@ export class UserModel {
     };
   }
 
-  async create(updateData: Omit<IUser, "comparePassword">): Promise<IUser> {
+  async create(updateData: ICreateUserDTO): Promise<IUser> {
     const hashedPassword = await bcrypt.hash(updateData.password, 10);
     const user = new User({ ...updateData, password: hashedPassword });
     const savedUser = (await user.save()) as unknown as UserDocument;

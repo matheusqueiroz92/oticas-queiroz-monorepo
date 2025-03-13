@@ -3,7 +3,7 @@ import { model, Schema } from "mongoose";
 const legacyClientSchema = new Schema(
   {
     name: { type: String, required: true },
-    documentId: { type: String, required: true, unique: true },
+    cpf: { type: String, required: true, unique: true },
     email: { type: String },
     phone: { type: String },
     address: {

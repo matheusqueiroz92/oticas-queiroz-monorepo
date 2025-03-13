@@ -264,9 +264,9 @@ oticas-queiroz-monorepo/
   clientId: string;
   employeeId: string;
   productType: "glasses" | "lensCleaner";
-  products: string;
-  glassType: "prescription" | "sunglasses";
-  glassFrame: "with" | "no";
+  product: string;
+  glassesType: "prescription" | "sunglasses";
+  glassesFrame: "with" | "no";
   paymentMethod: string;
   paymentEntry?: number;
   installments?: number;
@@ -457,7 +457,7 @@ oticas-queiroz-monorepo/
 {
   _id: string;
   name: string;
-  identifier: string; // CPF/CNPJ
+  cpf: string;
   phone?: string;
   address?: string;
   totalDebt: number;

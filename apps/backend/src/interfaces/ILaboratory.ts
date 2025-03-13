@@ -17,3 +17,8 @@ export interface ILaboratory {
   createdAt?: Date;
   updatedAt?: Date;
 }
+
+export type ICreateLaboratoryDTO = Omit<
+  ILaboratory,
+  "_id" | "createdAt" | "updatedAt"
+>;

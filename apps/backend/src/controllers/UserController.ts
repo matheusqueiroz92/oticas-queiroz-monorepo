@@ -1,10 +1,17 @@
+// src/controllers/UserController.ts
 import type { Request, Response } from "express";
-import { UserService, UserError } from "../services/UserService";
+import { UserService } from "../services/UserService";
 import type { JwtPayload } from "jsonwebtoken";
 import { z } from "zod";
-import { MulterError } from "multer";
 import { isValidCPF } from "../utils/validators";
 import type { IUser } from "../interfaces/IUser";
+import {
+  ValidationError,
+  AuthError,
+  PermissionError,
+  NotFoundError,
+} from "../utils/AppError";
+import { ErrorCode } from "../utils/errorCodes";
 
 interface AuthRequest extends Request {
   user?: JwtPayload;
@@ -51,6 +58,9 @@ const userUpdateSchema = z.object({
   sales: z.array(z.string()).optional(),
 });
 
+// Definir o tipo para os dados de atualização do usuário
+type UserUpdateInput = z.infer<typeof userUpdateSchema>;
+
 export class UserController {
   private userService: UserService;
 
@@ -59,264 +69,188 @@ export class UserController {
   }
 
   async getAllUsers(req: Request, res: Response): Promise<void> {
-    try {
-      // Extrair parâmetros da query
-      const { role, search, cpf } = req.query;
+    // Extrair parâmetros da query
+    const { role, search, cpf } = req.query;
 
-      // Obter usuários com base nos filtros
-      let users: IUser[];
+    // Obter usuários com base nos filtros
+    let users: IUser[];
 
-      if (search) {
-        // Busca por termo geral (nome, email, etc.)
-        users = await this.userService.searchUsers(search as string);
-      } else if (cpf) {
-        // Busca específica por CPF
-        try {
-          const user = await this.userService.getUserByCpf(cpf as string);
-          users = user ? [user] : [];
-        } catch (error) {
+    if (search) {
+      // Busca por termo geral (nome, email, etc.)
+      users = await this.userService.searchUsers(search as string);
+    } else if (cpf) {
+      // Busca específica por CPF
+      try {
+        const user = await this.userService.getUserByCpf(cpf as string);
+        users = user ? [user] : [];
+      } catch (error) {
+        if (error instanceof NotFoundError) {
           users = [];
+        } else {
+          throw error;
         }
-      } else if (role) {
-        // Filtrar por role
-        users = await this.userService.getUsersByRole(role as string);
-      } else {
-        // Sem filtros, retornar todos os usuários
-        users = await this.userService.getAllUsers();
       }
-
-      res.status(200).json(users);
-    } catch (error) {
-      if (error instanceof UserError) {
-        res.status(404).json({ message: error.message });
-        return;
-      }
-      res.status(500).json({ message: "Erro interno do servidor" });
+    } else if (role) {
+      // Filtrar por role
+      users = await this.userService.getUsersByRole(role as string);
+    } else {
+      // Sem filtros, retornar todos os usuários
+      users = await this.userService.getAllUsers();
     }
+
+    res.status(200).json(users);
   }
 
   async getUserById(req: AuthRequest, res: Response): Promise<void> {
-    try {
-      const user = await this.userService.getUserById(req.params.id);
-      res.status(200).json(user);
-    } catch (error) {
-      if (error instanceof UserError) {
-        res.status(404).json({ message: error.message });
-        return;
-      }
-      res.status(500).json({ message: "Erro interno do servidor" });
-    }
+    const user = await this.userService.getUserById(req.params.id);
+    res.status(200).json(user);
   }
 
   async getUserByCpf(req: Request, res: Response): Promise<void> {
-    try {
-      const { cpf } = req.params;
+    const { cpf } = req.params;
 
-      if (!cpf) {
-        res.status(400).json({ message: "CPF é obrigatório" });
-        return;
-      }
-
-      const user = await this.userService.getUserByCpf(cpf);
-      res.status(200).json(user);
-    } catch (error) {
-      if (error instanceof UserError) {
-        res.status(404).json({ message: error.message });
-        return;
-      }
-      res.status(500).json({ message: "Erro interno do servidor" });
+    if (!cpf) {
+      throw new ValidationError("CPF é obrigatório", ErrorCode.INVALID_CPF);
     }
+
+    const user = await this.userService.getUserByCpf(cpf);
+    res.status(200).json(user);
   }
 
   async updateUser(req: AuthRequest, res: Response): Promise<void> {
+    // Validar os dados de entrada
+    let userData: UserUpdateInput;
     try {
-      let userData = userUpdateSchema.parse(req.body);
-
-      if (req.file) {
-        userData = {
-          ...userData,
-          image: `/images/users/${req.file.filename}`,
-        };
-      }
-
-      if (req.user?.role === "employee" && userData.role) {
-        res
-          .status(403)
-          .json({ message: "Funcionários não podem alterar 'roles'" });
-        return;
-      }
-
-      const targetUser = await this.userService.getUserById(req.params.id);
-      if (req.user?.role === "employee" && targetUser.role !== "customer") {
-        res.status(403).json({
-          message: "Funcionários só podem atualizar dados de clientes",
-        });
-        return;
-      }
-
-      const user = await this.userService.updateUser(req.params.id, userData);
-      res.status(200).json(user);
+      userData = userUpdateSchema.parse(req.body);
     } catch (error) {
-      if (error instanceof MulterError) {
-        if (error.code === "LIMIT_FILE_SIZE") {
-          res
-            .status(400)
-            .json({ message: "Arquivo muito grande. Tamanho máximo: 5MB" });
-          return;
-        }
-        res.status(400).json({ message: error.message });
-        return;
-      }
-
-      if (
-        error instanceof Error &&
-        error.message.includes("Tipo de arquivo não suportado")
-      ) {
-        res.status(400).json({
-          message: "Tipo de arquivo não suportado. Use JPEG, PNG ou WebP.",
-        });
-        return;
-      }
-
       if (error instanceof z.ZodError) {
-        res.status(400).json({
-          message: "Dados inválidos",
-          errors: error.errors,
-        });
-        return;
+        throw new ValidationError(
+          "Dados inválidos",
+          ErrorCode.VALIDATION_ERROR,
+          error.errors
+        );
       }
-      if (error instanceof UserError) {
-        res.status(400).json({ message: error.message });
-        return;
-      }
-      res.status(500).json({ message: "Erro interno do servidor" });
+      throw error;
     }
+
+    // Adicionar imagem ao usuário, se fornecida
+    if (req.file) {
+      userData = {
+        ...userData,
+        image: `/images/users/${req.file.filename}`,
+      };
+    }
+
+    // Verificar permissões de atualização
+    if (req.user?.role === "employee" && userData.role) {
+      throw new PermissionError(
+        "Funcionários não podem alterar 'roles'",
+        ErrorCode.INSUFFICIENT_PERMISSIONS
+      );
+    }
+
+    // Verificar se o alvo é acessível para o usuário atual
+    const targetUser = await this.userService.getUserById(req.params.id);
+    if (req.user?.role === "employee" && targetUser.role !== "customer") {
+      throw new PermissionError(
+        "Funcionários só podem atualizar dados de clientes",
+        ErrorCode.INSUFFICIENT_PERMISSIONS
+      );
+    }
+
+    // Atualizar o usuário
+    const user = await this.userService.updateUser(req.params.id, userData);
+    res.status(200).json(user);
   }
 
   async deleteUser(req: Request, res: Response): Promise<void> {
-    try {
-      await this.userService.deleteUser(req.params.id);
-      res.status(204).send();
-    } catch (error) {
-      if (error instanceof UserError) {
-        res.status(404).json({ message: error.message });
-        return;
-      }
-      res.status(500).json({ message: "Erro interno do servidor" });
-    }
+    await this.userService.deleteUser(req.params.id);
+    res.status(204).send();
   }
 
   async getProfile(req: AuthRequest, res: Response): Promise<void> {
-    try {
-      if (!req.user?.id) {
-        res.status(401).json({ message: "Usuário não autenticado" });
-        return;
-      }
-
-      const user = await this.userService.getUserById(req.user.id);
-
-      const { password, ...userWithoutPassword } = user;
-      res.status(200).json(userWithoutPassword);
-    } catch (error) {
-      if (error instanceof UserError) {
-        res.status(404).json({ message: error.message });
-        return;
-      }
-      res.status(500).json({ message: "Erro interno do servidor" });
+    if (!req.user?.id) {
+      throw new AuthError("Usuário não autenticado", ErrorCode.UNAUTHORIZED);
     }
+
+    const user = await this.userService.getUserById(req.user.id);
+
+    const { password, ...userWithoutPassword } = user;
+    res.status(200).json(userWithoutPassword);
   }
 
   async updateProfile(req: AuthRequest, res: Response): Promise<void> {
+    if (!req.user?.id) {
+      throw new AuthError("Usuário não autenticado", ErrorCode.UNAUTHORIZED);
+    }
+
+    // Validar os dados de entrada
+    let validatedData: UserUpdateInput;
     try {
-      if (!req.user?.id) {
-        res.status(401).json({ message: "Usuário não autenticado" });
-        return;
-      }
-
-      const validatedData = userUpdateSchema.parse(req.body);
-
-      const userData = {
-        ...validatedData,
-        image: req.file
-          ? `/images/users/${req.file.filename}`
-          : validatedData.image,
-      };
-
-      const updatedUser = await this.userService.updateProfile(
-        req.user.id,
-        userData
-      );
-      res.status(200).json(updatedUser);
+      validatedData = userUpdateSchema.parse(req.body);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        res.status(400).json({
-          message: "Dados inválidos",
-          errors: error.errors,
-        });
-        return;
+        throw new ValidationError(
+          "Dados inválidos",
+          ErrorCode.VALIDATION_ERROR,
+          error.errors
+        );
       }
-
-      if (error instanceof UserError) {
-        res.status(400).json({ message: error.message });
-        return;
-      }
-
-      res.status(500).json({ message: "Erro interno do servidor" });
+      throw error;
     }
+
+    const userData = {
+      ...validatedData,
+      image: req.file
+        ? `/images/users/${req.file.filename}`
+        : validatedData.image,
+    };
+
+    const updatedUser = await this.userService.updateProfile(
+      req.user.id,
+      userData
+    );
+    res.status(200).json(updatedUser);
   }
 
   async changePassword(req: AuthRequest, res: Response): Promise<void> {
-    try {
-      if (!req.user?.id) {
-        res.status(401).json({ message: "Usuário não autenticado" });
-        return;
-      }
-
-      const { currentPassword, newPassword } = req.body;
-
-      // Validar dados
-      if (!currentPassword || !newPassword) {
-        res
-          .status(400)
-          .json({ message: "Senha atual e nova senha são obrigatórias" });
-        return;
-      }
-
-      if (newPassword.length < 6) {
-        res
-          .status(400)
-          .json({ message: "A nova senha deve ter pelo menos 6 caracteres" });
-        return;
-      }
-
-      // Verificar senha atual
-      const isPasswordValid = await this.userService.verifyPassword(
-        req.user.id,
-        currentPassword
-      );
-
-      if (!isPasswordValid) {
-        res.status(400).json({ message: "Senha atual incorreta" });
-        return;
-      }
-
-      // Atualizar para a nova senha usando o método existente
-      await this.userService.updatePassword(req.user.id, newPassword);
-
-      res.status(200).json({ message: "Senha alterada com sucesso" });
-    } catch (error) {
-      console.error("Erro ao alterar senha:", error);
-
-      if (error instanceof UserError) {
-        res.status(400).json({ message: error.message });
-        return;
-      }
-
-      res.status(500).json({ message: "Erro interno do servidor" });
+    if (!req.user?.id) {
+      throw new AuthError("Usuário não autenticado", ErrorCode.UNAUTHORIZED);
     }
-  }
-}
 
-function next(error: unknown) {
-  throw new Error("Function not implemented.");
+    const { currentPassword, newPassword } = req.body;
+
+    // Validar dados
+    if (!currentPassword || !newPassword) {
+      throw new ValidationError(
+        "Senha atual e nova senha são obrigatórias",
+        ErrorCode.VALIDATION_ERROR
+      );
+    }
+
+    if (newPassword.length < 6) {
+      throw new ValidationError(
+        "A nova senha deve ter pelo menos 6 caracteres",
+        ErrorCode.INVALID_PASSWORD
+      );
+    }
+
+    // Verificar senha atual
+    const isPasswordValid = await this.userService.verifyPassword(
+      req.user.id,
+      currentPassword
+    );
+
+    if (!isPasswordValid) {
+      throw new ValidationError(
+        "Senha atual incorreta",
+        ErrorCode.INVALID_PASSWORD
+      );
+    }
+
+    // Atualizar para a nova senha
+    await this.userService.updatePassword(req.user.id, newPassword);
+
+    res.status(200).json({ message: "Senha alterada com sucesso" });
+  }
 }
