@@ -2,7 +2,6 @@ import { useState } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,19 +28,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
-import { api } from "@/app/services/auth";
-import type { AxiosError } from "axios";
+import { useOrders } from "@/hooks/useOrders";
 
 // Interface para o pedido
 interface OrderDetail {
   _id: string;
   status: string;
-}
-
-interface ApiError {
-  message: string;
-  errors?: Record<string, string[]>;
 }
 
 // Props do componente
@@ -62,7 +54,8 @@ export default function OrderStatusUpdate({
   onUpdateSuccess,
 }: OrderStatusUpdateProps) {
   const [open, setOpen] = useState(false);
-  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { handleUpdateOrderStatus, translateOrderStatus } = useOrders();
 
   // Inicializar o formulário apenas com o campo de status
   const form = useForm<UpdateStatusFormData>({
@@ -72,63 +65,19 @@ export default function OrderStatusUpdate({
     },
   });
 
-  // Mutation para atualizar o status do pedido
-  const updateOrderStatus = useMutation({
-    mutationFn: async (data: UpdateStatusFormData) => {
-      try {
-        // Enviar apenas o campo status
-        const response = await api.put(`/api/orders/${order._id}/status`, {
-          status: data.status,
-        });
-        return response.data;
-      } catch (error) {
-        const axiosError = error as AxiosError<ApiError>;
-        console.error(
-          "Detalhes do erro da API:",
-          axiosError.response?.data || axiosError.message
-        );
-        throw axiosError;
-      }
-    },
-    onSuccess: () => {
-      toast({
-        title: "Status atualizado",
-        description: "O status do pedido foi atualizado com sucesso.",
-      });
-      setOpen(false);
-      onUpdateSuccess();
-    },
-    onError: (error: AxiosError<ApiError>) => {
-      console.error("Erro ao atualizar status do pedido:", error);
-
-      const errorMessage =
-        error.response?.data?.message ||
-        "Erro ao atualizar status. Tente novamente.";
-
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: errorMessage,
-      });
-    },
-  });
-
   // Função de submissão do formulário
-  function onSubmit(data: UpdateStatusFormData) {
-    updateOrderStatus.mutate(data);
+  async function onSubmit(data: UpdateStatusFormData) {
+    setIsSubmitting(true);
+    try {
+      const result = await handleUpdateOrderStatus(order._id, data.status);
+      if (result) {
+        setOpen(false);
+        onUpdateSuccess();
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   }
-
-  // Tradução de status para exibição
-  const translateStatus = (status: string): string => {
-    const statusMap: Record<string, string> = {
-      pending: "Pendente",
-      in_production: "Em Produção",
-      ready: "Pronto",
-      delivered: "Entregue",
-    };
-
-    return statusMap[status] || status;
-  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -153,7 +102,7 @@ export default function OrderStatusUpdate({
                   <FormLabel>
                     Status Atual:{" "}
                     <span className="font-medium">
-                      {translateStatus(order.status)}
+                      {translateOrderStatus(order.status)}
                     </span>
                   </FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
@@ -175,8 +124,8 @@ export default function OrderStatusUpdate({
             />
 
             <DialogFooter className="pt-4">
-              <Button type="submit" disabled={updateOrderStatus.isPending}>
-                {updateOrderStatus.isPending && (
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
                 Atualizar Status

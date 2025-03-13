@@ -6,12 +6,13 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import type { Customer } from "../../../app/types/customer";
+import type { Customer } from "@/app/types/customer";
+import type { UseFormReturn } from "react-hook-form";
+import type { OrderFormValues } from "@/app/types/form-types";
 
 interface ClientSearchProps {
   customers: Customer[];
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-  form: any;
+  form: UseFormReturn<OrderFormValues>;
   onClientSelect: (clientId: string, name: string) => void;
 }
 
@@ -59,9 +60,11 @@ export default function ClientSearch({
   }, []);
 
   const handleSelectCustomer = (customer: Customer) => {
-    onClientSelect(customer._id ?? "", customer.name ?? "");
-    setCustomerSearch(customer.name ?? "");
-    setShowSuggestions(false);
+    if (customer._id) {
+      onClientSelect(customer._id, customer.name || "");
+      setCustomerSearch(customer.name || "");
+      setShowSuggestions(false);
+    }
   };
 
   return (
@@ -81,11 +84,12 @@ export default function ClientSearch({
                   setShowSuggestions(true);
                 }
               }}
+              aria-label="Buscar cliente"
             />
             {showSuggestions && (
               <div
                 ref={suggestionsRef}
-                className="absolute z-10 w-full bg-white border rounded-md shadow-lg mt-1"
+                className="absolute z-10 w-full bg-white border rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto"
               >
                 {filteredCustomers.length > 0 ? (
                   <ul className="py-1">
@@ -98,6 +102,11 @@ export default function ClientSearch({
                           aria-label={`Selecionar cliente ${customer.name}`}
                         >
                           {customer.name}
+                          {customer.phone && (
+                            <span className="block text-xs text-gray-500">
+                              {customer.phone}
+                            </span>
+                          )}
                         </button>
                       </li>
                     ))}
@@ -105,7 +114,7 @@ export default function ClientSearch({
                 ) : (
                   <div className="p-3 text-sm text-gray-500">
                     Nenhum cliente encontrado com este nome. Por favor, cadastre
-                    o cliente.
+                    o cliente primeiro.
                   </div>
                 )}
               </div>

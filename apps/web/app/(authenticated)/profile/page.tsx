@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 import { api } from "../../services/auth";
 import type { AxiosError } from "axios";
 import type { User } from "@/app/types/user";

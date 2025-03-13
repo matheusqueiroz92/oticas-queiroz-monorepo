@@ -50,76 +50,62 @@ interface PaginationInfo {
  */
 export async function checkOpenCashRegister(): Promise<CashRegisterCheckResult> {
   try {
+    console.log("Verificando caixas abertos...");
+
+    // Usar a rota /api/cash-registers/current que retorna apenas o caixa aberto
     const response = await api.get("/api/cash-registers/current");
 
-    if (response.data && response.data.status === "open") {
-      return {
-        isOpen: true,
-        data: response.data,
-      };
-    }
-
     return {
-      isOpen: false,
-      data: null,
+      isOpen: true,
+      data: response.data,
     };
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Erro ao verificar caixa aberto:", error);
 
-    // Tentar método alternativo
-    try {
-      const allRegistersResponse = await api.get("/api/cash-registers");
-      let registers: ICashRegister[] = [];
+    // Verificar se o erro é uma instância de Error com a propriedade response
+    if (error && typeof error === "object" && "response" in error) {
+      const apiError = error as { response?: { status?: number } };
 
-      if (Array.isArray(allRegistersResponse.data)) {
-        registers = allRegistersResponse.data;
-      } else if (allRegistersResponse.data?.cashRegisters) {
-        registers = allRegistersResponse.data.cashRegisters;
-      }
-
-      const openRegister = registers.find(
-        (register) => register.status === "open"
-      );
-
-      if (openRegister) {
+      // Se receber um erro 404, significa que não há caixa aberto (comportamento esperado da API)
+      if (apiError.response && apiError.response.status === 404) {
         return {
-          isOpen: true,
-          data: openRegister,
+          isOpen: false,
+          data: null,
         };
       }
-    } catch (fallbackError) {
-      console.error("Erro ao tentar método alternativo:", fallbackError);
     }
 
-    // Se chegou aqui, não encontrou caixa aberto
     return {
       isOpen: false,
       data: null,
-      error: "Não foi possível verificar caixa aberto",
+      error: "Não foi possível verificar o status do caixa",
     };
   }
 }
 
 /**
  * Abre um novo caixa
+ * Corrigido para usar o padrão do backend com 's' (cash-registers)
  */
 export async function openCashRegister(
   data: OpenCashRegisterDTO
 ): Promise<ICashRegister> {
+  console.log("Abrindo caixa com dados:", data);
   const response = await api.post("/api/cash-registers/open", data);
   return response.data;
 }
 
 /**
  * Fecha um caixa aberto
+ * Corrigido para usar o padrão do backend com 's' (cash-registers)
  */
 export async function closeCashRegister(
   id: string,
   data: CloseCashRegisterDTO
 ): Promise<ICashRegister> {
-  const response = await api.post("/api/cash-registers/close", {
-    ...data,
-  });
+  console.log(`Fechando caixa ${id} com dados:`, data);
+  // O backend espera os dados no corpo da requisição, sem o ID
+  const response = await api.post("/api/cash-registers/close", data);
   return response.data;
 }
 
@@ -133,6 +119,7 @@ export async function getAllCashRegisters(
   pagination?: PaginationInfo;
 }> {
   try {
+    console.log("Buscando registros de caixa com filtros:", filters);
     const response = await api.get("/api/cash-registers", { params: filters });
 
     // Normalizar a resposta para garantir consistência
@@ -141,25 +128,31 @@ export async function getAllCashRegisters(
 
     if (Array.isArray(response.data)) {
       registers = response.data;
+    } else if (response.data?.registers) {
+      registers = response.data.registers;
+      pagination = response.data.pagination;
     } else if (response.data?.cashRegisters) {
       registers = response.data.cashRegisters;
       pagination = response.data.pagination;
     }
 
     return { registers, pagination };
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Erro ao buscar registros de caixa:", error);
+    // Em caso de erro, retornar lista vazia
     return { registers: [] };
   }
 }
 
 /**
  * Busca um registro de caixa específico por ID
+ * Corrigido para usar o padrão do backend com 's' (cash-registers)
  */
 export async function getCashRegisterById(
   id: string
 ): Promise<ICashRegister | null> {
   try {
+    console.log(`Buscando caixa com ID ${id}`);
     const response = await api.get(`/api/cash-registers/${id}`);
     return response.data;
   } catch (error) {
@@ -170,11 +163,13 @@ export async function getCashRegisterById(
 
 /**
  * Busca o resumo de um registro de caixa
+ * Corrigido para usar o padrão do backend com 's' (cash-registers)
  */
 export async function getCashRegisterSummary(
   id: string
 ): Promise<CashRegisterSummary | null> {
   try {
+    console.log(`Buscando resumo do caixa com ID ${id}`);
     const response = await api.get(`/api/cash-registers/${id}/summary`);
     return response.data;
   } catch (error) {
@@ -185,12 +180,14 @@ export async function getCashRegisterSummary(
 
 /**
  * Exporta um resumo de caixa em um formato específico
+ * Corrigido para usar o padrão do backend com 's' (cash-registers)
  */
 export async function exportCashRegisterSummary(
   id: string,
   format: "excel" | "pdf" | "csv" | "json" = "excel",
   title?: string
 ): Promise<Blob> {
+  console.log(`Exportando resumo do caixa ${id} em formato ${format}`);
   const response = await api.get(`/api/cash-registers/${id}/export`, {
     params: { format, title },
     responseType: "blob",

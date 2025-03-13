@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
+import { api } from "@/app/services/auth";
 import {
   getAllCashRegisters,
   checkOpenCashRegister,
@@ -43,6 +44,7 @@ export function useCashRegister() {
   const router = useRouter();
   const { toast } = useToast();
 
+  // Função para buscar todos os registros
   const fetchCashRegisters = useCallback(async () => {
     try {
       setLoading(true);
@@ -54,16 +56,7 @@ export function useCashRegister() {
         ...filters,
       };
 
-      // Primeiro verificar se há um caixa ativo
-      const currentRegisterCheck = await checkOpenCashRegister();
-
-      if (currentRegisterCheck.isOpen && currentRegisterCheck.data) {
-        setActiveRegister(currentRegisterCheck.data);
-      } else {
-        setActiveRegister(null);
-      }
-
-      // Buscar todos os registros
+      // Usar a nova rota base
       const { registers, pagination } = await getAllCashRegisters(params);
 
       setCashRegisters(registers);
@@ -74,6 +67,17 @@ export function useCashRegister() {
       } else {
         setTotalPages(1);
         setTotalRegisters(registers.length);
+      }
+
+      // Verificar se há um caixa aberto entre os registros
+      const openRegister = registers.find(
+        (register) => register.status === "open"
+      );
+
+      if (openRegister) {
+        setActiveRegister(openRegister);
+      } else {
+        setActiveRegister(null);
       }
     } catch (error) {
       console.error("Erro ao buscar registros de caixa:", error);
@@ -91,7 +95,8 @@ export function useCashRegister() {
   const fetchCashRegisterById = async (id: string) => {
     try {
       setLoading(true);
-      const register = await getCashRegisterById(id);
+      const response = await api.get(`/api/cash-registers/${id}`);
+      const register = response.data;
       setCurrentRegister(register);
       return register;
     } catch (error) {
@@ -121,16 +126,16 @@ export function useCashRegister() {
   const handleOpenCashRegister = async (data: OpenCashRegisterDTO) => {
     try {
       setLoading(true);
-      const result = await openCashRegister(data);
+      const result = await api.post("/api/cash-registers/open", data);
 
-      setActiveRegister(result);
+      setActiveRegister(result.data);
 
       toast({
         title: "Caixa aberto",
         description: "O caixa foi aberto com sucesso.",
       });
 
-      return result;
+      return result.data;
     } catch (error) {
       console.error("Erro ao abrir caixa:", error);
       toast({
@@ -152,7 +157,7 @@ export function useCashRegister() {
   ) => {
     try {
       setLoading(true);
-      const result = await closeCashRegister(id, data);
+      const result = await api.post("/api/cash-registers/close", data);
 
       setActiveRegister(null);
 
@@ -164,7 +169,7 @@ export function useCashRegister() {
       // Recarregar a lista após o fechamento
       fetchCashRegisters();
 
-      return result;
+      return result.data;
     } catch (error) {
       console.error("Erro ao fechar caixa:", error);
       toast({

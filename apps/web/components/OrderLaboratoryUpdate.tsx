@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,9 +28,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
 import { api } from "@/app/services/auth";
-import type { AxiosError } from "axios";
+import { useOrders } from "@/hooks/useOrders";
+import { API_ROUTES } from "../app/constants/api-routes";
 
 // Interface para laboratório
 interface Laboratory {
@@ -44,16 +43,8 @@ interface Laboratory {
 interface OrderDetail {
   _id: string;
   status: string;
+  glassesType: string;
   laboratoryId?: string;
-  glassesType?: string;
-  // Outros campos que podem ser usados...
-  paymentMethod: string;
-  totalPrice: number;
-}
-
-interface ApiError {
-  message: string;
-  errors?: Record<string, string[]>;
 }
 
 // Props do componente
@@ -62,7 +53,7 @@ interface OrderLaboratoryUpdateProps {
   onUpdateSuccess: () => void;
 }
 
-// Schema para validação - agora APENAS com laboratório
+// Schema para validação
 const updateLaboratorySchema = z.object({
   laboratoryId: z.string().min(1, "Laboratório é obrigatório"),
 });
@@ -76,9 +67,9 @@ export default function OrderLaboratoryUpdate({
   const [open, setOpen] = useState(false);
   const [laboratories, setLaboratories] = useState<Laboratory[]>([]);
   const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
+  const { handleUpdateOrderLaboratory } = useOrders();
 
-  // Inicializar o formulário apenas com o campo de laboratório
+  // Inicializar o formulário
   const form = useForm<UpdateLaboratoryFormData>({
     resolver: zodResolver(updateLaboratorySchema),
     defaultValues: {
@@ -89,12 +80,12 @@ export default function OrderLaboratoryUpdate({
   // Buscar lista de laboratórios ativos
   useEffect(() => {
     const fetchLaboratories = async () => {
+      if (!open) return;
+
       try {
         setLoading(true);
         // Buscar apenas laboratórios ativos
-        const response = await api.get("/api/laboratories", {
-          params: { isActive: true },
-        });
+        const response = await api.get(API_ROUTES.LABORATORIES.ACTIVE);
 
         // Verificar o formato da resposta
         let labData: Laboratory[] = [];
@@ -110,65 +101,29 @@ export default function OrderLaboratoryUpdate({
         setLaboratories(labData.filter((lab) => lab.isActive));
       } catch (error) {
         console.error("Erro ao buscar laboratórios:", error);
-        toast({
-          variant: "destructive",
-          title: "Erro",
-          description: "Não foi possível carregar a lista de laboratórios.",
-        });
       } finally {
         setLoading(false);
       }
     };
 
-    if (open) {
-      fetchLaboratories();
-    }
-  }, [open, toast]);
-
-  // Mutation para atualizar apenas o laboratório do pedido
-  const updateOrderLaboratory = useMutation({
-    mutationFn: async (data: UpdateLaboratoryFormData) => {
-      try {
-        // Enviar apenas o campo laboratoryId
-        const response = await api.put(`/api/orders/${order._id}/laboratory`, {
-          laboratoryId: data.laboratoryId,
-        });
-        return response.data;
-      } catch (error) {
-        const axiosError = error as AxiosError<ApiError>;
-        console.error(
-          "Detalhes do erro da API:",
-          axiosError.response?.data || axiosError.message
-        );
-        throw axiosError;
-      }
-    },
-    onSuccess: () => {
-      toast({
-        title: "Laboratório atualizado",
-        description: "O laboratório do pedido foi atualizado com sucesso.",
-      });
-      setOpen(false);
-      onUpdateSuccess();
-    },
-    onError: (error: AxiosError<ApiError>) => {
-      console.error("Erro ao atualizar laboratório do pedido:", error);
-
-      const errorMessage =
-        error.response?.data?.message ||
-        "Erro ao atualizar laboratório. Tente novamente.";
-
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: errorMessage,
-      });
-    },
-  });
+    fetchLaboratories();
+  }, [open]);
 
   // Função de submissão do formulário
-  function onSubmit(data: UpdateLaboratoryFormData) {
-    updateOrderLaboratory.mutate(data);
+  async function onSubmit(data: UpdateLaboratoryFormData) {
+    try {
+      setLoading(true);
+      const result = await handleUpdateOrderLaboratory(
+        order._id,
+        data.laboratoryId
+      );
+      if (result) {
+        setOpen(false);
+        onUpdateSuccess();
+      }
+    } finally {
+      setLoading(false);
+    }
   }
 
   // Só mostrar o botão para atualizar se for óculos de grau
@@ -236,13 +191,9 @@ export default function OrderLaboratoryUpdate({
               <DialogFooter className="pt-4">
                 <Button
                   type="submit"
-                  disabled={
-                    updateOrderLaboratory.isPending || laboratories.length === 0
-                  }
+                  disabled={loading || laboratories.length === 0}
                 >
-                  {updateOrderLaboratory.isPending && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  )}
+                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Salvar
                 </Button>
               </DialogFooter>

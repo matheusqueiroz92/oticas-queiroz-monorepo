@@ -10,7 +10,7 @@ import {
 } from "@react-pdf/renderer";
 import { Button } from "@/components/ui/button";
 import { FileDown } from "lucide-react";
-import type { OrderDetail } from "@/app/types/order-details";
+import type { Order } from "@/app/types/order";
 
 // Estilos para o PDF
 const styles = StyleSheet.create({
@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
 
 // Interface para o documento PDF
 interface OrderPDFDocumentProps {
-  order: OrderDetail;
+  order: Order;
   clientName: string;
   employeeName: string;
 }
@@ -386,7 +386,7 @@ const OrderPDFDocument = ({
 
 // Componente principal que será exportado
 interface OrderDetailsPDFProps {
-  order: OrderDetail;
+  order: Order;
   clientName: string;
   employeeName: string;
 }

@@ -23,6 +23,7 @@ export interface PrescriptionData {
 // Define a interface padrão para valores do formulário de pedido
 export interface OrderFormValues {
   clientId: string;
+  customClientName?: string;
   employeeId: string;
   productType: "glasses" | "lensCleaner";
   product: string;
@@ -38,8 +39,6 @@ export interface OrderFormValues {
   observations?: string;
   totalPrice: number;
   prescriptionData: PrescriptionData;
-  // Permitir propriedades adicionais de string
-  [key: string]: unknown;
 }
 
 // Tipo padrão para o UseFormReturn usado em todos os componentes

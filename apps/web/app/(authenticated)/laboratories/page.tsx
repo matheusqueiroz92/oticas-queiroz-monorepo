@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,139 +12,24 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Loader2, Beaker } from "lucide-react";
-import { api } from "../../services/auth";
-import { usePermissions } from "@/hooks/usePermissions";
 import { Badge } from "@/components/ui/badge";
-import axios from "axios";
-
-// Definir tipos para os parâmetros de busca
-interface LaboratorySearchParams {
-  search?: string;
-}
-
-// Definir tipo para o objeto de erro
-interface ApiError {
-  status: number;
-  message: string;
-}
-
-// Definir tipo para o resultado da função fetchWithErrorHandling
-interface FetchResult<T> {
-  data: T | null;
-  error: ApiError | null;
-}
-
-// Definir interface para laboratórios
-interface Laboratory {
-  _id: string;
-  name: string;
-  contactName: string;
-  phone: string;
-  email: string;
-  address: {
-    street: string;
-    number: string;
-    complement?: string;
-    neighborhood: string;
-    city: string;
-    state: string;
-    zipCode: string;
-  };
-  isActive: boolean;
-  createdAt?: string;
-  updatedAt?: string;
-}
+import { useLaboratories } from "@/hooks/useLaboratories";
+import type { Laboratory } from "@/app/types/laboratory";
 
 export default function LaboratoriesPage() {
-  const [laboratories, setLaboratories] = useState<Laboratory[]>([]);
   const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  const router = useRouter();
+  const {
+    laboratories,
+    loading,
+    error,
+    navigateToLaboratoryDetails,
+    navigateToCreateLaboratory,
+    updateFilters,
+  } = useLaboratories();
 
-  useEffect(() => {
-    const fetchLaboratories = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        // Usar função auxiliar para lidar com erros da API
-        const { data, error: apiError } = await fetchWithErrorHandling<
-          | {
-              laboratories: Laboratory[];
-              pagination?: { totalPages: number; total: number };
-            }
-          | Laboratory[]
-        >("/api/laboratories", {
-          search,
-        });
-
-        if (apiError) {
-          // Se for um erro 404 específico, apenas definimos uma lista vazia
-          if (
-            apiError.status === 404 &&
-            apiError.message === "Nenhum laboratório encontrado"
-          ) {
-            setLaboratories([]);
-          } else {
-            // Outros erros são tratados normalmente
-            setError(
-              "Erro ao carregar laboratórios. Tente novamente mais tarde."
-            );
-          }
-        } else if (data) {
-          // Verifica o formato da resposta
-          if (Array.isArray(data)) {
-            // Se for um array, usa diretamente
-            setLaboratories(data);
-          } else if (data.laboratories && Array.isArray(data.laboratories)) {
-            // Se for um objeto com a propriedade 'laboratories', usa essa propriedade
-            setLaboratories(data.laboratories);
-          } else {
-            // Formato desconhecido
-            console.error("Formato de resposta inesperado:", data);
-            setLaboratories([]);
-          }
-        }
-      } catch (error) {
-        console.error("Erro não tratado:", error);
-        setError("Erro ao carregar laboratórios. Tente novamente mais tarde.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchLaboratories();
-  }, [search]);
-
-  // Função auxiliar para lidar com erros 404 sem disparar alertas globais
-  const fetchWithErrorHandling = async <T,>(
-    url: string,
-    params: LaboratorySearchParams
-  ): Promise<FetchResult<T>> => {
-    try {
-      const response = await api.get<T>(url, { params });
-      return { data: response.data, error: null };
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        // Retornar um objeto de erro estruturado em vez de lançar exceção
-        return {
-          data: null,
-          error: {
-            status: error.response.status,
-            message: error.response.data?.message || error.message,
-          },
-        };
-      }
-      // Para erros não-Axios, passamos adiante
-      throw error;
-    }
-  };
-
-  // Renderizar endereço completo
-  const formatAddress = (address: Laboratory["address"]) => {
-    return `${address.street}, ${address.number}${address.complement ? `, ${address.complement}` : ""} - ${address.neighborhood}, ${address.city}/${address.state}`;
+  const handleSearch = () => {
+    updateFilters({ search });
   };
 
   const showEmptyState = !loading && !error && laboratories.length === 0;
@@ -154,15 +38,19 @@ export default function LaboratoriesPage() {
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">Laboratórios</h1>
       <div className="flex justify-between">
-        <Input
-          placeholder="Buscar laboratório..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="max-w-sm"
-        />
-        <Button onClick={() => router.push("/laboratories/new")}>
-          Novo Laboratório
-        </Button>
+        <div className="flex gap-2">
+          <Input
+            placeholder="Buscar laboratório..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+            className="max-w-sm"
+          />
+          <Button variant="outline" onClick={handleSearch}>
+            Buscar
+          </Button>
+        </div>
+        <Button onClick={navigateToCreateLaboratory}>Novo Laboratório</Button>
       </div>
 
       {loading && (
@@ -196,7 +84,7 @@ export default function LaboratoriesPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {laboratories.map((lab) => (
+            {laboratories.map((lab: Laboratory) => (
               <TableRow key={lab._id}>
                 <TableCell className="font-medium">{lab.name}</TableCell>
                 <TableCell>{lab.contactName}</TableCell>
@@ -212,7 +100,7 @@ export default function LaboratoriesPage() {
                 <TableCell>
                   <Button
                     variant="outline"
-                    onClick={() => router.push(`/laboratories/${lab._id}`)}
+                    onClick={() => navigateToLaboratoryDetails(lab._id)}
                   >
                     Detalhes
                   </Button>

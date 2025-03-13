@@ -47,7 +47,6 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 
-// Importar novo hook e componentes
 import { useCashRegister } from "../../../hooks/useCashRegister";
 import { formatCurrency, formatDate } from "@/app/utils/formatters";
 

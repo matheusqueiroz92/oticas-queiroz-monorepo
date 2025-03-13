@@ -3,7 +3,6 @@
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,11 +29,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { useToast } from "../../../../hooks/use-toast";
-import { api } from "../../../services/auth";
-import { useRef } from "react";
-// import { useRouteGuard } from "@/hooks/useRouteGuard";
-// import { Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { useRef, useState } from "react";
+import { useProducts } from "@/hooks/useProducts";
 
 const productFormSchema = z.object({
   name: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
@@ -42,7 +39,7 @@ const productFormSchema = z.object({
     required_error: "Selecione uma categoria",
   }),
   description: z.string().min(10, "Descrição muito curta"),
-  image: z.string(),
+  image: z.instanceof(File).optional(),
   brand: z.string().min(2, "Marca inválida"),
   modelGlasses: z.string().min(2, "Modelo inválido"),
   price: z.number().min(0, "Preço inválido"),
@@ -52,10 +49,10 @@ const productFormSchema = z.object({
 type ProductFormData = z.infer<typeof productFormSchema>;
 
 export default function NewProductPage() {
-  // const { isAuthorized, isLoading } = useRouteGuard(["admin", "employee"]);
   const router = useRouter();
-  const { toast } = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null); // Referência para o input de arquivo
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { handleCreateProduct } = useProducts();
 
   const form = useForm<ProductFormData>({
     resolver: zodResolver(productFormSchema),
@@ -67,60 +64,44 @@ export default function NewProductPage() {
       modelGlasses: "",
       price: 0,
       stock: 0,
+      image: undefined,
     },
   });
 
-  const createProduct = useMutation({
-    mutationFn: async (data: ProductFormData) => {
-      const formData = new FormData(); // Crie um FormData
+  async function onSubmit(data: ProductFormData) {
+    setIsSubmitting(true);
+    try {
+      const formData = new FormData();
 
-      // Adicione os campos do formulário ao FormData
-      // biome-ignore lint/complexity/noForEach: <explanation>
-      Object.entries(data).forEach(([key, value]) => {
-        formData.append(key, value.toString());
-      });
-
-      // Adicione o arquivo de imagem ao FormData, se existir
-      if (fileInputRef.current?.files?.[0]) {
-        formData.append("image", fileInputRef.current.files[0]);
+      // Adicionar todos os campos do formulário
+      for (let i = 0; i < Object.entries(data).length; i++) {
+        const [key, value] = Object.entries(data)[i];
+        if (key !== "image") {
+          // A imagem será tratada separadamente
+          formData.append(key, String(value));
+        }
       }
 
-      return api.post("/api/products", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data", // Defina o tipo de conteúdo como multipart/form-data
-        },
-      });
-    },
-    onSuccess: () => {
-      toast({
-        title: "Produto cadastrado",
-        description: "O produto foi cadastrado com sucesso.",
-      });
-      router.push("/products");
-    },
-    onError: () => {
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Erro ao cadastrar produto. Tente novamente.",
-      });
-    },
-  });
+      // Adicionar imagem se existir
+      const file = fileInputRef.current?.files?.[0];
+      if (file) {
+        console.log("Enviando arquivo:", {
+          name: file.name,
+          type: file.type,
+          size: file.size,
+        });
 
-  // if (isLoading) {
-  //   return (
-  //     <div className="flex items-center justify-center min-h-screen">
-  //       <Loader2 className="h-8 w-8 animate-spin" />
-  //     </div>
-  //   );
-  // }
+        // O nome do campo DEVE corresponder ao configurado na rota no backend
+        formData.append("productImage", file);
+      }
 
-  // if (!isAuthorized) {
-  //   return null;
-  // }
-
-  function onSubmit(data: ProductFormData) {
-    createProduct.mutate(data);
+      const newProduct = await handleCreateProduct(formData);
+      if (newProduct) {
+        router.push("/products");
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -193,17 +174,19 @@ export default function NewProductPage() {
               <FormField
                 control={form.control}
                 name="image"
-                render={({ field }) => (
+                render={({ field: { onChange } }) => (
                   <FormItem>
                     <FormLabel>Imagem</FormLabel>
                     <FormControl>
                       <Input
                         type="file"
-                        placeholder="Selecione a imagem do produto"
-                        ref={fileInputRef} // Use a referência aqui
+                        accept="image/jpeg,image/png,image/webp"
+                        ref={fileInputRef}
                         onChange={(e) => {
-                          // Atualize o valor do campo no react-hook-form
-                          field.onChange(e.target.files?.[0]?.name || "");
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            onChange(file); // Atualiza o estado do formulário
+                          }
                         }}
                       />
                     </FormControl>
@@ -257,8 +240,11 @@ export default function NewProductPage() {
                           placeholder="0.00"
                           {...field}
                           onChange={(e) =>
-                            field.onChange(Number.parseFloat(e.target.value))
+                            field.onChange(
+                              Number.parseFloat(e.target.value) || 0
+                            )
                           }
+                          value={field.value}
                         />
                       </FormControl>
                       <FormMessage />
@@ -279,8 +265,9 @@ export default function NewProductPage() {
                           placeholder="0"
                           {...field}
                           onChange={(e) =>
-                            field.onChange(Number.parseInt(e.target.value))
+                            field.onChange(Number.parseInt(e.target.value) || 0)
                           }
+                          value={field.value}
                         />
                       </FormControl>
                       <FormMessage />
@@ -297,8 +284,15 @@ export default function NewProductPage() {
                 >
                   Cancelar
                 </Button>
-                <Button type="submit" disabled={createProduct.isPending}>
-                  {createProduct.isPending ? "Cadastrando..." : "Cadastrar"}
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Cadastrando...
+                    </>
+                  ) : (
+                    "Cadastrar"
+                  )}
                 </Button>
               </div>
             </form>

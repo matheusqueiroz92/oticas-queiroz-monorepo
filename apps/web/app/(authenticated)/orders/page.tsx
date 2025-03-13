@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,138 +21,31 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { Loader2, FileX } from "lucide-react";
-import { api } from "../../services/auth";
-import type { Order } from "../../types/order";
-import axios from "axios";
-
-type OrderStatus = "pending" | "in_production" | "ready" | "delivered";
-
-// Função auxiliar para extrair nomes de strings de objetos MongoDB
-const extractName = (objectString: string) => {
-  try {
-    // Usa regex para extrair o nome entre aspas simples após 'name:'
-    const nameMatch = objectString.match(/name: ['"]([^'"]+)['"]/);
-    if (nameMatch?.[1]) {
-      return nameMatch[1];
-    }
-    return "Nome não disponível";
-  } catch (error) {
-    console.error("Erro ao extrair nome:", error);
-    return "Nome não disponível";
-  }
-};
+import { useOrders } from "@/hooks/useOrders";
+import { extractName } from "@/app/services/order";
+import { formatCurrency, formatDate } from "@/app/utils/formatters";
 
 export default function OrdersPage() {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalOrders, setTotalOrders] = useState(0);
-  const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
 
-  useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+  const {
+    orders,
+    loading,
+    error,
+    currentPage,
+    totalPages,
+    totalOrders,
+    setCurrentPage,
+    updateFilters,
+    navigateToOrderDetails,
+    navigateToCreateOrder,
+    translateOrderStatus,
+    getOrderStatusClass,
+  } = useOrders();
 
-        // Enviar a página atual para a API
-        const response = await api.get("/api/orders", {
-          params: {
-            search,
-            page: currentPage,
-            // Adicionando ordenação para sempre mostrar mais recentes primeiro
-            sort: "-createdAt",
-          },
-        });
-
-        // Verificar se a resposta tem a estrutura esperada
-        if (response.data?.orders) {
-          setOrders(response.data.orders);
-
-          // Extrair informações de paginação
-          if (response.data.pagination) {
-            setTotalPages(response.data.pagination.totalPages || 1);
-            setTotalOrders(
-              response.data.pagination.total || response.data.orders.length
-            );
-          }
-        } else if (Array.isArray(response.data)) {
-          // Caso a API retorne diretamente um array
-          setOrders(response.data);
-          setTotalPages(1);
-          setTotalOrders(response.data.length);
-        } else {
-          // Caso não tenha dados estruturados
-          setOrders([]);
-          setTotalPages(1);
-          setTotalOrders(0);
-        }
-      } catch (error) {
-        console.error("Erro ao buscar pedidos:", error);
-
-        // Verificar se é um erro 404 (não encontrado)
-        if (axios.isAxiosError(error) && error.response?.status === 404) {
-          // Este não é um erro real, apenas significa que não há pedidos
-          setOrders([]);
-          setTotalPages(1);
-          setTotalOrders(0);
-          setError(null); // Importante: limpar qualquer erro anterior
-        } else {
-          // Para outros erros, mostrar mensagem de erro
-          setError("Erro ao carregar pedidos. Tente novamente mais tarde.");
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchOrders();
-  }, [search, currentPage]);
-
-  // Função para determinar a classe de status
-  const getStatusClass = (status: string) => {
-    switch (status) {
-      case "pending":
-        return "text-yellow-600 bg-yellow-100 px-2 py-1 rounded";
-      case "in_production":
-        return "text-blue-600 bg-blue-100 px-2 py-1 rounded";
-      case "ready":
-        return "text-green-600 bg-green-100 px-2 py-1 rounded";
-      case "delivered":
-        return "text-purple-600 bg-purple-100 px-2 py-1 rounded";
-      default:
-        return "text-gray-600 bg-gray-100 px-2 py-1 rounded";
-    }
-  };
-
-  // Tradução de status
-  const translateStatus = (status: string): string => {
-    const statusMap: Record<OrderStatus, string> = {
-      pending: "Pendente",
-      in_production: "Em Produção",
-      ready: "Pronto",
-      delivered: "Entregue",
-    };
-
-    return statusMap[status as OrderStatus] || status;
-  };
-
-  // Função para formatar data
-  const formatDate = (dateInput?: string | Date) => {
-    if (!dateInput) return "N/A";
-
-    // Converter para Date se for string, ou usar diretamente se já for Date
-    const date =
-      typeof dateInput === "string" ? new Date(dateInput) : dateInput;
-
-    return date.toLocaleDateString("pt-BR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
+  // Função para aplicar o filtro de busca
+  const handleSearch = () => {
+    updateFilters({ search });
   };
 
   // Função para gerar itens de paginação
@@ -162,7 +54,6 @@ export default function OrdersPage() {
     const maxVisiblePages = 5;
 
     if (totalPages <= maxVisiblePages) {
-      // Se tivermos menos páginas que o máximo visível, mostrar todas
       for (let i = 1; i <= totalPages; i++) {
         items.push(
           <PaginationItem key={i}>
@@ -247,13 +138,19 @@ export default function OrdersPage() {
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">Pedidos</h1>
       <div className="flex justify-between">
-        <Input
-          placeholder="Buscar pedido..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="max-w-sm"
-        />
-        <Button onClick={() => router.push("/orders/new")}>Novo Pedido</Button>
+        <div className="flex gap-2">
+          <Input
+            placeholder="Buscar pedido..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+            className="max-w-sm"
+          />
+          <Button variant="outline" onClick={handleSearch}>
+            Buscar
+          </Button>
+        </div>
+        <Button onClick={navigateToCreateOrder}>Novo Pedido</Button>
       </div>
 
       {loading && (
@@ -303,18 +200,16 @@ export default function OrdersPage() {
                       : "Funcionário não identificado"}
                   </TableCell>
                   <TableCell>
-                    <span className={getStatusClass(order.status)}>
-                      {translateStatus(order.status)}
+                    <span className={getOrderStatusClass(order.status)}>
+                      {translateOrderStatus(order.status)}
                     </span>
                   </TableCell>
                   <TableCell>{formatDate(order.createdAt)}</TableCell>
-                  <TableCell>
-                    R$ {Number(order.totalPrice).toFixed(2)}
-                  </TableCell>
+                  <TableCell>{formatCurrency(order.totalPrice)}</TableCell>
                   <TableCell>
                     <Button
                       variant="outline"
-                      onClick={() => router.push(`/orders/${order._id}`)}
+                      onClick={() => navigateToOrderDetails(order._id)}
                     >
                       Detalhes
                     </Button>
@@ -324,7 +219,7 @@ export default function OrdersPage() {
             </TableBody>
           </Table>
 
-          {/* Paginação usando o Shadcn UI */}
+          {/* Paginação */}
           {totalPages > 1 && (
             <div className="mt-4">
               <Pagination>

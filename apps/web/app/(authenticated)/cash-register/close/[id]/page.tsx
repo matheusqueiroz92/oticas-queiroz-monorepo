@@ -5,8 +5,6 @@ import { useParams, useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 
 import {
   Form,
@@ -29,14 +27,13 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft,
   Loader2,
   DollarSign,
   Calendar,
   AlertTriangle,
-  CreditCard,
-  Landmark,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -48,50 +45,19 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-import { useCashRegister } from "../../../../../hooks/useCashRegister";
-import {
-  getCashRegisterById,
-  getCashRegisterSummary,
-} from "@/app/services/cashRegister";
+import { api } from "@/app/services/auth";
+import { useToast } from "@/hooks/useToast";
 import { formatCurrency, formatDate } from "@/app/utils/formatters";
-import type {
-  ICashRegister,
-  CloseCashRegisterDTO,
-} from "@/app/types/cash-register";
-
-interface RegisterSummary {
-  register: {
-    _id: string;
-    openingDate: string | Date;
-    status: string;
-    openingBalance: number;
-    currentBalance: number;
-    closingBalance?: number;
-    // Outros campos possíveis
-  };
-  payments: {
-    sales: {
-      total: number;
-      byMethod: Record<string, number>;
-    };
-    debts: {
-      received: number;
-      byMethod: Record<string, number>;
-    };
-    expenses: {
-      total: number;
-      byCategory: Record<string, number>;
-    };
-  };
-}
+import type { ICashRegister } from "@/app/types/cash-register";
 
 // Esquema de validação para o formulário
 const closeCashRegisterSchema = z.object({
   closingBalance: z.preprocess(
     (value) =>
-      value === ""
-        ? undefined
+      value === "" || value === undefined
+        ? 0
         : Number.parseFloat(String(value).replace(",", ".")),
     z.number().min(0, "O valor não pode ser negativo")
   ),
@@ -104,12 +70,13 @@ export default function CloseCashRegisterPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const [cashRegister, setCashRegister] = useState<ICashRegister | null>(null);
-  const [summary, setSummary] = useState<RegisterSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [difference, setDifference] = useState<number | null>(null);
 
-  const { handleCloseCashRegister } = useCashRegister();
+  const { toast } = useToast();
 
   // Inicializar o formulário
   const form = useForm<CloseCashRegisterFormValues>({
@@ -119,6 +86,15 @@ export default function CloseCashRegisterPage() {
       observations: "",
     },
   });
+
+  // Observa mudanças no valor de fechamento para calcular a diferença
+  const closingBalance = form.watch("closingBalance");
+
+  useEffect(() => {
+    if (cashRegister && closingBalance !== undefined) {
+      setDifference(closingBalance - cashRegister.currentBalance);
+    }
+  }, [closingBalance, cashRegister]);
 
   // Buscar dados do caixa
   useEffect(() => {
@@ -130,7 +106,8 @@ export default function CloseCashRegisterPage() {
         setError(null);
 
         // Buscar detalhes do caixa
-        const registerData = await getCashRegisterById(params.id);
+        const response = await api.get(`/api/cash-registers/${params.id}`);
+        const registerData = response.data;
 
         if (!registerData) {
           setError("Caixa não encontrado.");
@@ -148,13 +125,8 @@ export default function CloseCashRegisterPage() {
         // Predefinir o saldo de fechamento como o saldo atual
         form.setValue("closingBalance", registerData.currentBalance);
 
-        // Buscar o resumo do caixa
-        try {
-          const summaryData = await getCashRegisterSummary(params.id);
-          setSummary(summaryData);
-        } catch (e) {
-          console.error("Erro ao buscar resumo do caixa:", e);
-        }
+        // Calcular diferença inicial
+        setDifference(0);
       } catch (error) {
         console.error("Erro ao buscar dados do caixa:", error);
         setError(
@@ -170,7 +142,9 @@ export default function CloseCashRegisterPage() {
 
   // Função para lidar com envio do formulário
   const onSubmit = (data: CloseCashRegisterFormValues) => {
-    setShowConfirmDialog(true);
+    if (difference !== null) {
+      setShowConfirmDialog(true);
+    }
   };
 
   // Função para confirmar fechamento
@@ -178,20 +152,30 @@ export default function CloseCashRegisterPage() {
     if (!cashRegister || !params.id) return;
 
     const data = form.getValues();
+    setIsSubmitting(true);
 
     try {
-      await handleCloseCashRegister(params.id, data);
+      const response = await api.post("/api/cash-registers/close", {
+        closingBalance: data.closingBalance,
+        observations: data.observations,
+      });
+
+      toast({
+        title: "Caixa fechado",
+        description: "O caixa foi fechado com sucesso.",
+      });
       router.push("/cash-register");
     } catch (error) {
       console.error("Erro ao fechar caixa:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível fechar o caixa. Tente novamente.",
+      });
+    } finally {
+      setIsSubmitting(false);
+      setShowConfirmDialog(false);
     }
-  };
-
-  // Calcular diferença entre saldo esperado e informado
-  const calculateDifference = (): number => {
-    const expectedBalance = cashRegister?.currentBalance || 0;
-    const reportedBalance = form.watch("closingBalance") || 0;
-    return reportedBalance - expectedBalance;
   };
 
   if (loading) {
@@ -222,8 +206,7 @@ export default function CloseCashRegisterPage() {
     );
   }
 
-  const difference = calculateDifference();
-  const hasDifference = Math.abs(difference) > 0.001; // Usar uma pequena margem para evitar problemas de arredondamento
+  const hasDifference = difference !== null && Math.abs(difference) > 0.001; // Usar uma pequena margem para evitar problemas de arredondamento
 
   return (
     <div className="max-w-3xl mx-auto p-4 space-y-6">
@@ -239,251 +222,269 @@ export default function CloseCashRegisterPage() {
         <h1 className="text-2xl font-bold">Fechar Caixa</h1>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Fechamento de Caixa</CardTitle>
-          <CardDescription>
-            Confira os valores e informe o saldo final para fechar o caixa.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-6">
-            <div className="bg-blue-50 p-4 rounded-md mb-6">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center space-x-3">
-                  <Calendar className="h-5 w-5 text-blue-600" />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Informações do caixa */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center text-lg">
+              Dados do Caixa
+              <Badge className="ml-2 bg-green-100 text-green-800 hover:bg-green-100">
+                Aberto
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 gap-4">
+                <div className="flex items-center space-x-2">
+                  <Calendar className="h-4 w-4 text-gray-500" />
                   <div>
-                    <div className="text-sm text-blue-600 font-medium">
-                      Caixa aberto em
+                    <div className="text-sm text-gray-500">
+                      Data de Abertura
                     </div>
-                    <div className="text-blue-700">
+                    <div className="font-medium">
                       {formatDate(cashRegister.openingDate)}
                     </div>
                   </div>
                 </div>
-                <div>
-                  <div className="text-sm text-blue-600 font-medium">
-                    Saldo Inicial
-                  </div>
-                  <div className="text-blue-700 font-semibold">
-                    {formatCurrency(cashRegister.openingBalance)}
+                <div className="flex items-center space-x-2">
+                  <DollarSign className="h-4 w-4 text-gray-500" />
+                  <div>
+                    <div className="text-sm text-gray-500">Saldo Inicial</div>
+                    <div className="font-medium">
+                      {formatCurrency(cashRegister.openingBalance)}
+                    </div>
                   </div>
                 </div>
+                <div className="flex items-center space-x-2">
+                  <DollarSign className="h-4 w-4 text-green-500" />
+                  <div>
+                    <div className="text-sm text-gray-500">Saldo Atual</div>
+                    <div className="font-medium text-green-600">
+                      {formatCurrency(cashRegister.currentBalance)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {cashRegister.observations && (
+                <div className="mt-4">
+                  <div className="text-sm text-gray-500">Observações</div>
+                  <div className="p-3 bg-gray-50 rounded-md mt-1 text-sm">
+                    {cashRegister.observations}
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Resumo financeiro */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Resumo Financeiro</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="flex justify-between border-b pb-2">
+                <span className="text-sm">Total de Vendas</span>
+                <span className="font-medium text-green-600">
+                  {formatCurrency(cashRegister.sales?.total || 0)}
+                </span>
+              </div>
+              <div className="flex justify-between border-b pb-2">
+                <span className="text-sm">Dinheiro</span>
+                <span className="font-medium">
+                  {formatCurrency(cashRegister.sales?.cash || 0)}
+                </span>
+              </div>
+              <div className="flex justify-between border-b pb-2">
+                <span className="text-sm">Cartão de Crédito</span>
+                <span className="font-medium">
+                  {formatCurrency(cashRegister.sales?.credit || 0)}
+                </span>
+              </div>
+              <div className="flex justify-between border-b pb-2">
+                <span className="text-sm">Cartão de Débito</span>
+                <span className="font-medium">
+                  {formatCurrency(cashRegister.sales?.debit || 0)}
+                </span>
+              </div>
+              <div className="flex justify-between border-b pb-2">
+                <span className="text-sm">PIX</span>
+                <span className="font-medium">
+                  {formatCurrency(cashRegister.sales?.pix || 0)}
+                </span>
+              </div>
+              <div className="flex justify-between font-medium">
+                <span>Saldo Final</span>
+                <span>{formatCurrency(cashRegister.currentBalance)}</span>
               </div>
             </div>
+          </CardContent>
+        </Card>
+      </div>
 
-            {summary && (
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">Resumo do Movimento</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  <div className="bg-green-50 p-3 rounded-md">
-                    <div className="text-sm text-green-600">
-                      Total de Vendas
-                    </div>
-                    <div className="text-lg font-semibold text-green-700">
-                      {formatCurrency(summary.payments?.sales?.total || 0)}
-                    </div>
-                  </div>
-                  <div className="bg-red-50 p-3 rounded-md">
-                    <div className="text-sm text-red-600">
-                      Total de Despesas
-                    </div>
-                    <div className="text-lg font-semibold text-red-700">
-                      {formatCurrency(summary.payments?.expenses?.total || 0)}
-                    </div>
-                  </div>
-                  <div className="bg-purple-50 p-3 rounded-md">
-                    <div className="text-sm text-purple-600">
-                      Pgtos. de Débitos
-                    </div>
-                    <div className="text-lg font-semibold text-purple-700">
-                      {formatCurrency(summary.payments?.debts?.received || 0)}
-                    </div>
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div className="space-y-3">
-                  <h4 className="font-medium">Detalhamento por Método</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <div className="border p-3 rounded-md flex flex-col">
-                      <div className="text-sm text-gray-500 flex items-center">
-                        <DollarSign className="h-4 w-4 mr-1" />
-                        Dinheiro
-                      </div>
-                      <div className="font-medium">
-                        {formatCurrency(
-                          summary.payments?.sales?.byMethod?.cash || 0
-                        )}
-                      </div>
-                    </div>
-                    <div className="border p-3 rounded-md flex flex-col">
-                      <div className="text-sm text-gray-500 flex items-center">
-                        <CreditCard className="h-4 w-4 mr-1" />
-                        Crédito
-                      </div>
-                      <div className="font-medium">
-                        {formatCurrency(
-                          summary.payments?.sales?.byMethod?.credit || 0
-                        )}
-                      </div>
-                    </div>
-                    <div className="border p-3 rounded-md flex flex-col">
-                      <div className="text-sm text-gray-500 flex items-center">
-                        <CreditCard className="h-4 w-4 mr-1" />
-                        Débito
-                      </div>
-                      <div className="font-medium">
-                        {formatCurrency(
-                          summary.payments?.sales?.byMethod?.debit || 0
-                        )}
-                      </div>
-                    </div>
-                    <div className="border p-3 rounded-md flex flex-col">
-                      <div className="text-sm text-gray-500 flex items-center">
-                        <Landmark className="h-4 w-4 mr-1" />
-                        PIX
-                      </div>
-                      <div className="font-medium">
-                        {formatCurrency(
-                          summary.payments?.sales?.byMethod?.pix || 0
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <Separator />
-
-            <Form {...form}>
-              <form
-                id="closeCashRegisterForm"
-                onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-6"
-              >
-                <FormField
-                  control={form.control}
-                  name="closingBalance"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Saldo de Fechamento (R$)</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <DollarSign className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                          <Input
-                            placeholder="0,00"
-                            className="pl-10"
-                            {...field}
-                            value={field.value ?? ""}
-                            onChange={(e) => {
-                              // Permitir apenas números e vírgula
-                              const value = e.target.value.replace(
-                                /[^0-9,.]/g,
-                                ""
-                              );
-                              field.onChange(value);
-                            }}
-                          />
-                        </div>
-                      </FormControl>
-                      <FormDescription>
-                        Valor em dinheiro disponível ao fechar o caixa
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Exibir a diferença, se houver */}
-                {hasDifference && (
-                  <div
-                    className={`p-4 rounded-md ${difference > 0 ? "bg-green-50" : "bg-red-50"}`}
-                  >
-                    <div className="flex items-start space-x-3">
-                      <AlertTriangle
-                        className={`h-5 w-5 ${difference > 0 ? "text-green-600" : "text-red-600"}`}
-                      />
-                      <div>
-                        <div
-                          className={`font-medium ${difference > 0 ? "text-green-700" : "text-red-700"}`}
-                        >
-                          {difference > 0 ? "Sobra de caixa" : "Falta de caixa"}
-                        </div>
-                        <div className="text-sm mt-1">
-                          {difference > 0
-                            ? `O saldo informado está ${formatCurrency(difference)} maior que o esperado.`
-                            : `O saldo informado está ${formatCurrency(Math.abs(difference))} menor que o esperado.`}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <FormField
-                  control={form.control}
-                  name="observations"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Observações</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Observações sobre o fechamento do caixa (opcional)"
-                          className="min-h-[100px]"
+      <Card>
+        <CardHeader>
+          <CardTitle>Fechamento de Caixa</CardTitle>
+          <CardDescription>
+            Informe o valor final em dinheiro para fechar o caixa.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="closingBalance"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Valor Final em Caixa (R$) *</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <DollarSign className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                        <Input
+                          placeholder="0,00"
+                          className="pl-10"
                           {...field}
+                          value={field.value ?? ""}
+                          onChange={(e) => {
+                            const value = e.target.value.replace(
+                              /[^0-9,.]/g,
+                              ""
+                            );
+                            field.onChange(
+                              value === ""
+                                ? ""
+                                : Number.parseFloat(value.replace(",", "."))
+                            );
+                          }}
                         />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </form>
-            </Form>
-          </div>
+                      </div>
+                    </FormControl>
+                    <FormDescription>
+                      Este valor deve representar o montante físico em dinheiro
+                      presente no caixa.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {hasDifference && (
+                <Alert
+                  variant={
+                    difference && difference < 0 ? "destructive" : "default"
+                  }
+                  className="my-4"
+                >
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>
+                    {difference && difference < 0
+                      ? "Falta dinheiro no caixa!"
+                      : "Sobra de dinheiro no caixa!"}
+                  </AlertTitle>
+                  <AlertDescription>
+                    {difference && difference < 0
+                      ? `Há uma diferença negativa de ${formatCurrency(Math.abs(difference))}. Verifique se houve erro na contagem ou possível desvio.`
+                      : `Há uma diferença positiva de ${formatCurrency(difference)}. Verifique se houve erro na contagem ou registro de vendas.`}
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              <FormField
+                control={form.control}
+                name="observations"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Observações</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Observações sobre o fechamento do caixa..."
+                        className="min-h-[100px]"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Adicione informações relevantes sobre o fechamento do
+                      caixa, especialmente se houver diferenças no valor.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="flex justify-end space-x-2 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => router.push("/cash-register")}
+                >
+                  Cancelar
+                </Button>
+                <Button type="submit">Fechar Caixa</Button>
+              </div>
+            </form>
+          </Form>
         </CardContent>
-        <CardFooter className="flex justify-between">
-          <Button
-            variant="outline"
-            onClick={() => router.push("/cash-register")}
-          >
-            Cancelar
-          </Button>
-          <Button type="submit" form="closeCashRegisterForm">
-            Fechar Caixa
-          </Button>
-        </CardFooter>
       </Card>
 
       {/* Diálogo de confirmação */}
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar fechamento do caixa?</AlertDialogTitle>
+            <AlertDialogTitle>Confirmar Fechamento de Caixa</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação não pode ser desfeita. O caixa será fechado com o saldo
-              de {formatCurrency(form.watch("closingBalance") || 0)}.
-              {hasDifference && (
-                <div className="mt-2 font-medium">
-                  {difference > 0
-                    ? `Há uma sobra de ${formatCurrency(difference)}.`
-                    : `Há uma falta de ${formatCurrency(Math.abs(difference))}.`}
-                </div>
-              )}
+              {hasDifference
+                ? "Há uma diferença entre o valor esperado e o valor informado. Deseja continuar?"
+                : "Confirme o fechamento do caixa."}
             </AlertDialogDescription>
           </AlertDialogHeader>
+
+          <div className="py-4">
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <span>Saldo Esperado:</span>
+                <span className="font-medium">
+                  {formatCurrency(cashRegister.currentBalance)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>Saldo Informado:</span>
+                <span className="font-medium">
+                  {formatCurrency(closingBalance || 0)}
+                </span>
+              </div>
+
+              {hasDifference && (
+                <>
+                  <Separator className="my-2" />
+                  <div className="flex justify-between">
+                    <span>Diferença:</span>
+                    <span
+                      className={`font-bold ${difference && difference < 0 ? "text-red-600" : "text-green-600"}`}
+                    >
+                      {formatCurrency(difference || 0)}
+                    </span>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmClose}
-              className={
-                hasDifference && difference < 0
-                  ? "bg-red-600 hover:bg-red-700"
-                  : ""
-              }
-            >
-              Sim, fechar caixa
+            <AlertDialogCancel disabled={isSubmitting}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={confirmClose} disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processando...
+                </>
+              ) : (
+                "Confirmar Fechamento"
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

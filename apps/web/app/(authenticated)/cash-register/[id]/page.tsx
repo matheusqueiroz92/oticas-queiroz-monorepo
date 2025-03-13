@@ -105,7 +105,9 @@ export default function CashRegisterDetailsPage() {
       // Buscar o resumo do caixa
       try {
         const summaryData = await fetchCashRegisterSummary(params.id);
-        setSummary(summaryData);
+        if (summaryData) {
+          setSummary(summaryData as RegisterSummary);
+        }
       } catch (e) {
         console.error("Erro ao buscar resumo do caixa:", e);
       }

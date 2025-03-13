@@ -31,7 +31,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 import { api } from "../../../services/auth";
 import type { Customer } from "../../../types/customer";
 import Cookies from "js-cookie";

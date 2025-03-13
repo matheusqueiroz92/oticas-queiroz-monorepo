@@ -1,5 +1,5 @@
 export interface Laboratory {
-  _id?: string;
+  _id: string;
   name: string;
   address: {
     street: string;

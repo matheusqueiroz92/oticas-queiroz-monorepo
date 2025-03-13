@@ -107,6 +107,52 @@ export function translatePaymentStatus(status: PaymentStatus | string): string {
 }
 
 /**
+ * Traduz o status do pedido
+ */
+export function translateOrderStatus(status: string): string {
+  const statuses: Record<string, string> = {
+    pending: "Pendente",
+    in_production: "Em Produção",
+    ready: "Pronto",
+    delivered: "Entregue",
+  };
+
+  return statuses[status] || status;
+}
+
+/**
+ * Obtém a classe CSS para o status do pedido
+ */
+export function getOrderStatusClass(status: string): string {
+  switch (status) {
+    case "pending":
+      return "text-yellow-600 bg-yellow-100 px-2 py-1 rounded";
+    case "in_production":
+      return "text-blue-600 bg-blue-100 px-2 py-1 rounded";
+    case "ready":
+      return "text-green-600 bg-green-100 px-2 py-1 rounded";
+    case "delivered":
+      return "text-purple-600 bg-purple-100 px-2 py-1 rounded";
+    default:
+      return "text-gray-600 bg-gray-100 px-2 py-1 rounded";
+  }
+}
+
+/**
+ * Formata valores de grau
+ */
+export function formatRefractionValue(value?: number): string {
+  if (value === undefined || value === null) return "N/A";
+
+  // Se o valor for exatamente zero, mostrar como "Neutro"
+  if (value === 0) return "Neutro";
+
+  // Para outros valores, mostrar sinal de + para positivos
+  const prefix = value > 0 ? "+" : "";
+  return `${prefix}${value.toFixed(2).replace(".", ",")}`;
+}
+
+/**
  * Obtém a classe CSS para o status do pagamento
  */
 export function getPaymentStatusClass(status: PaymentStatus | string): string {

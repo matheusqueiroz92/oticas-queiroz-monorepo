@@ -6,13 +6,23 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import type { OrderFormReturn } from "../../../app/types/form-types";
+import type { OrderFormReturn } from "@/app/types/form-types";
+
 interface VisionSectionProps {
   eye: "left" | "right";
   form: OrderFormReturn;
 }
 
 export default function VisionSection({ eye, form }: VisionSectionProps) {
+  // Helper function para lidar com campos numéricos
+  const handleNumericInput = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    onChange: (value: number) => void
+  ) => {
+    const value = e.target.value === "" ? 0 : Number.parseFloat(e.target.value);
+    onChange(Number.isNaN(value) ? 0 : value);
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 p-3 border rounded-md bg-gray-50">
       <FormField
@@ -26,16 +36,9 @@ export default function VisionSection({ eye, form }: VisionSectionProps) {
                 type="number"
                 step="0.25"
                 placeholder="0.00"
-                {...field}
-                onChange={(e) => {
-                  // Garantir que mesmo se o campo estiver vazio, um valor válido é definido
-                  const value =
-                    e.target.value === ""
-                      ? 0
-                      : Number.parseFloat(e.target.value);
-                  field.onChange(value);
-                }}
-                value={field.value === undefined ? "0" : field.value.toString()}
+                value={field.value !== undefined ? field.value : "0"}
+                onChange={(e) => handleNumericInput(e, field.onChange)}
+                aria-label={`Esférico do olho ${eye === "left" ? "esquerdo" : "direito"}`}
               />
             </FormControl>
             <FormMessage />
@@ -54,15 +57,9 @@ export default function VisionSection({ eye, form }: VisionSectionProps) {
                 type="number"
                 step="0.25"
                 placeholder="0.00"
-                {...field}
-                onChange={(e) => {
-                  const value =
-                    e.target.value === ""
-                      ? 0
-                      : Number.parseFloat(e.target.value);
-                  field.onChange(value);
-                }}
-                value={field.value === undefined ? "0" : field.value.toString()}
+                value={field.value !== undefined ? field.value : "0"}
+                onChange={(e) => handleNumericInput(e, field.onChange)}
+                aria-label={`Cilíndrico do olho ${eye === "left" ? "esquerdo" : "direito"}`}
               />
             </FormControl>
             <FormMessage />
@@ -83,15 +80,18 @@ export default function VisionSection({ eye, form }: VisionSectionProps) {
                 min="0"
                 max="180"
                 placeholder="0"
-                {...field}
+                value={field.value !== undefined ? field.value : "0"}
                 onChange={(e) => {
                   const value =
                     e.target.value === ""
                       ? 0
-                      : Number.parseInt(e.target.value, 10);
-                  field.onChange(value);
+                      : Math.min(
+                          180,
+                          Math.max(0, Number.parseInt(e.target.value, 10))
+                        );
+                  field.onChange(Number.isNaN(value) ? 0 : value);
                 }}
-                value={field.value === undefined ? "0" : field.value.toString()}
+                aria-label={`Eixo do olho ${eye === "left" ? "esquerdo" : "direito"}`}
               />
             </FormControl>
             <FormMessage />

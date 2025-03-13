@@ -15,8 +15,8 @@ import { api } from "../../../services/auth";
 import OrderDetailsPDF from "../../../../components/exports/OrderDetailsPdf";
 import OrderLaboratoryUpdate from "../../../../components/OrderLaboratoryUpdate";
 import OrderStatusUpdate from "../../../../components/OrderStatusUpdate";
-import type { OrderDetail } from "@/app/types/order-details";
 import { Beaker } from "lucide-react";
+import type { Order } from "@/app/types/order";
 
 interface Laboratory {
   _id: string;
@@ -36,7 +36,7 @@ interface User {
 
 export default function OrderDetailsPage() {
   const { id } = useParams();
-  const [order, setOrder] = useState<OrderDetail | null>(null);
+  const [order, setOrder] = useState<Order | null>(null);
   const [client, setClient] = useState<User | null>(null);
   const [employee, setEmployee] = useState<User | null>(null);
   const [laboratoryInfo, setLaboratoryInfo] = useState<Laboratory | null>(null);
@@ -315,9 +315,7 @@ export default function OrderDetailsPage() {
               <div className="space-y-2 bg-gray-50 p-3 rounded-md">
                 <p className="text-sm">
                   <span className="font-semibold">Nome:</span>{" "}
-                  {client
-                    ? client.name
-                    : order.customClientName || "Cliente não encontrado"}
+                  {client ? client.name : "Cliente não encontrado"}
                 </p>
                 {client && (
                   <p className="text-sm">
@@ -356,10 +354,10 @@ export default function OrderDetailsPage() {
                   <span className="font-semibold">Produto:</span>{" "}
                   {order.product || "N/A"}
                 </p>
-                {order.description && (
+                {order.observations && (
                   <p className="text-sm">
                     <span className="font-semibold">Descrição:</span>{" "}
-                    {order.description}
+                    {order.observations}
                   </p>
                 )}
                 <p className="text-sm">
@@ -636,11 +634,7 @@ export default function OrderDetailsPage() {
           <h3 className="text-lg font-medium mb-4">Exportar Pedido</h3>
           <OrderDetailsPDF
             order={order}
-            clientName={
-              client
-                ? client.name
-                : order.customClientName || "Cliente não encontrado"
-            }
+            clientName={client ? client.name : "Cliente não encontrado"}
             employeeName={employee ? employee.name : "Vendedor não encontrado"}
           />
         </CardContent>

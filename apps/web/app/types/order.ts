@@ -2,14 +2,16 @@ export interface Order {
   _id: string;
   clientId: string;
   employeeId: string;
+  productType: "glasses" | "lensCleaner";
   product: string;
-  glassesType: string;
+  glassesType: "prescription" | "sunglasses";
+  glassesFrame: "with" | "no";
   paymentMethod: string;
   paymentEntry?: number;
   installments?: number;
   deliveryDate?: string | Date;
   status: "pending" | "in_production" | "ready" | "delivered";
-  laboratoryId?: string;
+  laboratoryId?: string | null;
   prescriptionData?: {
     doctorName: string;
     clinicName: string;

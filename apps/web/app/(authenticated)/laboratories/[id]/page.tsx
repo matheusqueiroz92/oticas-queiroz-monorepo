@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   Card,
@@ -14,9 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Loader2, MapPin, Mail, Phone, User, Building } from "lucide-react";
-import { api } from "../../../services/auth";
 import { usePermissions } from "@/hooks/usePermissions";
-import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,85 +26,32 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-
-// Interface para laboratório
-interface Laboratory {
-  _id: string;
-  name: string;
-  contactName: string;
-  email: string;
-  phone: string;
-  address: {
-    street: string;
-    number: string;
-    complement?: string;
-    neighborhood: string;
-    city: string;
-    state: string;
-    zipCode: string;
-  };
-  isActive: boolean;
-  createdAt?: string;
-  updatedAt?: string;
-}
+import { useLaboratories } from "@/hooks/useLaboratories";
 
 export default function LaboratoryDetailsPage() {
-  const { id } = useParams();
-  const [laboratory, setLaboratory] = useState<Laboratory | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [statusLoading, setStatusLoading] = useState(false);
-  const { canManageLaboratories } = usePermissions();
+  const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { toast } = useToast();
+  const { canManageLaboratories } = usePermissions();
+
+  const {
+    currentLaboratory,
+    loading,
+    error,
+    fetchLaboratoryById,
+    handleToggleLaboratoryStatus,
+    navigateToEditLaboratory,
+  } = useLaboratories();
 
   useEffect(() => {
-    const fetchLaboratory = async () => {
-      try {
-        setLoading(true);
-        const response = await api.get(`/api/laboratories/${id}`);
-        setLaboratory(response.data);
-      } catch (error) {
-        console.error("Erro ao buscar detalhes do laboratório:", error);
-        setError("Não foi possível carregar os detalhes do laboratório.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     if (id) {
-      fetchLaboratory();
+      fetchLaboratoryById(id as string);
     }
-  }, [id]);
+  }, [id, fetchLaboratoryById]);
 
-  // Função para alternar o status do laboratório (ativar/desativar)
+  // Status toggle handler
   const toggleStatus = async () => {
-    if (!laboratory) return;
-
-    try {
-      setStatusLoading(true);
-      await api.patch(`/api/laboratories/${laboratory._id}/toggle-status`);
-
-      // Atualizar o laboratório com o novo status
-      setLaboratory({
-        ...laboratory,
-        isActive: !laboratory.isActive,
-      });
-
-      toast({
-        title: "Status atualizado",
-        description: `Laboratório ${laboratory.isActive ? "desativado" : "ativado"} com sucesso.`,
-      });
-    } catch (error) {
-      console.error("Erro ao alterar status do laboratório:", error);
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Não foi possível alterar o status do laboratório.",
-      });
-    } finally {
-      setStatusLoading(false);
-    }
+    if (!currentLaboratory) return;
+    await handleToggleLaboratoryStatus(currentLaboratory._id);
   };
 
   if (loading) {
@@ -117,7 +62,7 @@ export default function LaboratoryDetailsPage() {
     );
   }
 
-  if (error || !laboratory) {
+  if (error || !currentLaboratory) {
     return (
       <div className="p-4 bg-red-50 text-red-600 rounded-md">
         {error || "Laboratório não encontrado."}
@@ -133,18 +78,18 @@ export default function LaboratoryDetailsPage() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Detalhes do Laboratório</h1>
         <Badge
-          variant={laboratory.isActive ? "default" : "destructive"}
+          variant={currentLaboratory.isActive ? "default" : "destructive"}
           className="text-sm px-3 py-1"
         >
-          {laboratory.isActive ? "Ativo" : "Inativo"}
+          {currentLaboratory.isActive ? "Ativo" : "Inativo"}
         </Badge>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl">{laboratory.name}</CardTitle>
+          <CardTitle className="text-xl">{currentLaboratory.name}</CardTitle>
           <CardDescription>
-            {laboratory.isActive
+            {currentLaboratory.isActive
               ? "Este laboratório está ativo e pode receber pedidos"
               : "Este laboratório está inativo e não pode receber pedidos"}
           </CardDescription>
@@ -159,17 +104,17 @@ export default function LaboratoryDetailsPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-md">
               <div>
                 <p className="text-sm text-muted-foreground">Nome do Contato</p>
-                <p>{laboratory.contactName}</p>
+                <p>{currentLaboratory.contactName}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Email</p>
                 <div className="flex items-center gap-2">
                   <Mail className="h-4 w-4 text-muted-foreground" />
                   <a
-                    href={`mailto:${laboratory.email}`}
+                    href={`mailto:${currentLaboratory.email}`}
                     className="text-blue-600 hover:underline"
                   >
-                    {laboratory.email}
+                    {currentLaboratory.email}
                   </a>
                 </div>
               </div>
@@ -178,10 +123,10 @@ export default function LaboratoryDetailsPage() {
                 <div className="flex items-center gap-2">
                   <Phone className="h-4 w-4 text-muted-foreground" />
                   <a
-                    href={`tel:${laboratory.phone}`}
+                    href={`tel:${currentLaboratory.phone}`}
                     className="text-blue-600 hover:underline"
                   >
-                    {laboratory.phone}
+                    {currentLaboratory.phone}
                   </a>
                 </div>
               </div>
@@ -200,15 +145,17 @@ export default function LaboratoryDetailsPage() {
                 <MapPin className="h-5 w-5 text-muted-foreground mt-1" />
                 <div className="space-y-1">
                   <p>
-                    {laboratory.address.street}, {laboratory.address.number}
-                    {laboratory.address.complement &&
-                      `, ${laboratory.address.complement}`}
+                    {currentLaboratory.address.street},{" "}
+                    {currentLaboratory.address.number}
+                    {currentLaboratory.address.complement &&
+                      `, ${currentLaboratory.address.complement}`}
                   </p>
                   <p>
-                    {laboratory.address.neighborhood}, {laboratory.address.city}
-                    /{laboratory.address.state}
+                    {currentLaboratory.address.neighborhood},{" "}
+                    {currentLaboratory.address.city}/
+                    {currentLaboratory.address.state}
                   </p>
-                  <p>CEP: {laboratory.address.zipCode}</p>
+                  <p>CEP: {currentLaboratory.address.zipCode}</p>
                 </div>
               </div>
             </div>
@@ -227,9 +174,7 @@ export default function LaboratoryDetailsPage() {
             <div className="flex gap-2">
               <Button
                 variant="outline"
-                onClick={() =>
-                  router.push(`/laboratories/${laboratory._id}/edit`)
-                }
+                onClick={() => navigateToEditLaboratory(currentLaboratory._id)}
               >
                 Editar
               </Button>
@@ -237,24 +182,26 @@ export default function LaboratoryDetailsPage() {
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button
-                    variant={laboratory.isActive ? "destructive" : "default"}
-                    disabled={statusLoading}
+                    variant={
+                      currentLaboratory.isActive ? "destructive" : "default"
+                    }
+                    disabled={loading}
                   >
-                    {statusLoading ? (
+                    {loading ? (
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     ) : null}
-                    {laboratory.isActive ? "Desativar" : "Ativar"}
+                    {currentLaboratory.isActive ? "Desativar" : "Ativar"}
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
                     <AlertDialogTitle>
-                      {laboratory.isActive
+                      {currentLaboratory.isActive
                         ? "Desativar laboratório?"
                         : "Ativar laboratório?"}
                     </AlertDialogTitle>
                     <AlertDialogDescription>
-                      {laboratory.isActive
+                      {currentLaboratory.isActive
                         ? "Laboratórios inativos não podem ser selecionados para novos pedidos. Você pode ativar o laboratório novamente a qualquer momento."
                         : "Ao ativar o laboratório, ele poderá ser selecionado para novos pedidos."}
                     </AlertDialogDescription>
@@ -264,7 +211,7 @@ export default function LaboratoryDetailsPage() {
                     <AlertDialogAction
                       onClick={toggleStatus}
                       className={
-                        laboratory.isActive
+                        currentLaboratory.isActive
                           ? "bg-destructive hover:bg-destructive/90"
                           : ""
                       }
