@@ -47,4 +47,13 @@ export const API_ROUTES = {
     BY_ID: (id: string) => `/api/reports/${id}`,
     DOWNLOAD: (id: string) => `/api/reports/${id}/download`,
   },
+  AUTH: {
+    LOGIN: "/api/auth/login",
+    REGISTER: "/api/auth/register",
+    PROFILE: "/api/users/profile",
+    FORGOT_PASSWORD: "/api/auth/forgot-password",
+    RESET_PASSWORD: "/api/auth/reset-password",
+    VALIDATE_RESET_TOKEN: (token: string) =>
+      `/api/auth/validate-reset-token/${token}`,
+  },
 };

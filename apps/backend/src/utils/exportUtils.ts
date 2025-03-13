@@ -315,7 +315,8 @@ export class ExportUtils {
       debit: "Cartão de Débito",
       cash: "Dinheiro",
       pix: "PIX",
-      installment: "Parcelado",
+      boleto: "Boleto",
+      promissory_note: "Promissória",
     };
     return methods[method] || method;
   }
@@ -580,11 +581,11 @@ export class ExportUtils {
     if (order.productType === "glasses") {
       worksheet.addRow([
         "Tipo de Óculos",
-        this.translateGlassesType(order.glassesType),
+        this.translateGlassesType(order.glassesType || ""),
       ]);
       worksheet.addRow([
         "Armação",
-        this.translateGlassesFrame(order.glassesFrame),
+        this.translateGlassesFrame(order.glassesFrame || ""),
       ]);
       worksheet.addRow(["Tipo de Lente", order.lensType || "N/A"]);
     }
@@ -768,7 +769,7 @@ export class ExportUtils {
         let y = tableTop + 25;
 
         for (const order of ordersToShow) {
-          doc.text(`${order._id.substring(0, 8)}...`, 50, y, {
+          doc.text(`${(order._id ?? "").substring(0, 8)}...`, 50, y, {
             width: columnWidth,
             align: "left",
           });
@@ -959,10 +960,10 @@ export class ExportUtils {
 
         if (order.productType === "glasses") {
           doc.text(
-            `Tipo de Óculos: ${this.translateGlassesType(order.glassesType)}`
+            `Tipo de Óculos: ${this.translateGlassesType(order.glassesType || "")}`
           );
           doc.text(
-            `Armação: ${this.translateGlassesFrame(order.glassesFrame)}`
+            `Armação: ${this.translateGlassesFrame(order.glassesFrame || "")}`
           );
           doc.text(`Tipo de Lente: ${order.lensType || "N/A"}`);
         }
@@ -1058,8 +1059,8 @@ export class ExportUtils {
     csv += `"Produto","${order.product}"\n`;
 
     if (order.productType === "glasses") {
-      csv += `"Tipo de Óculos","${this.translateGlassesType(order.glassesType)}"\n`;
-      csv += `"Armação","${this.translateGlassesFrame(order.glassesFrame)}"\n`;
+      csv += `"Tipo de Óculos","${this.translateGlassesType(order.glassesType || "")}"\n`;
+      csv += `"Armação","${this.translateGlassesFrame(order.glassesFrame || "")}"\n`;
       csv += `"Tipo de Lente","${order.lensType || "N/A"}"\n`;
     }
 
@@ -1175,7 +1176,7 @@ export class ExportUtils {
           const type = this.translateProductType(order.productType);
           const status = this.translateOrderStatus(order.status);
 
-          doc.text(`${order._id.substring(0, 10)}...`, 50, y, {
+          doc.text(`${(order._id ?? "").substring(0, 10)}...`, 50, y, {
             width: columnWidth,
             align: "left",
           });

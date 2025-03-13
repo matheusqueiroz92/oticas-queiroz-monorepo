@@ -1,6 +1,9 @@
-import { useState, useEffect, useCallback } from "react";
+"use client";
+
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/useToast";
+import { useState } from "react";
 import {
   getAllLaboratories,
   getLaboratoryById,
@@ -9,6 +12,7 @@ import {
   toggleLaboratoryStatus,
   deleteLaboratory,
 } from "@/app/services/laboratoryService";
+import { QUERY_KEYS } from "../app/constants/query-keys";
 import type { Laboratory } from "@/app/types/laboratory";
 
 interface LaboratoryFilters {
@@ -18,112 +22,40 @@ interface LaboratoryFilters {
 }
 
 export function useLaboratories() {
-  const [laboratories, setLaboratories] = useState<Laboratory[]>([]);
-  const [currentLaboratory, setCurrentLaboratory] = useState<Laboratory | null>(
-    null
-  );
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalLaboratories, setTotalLaboratories] = useState(0);
   const [filters, setFilters] = useState<LaboratoryFilters>({});
+  const [currentPage, setCurrentPage] = useState(1);
 
   const router = useRouter();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const fetchLaboratories = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
+  // Query para buscar laboratórios
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: QUERY_KEYS.LABORATORIES.PAGINATED(currentPage, filters),
+    queryFn: () => getAllLaboratories({ ...filters, page: currentPage }),
+    placeholderData: (prevData) => prevData,
+  });
 
-      // Preparar parâmetros de busca
-      const params = {
-        page: currentPage,
-        ...filters,
-      };
+  // Dados normalizados
+  const laboratories = data?.laboratories || [];
+  const totalPages = data?.pagination?.totalPages || 1;
+  const totalLaboratories = data?.pagination?.total || 0;
 
-      // Buscar todos os laboratórios
-      const { laboratories: fetchedLaboratories, pagination } =
-        await getAllLaboratories(params);
-
-      setLaboratories(fetchedLaboratories);
-
-      if (pagination) {
-        setTotalPages(pagination.totalPages || 1);
-        setTotalLaboratories(pagination.total || fetchedLaboratories.length);
-      } else {
-        setTotalPages(1);
-        setTotalLaboratories(fetchedLaboratories.length);
-      }
-    } catch (error: unknown) {
-      console.error("Erro ao buscar laboratórios:", error);
-
-      // Se for um erro de Axios, podemos verificar o status e a mensagem
-      if (error && typeof error === "object" && "response" in error) {
-        const axiosError = error as {
-          response?: { status?: number; data?: { message?: string } };
-        };
-
-        // Se for um erro 404 específico, apenas definimos uma lista vazia
-        if (
-          axiosError.response?.status === 404 &&
-          axiosError.response?.data?.message === "Nenhum laboratório encontrado"
-        ) {
-          setLaboratories([]);
-        } else {
-          setError("Não foi possível carregar os laboratórios.");
-        }
-      } else {
-        setError("Não foi possível carregar os laboratórios.");
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [currentPage, filters]);
-
-  useEffect(() => {
-    fetchLaboratories();
-  }, [fetchLaboratories]);
-
-  const fetchLaboratoryById = async (
-    id: string
-  ): Promise<Laboratory | null> => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const laboratory = await getLaboratoryById(id);
-
-      if (laboratory) {
-        setCurrentLaboratory(laboratory);
-        return laboratory;
-      }
-      setError("Laboratório não encontrado.");
-      return null;
-    } catch (error) {
-      console.error(`Erro ao buscar laboratório com ID ${id}:`, error);
-      setError("Não foi possível carregar os detalhes do laboratório.");
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCreateLaboratory = async (
-    data: Omit<Laboratory, "_id">
-  ): Promise<Laboratory | null> => {
-    try {
-      setLoading(true);
-      const newLaboratory = await createLaboratory(data);
-
+  // Mutation para criar laboratório
+  const createLaboratoryMutation = useMutation({
+    mutationFn: createLaboratory,
+    onSuccess: (newLaboratory) => {
       toast({
         title: "Laboratório criado",
         description: "O laboratório foi criado com sucesso.",
       });
 
+      // Invalidar queries
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.LABORATORIES.ALL });
+
       return newLaboratory;
-    } catch (error) {
+    },
+    onError: (error: unknown) => {
       console.error("Erro ao criar laboratório:", error);
       toast({
         variant: "destructive",
@@ -133,62 +65,63 @@ export function useLaboratories() {
             ? String(error.message)
             : "Não foi possível criar o laboratório.",
       });
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+  });
 
-  const handleUpdateLaboratory = async (
-    id: string,
-    data: Partial<Laboratory>
-  ): Promise<Laboratory | null> => {
-    try {
-      setLoading(true);
-      const updatedLaboratory = await updateLaboratory(id, data);
-
+  // Mutation para atualizar laboratório
+  const updateLaboratoryMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<Laboratory> }) =>
+      updateLaboratory(id, data),
+    onSuccess: (updatedLaboratory) => {
       toast({
         title: "Laboratório atualizado",
         description: "O laboratório foi atualizado com sucesso.",
       });
 
-      if (currentLaboratory?._id === id) {
-        setCurrentLaboratory(updatedLaboratory);
-      }
+      // Invalidar queries
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.LABORATORIES.DETAIL(updatedLaboratory._id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.LABORATORIES.PAGINATED(),
+      });
 
       return updatedLaboratory;
-    } catch (error) {
-      console.error(`Erro ao atualizar laboratório com ID ${id}:`, error);
+    },
+    onError: (error: unknown, variables) => {
+      console.error(
+        `Erro ao atualizar laboratório com ID ${variables.id}:`,
+        error
+      );
       toast({
         variant: "destructive",
         title: "Erro",
         description: "Não foi possível atualizar o laboratório.",
       });
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+  });
 
-  const handleToggleLaboratoryStatus = async (
-    id: string
-  ): Promise<Laboratory | null> => {
-    try {
-      setLoading(true);
-      const updatedLaboratory = await toggleLaboratoryStatus(id);
-
+  // Mutation para alternar status do laboratório
+  const toggleLaboratoryStatusMutation = useMutation({
+    mutationFn: toggleLaboratoryStatus,
+    onSuccess: (updatedLaboratory) => {
       const statusText = updatedLaboratory.isActive ? "ativado" : "desativado";
       toast({
         title: "Status atualizado",
         description: `Laboratório ${statusText} com sucesso.`,
       });
 
-      if (currentLaboratory?._id === id) {
-        setCurrentLaboratory(updatedLaboratory);
-      }
+      // Invalidar queries
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.LABORATORIES.DETAIL(updatedLaboratory._id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.LABORATORIES.PAGINATED(),
+      });
 
       return updatedLaboratory;
-    } catch (error) {
+    },
+    onError: (error: unknown, id) => {
       console.error(
         `Erro ao alternar status do laboratório com ID ${id}:`,
         error
@@ -198,29 +131,24 @@ export function useLaboratories() {
         title: "Erro",
         description: "Não foi possível alterar o status do laboratório.",
       });
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+  });
 
-  const handleDeleteLaboratory = async (id: string): Promise<boolean> => {
-    try {
-      setLoading(true);
-      await deleteLaboratory(id);
-
+  // Mutation para deletar laboratório
+  const deleteLaboratoryMutation = useMutation({
+    mutationFn: deleteLaboratory,
+    onSuccess: (_, id) => {
       toast({
         title: "Laboratório excluído",
         description: "O laboratório foi excluído com sucesso.",
       });
 
-      if (currentLaboratory?._id === id) {
-        setCurrentLaboratory(null);
-      }
+      // Invalidar queries
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.LABORATORIES.ALL });
 
-      fetchLaboratories();
       return true;
-    } catch (error) {
+    },
+    onError: (error: unknown, id) => {
       console.error(`Erro ao excluir laboratório com ID ${id}:`, error);
       toast({
         variant: "destructive",
@@ -228,9 +156,16 @@ export function useLaboratories() {
         description: "Não foi possível excluir o laboratório.",
       });
       return false;
-    } finally {
-      setLoading(false);
-    }
+    },
+  });
+
+  // Custom query para buscar um laboratório específico
+  const fetchLaboratoryById = (id: string) => {
+    return useQuery({
+      queryKey: QUERY_KEYS.LABORATORIES.DETAIL(id),
+      queryFn: () => getLaboratoryById(id),
+      enabled: !!id,
+    });
   };
 
   // Função para atualizar filtros
@@ -239,38 +174,60 @@ export function useLaboratories() {
     setCurrentPage(1); // Voltar para a primeira página ao filtrar
   };
 
-  // Função para navegar para a página de detalhes do laboratório
+  // Funções que utilizam as mutations
+  const handleCreateLaboratory = (data: Omit<Laboratory, "_id">) => {
+    return createLaboratoryMutation.mutateAsync(data);
+  };
+
+  const handleUpdateLaboratory = (id: string, data: Partial<Laboratory>) => {
+    return updateLaboratoryMutation.mutateAsync({ id, data });
+  };
+
+  const handleToggleLaboratoryStatus = (id: string) => {
+    return toggleLaboratoryStatusMutation.mutateAsync(id);
+  };
+
+  const handleDeleteLaboratory = (id: string) => {
+    return deleteLaboratoryMutation.mutateAsync(id);
+  };
+
+  // Funções de navegação
   const navigateToLaboratoryDetails = (id: string) => {
     router.push(`/laboratories/${id}`);
   };
 
-  // Função para navegar para a página de criação de laboratório
   const navigateToCreateLaboratory = () => {
     router.push("/laboratories/new");
   };
 
-  // Função para navegar para a página de edição de laboratório
   const navigateToEditLaboratory = (id: string) => {
     router.push(`/laboratories/${id}/edit`);
   };
 
-  // Função para formatar endereço completo
+  // Formatar endereço completo
   const formatAddress = (address: Laboratory["address"]) => {
     return `${address.street}, ${address.number}${address.complement ? `, ${address.complement}` : ""} - ${address.neighborhood}, ${address.city}/${address.state}`;
   };
 
   return {
+    // Dados e estado
     laboratories,
-    currentLaboratory,
-    loading,
-    error,
+    isLoading,
+    error: error ? String(error) : null,
     currentPage,
     totalPages,
     totalLaboratories,
     filters,
+
+    // Mutações e seus estados
+    isCreating: createLaboratoryMutation.isPending,
+    isUpdating: updateLaboratoryMutation.isPending,
+    isTogglingStatus: toggleLaboratoryStatusMutation.isPending,
+    isDeleting: deleteLaboratoryMutation.isPending,
+
+    // Ações
     setCurrentPage,
     updateFilters,
-    fetchLaboratories,
     fetchLaboratoryById,
     handleCreateLaboratory,
     handleUpdateLaboratory,
@@ -280,5 +237,6 @@ export function useLaboratories() {
     navigateToCreateLaboratory,
     navigateToEditLaboratory,
     formatAddress,
+    refetch,
   };
 }

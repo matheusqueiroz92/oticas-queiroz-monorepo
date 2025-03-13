@@ -260,25 +260,25 @@ oticas-queiroz-monorepo/
 
 ```typescript
 {
-  _id: string;
+   _id?: string;
   clientId: string;
   employeeId: string;
   productType: "glasses" | "lensCleaner";
   product: string;
-  glassesType: "prescription" | "sunglasses";
-  glassesFrame: "with" | "no";
+  glassesType?: "prescription" | "sunglasses";
+  glassesFrame?: "with" | "no";
   paymentMethod: string;
   paymentEntry?: number;
   installments?: number;
-  orderDate: number;
-  deliveryDate?: Date;
-  status: "pending" | "in_production" | "ready" | "delivered";
-  laboratoryId?: string;
+  orderDate: Date;
+  deliveryDate: Date;
+  status: "pending" | "in_production" | "ready" | "delivered" | "cancelled";
+  laboratoryId?: string | null;
   lensType?: string;
   prescriptionData?: {
     doctorName: string;
     clinicName: string;
-    appointmentdate: Date;
+    appointmentDate: Date;
     leftEye: {
       sph: number;
       cyl: number;
@@ -293,8 +293,11 @@ oticas-queiroz-monorepo/
     oc: number;
     addition: number;
   };
+  observations?: string;
   totalPrice: number;
-  description?: string;
+  isDeleted?: boolean;
+  deletedAt?: Date;
+  deletedBy?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }

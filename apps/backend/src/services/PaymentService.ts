@@ -51,7 +51,10 @@ export class PaymentService {
     this.cache = new NodeCache({ stdTTL: 300 }); // Cache com expiração de 5 minutos
   }
 
-  // Método para invalidar cache quando houver alterações
+  /**
+   * Invalida cache quando houver alterações
+   * @param keys
+   */
   private invalidateCache(keys: string | string[]): void {
     if (Array.isArray(keys)) {
       // Substituindo forEach por for...of para evitar o erro do linter
@@ -60,6 +63,38 @@ export class PaymentService {
       }
     } else {
       this.cache.del(keys);
+    }
+  }
+
+  /**
+   * Valida dados de débito ao cliente
+   * @param clientDebt Dados de débito
+   */
+  private validateClientDebtData(clientDebt: {
+    generateDebt: boolean;
+    installments?: { total: number; value: number };
+    dueDates?: Date[];
+  }): void {
+    if (
+      !clientDebt.installments ||
+      !clientDebt.installments.total ||
+      !clientDebt.installments.value
+    ) {
+      throw new PaymentError(
+        "Dados de parcelamento são obrigatórios para débito ao cliente"
+      );
+    }
+
+    if (!clientDebt.dueDates || clientDebt.dueDates.length === 0) {
+      throw new PaymentError(
+        "Datas de vencimento são obrigatórias para débito ao cliente"
+      );
+    }
+
+    if (clientDebt.installments.total !== clientDebt.dueDates.length) {
+      throw new PaymentError(
+        "O número de datas de vencimento deve ser igual ao número de parcelas"
+      );
     }
   }
 
@@ -172,6 +207,7 @@ export class PaymentService {
 
     const cashRegisterId = await this.validateAndGetOpenRegister();
 
+    // Validações específicas por tipo de pagamento
     if (paymentData.type === "sale") {
       await this.validateOrder(paymentData.orderId);
     }
@@ -179,10 +215,46 @@ export class PaymentService {
     await this.validateCustomer(paymentData.customerId);
     await this.validateLegacyClient(paymentData.legacyClientId);
 
-    this.validateInstallments(
-      paymentData.paymentMethod,
-      paymentData.installments
-    );
+    // Validações específicas por método de pagamento
+    switch (paymentData.paymentMethod) {
+      case "credit":
+        // Validar dados de parcelamento de cartão
+        if (
+          paymentData.creditCardInstallments?.total &&
+          paymentData.creditCardInstallments.total > 1
+        ) {
+          if (!paymentData.creditCardInstallments.value) {
+            throw new PaymentError(
+              "Valor das parcelas é obrigatório para parcelamento no cartão"
+            );
+          }
+        }
+        break;
+
+      case "boleto":
+        // Validar dados de boleto
+        if (!paymentData.boleto || !paymentData.boleto.code) {
+          throw new PaymentError("Código do boleto é obrigatório");
+        }
+
+        // Se gerar débito, validar parcelamento
+        if (paymentData.clientDebt?.generateDebt) {
+          this.validateClientDebtData(paymentData.clientDebt);
+        }
+        break;
+
+      case "promissory_note":
+        // Validar dados de promissória
+        if (!paymentData.promissoryNote || !paymentData.promissoryNote.number) {
+          throw new PaymentError("Número da promissória é obrigatório");
+        }
+
+        // Se gerar débito, validar parcelamento
+        if (paymentData.clientDebt?.generateDebt) {
+          this.validateClientDebtData(paymentData.clientDebt);
+        }
+        break;
+    }
 
     return cashRegisterId;
   }
@@ -220,6 +292,46 @@ export class PaymentService {
   }
 
   /**
+   * Atualiza o caixa com base no tipo e método de pagamento
+   */
+  private async updateCashRegister(
+    cashRegisterId: string,
+    payment: IPayment
+  ): Promise<void> {
+    // Mapear os novos métodos de pagamento para os tipos aceitos pelo caixa
+    let registerMethod: "credit" | "debit" | "cash" | "pix";
+
+    switch (payment.paymentMethod) {
+      case "credit":
+        registerMethod = "credit";
+        break;
+      case "debit":
+        registerMethod = "debit";
+        break;
+      case "cash":
+        registerMethod = "cash";
+        break;
+      case "pix":
+        registerMethod = "pix";
+        break;
+      case "boleto":
+      case "promissory_note":
+        // Para boleto e promissória, registramos como "cash" no caixa
+        // Ou escolha outro tipo que faça mais sentido para o negócio
+        registerMethod = "cash";
+        break;
+    }
+
+    // Atualizar valores do caixa
+    await this.cashRegisterModel.updateSalesAndPayments(
+      cashRegisterId,
+      payment.type,
+      payment.amount,
+      registerMethod
+    );
+  }
+
+  /**
    * Cria um novo pagamento
    * @param paymentData Dados do pagamento
    * @returns Pagamento criado
@@ -228,19 +340,44 @@ export class PaymentService {
     // Validar os dados do pagamento e obter o ID do caixa
     const cashRegisterId = await this.validatePayment(paymentData);
 
-    // Iniciar uma sessão para a transação (usando o método existente ao invés de session)
+    // Mapeamento para o método de caixa
+    let registerMethod: "credit" | "debit" | "cash" | "pix";
+
+    switch (paymentData.paymentMethod) {
+      case "credit":
+        registerMethod = "credit";
+        break;
+      case "debit":
+        registerMethod = "debit";
+        break;
+      case "cash":
+        registerMethod = "cash";
+        break;
+      case "pix":
+        registerMethod = "pix";
+        break;
+      case "boleto":
+      case "promissory_note":
+        // Para boleto e promissória, registramos como "cash" no caixa
+        registerMethod = "cash";
+        break;
+    }
+
     const payment = await this.paymentModel.create({
       ...paymentData,
       cashRegisterId: cashRegisterId,
       status: "completed",
     });
 
+    // Usar a função auxiliar
+    await this.updateCashRegister(cashRegisterId, payment);
+
     // Atualizar o caixa
     await this.cashRegisterModel.updateSalesAndPayments(
       cashRegisterId,
       payment.type,
       payment.amount,
-      payment.paymentMethod === "installment" ? "credit" : payment.paymentMethod
+      registerMethod
     );
 
     // Se for pagamento de dívida, atualizar a dívida do cliente
@@ -250,6 +387,28 @@ export class PaymentService {
         payment.customerId,
         payment.legacyClientId,
         debtAmount,
+        payment._id
+      );
+    }
+
+    // Se for boleto ou promissória com geração de débito, atualizar débito do cliente
+    if (
+      (payment.paymentMethod === "boleto" ||
+        payment.paymentMethod === "promissory_note") &&
+      payment.clientDebt?.generateDebt
+    ) {
+      // Calcular o valor total do débito (total do parcelamento)
+      const totalDebt =
+        payment.clientDebt.installments?.total &&
+        payment.clientDebt.installments.value
+          ? payment.clientDebt.installments.total *
+            payment.clientDebt.installments.value
+          : payment.amount;
+
+      await this.updateClientDebt(
+        payment.customerId,
+        payment.legacyClientId,
+        totalDebt,
         payment._id
       );
     }
@@ -389,13 +548,11 @@ export class PaymentService {
       );
     }
 
-    // Atualizar caixa
-    await this.cashRegisterModel.updateSalesAndPayments(
-      payment.cashRegisterId,
-      payment.type,
-      -payment.amount,
-      payment.paymentMethod === "installment" ? "credit" : payment.paymentMethod
-    );
+    // Atualizar caixa usando a função auxiliar (com valor negativo para cancelamento)
+    await this.updateCashRegister(payment.cashRegisterId, {
+      ...payment,
+      amount: -payment.amount,
+    });
 
     // Atualizar dívida se necessário
     if (payment.type === "debt_payment") {
@@ -404,6 +561,29 @@ export class PaymentService {
         payment.customerId,
         payment.legacyClientId,
         debtAmount
+      );
+    }
+
+    // Se for boleto ou promissória com geração de débito, reverter débito do cliente
+    if (
+      (payment.paymentMethod === "boleto" ||
+        payment.paymentMethod === "promissory_note") &&
+      payment.clientDebt?.generateDebt
+    ) {
+      // Calcular o valor total do débito (total do parcelamento)
+      const totalDebt =
+        payment.clientDebt.installments?.total &&
+        payment.clientDebt.installments.value
+          ? -(
+              payment.clientDebt.installments.total *
+              payment.clientDebt.installments.value
+            )
+          : -payment.amount;
+
+      await this.updateClientDebt(
+        payment.customerId,
+        payment.legacyClientId,
+        totalDebt
       );
     }
 

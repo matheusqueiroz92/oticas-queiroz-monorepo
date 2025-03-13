@@ -1,4 +1,3 @@
-// src/services/AuthService.ts
 import { AuthModel } from "../models/AuthModel";
 import { generateToken } from "../utils/jwt";
 import type { IUser } from "../interfaces/IUser";

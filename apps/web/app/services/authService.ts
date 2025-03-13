@@ -1,5 +1,6 @@
 import axios from "axios";
 import Cookies from "js-cookie";
+import { API_ROUTES } from "../constants/api-routes";
 
 export interface User {
   _id: string;
@@ -35,9 +36,10 @@ api.interceptors.request.use(
 
     // Verificar e corrigir URLs
     if (config.url) {
-      // Garantir que a URL comece com barra
-      if (!config.url.startsWith("/")) {
-        config.url = `/${config.url}`;
+      // Garantir que a URL comece com /api se não começar já
+      if (!config.url.startsWith("/api/") && !config.url.startsWith("/auth/")) {
+        // Não adicionar prefixo se já for uma rota /auth/
+        config.url = `/api${config.url.startsWith("/") ? config.url : `/${config.url}`}`;
       }
 
       // Log apenas em ambiente de desenvolvimento
@@ -159,9 +161,11 @@ export const loginWithCredentials = async (
   password: string
 ): Promise<LoginResponse> => {
   try {
-    console.log(`Enviando requisição de login para ${API_URL}/api/auth/login`);
+    console.log(
+      `Enviando requisição de login para ${API_URL}${API_ROUTES.AUTH.LOGIN}`
+    );
 
-    const response = await api.post<LoginResponse>("/api/auth/login", {
+    const response = await api.post<LoginResponse>(API_ROUTES.AUTH.LOGIN, {
       login,
       password,
     });
@@ -221,7 +225,7 @@ export const loginWithCredentials = async (
  */
 export const requestPasswordReset = async (email: string): Promise<void> => {
   try {
-    await api.post("/api/auth/forgot-password", { email });
+    await api.post(API_ROUTES.AUTH.FORGOT_PASSWORD, { email });
   } catch (error) {
     if (axios.isAxiosError(error)) {
       const message =
@@ -245,7 +249,7 @@ export const validateResetToken = async (token: string): Promise<boolean> => {
     });
 
     const response = await validationApi.get(
-      `/api/auth/validate-reset-token/${token}`
+      API_ROUTES.AUTH.VALIDATE_RESET_TOKEN(token)
     );
     return response.data.valid === true;
   } catch (error) {
@@ -275,7 +279,7 @@ export const resetPassword = async (
       headers: { "Content-Type": "application/json" },
     });
 
-    await resetApi.post("/api/auth/reset-password", { token, password });
+    await resetApi.post(API_ROUTES.AUTH.RESET_PASSWORD, { token, password });
     console.log("Senha redefinida com sucesso");
   } catch (error) {
     console.error("Erro ao redefinir senha:", error);

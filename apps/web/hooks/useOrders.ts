@@ -1,6 +1,9 @@
-import { useState, useEffect, useCallback } from "react";
+"use client";
+
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/useToast";
+import { useState } from "react";
 import {
   getAllOrders,
   getOrderById,
@@ -8,6 +11,7 @@ import {
   updateOrderLaboratory,
   createOrder,
 } from "@/app/services/orderService";
+import { QUERY_KEYS } from "../app/constants/query-keys";
 import type { Order } from "@/app/types/order";
 
 interface OrderFilters {
@@ -16,165 +20,127 @@ interface OrderFilters {
   status?: string;
   startDate?: string;
   endDate?: string;
+  sort?: string;
 }
 
 export function useOrders() {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [currentOrder, setCurrentOrder] = useState<Order | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalOrders, setTotalOrders] = useState(0);
   const [filters, setFilters] = useState<OrderFilters>({});
+  const [currentPage, setCurrentPage] = useState(1);
 
   const router = useRouter();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const fetchOrders = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      // Preparar parâmetros de busca
-      const params = {
-        page: currentPage,
+  // Query para buscar pedidos paginados
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: QUERY_KEYS.ORDERS.PAGINATED(currentPage, filters),
+    queryFn: () =>
+      getAllOrders({
         ...filters,
-        sort: "-createdAt", // Ordenar do mais recente para o mais antigo
-      };
+        page: currentPage,
+        sort: "-createdAt",
+      } as OrderFilters),
+    placeholderData: (prevData) => prevData, // Substitui keepPreviousData
+  });
 
-      // Buscar todos os pedidos
-      const { orders: fetchedOrders, pagination } = await getAllOrders(params);
+  // Dados normalizados
+  const orders = data?.orders || [];
+  const totalPages = data?.pagination?.totalPages || 1;
+  const totalOrders = data?.pagination?.total || 0;
 
-      setOrders(fetchedOrders);
-
-      if (pagination) {
-        setTotalPages(pagination.totalPages || 1);
-        setTotalOrders(pagination.total || fetchedOrders.length);
-      } else {
-        setTotalPages(1);
-        setTotalOrders(fetchedOrders.length);
-      }
-    } catch (error) {
-      console.error("Erro ao buscar pedidos:", error);
-      setError("Não foi possível carregar os pedidos.");
-    } finally {
-      setLoading(false);
-    }
-  }, [currentPage, filters]);
-
-  useEffect(() => {
-    fetchOrders();
-  }, [fetchOrders]);
-
-  const fetchOrderById = async (id: string): Promise<Order | null> => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const order = await getOrderById(id);
-
-      if (order) {
-        setCurrentOrder(order);
-        return order;
-      }
-      setError("Pedido não encontrado.");
-      return null;
-    } catch (error) {
-      console.error(`Erro ao buscar pedido com ID ${id}:`, error);
-      setError("Não foi possível carregar os detalhes do pedido.");
-      return null;
-    } finally {
-      setLoading(false);
-    }
+  // Custom query para buscar um pedido específico
+  const fetchOrderById = (id: string) => {
+    return useQuery({
+      queryKey: QUERY_KEYS.ORDERS.DETAIL(id),
+      queryFn: () => getOrderById(id),
+      enabled: !!id,
+    });
   };
 
-  const handleUpdateOrderStatus = async (
-    id: string,
-    status: string
-  ): Promise<Order | null> => {
-    try {
-      setLoading(true);
-      const updatedOrder = await updateOrderStatus(id, status);
-
+  // Mutation para atualizar status do pedido
+  const updateOrderStatusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: string }) =>
+      updateOrderStatus(id, status),
+    onSuccess: (updatedOrder) => {
       if (updatedOrder) {
         toast({
           title: "Status atualizado",
           description: "O status do pedido foi atualizado com sucesso.",
         });
 
-        // Atualizar pedido atual se estiver visualizando-o
-        if (currentOrder && currentOrder._id === id) {
-          setCurrentOrder(updatedOrder);
-        }
-
-        return updatedOrder;
+        // Invalidar queries
+        queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.ORDERS.DETAIL(updatedOrder._id),
+        });
+        queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.ORDERS.PAGINATED(),
+        });
       }
-      throw new Error("Não foi possível atualizar o status do pedido.");
-    } catch (error) {
-      console.error(`Erro ao atualizar status do pedido ${id}:`, error);
+      return updatedOrder;
+    },
+    onError: (error, variables) => {
+      console.error(
+        `Erro ao atualizar status do pedido ${variables.id}:`,
+        error
+      );
       toast({
         variant: "destructive",
         title: "Erro",
         description: "Não foi possível atualizar o status do pedido.",
       });
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+  });
 
-  const handleUpdateOrderLaboratory = async (
-    id: string,
-    laboratoryId: string
-  ): Promise<Order | null> => {
-    try {
-      setLoading(true);
-      const updatedOrder = await updateOrderLaboratory(id, laboratoryId);
-
+  // Mutation para atualizar laboratório do pedido
+  const updateOrderLaboratoryMutation = useMutation({
+    mutationFn: ({ id, laboratoryId }: { id: string; laboratoryId: string }) =>
+      updateOrderLaboratory(id, laboratoryId),
+    onSuccess: (updatedOrder) => {
       if (updatedOrder) {
         toast({
           title: "Laboratório atualizado",
           description: "O laboratório do pedido foi atualizado com sucesso.",
         });
 
-        // Atualizar pedido atual se estiver visualizando-o
-        if (currentOrder && currentOrder._id === id) {
-          setCurrentOrder(updatedOrder);
-        }
-
-        return updatedOrder;
+        // Invalidar queries
+        queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.ORDERS.DETAIL(updatedOrder._id),
+        });
+        queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.ORDERS.PAGINATED(),
+        });
       }
-      throw new Error("Não foi possível atualizar o laboratório do pedido.");
-    } catch (error) {
-      console.error(`Erro ao atualizar laboratório do pedido ${id}:`, error);
+      return updatedOrder;
+    },
+    onError: (error, variables) => {
+      console.error(
+        `Erro ao atualizar laboratório do pedido ${variables.id}:`,
+        error
+      );
       toast({
         variant: "destructive",
         title: "Erro",
         description: "Não foi possível atualizar o laboratório do pedido.",
       });
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+  });
 
-  const handleCreateOrder = async (
-    orderData: Omit<Order, "_id">
-  ): Promise<Order | null> => {
-    try {
-      setLoading(true);
-      const newOrder = await createOrder(orderData);
-
+  // Mutation para criar pedido
+  const createOrderMutation = useMutation({
+    mutationFn: createOrder,
+    onSuccess: (newOrder) => {
       if (newOrder) {
         toast({
           title: "Pedido criado",
           description: "O pedido foi criado com sucesso.",
         });
-        return newOrder;
+
+        // Invalidar queries
+        queryClient.invalidateQueries({ queryKey: QUERY_KEYS.ORDERS.ALL });
       }
-      return null;
-    } catch (error) {
+      return newOrder;
+    },
+    onError: (error) => {
       console.error("Erro ao criar pedido:", error);
       toast({
         variant: "destructive",
@@ -184,11 +150,8 @@ export function useOrders() {
             ? String(error.message)
             : "Não foi possível criar o pedido.",
       });
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+  });
 
   // Função para atualizar filtros
   const updateFilters = (newFilters: OrderFilters) => {
@@ -196,17 +159,29 @@ export function useOrders() {
     setCurrentPage(1); // Voltar para a primeira página ao filtrar
   };
 
-  // Função para navegar para a página de detalhes do pedido
+  // Funções que utilizam as mutations
+  const handleUpdateOrderStatus = (id: string, status: string) => {
+    return updateOrderStatusMutation.mutateAsync({ id, status });
+  };
+
+  const handleUpdateOrderLaboratory = (id: string, laboratoryId: string) => {
+    return updateOrderLaboratoryMutation.mutateAsync({ id, laboratoryId });
+  };
+
+  const handleCreateOrder = (orderData: Omit<Order, "_id">) => {
+    return createOrderMutation.mutateAsync(orderData);
+  };
+
+  // Funções de navegação
   const navigateToOrderDetails = (id: string) => {
     router.push(`/orders/${id}`);
   };
 
-  // Função para navegar para a página de criação de pedido
   const navigateToCreateOrder = () => {
     router.push("/orders/new");
   };
 
-  // Tradução de status
+  // Funções de utilidade
   const translateOrderStatus = (status: string): string => {
     const statusMap: Record<string, string> = {
       pending: "Pendente",
@@ -217,7 +192,6 @@ export function useOrders() {
     return statusMap[status] || status;
   };
 
-  // Obter classe CSS para status
   const getOrderStatusClass = (status: string): string => {
     switch (status) {
       case "pending":
@@ -234,17 +208,23 @@ export function useOrders() {
   };
 
   return {
+    // Dados e estado
     orders,
-    currentOrder,
-    loading,
-    error,
+    isLoading,
+    error: error ? String(error) : null,
     currentPage,
     totalPages,
     totalOrders,
     filters,
+
+    // Mutações e seus estados
+    isCreating: createOrderMutation.isPending,
+    isUpdatingStatus: updateOrderStatusMutation.isPending,
+    isUpdatingLaboratory: updateOrderLaboratoryMutation.isPending,
+
+    // Ações
     setCurrentPage,
     updateFilters,
-    fetchOrders,
     fetchOrderById,
     handleUpdateOrderStatus,
     handleUpdateOrderLaboratory,
@@ -253,5 +233,6 @@ export function useOrders() {
     navigateToCreateOrder,
     translateOrderStatus,
     getOrderStatusClass,
+    refetch,
   };
 }

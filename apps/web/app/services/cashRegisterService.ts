@@ -4,6 +4,7 @@ import type {
   OpenCashRegisterDTO,
   CloseCashRegisterDTO,
 } from "../types/cash-register";
+import { API_ROUTES } from "../constants/api-routes";
 
 interface CashRegisterFilters {
   page?: number;
@@ -53,7 +54,7 @@ export async function checkOpenCashRegister(): Promise<CashRegisterCheckResult> 
     console.log("Verificando caixas abertos...");
 
     // Usar a rota /api/cash-registers/current que retorna apenas o caixa aberto
-    const response = await api.get("/api/cash-registers/current");
+    const response = await api.get(API_ROUTES.CASH_REGISTERS.CURRENT);
 
     return {
       isOpen: true,
@@ -91,7 +92,7 @@ export async function openCashRegister(
   data: OpenCashRegisterDTO
 ): Promise<ICashRegister> {
   console.log("Abrindo caixa com dados:", data);
-  const response = await api.post("/api/cash-registers/open", data);
+  const response = await api.post(API_ROUTES.CASH_REGISTERS.OPEN, data);
   return response.data;
 }
 
@@ -105,7 +106,7 @@ export async function closeCashRegister(
 ): Promise<ICashRegister> {
   console.log(`Fechando caixa ${id} com dados:`, data);
   // O backend espera os dados no corpo da requisição, sem o ID
-  const response = await api.post("/api/cash-registers/close", data);
+  const response = await api.post(API_ROUTES.CASH_REGISTERS.CLOSE, data);
   return response.data;
 }
 
@@ -120,7 +121,9 @@ export async function getAllCashRegisters(
 }> {
   try {
     console.log("Buscando registros de caixa com filtros:", filters);
-    const response = await api.get("/api/cash-registers", { params: filters });
+    const response = await api.get(API_ROUTES.CASH_REGISTERS.BASE, {
+      params: filters,
+    });
 
     // Normalizar a resposta para garantir consistência
     let registers: ICashRegister[] = [];
@@ -153,7 +156,7 @@ export async function getCashRegisterById(
 ): Promise<ICashRegister | null> {
   try {
     console.log(`Buscando caixa com ID ${id}`);
-    const response = await api.get(`/api/cash-registers/${id}`);
+    const response = await api.get(API_ROUTES.CASH_REGISTERS.BY_ID(id));
     return response.data;
   } catch (error) {
     console.error(`Erro ao buscar caixa com ID ${id}:`, error);
@@ -170,7 +173,7 @@ export async function getCashRegisterSummary(
 ): Promise<CashRegisterSummary | null> {
   try {
     console.log(`Buscando resumo do caixa com ID ${id}`);
-    const response = await api.get(`/api/cash-registers/${id}/summary`);
+    const response = await api.get(API_ROUTES.CASH_REGISTERS.SUMMARY(id));
     return response.data;
   } catch (error) {
     console.error(`Erro ao buscar resumo do caixa com ID ${id}:`, error);
@@ -188,7 +191,7 @@ export async function exportCashRegisterSummary(
   title?: string
 ): Promise<Blob> {
   console.log(`Exportando resumo do caixa ${id} em formato ${format}`);
-  const response = await api.get(`/api/cash-registers/${id}/export`, {
+  const response = await api.get(API_ROUTES.CASH_REGISTERS.EXPORT(id), {
     params: { format, title },
     responseType: "blob",
   });

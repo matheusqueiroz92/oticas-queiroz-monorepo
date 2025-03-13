@@ -140,14 +140,59 @@ export class OrderController {
         return;
       }
 
-      const validatedData = createOrderSchema.parse(req.body);
+      // Extrair e validar dados da requisição
+      const data = req.body;
 
-      // Remover laboratoryId se for uma string vazia
-      if (validatedData.laboratoryId === "") {
-        validatedData.laboratoryId = undefined;
+      // Validações para produtos do tipo "glasses"
+      if (data.productType === "glasses") {
+        if (!data.glassesType) {
+          res.status(400).json({
+            message: "Dados inválidos",
+            errors: [
+              "Tipo de óculos é obrigatório para produtos do tipo 'glasses'",
+            ],
+          });
+          return;
+        }
+
+        if (!data.glassesFrame) {
+          res.status(400).json({
+            message: "Dados inválidos",
+            errors: [
+              "Informação sobre armação é obrigatória para produtos do tipo 'glasses'",
+            ],
+          });
+          return;
+        }
+
+        if (!data.lensType) {
+          res.status(400).json({
+            message: "Dados inválidos",
+            errors: [
+              "Tipo de lente é obrigatório para produtos do tipo 'glasses'",
+            ],
+          });
+          return;
+        }
+
+        // Se for óculos de grau, verificar dados de prescrição
+        if (data.glassesType === "prescription" && !data.prescriptionData) {
+          res.status(400).json({
+            message: "Dados inválidos",
+            errors: [
+              "Dados de prescrição são obrigatórios para óculos de grau",
+            ],
+          });
+          return;
+        }
       }
 
-      const order = await this.orderService.createOrder(validatedData);
+      // Se laboratoryId for string vazia, definir como null
+      if (data.laboratoryId === "") {
+        data.laboratoryId = null;
+      }
+
+      const order = await this.orderService.createOrder(data);
       res.status(201).json(order);
     } catch (error) {
       if (error instanceof z.ZodError) {

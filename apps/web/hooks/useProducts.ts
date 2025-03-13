@@ -1,6 +1,9 @@
-import { useState, useEffect, useCallback } from "react";
+"use client";
+
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/useToast";
+import { useState } from "react";
 import {
   getAllProducts,
   getProductById,
@@ -9,6 +12,7 @@ import {
   deleteProduct,
   formatCurrency,
 } from "../app/services/productService";
+import { QUERY_KEYS } from "../app/constants/query-keys";
 import type { Product } from "@/app/types/product";
 
 interface ProductFilters {
@@ -19,84 +23,40 @@ interface ProductFilters {
 }
 
 export function useProducts() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalProducts, setTotalProducts] = useState(0);
   const [filters, setFilters] = useState<ProductFilters>({});
+  const [currentPage, setCurrentPage] = useState(1);
 
   const router = useRouter();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const fetchProducts = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
+  // Query para buscar produtos paginados com filtros
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: QUERY_KEYS.PRODUCTS.PAGINATED(currentPage, filters),
+    queryFn: () => getAllProducts({ ...filters, page: currentPage, limit: 10 }),
+    placeholderData: (prevData) => prevData, // Substitui keepPreviousData
+  });
 
-      // Preparar parâmetros de busca
-      const params = {
-        page: currentPage,
-        limit: 10,
-        ...filters,
-      };
+  // Dados normalizados da query
+  const products = data?.products || [];
+  const totalPages = data?.pagination?.totalPages || 1;
+  const totalProducts = data?.pagination?.total || 0;
 
-      // Buscar todos os produtos
-      const result = await getAllProducts(params);
-
-      setProducts(result.products);
-      setTotalPages(result.pagination.totalPages || 1);
-      setTotalProducts(result.pagination.total || result.products.length);
-    } catch (error) {
-      console.error("Erro ao buscar produtos:", error);
-      setError("Não foi possível carregar os produtos.");
-    } finally {
-      setLoading(false);
-    }
-  }, [currentPage, filters]);
-
-  useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
-
-  const fetchProductById = async (id: string): Promise<Product | null> => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const product = await getProductById(id);
-
-      if (product) {
-        setCurrentProduct(product);
-        return product;
-      }
-      setError("Produto não encontrado.");
-      return null;
-    } catch (error) {
-      console.error(`Erro ao buscar produto com ID ${id}:`, error);
-      setError("Não foi possível carregar os detalhes do produto.");
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCreateProduct = async (
-    formData: FormData
-  ): Promise<Product | null> => {
-    try {
-      setLoading(true);
-      const newProduct = await createProduct(formData);
-
+  // Mutation para criar produto
+  const createProductMutation = useMutation({
+    mutationFn: createProduct,
+    onSuccess: (newProduct) => {
       toast({
         title: "Produto criado",
         description: "O produto foi criado com sucesso.",
       });
 
+      // Invalidar queries existentes para re-fetch automático
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.PRODUCTS.ALL });
+
       return newProduct;
-    } catch (error) {
+    },
+    onError: (error: unknown) => {
       console.error("Erro ao criar produto:", error);
       toast({
         variant: "destructive",
@@ -106,60 +66,54 @@ export function useProducts() {
             ? String(error.message)
             : "Não foi possível criar o produto.",
       });
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+  });
 
-  const handleUpdateProduct = async (
-    id: string,
-    formData: FormData
-  ): Promise<Product | null> => {
-    try {
-      setLoading(true);
-      const updatedProduct = await updateProduct(id, formData);
-
+  // Mutation para atualizar produto
+  const updateProductMutation = useMutation({
+    mutationFn: ({ id, formData }: { id: string; formData: FormData }) =>
+      updateProduct(id, formData),
+    onSuccess: (updatedProduct) => {
       toast({
         title: "Produto atualizado",
         description: "O produto foi atualizado com sucesso.",
       });
 
-      if (currentProduct?._id === id) {
-        setCurrentProduct(updatedProduct);
-      }
+      // Invalidar queries específicas
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.PRODUCTS.DETAIL(updatedProduct._id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.PRODUCTS.PAGINATED(),
+      });
 
       return updatedProduct;
-    } catch (error) {
-      console.error(`Erro ao atualizar produto com ID ${id}:`, error);
+    },
+    onError: (error: unknown, variables) => {
+      console.error(`Erro ao atualizar produto com ID ${variables.id}:`, error);
       toast({
         variant: "destructive",
         title: "Erro",
         description: "Não foi possível atualizar o produto.",
       });
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+  });
 
-  const handleDeleteProduct = async (id: string): Promise<boolean> => {
-    try {
-      setLoading(true);
-      await deleteProduct(id);
-
+  // Mutation para deletar produto
+  const deleteProductMutation = useMutation({
+    mutationFn: deleteProduct,
+    onSuccess: (_, id) => {
       toast({
         title: "Produto excluído",
         description: "O produto foi excluído com sucesso.",
       });
 
-      if (currentProduct?._id === id) {
-        setCurrentProduct(null);
-      }
+      // Invalidar queries
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.PRODUCTS.ALL });
 
-      fetchProducts();
       return true;
-    } catch (error) {
+    },
+    onError: (error: unknown, id) => {
       console.error(`Erro ao excluir produto com ID ${id}:`, error);
       toast({
         variant: "destructive",
@@ -167,9 +121,16 @@ export function useProducts() {
         description: "Não foi possível excluir o produto.",
       });
       return false;
-    } finally {
-      setLoading(false);
-    }
+    },
+  });
+
+  // Custom query para buscar um produto específico
+  const fetchProductById = (id: string) => {
+    return useQuery({
+      queryKey: QUERY_KEYS.PRODUCTS.DETAIL(id),
+      queryFn: () => getProductById(id),
+      enabled: !!id, // Só executa se o ID for fornecido
+    });
   };
 
   // Função para atualizar filtros
@@ -193,18 +154,37 @@ export function useProducts() {
     router.push(`/products/${id}/edit`);
   };
 
+  // Funções expostas pelo hook que utilizam as mutations
+  const handleCreateProduct = (formData: FormData) => {
+    return createProductMutation.mutateAsync(formData);
+  };
+
+  const handleUpdateProduct = (id: string, formData: FormData) => {
+    return updateProductMutation.mutateAsync({ id, formData });
+  };
+
+  const handleDeleteProduct = (id: string) => {
+    return deleteProductMutation.mutateAsync(id);
+  };
+
   return {
+    // Dados e estado
     products,
-    currentProduct,
-    loading,
-    error,
+    isLoading,
+    error: error ? String(error) : null,
     currentPage,
     totalPages,
     totalProducts,
     filters,
+
+    // Mutações e seus estados
+    isCreating: createProductMutation.isPending,
+    isUpdating: updateProductMutation.isPending,
+    isDeleting: deleteProductMutation.isPending,
+
+    // Ações
     setCurrentPage,
     updateFilters,
-    fetchProducts,
     fetchProductById,
     handleCreateProduct,
     handleUpdateProduct,
@@ -213,5 +193,6 @@ export function useProducts() {
     navigateToCreateProduct,
     navigateToEditProduct,
     formatCurrency,
+    refetch,
   };
 }

@@ -1,14 +1,16 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/useToast";
+import { useState } from "react";
 import {
   createReport,
   getReportById,
   getUserReports,
   downloadReport,
 } from "@/app/services/reportService";
+import { QUERY_KEYS } from "../app/constants/query-keys";
 import type {
   IReport,
   CreateReportDTO,
@@ -26,96 +28,71 @@ interface ReportFilters {
 }
 
 export function useReports() {
-  const [reports, setReports] = useState<IReport[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [filters, setFilters] = useState<ReportFilters>({});
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalReports, setTotalReports] = useState(0);
-  const [filters, setFilters] = useState<ReportFilters>({});
 
   const router = useRouter();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  // Função para buscar relatórios com filtros
-  const fetchReports = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
+  // Query para buscar relatórios
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: QUERY_KEYS.REPORTS.PAGINATED(currentPage, {
+      ...filters,
+      limit: pageSize,
+    }),
+    queryFn: () => getUserReports(currentPage, pageSize, filters),
+    placeholderData: (prevData) => prevData,
+  });
 
-      const response = await getUserReports(currentPage, pageSize, filters);
+  // Dados normalizados
+  const reports = data?.reports || [];
+  const totalPages = data?.pagination?.totalPages || 1;
+  const totalReports = data?.pagination?.total || 0;
 
-      if (response.reports) {
-        setReports(response.reports);
-      }
-
-      if (response.pagination) {
-        setTotalPages(response.pagination.totalPages || 1);
-        setTotalReports(response.pagination.total || 0);
-      }
-    } catch (error) {
-      console.error("Erro ao buscar relatórios:", error);
-      setError("Não foi possível carregar os relatórios.");
-    } finally {
-      setLoading(false);
-    }
-  }, [currentPage, pageSize, filters]);
-
-  // Carrega os relatórios quando os filtros ou a paginação mudam
-  useEffect(() => {
-    fetchReports();
-  }, [fetchReports]);
-
-  // Função para buscar um relatório específico por ID
-  const fetchReportById = async (id: string) => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const report = await getReportById(id);
-      return report;
-    } catch (error) {
-      console.error(`Erro ao buscar relatório com ID ${id}:`, error);
-      setError("Não foi possível carregar o relatório.");
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Função para criar um novo relatório
-  const handleCreateReport = async (data: CreateReportDTO) => {
-    try {
-      setLoading(true);
-      const report = await createReport(data);
-
+  // Mutation para criar relatório
+  const createReportMutation = useMutation({
+    mutationFn: createReport,
+    onSuccess: (newReport) => {
       toast({
         title: "Relatório solicitado",
         description:
           "O relatório está sendo gerado e ficará disponível em breve.",
       });
 
-      fetchReports();
-      return report;
-    } catch (error) {
+      // Invalidar queries
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.REPORTS.PAGINATED(),
+      });
+
+      return newReport;
+    },
+    onError: (error: unknown) => {
       console.error("Erro ao criar relatório:", error);
       toast({
         variant: "destructive",
         title: "Erro",
         description: "Não foi possível criar o relatório. Tente novamente.",
       });
-      return null;
-    } finally {
-      setLoading(false);
-    }
+    },
+  });
+
+  // Custom query para buscar um relatório específico
+  const fetchReportById = (id: string) => {
+    return useQuery({
+      queryKey: QUERY_KEYS.REPORTS.DETAIL(id),
+      queryFn: () => getReportById(id),
+      enabled: !!id,
+    });
   };
 
-  // Função para baixar um relatório
-  const handleDownloadReport = async (id: string, format: ReportFormat) => {
+  // Função para baixar relatório
+  const handleDownloadReport = async (
+    id: string,
+    format: ReportFormat
+  ): Promise<Blob | null> => {
     try {
-      setLoading(true);
-
       // Verificar se o relatório está pronto para download
       const report = await getReportById(id);
 
@@ -154,44 +131,52 @@ export function useReports() {
         description: "Não foi possível baixar o relatório. Tente novamente.",
       });
       return null;
-    } finally {
-      setLoading(false);
     }
   };
 
-  // Função para atualizar os filtros
+  // Função para atualizar filtros
   const updateFilters = (newFilters: ReportFilters) => {
     setFilters(newFilters);
-    setCurrentPage(1); // Voltar para a primeira página ao aplicar novos filtros
+    setCurrentPage(1); // Voltar para a primeira página ao filtrar
   };
 
-  // Função para navegar para a página de detalhes
+  // Funções que utilizam as mutations
+  const handleCreateReport = (data: CreateReportDTO) => {
+    return createReportMutation.mutateAsync(data);
+  };
+
+  // Funções de navegação
   const navigateToReportDetails = (id: string) => {
     router.push(`/reports/${id}`);
   };
 
-  // Função para navegar para a página de criação
   const navigateToCreateReport = () => {
     router.push("/reports/create");
   };
 
   return {
+    // Dados e estado
     reports,
-    loading,
-    error,
+    isLoading,
+    error: error ? String(error) : null,
     currentPage,
     pageSize,
     totalPages,
     totalReports,
     filters,
+
+    // Mutações e seus estados
+    isCreating: createReportMutation.isPending,
+
+    // Ações
     setCurrentPage,
     setPageSize,
     updateFilters,
-    fetchReports,
     fetchReportById,
     handleCreateReport,
     handleDownloadReport,
     navigateToReportDetails,
     navigateToCreateReport,
+    refetch,
   };
 }
