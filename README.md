@@ -337,19 +337,6 @@ oticas-queiroz-monorepo/
 
 ## 💰 Pagamentos
 
-### Features
-
-- Registro de diferentes tipos de pagamentos (vendas, recebimentos, despesas)
-- Suporte a múltiplos métodos de pagamento
-- Controle de parcelamentos
-- Relatórios financeiros personalizados
-- Exportação em múltiplos formatos (Excel, PDF, CSV, JSON)
-- Cancelamento com estorno automático
-- Cache para consultas frequentes
-- Transações atômicas para garantir integridade
-- Soft delete para manter histórico completo
-- Validações robustas e modulares
-
 ### Rotas
 
 - POST `/api/payments`: Criar pagamento
@@ -744,6 +731,19 @@ npm test
 - ✅ **Exportação Flexível**: Suporte a exportação para Excel, PDF, CSV e JSON para relatórios financeiros.
 - ✅ **Relatórios Avançados**: Adição de relatórios personalizados para análise financeira detalhada.
 - ✅ **Correção de Bugs**: Resolução de inconsistências e bugs em ambos os módulos.
+
+### Features de pagamentos
+
+- Registro de diferentes tipos de pagamentos (vendas, recebimentos, despesas)
+- Suporte a múltiplos métodos de pagamento
+- Controle de parcelamentos
+- Relatórios financeiros personalizados
+- Exportação em múltiplos formatos (Excel, PDF, CSV, JSON)
+- Cancelamento com estorno automático
+- Cache para consultas frequentes
+- Transações atômicas para garantir integridade
+- Soft delete para manter histórico completo
+- Validações robustas e modulares
 
 ## 🔄 Melhorias Sugeridas
 

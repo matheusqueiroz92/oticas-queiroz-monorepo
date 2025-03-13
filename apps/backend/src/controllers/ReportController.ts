@@ -1,8 +1,13 @@
 import type { Request, Response } from "express";
 import { ReportService } from "../services/ReportService";
-import { ReportError } from "../interfaces/IReport";
+import {
+  type InventoryReportData,
+  ReportError,
+  type SalesReportData,
+} from "../interfaces/IReport";
 import type { JwtPayload } from "jsonwebtoken";
 import { z } from "zod";
+import { ExportUtils } from "../utils/exportUtils";
 
 interface AuthRequest extends Request {
   user?: JwtPayload;
@@ -31,9 +36,11 @@ const reportSchema = z.object({
 
 export class ReportController {
   private reportService: ReportService;
+  private exportUtils: ExportUtils;
 
   constructor() {
     this.reportService = new ReportService();
+    this.exportUtils = new ExportUtils();
   }
 
   async createReport(req: AuthRequest, res: Response): Promise<void> {
@@ -122,6 +129,54 @@ export class ReportController {
     }
   }
 
+  // async downloadReport(req: AuthRequest, res: Response): Promise<void> {
+  //   try {
+  //     if (!req.user?.id) {
+  //       res.status(401).json({ message: "Usuário não autenticado" });
+  //       return;
+  //     }
+
+  //     const report = await this.reportService.getReport(req.params.id);
+
+  //     // Verificar se o relatório está completo
+  //     if (report.status !== "completed") {
+  //       res.status(400).json({
+  //         message: "Relatório ainda não está pronto para download",
+  //         status: report.status,
+  //       });
+  //       return;
+  //     }
+
+  //     // Verificar se o formato é suportado
+  //     const format = (req.query.format as string) || report.format;
+  //     if (!["json", "pdf", "excel"].includes(format)) {
+  //       res.status(400).json({ message: "Formato não suportado" });
+  //       return;
+  //     }
+
+  //     // Para este exemplo, apenas retornamos o JSON
+  //     // Em uma implementação real, você geraria o PDF ou Excel aqui
+  //     if (format === "json") {
+  //       res.status(200).json(report.data);
+  //       return;
+  //     }
+
+  //     // Para outros formatos, você implementaria a conversão
+  //     res
+  //       .status(501)
+  //       .json({
+  //         message: "Exportação para este formato ainda não implementada",
+  //       });
+  //   } catch (error) {
+  //     if (error instanceof ReportError) {
+  //       res.status(404).json({ message: error.message });
+  //       return;
+  //     }
+  //     console.error("Erro ao fazer download do relatório:", error);
+  //     res.status(500).json({ message: "Erro interno do servidor" });
+  //   }
+  // }
+
   async downloadReport(req: AuthRequest, res: Response): Promise<void> {
     try {
       if (!req.user?.id) {
@@ -140,26 +195,52 @@ export class ReportController {
         return;
       }
 
-      // Verificar se o formato é suportado
-      const format = (req.query.format as string) || report.format;
-      if (!["json", "pdf", "excel"].includes(format)) {
-        res.status(400).json({ message: "Formato não suportado" });
-        return;
+      // Usar o ExportUtils para gerar o arquivo no formato solicitado
+      const format =
+        (req.query.format as "excel" | "pdf" | "csv" | "json") || report.format;
+
+      // Determinar o tipo de relatório e usar o exportador adequado
+      let buffer;
+      let contentType;
+      let filename;
+      const exportOptions = {
+        format,
+        title: report.name,
+        filename: `relatorio-${report._id}-${Date.now()}`,
+      };
+
+      switch (report.type) {
+        case "sales":
+          ({ buffer, contentType, filename } =
+            await this.exportUtils.exportSalesReport(
+              report.data as SalesReportData,
+              exportOptions
+            ));
+          break;
+        case "inventory":
+          ({ buffer, contentType, filename } =
+            await this.exportUtils.exportInventoryReport(
+              report.data as InventoryReportData,
+              exportOptions
+            ));
+          break;
+        // ... outros casos para os diferentes tipos de relatório
+        default:
+          if (format === "json") {
+            res.status(200).json(report.data);
+          }
+          res.status(400).json({
+            message: "Formato não suportado para este tipo de relatório",
+          });
       }
 
-      // Para este exemplo, apenas retornamos o JSON
-      // Em uma implementação real, você geraria o PDF ou Excel aqui
-      if (format === "json") {
-        res.status(200).json(report.data);
-        return;
-      }
-
-      // Para outros formatos, você implementaria a conversão
-      res
-        .status(501)
-        .json({
-          message: "Exportação para este formato ainda não implementada",
-        });
+      // Enviar o arquivo
+      res.setHeader("Content-Type", contentType);
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${filename}"`
+      );
+      res.send(buffer);
     } catch (error) {
       if (error instanceof ReportError) {
         res.status(404).json({ message: error.message });
