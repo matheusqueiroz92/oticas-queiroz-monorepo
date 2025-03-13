@@ -9,6 +9,7 @@ export interface Order {
   paymentMethod: string;
   paymentEntry?: number;
   installments?: number;
+  orderDate: string | Date;
   deliveryDate?: string | Date;
   status: "pending" | "in_production" | "ready" | "delivered";
   laboratoryId?: string | null;

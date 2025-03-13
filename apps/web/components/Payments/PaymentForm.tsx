@@ -41,7 +41,7 @@ import {
   Loader2,
 } from "lucide-react";
 
-import { CashRegisterStatus } from "@/components/CashRegisterStatus";
+import { CashRegisterStatus } from "@/components/CashRegister/CashRegisterStatus";
 import type {
   PaymentType,
   PaymentMethod,

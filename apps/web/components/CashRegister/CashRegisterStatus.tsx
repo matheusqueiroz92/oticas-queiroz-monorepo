@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { DollarSign, Loader2, AlertCircle } from "lucide-react";
-import { checkOpenCashRegister } from "@/app/services/cashRegister";
+import { checkOpenCashRegister } from "@/app/services/cashRegisterService";
 import { formatCurrency } from "@/app/utils/formatters";
 import type { ICashRegister } from "@/app/types/cash-register";
 

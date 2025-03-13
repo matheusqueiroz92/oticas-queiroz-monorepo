@@ -18,36 +18,35 @@ const orderSchema = new Schema(
       default: "glasses",
       required: true,
     },
-    product: { type: String, required: true }, // futura implementação -> [{ type: Schema.Types.ObjectId, ref: "Product", required: true }],
+    product: { type: String, required: true },
+    // Campos para óculos
     glassesType: {
       type: String,
       enum: ["prescription", "sunglasses"],
-      default: "prescription",
-      required: true,
+      // Não definimos required aqui
     },
     glassesFrame: {
       type: String,
       enum: ["with", "no"],
-      default: "with",
-      required: true,
+      // Não definimos required aqui
     },
     paymentMethod: { type: String, required: true },
     paymentEntry: Number,
     installments: Number,
     orderDate: { type: Date, required: true },
-    deliveryDate: { type: Date, required: true },
+    deliveryDate: { type: Date },
     status: {
       type: String,
       enum: ["pending", "in_production", "ready", "delivered", "cancelled"],
       default: "pending",
     },
-    // Permitir que o laboratoryId seja nulo ou indefinido
     laboratoryId: {
       type: Schema.Types.ObjectId,
       ref: "Laboratory",
-      required: false, // Explicitamente indicar que não é obrigatório
-      default: null, // Valor padrão nulo
+      required: false,
+      default: null,
     },
+    // Dados de prescrição
     prescriptionData: {
       doctorName: { type: String },
       clinicName: { type: String },
@@ -66,7 +65,7 @@ const orderSchema = new Schema(
       oc: Number,
       addition: Number,
     },
-    lensType: String,
+    lensType: { type: String },
     observations: String,
     totalPrice: { type: Number, required: true },
     // Campos para soft delete
@@ -79,5 +78,41 @@ const orderSchema = new Schema(
   },
   { timestamps: true }
 );
+
+// Validação pré-salvamento para garantir que campos de óculos estejam presentes quando necessário
+orderSchema.pre("validate", function (next) {
+  if (this.productType === "glasses") {
+    if (!this.glassesType) {
+      this.invalidate(
+        "glassesType",
+        'Tipo de óculos é obrigatório para produtos do tipo "glasses"'
+      );
+    }
+
+    if (!this.glassesFrame) {
+      this.invalidate(
+        "glassesFrame",
+        'Informação sobre armação é obrigatória para produtos do tipo "glasses"'
+      );
+    }
+
+    if (!this.lensType) {
+      this.invalidate(
+        "lensType",
+        'Tipo de lente é obrigatório para produtos do tipo "glasses"'
+      );
+    }
+
+    if (this.glassesType === "prescription") {
+      if (!this.prescriptionData || !this.prescriptionData.doctorName) {
+        this.invalidate(
+          "prescriptionData",
+          "Dados de prescrição são obrigatórios para óculos de grau"
+        );
+      }
+    }
+  }
+  next();
+});
 
 export const Order = model("Order", orderSchema);

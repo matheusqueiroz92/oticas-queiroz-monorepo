@@ -8,7 +8,7 @@ import {
   updateLaboratory,
   toggleLaboratoryStatus,
   deleteLaboratory,
-} from "@/app/services/laboratory";
+} from "@/app/services/laboratoryService";
 import type { Laboratory } from "@/app/types/laboratory";
 
 interface LaboratoryFilters {

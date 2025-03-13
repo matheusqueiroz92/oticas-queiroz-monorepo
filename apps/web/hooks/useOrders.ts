@@ -7,7 +7,7 @@ import {
   updateOrderStatus,
   updateOrderLaboratory,
   createOrder,
-} from "@/app/services/order";
+} from "@/app/services/orderService";
 import type { Order } from "@/app/types/order";
 
 interface OrderFilters {

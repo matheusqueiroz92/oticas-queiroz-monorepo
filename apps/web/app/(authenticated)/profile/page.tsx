@@ -29,7 +29,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/useToast";
-import { api } from "../../services/auth";
+import { api } from "../../services/authService";
 import type { AxiosError } from "axios";
 import type { User } from "@/app/types/user";
 import Cookies from "js-cookie";

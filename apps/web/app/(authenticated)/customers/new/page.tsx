@@ -1,6 +1,6 @@
 "use client";
 
-import UserRegistrationForm from "../../../../components/forms/UserRegisterForm";
+import UserRegistrationForm from "../../../../components/Users/UserRegisterForm";
 
 export default function NewCustomerPage() {
   return (

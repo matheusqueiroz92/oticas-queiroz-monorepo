@@ -8,8 +8,8 @@ import {
   Image,
 } from "@react-pdf/renderer";
 import { Button } from "@/components/ui/button";
-import LogoImage from "../../public/logo-oticas-queiroz.png";
-import type { Customer } from "../../app/types/customer";
+import LogoImage from "../../../public/logo-oticas-queiroz.png";
+import type { Customer } from "../../../app/types/customer";
 
 // Interface para os dados do formulário
 interface OrderFormData {

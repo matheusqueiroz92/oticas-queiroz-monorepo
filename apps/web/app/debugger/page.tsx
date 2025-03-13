@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { api } from "../services/auth";
+import { api } from "../services/authService";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -17,9 +17,11 @@ import { Loader2, CheckCircle, XCircle } from "lucide-react";
 // Adicione este componente temporariamente à sua aplicação para diagnosticar problemas com rotas API
 
 export default function ApiTester() {
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   const [results, setResults] = useState<Record<string, any>>({});
   const [testing, setTesting] = useState(false);
   const [alternativeResults, setAlternativeResults] = useState<
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     Record<string, any>
   >({});
 
@@ -50,6 +52,7 @@ export default function ApiTester() {
         status: response.status,
         data: response.data,
       };
+      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     } catch (error: any) {
       console.error(`Erro ao testar ${route}:`, error);
       return {
@@ -84,6 +87,7 @@ export default function ApiTester() {
         status: response.status,
         data: data,
       };
+      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     } catch (error: any) {
       console.error(`Erro ao testar com fetch ${url}:`, error);
       return {
@@ -96,7 +100,9 @@ export default function ApiTester() {
   // Função para executar todos os testes
   const runAllTests = async () => {
     setTesting(true);
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     const testResults: Record<string, any> = {};
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     const altResults: Record<string, any> = {};
 
     // Testar com Axios

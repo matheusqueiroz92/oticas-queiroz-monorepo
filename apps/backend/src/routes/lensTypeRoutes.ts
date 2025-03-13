@@ -41,7 +41,7 @@ const lensTypeController = new LensTypeController();
 
 /**
  * @swagger
- * /api/lens-type:
+ * /api/lens-types:
  *   post:
  *     summary: Cria um novo tipo de lente
  *     security:
@@ -88,7 +88,7 @@ const lensTypeController = new LensTypeController();
  *         description: Erro interno do servidor
  */
 router.post(
-  "/lens-type",
+  "/lens-types",
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler(lensTypeController.createLensType.bind(lensTypeController))
@@ -126,7 +126,7 @@ router.post(
  *         description: Erro interno do servidor
  */
 router.get(
-  "/lens-type",
+  "/lens-types",
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler(lensTypeController.getAllLensType.bind(lensTypeController))
@@ -134,7 +134,7 @@ router.get(
 
 /**
  * @swagger
- * /api/lens-type/{id}:
+ * /api/lens-types/{id}:
  *   get:
  *     summary: Obtém um tipo de lente pelo ID
  *     security:
@@ -166,7 +166,7 @@ router.get(
  *         description: Erro interno do servidor
  */
 router.get(
-  "/lens-type/:id",
+  "/lens-types/:id",
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler(lensTypeController.getLensTypeById.bind(lensTypeController))
@@ -174,7 +174,7 @@ router.get(
 
 /**
  * @swagger
- * /api/lens-type/{id}:
+ * /api/lens-types/{id}:
  *   put:
  *     summary: Atualiza um tipo de lente
  *     security:
@@ -224,7 +224,7 @@ router.get(
  *         description: Erro interno do servidor
  */
 router.put(
-  "/lens-type/:id",
+  "/lens-types/:id",
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler(lensTypeController.updateLensType.bind(lensTypeController))
@@ -232,7 +232,7 @@ router.put(
 
 /**
  * @swagger
- * /api/lens-type/{id}:
+ * /api/lens-types/{id}:
  *   delete:
  *     summary: Remove um tipo de lente
  *     security:
@@ -260,7 +260,7 @@ router.put(
  *         description: Erro interno do servidor
  */
 router.delete(
-  "/lens-type/:id",
+  "/lens-types/:id",
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler(lensTypeController.deleteLensType.bind(lensTypeController))

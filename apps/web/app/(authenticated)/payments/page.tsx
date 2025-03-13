@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-import { CashRegisterStatus } from "@/components/CashRegisterStatus";
+import { CashRegisterStatus } from "@/components/CashRegister/CashRegisterStatus";
 import { usePayments } from "../../../hooks/usePayments";
 import {
   formatCurrency,

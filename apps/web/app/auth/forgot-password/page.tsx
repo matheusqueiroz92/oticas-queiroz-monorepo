@@ -17,7 +17,7 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Loader2, ArrowLeft, Mail } from "lucide-react";
-import { requestPasswordReset } from "../../services/auth";
+import { requestPasswordReset } from "../../services/authService";
 
 const forgotPasswordSchema = z.object({
   email: z.string().email("Digite um email válido"),

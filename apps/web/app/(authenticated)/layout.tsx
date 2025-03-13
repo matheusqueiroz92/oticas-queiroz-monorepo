@@ -22,7 +22,10 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { clearAuthCookies, redirectAfterLogout } from "@/app/services/auth";
+import {
+  clearAuthCookies,
+  redirectAfterLogout,
+} from "@/app/services/authService";
 import { useEffect, useState } from "react";
 import Cookies from "js-cookie";
 

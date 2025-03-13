@@ -8,7 +8,7 @@ import { z } from "zod";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useMutation } from "@tanstack/react-query";
-import { api } from "@/app/services/auth";
+import { api } from "@/app/services/authService";
 import { useToast } from "@/hooks/useToast";
 
 import {

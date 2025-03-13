@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import EyeFormSection from "./EyeFormSection";
-import type { OrderFormReturn } from "../../../app/types/form-types";
+import type { OrderFormReturn } from "../../app/types/form-types";
 
 interface PrescriptionFormProps {
   form: OrderFormReturn;

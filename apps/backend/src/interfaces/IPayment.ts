@@ -3,31 +3,57 @@ export interface IPayment {
   createdBy: string;
   customerId?: string;
   legacyClientId?: string;
-  cashRegisterId: string;
   orderId?: string;
+  cashRegisterId: string;
   amount: number;
   date: Date;
   type: "sale" | "debt_payment" | "expense";
-  paymentMethod: "credit" | "debit" | "cash" | "pix" | "installment";
+  paymentMethod:
+    | "credit"
+    | "debit"
+    | "cash"
+    | "pix"
+    | "boleto"
+    | "promissory_note";
   status: "pending" | "completed" | "cancelled";
-  installments?: {
-    current: number;
+
+  // Campos para cartão de crédito
+  creditCardInstallments?: {
+    current?: number;
     total: number;
-    value: number;
+    value?: number;
   };
+
+  // Campos para boleto
+  boleto?: {
+    code: string;
+    bank: string;
+  };
+
+  // Campos para promissória
+  promissoryNote?: {
+    number: string;
+  };
+
+  // Campos para débito ao cliente
+  clientDebt?: {
+    generateDebt: boolean;
+    installments?: {
+      total: number;
+      value: number;
+    };
+    dueDates?: Date[];
+  };
+
   description?: string;
-  createdAt?: Date;
-  updatedAt?: Date;
-  // Campos de soft delete
   isDeleted?: boolean;
   deletedAt?: Date;
   deletedBy?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export type CreatePaymentDTO = Omit<
   IPayment,
   "_id" | "createdAt" | "updatedAt"
->;
-export type UpdatePaymentDTO = Partial<
-  Omit<IPayment, "_id" | "createdAt" | "updatedAt">
 >;

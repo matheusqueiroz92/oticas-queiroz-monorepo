@@ -23,7 +23,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useToast } from "@/hooks/useToast";
-import { api } from "../../../services/auth";
+import { api } from "../../../services/authService";
 import type { AxiosError } from "axios";
 
 interface ApiError {

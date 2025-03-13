@@ -21,7 +21,10 @@ import {
   NavigationMenuList,
 } from "@/components/ui/navigation-menu";
 import { useEffect, useState } from "react";
-import { clearAuthCookies, redirectAfterLogout } from "@/app/services/auth";
+import {
+  clearAuthCookies,
+  redirectAfterLogout,
+} from "@/app/services/authService";
 import Cookies from "js-cookie";
 
 interface DashboardLayoutProps {

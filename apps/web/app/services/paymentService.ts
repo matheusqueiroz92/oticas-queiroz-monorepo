@@ -1,5 +1,4 @@
-// app/services/payment.ts
-import { api } from "./auth";
+import { api } from "./authService";
 import type {
   IPayment,
   CreatePaymentDTO,

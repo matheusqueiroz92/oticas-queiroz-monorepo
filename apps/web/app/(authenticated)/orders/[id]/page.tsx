@@ -11,10 +11,10 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { api } from "../../../services/auth";
-import OrderDetailsPDF from "../../../../components/exports/OrderDetailsPdf";
-import OrderLaboratoryUpdate from "../../../../components/OrderLaboratoryUpdate";
-import OrderStatusUpdate from "../../../../components/OrderStatusUpdate";
+import { api } from "../../../services/authService";
+import OrderDetailsPDF from "../../../../components/Orders/exports/OrderDetailsPdf";
+import OrderLaboratoryUpdate from "../../../../components/Orders/OrderLaboratoryUpdate";
+import OrderStatusUpdate from "../../../../components/Orders/OrderStatusUpdate";
 import { Beaker } from "lucide-react";
 import type { Order } from "@/app/types/order";
 

@@ -8,7 +8,7 @@ import {
   updateProduct,
   deleteProduct,
   formatCurrency,
-} from "../app/services/products";
+} from "../app/services/productService";
 import type { Product } from "@/app/types/product";
 
 interface ProductFilters {

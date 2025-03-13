@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/pagination";
 import { Loader2, FileX } from "lucide-react";
 import { useOrders } from "@/hooks/useOrders";
-import { extractName } from "@/app/services/order";
+import { extractName } from "@/app/services/orderService";
 import { formatCurrency, formatDate } from "@/app/utils/formatters";
 
 export default function OrdersPage() {

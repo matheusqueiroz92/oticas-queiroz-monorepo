@@ -32,16 +32,16 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { useToast } from "@/hooks/useToast";
-import { api } from "../../../services/auth";
+import { api } from "../../../services/authService";
 import type { Customer } from "../../../types/customer";
 import Cookies from "js-cookie";
 
 // Componentes
-import ClientSearch from "../../../../components/forms/OrderForm/ClientSearch";
-import LensTypeSelection from "../../../../components/forms/OrderForm/LensTypeSearch";
-import OrderPdfGenerator from "../../../../components/exports/OrderPdfGenerator";
+import ClientSearch from "../../../../components/Orders/ClientSearch";
+import LensTypeSelection from "../../../../components/Orders/LensTypeSearch";
+import OrderPdfGenerator from "../../../../components/Orders/exports/OrderPdfGenerator";
 import type { OrderFormValues } from "../../../../app/types/form-types";
-import PrescriptionForm from "../../../../components/forms/OrderForm/PrescriptionForm";
+import PrescriptionForm from "../../../../components/Orders/PrescriptionForm";
 
 const prescriptionDataSchema = z.object({
   doctorName: z.string().optional(),
@@ -73,6 +73,7 @@ const orderFormSchema = z
     paymentMethod: z.string().min(1, "Forma de pagamento é obrigatória"),
     paymentEntry: z.number().min(0).optional(),
     installments: z.number().min(1).optional(),
+    orderDate: z.string().optional(),
     deliveryDate: z.string().optional(),
     status: z.string().min(1, "Status é obrigatório"),
     laboratoryId: z.string().optional(),
@@ -123,6 +124,7 @@ export default function NewOrderPage() {
       paymentMethod: "",
       paymentEntry: 0,
       installments: undefined,
+      orderDate: new Date().toISOString().split("T")[0],
       deliveryDate: getTomorrowDate(), // Formato YYYY-MM-DD
       status: "pending",
       laboratoryId: "", // Valor vazio, será tratado no backend

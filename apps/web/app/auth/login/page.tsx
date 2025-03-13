@@ -17,7 +17,7 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
-import { api } from "../../services/auth";
+import { api } from "../../services/authService";
 import Cookies from "js-cookie";
 import { AxiosError } from "axios";
 

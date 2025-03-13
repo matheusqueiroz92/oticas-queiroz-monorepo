@@ -1,4 +1,3 @@
-// src/utils/AppError.ts
 import { ErrorCode } from "./errorCodes";
 
 export class AppError extends Error {

@@ -18,7 +18,10 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Loader2, ArrowLeft, CheckCircle2, XCircle } from "lucide-react";
-import { resetPassword, validateResetToken } from "../../../services/auth";
+import {
+  resetPassword,
+  validateResetToken,
+} from "../../../services/authService";
 
 const resetPasswordSchema = z
   .object({

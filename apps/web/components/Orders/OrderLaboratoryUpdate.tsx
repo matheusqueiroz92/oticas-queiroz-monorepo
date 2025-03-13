@@ -28,9 +28,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { api } from "@/app/services/auth";
+import { api } from "@/app/services/authService";
 import { useOrders } from "@/hooks/useOrders";
-import { API_ROUTES } from "../app/constants/api-routes";
+import { API_ROUTES } from "../../app/constants/api-routes";
+import type { Order } from "@/app/types/order";
 
 // Interface para laboratório
 interface Laboratory {
@@ -39,17 +40,9 @@ interface Laboratory {
   isActive: boolean;
 }
 
-// Interface para o pedido
-interface OrderDetail {
-  _id: string;
-  status: string;
-  glassesType: string;
-  laboratoryId?: string;
-}
-
 // Props do componente
 interface OrderLaboratoryUpdateProps {
-  order: OrderDetail;
+  order: Order;
   onUpdateSuccess: () => void;
 }
 

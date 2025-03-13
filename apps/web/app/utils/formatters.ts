@@ -183,3 +183,10 @@ export function getPaymentTypeClass(type: PaymentType | string): string {
       return "bg-gray-100 text-gray-800";
   }
 }
+
+/**
+ * Função utilitária para combinar nomes de classes com tailwind
+ */
+export function cn(...inputs: (string | undefined | null | false)[]): string {
+  return inputs.filter(Boolean).join(" ");
+}

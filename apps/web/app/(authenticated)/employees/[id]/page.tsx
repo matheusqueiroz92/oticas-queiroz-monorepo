@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { api } from "../../../services/auth";
-import { UserDetailsCard } from "../../../../components/UserDetails";
+import { api } from "../../../services/authService";
+import { UserDetailsCard } from "../../../../components/Users/UserDetails";
 import type { Employee } from "../../../types/employee";
 
 export default function EmployeeDetailsPage() {

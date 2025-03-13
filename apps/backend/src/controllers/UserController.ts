@@ -1,4 +1,3 @@
-// src/controllers/UserController.ts
 import type { Request, Response } from "express";
 import { UserService } from "../services/UserService";
 import type { JwtPayload } from "jsonwebtoken";

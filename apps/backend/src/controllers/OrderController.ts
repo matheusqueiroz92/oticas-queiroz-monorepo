@@ -9,6 +9,23 @@ interface AuthRequest extends Request {
   user?: JwtPayload & { role?: string };
 }
 
+// Esquema base para todos os tipos de pedido
+const baseOrderSchema = z.object({
+  clientId: z.string().min(1, "ID do cliente é obrigatório"),
+  employeeId: z.string().min(1, "ID do funcionário é obrigatório"),
+  productType: z.enum(["glasses", "lensCleaner"]),
+  product: z.string().min(1, "Produto é obrigatório"),
+  paymentMethod: z.string().min(1, "Método de pagamento é obrigatório"),
+  paymentEntry: z.number().min(0).optional(),
+  installments: z.number().min(1).optional(),
+  orderDate: z.coerce.date(),
+  deliveryDate: z.coerce.date(),
+  status: z.enum(["pending", "in_production", "ready", "delivered"]),
+  totalPrice: z.number().positive("Preço total deve ser positivo"),
+  observations: z.string().optional(),
+});
+
+// Esquema para dados de prescrição
 const prescriptionDataSchema = z.object({
   doctorName: z
     .string()
@@ -32,25 +49,46 @@ const prescriptionDataSchema = z.object({
   addition: z.number(),
 });
 
-const createOrderSchema = z.object({
-  clientId: z.string().min(1, "ID do cliente é obrigatório"),
-  employeeId: z.string().min(1, "ID do funcionário é obrigatório"),
-  productType: z.enum(["glasses", "lensCleaner"]),
-  product: z.string().min(1, "Produto é obrigatório"), // futura implementação -> z.array(z.string()).min(1, "Pelo menos um produto é obrigatório"),
-  glassesType: z.enum(["prescription", "sunglasses"]),
-  glassesFrame: z.enum(["with", "no"]),
-  paymentMethod: z.string().min(1, "Método de pagamento é obrigatório"),
-  paymentEntry: z.number().min(0).optional(),
-  installments: z.number().min(1).optional(),
-  deliveryDate: z.coerce.date(),
-  orderDate: z.coerce.date(),
-  status: z.enum(["pending", "in_production", "ready", "delivered"]),
-  laboratoryId: z.string().optional().nullable(),
-  prescriptionData: prescriptionDataSchema,
-  lensType: z.string().min(1, "Tipo de lente é obrigatório"),
-  totalPrice: z.number().positive("Preço total deve ser positivo"),
-  observations: z.string().optional(),
-});
+// Esquema completo do pedido
+const createOrderSchema = baseOrderSchema
+  .extend({
+    // Campos condicionais para óculos
+    glassesType: z.enum(["prescription", "sunglasses"]).optional(),
+    glassesFrame: z.enum(["with", "no"]).optional(),
+    laboratoryId: z.string().optional().nullable(),
+    lensType: z.string().optional(),
+    prescriptionData: prescriptionDataSchema.optional(),
+  })
+  .refine(
+    (data) => {
+      // Se for óculos, precisa de glassesType e glassesFrame
+      if (data.productType === "glasses") {
+        return !!data.glassesType && !!data.glassesFrame && !!data.lensType;
+      }
+      return true;
+    },
+    {
+      message:
+        "Para óculos, é necessário informar o tipo, armação e tipo de lente",
+      path: ["productType"],
+    }
+  )
+  .refine(
+    (data) => {
+      // Se for óculos de grau, precisa ter dados de prescrição
+      if (
+        data.productType === "glasses" &&
+        data.glassesType === "prescription"
+      ) {
+        return !!data.prescriptionData;
+      }
+      return true;
+    },
+    {
+      message: "Dados de prescrição são obrigatórios para óculos de grau",
+      path: ["prescriptionData"],
+    }
+  );
 
 const updateOrderStatusSchema = z.object({
   status: z.enum([

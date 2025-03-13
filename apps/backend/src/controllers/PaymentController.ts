@@ -9,30 +9,109 @@ interface AuthRequest extends Request {
   user?: JwtPayload;
 }
 
-const paymentSchema = z.object({
+// Definir esquemas para tipos de pagamento específicos
+const creditCardSchema = z.object({
+  creditCardInstallments: z
+    .object({
+      total: z.number().min(1).default(1),
+      value: z.number().positive().optional(),
+    })
+    .optional(),
+});
+
+const boletoSchema = z.object({
+  boleto: z.object({
+    code: z.string().min(1, "Código do boleto é obrigatório"),
+    bank: z.string().min(1, "Banco é obrigatório"),
+  }),
+  clientDebt: z
+    .object({
+      generateDebt: z.boolean().default(false),
+      installments: z
+        .object({
+          total: z.number().min(1),
+          value: z.number().positive(),
+        })
+        .optional(),
+      dueDates: z.array(z.date()).optional(),
+    })
+    .optional(),
+});
+
+const promissoryNoteSchema = z.object({
+  promissoryNote: z.object({
+    number: z.string().min(1, "Número da promissória é obrigatório"),
+  }),
+  clientDebt: z
+    .object({
+      generateDebt: z.boolean().default(false),
+      installments: z
+        .object({
+          total: z.number().min(1),
+          value: z.number().positive(),
+        })
+        .optional(),
+      dueDates: z.array(z.date()).optional(),
+    })
+    .optional(),
+});
+
+// Esquema base do pagamento
+const basePaymentSchema = z.object({
   amount: z.number().positive("Valor deve ser positivo"),
   type: z.enum(["sale", "debt_payment", "expense"] as const, {
     errorMap: () => ({ message: "Tipo de pagamento inválido" }),
   }),
   paymentMethod: z.enum(
-    ["credit", "debit", "cash", "pix", "installment"] as const,
+    ["credit", "debit", "cash", "pix", "boleto", "promissory_note"] as const,
     {
       errorMap: () => ({ message: "Método de pagamento inválido" }),
     }
   ),
-  installments: z
-    .object({
-      current: z.number().min(1),
-      total: z.number().min(2),
-      value: z.number().positive(),
-    })
-    .optional(),
   orderId: z.string().optional(),
-  costumerId: z.string().optional(),
+  customerId: z.string().optional(),
   legacyClientId: z.string().optional(),
-  categoryId: z.string().optional(),
   description: z.string().optional(),
 });
+
+// Schema condicional
+const paymentSchema = z.discriminatedUnion("paymentMethod", [
+  // Cartão de crédito
+  basePaymentSchema
+    .extend({
+      paymentMethod: z.literal("credit"),
+    })
+    .merge(creditCardSchema),
+
+  // Cartão de débito
+  basePaymentSchema.extend({
+    paymentMethod: z.literal("debit"),
+  }),
+
+  // Dinheiro
+  basePaymentSchema.extend({
+    paymentMethod: z.literal("cash"),
+  }),
+
+  // PIX
+  basePaymentSchema.extend({
+    paymentMethod: z.literal("pix"),
+  }),
+
+  // Boleto
+  basePaymentSchema
+    .extend({
+      paymentMethod: z.literal("boleto"),
+    })
+    .merge(boletoSchema),
+
+  // Promissória
+  basePaymentSchema
+    .extend({
+      paymentMethod: z.literal("promissory_note"),
+    })
+    .merge(promissoryNoteSchema),
+]);
 
 type PaymentInput = z.infer<typeof paymentSchema>;
 
@@ -50,12 +129,14 @@ export class PaymentController {
         return;
       }
 
+      // Validar os dados de acordo com o method
       const validatedData = paymentSchema.parse(req.body);
 
-      const paymentData: CreatePaymentDTO = {
+      // Criar o objeto de pagamento
+      const paymentData = {
         ...validatedData,
         date: new Date(),
-        status: "pending",
+        status: "pending" as const,
         createdBy: req.user.id,
         cashRegisterId: "", // Será preenchido pelo PaymentService
       };
@@ -425,13 +506,9 @@ export class PaymentController {
         .filter((p) => p.type === "expense" && p.status === "completed")
         .reduce((sum, p) => sum + p.amount, 0);
 
+      // Alterando a verificação para cartão de crédito
       const totalByCreditCard = payments
-        .filter(
-          (p) =>
-            (p.paymentMethod === "credit" ||
-              p.paymentMethod === "installment") &&
-            p.status === "completed"
-        )
+        .filter((p) => p.paymentMethod === "credit" && p.status === "completed")
         .reduce((sum, p) => sum + p.amount, 0);
 
       const totalByDebitCard = payments
@@ -444,6 +521,18 @@ export class PaymentController {
 
       const totalByPix = payments
         .filter((p) => p.paymentMethod === "pix" && p.status === "completed")
+        .reduce((sum, p) => sum + p.amount, 0);
+
+      // Adicionar totais para boleto e promissória
+      const totalByBoleto = payments
+        .filter((p) => p.paymentMethod === "boleto" && p.status === "completed")
+        .reduce((sum, p) => sum + p.amount, 0);
+
+      const totalByPromissoryNote = payments
+        .filter(
+          (p) =>
+            p.paymentMethod === "promissory_note" && p.status === "completed"
+        )
         .reduce((sum, p) => sum + p.amount, 0);
 
       // Calcular saldo do dia
@@ -459,6 +548,8 @@ export class PaymentController {
         totalByDebitCard,
         totalByCash,
         totalByPix,
+        totalByBoleto,
+        totalByPromissoryNote,
         dailyBalance,
         payments,
       };
@@ -466,6 +557,7 @@ export class PaymentController {
       // Se formato for JSON, retornar diretamente
       if (format === "json") {
         res.json(reportData);
+        return;
       }
 
       // Formatar título do relatório

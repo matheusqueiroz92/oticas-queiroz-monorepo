@@ -9,8 +9,8 @@ import {
   createPayment,
   cancelPayment,
   getPaymentsByCashRegister,
-} from "@/app/services/payment";
-import { checkOpenCashRegister } from "@/app/services/cashRegister";
+} from "@/app/services/paymentService";
+import { checkOpenCashRegister } from "@/app/services/cashRegisterService";
 import type {
   IPayment,
   CreatePaymentDTO,

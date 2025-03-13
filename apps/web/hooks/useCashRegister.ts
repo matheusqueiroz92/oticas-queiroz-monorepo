@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/useToast";
-import { api } from "@/app/services/auth";
+import { api } from "@/app/services/authService";
 import {
   getAllCashRegisters,
   checkOpenCashRegister,
@@ -11,7 +11,7 @@ import {
   closeCashRegister,
   getCashRegisterById,
   getCashRegisterSummary,
-} from "@/app/services/cashRegister";
+} from "@/app/services/cashRegisterService";
 import type {
   ICashRegister,
   OpenCashRegisterDTO,

@@ -1,4 +1,4 @@
-import { api } from "./auth";
+import { api } from "./authService";
 import type { Order } from "../types/order";
 
 interface OrderFilters {

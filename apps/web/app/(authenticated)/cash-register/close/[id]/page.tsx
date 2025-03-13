@@ -47,7 +47,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-import { api } from "@/app/services/auth";
+import { api } from "@/app/services/authService";
 import { useToast } from "@/hooks/useToast";
 import { formatCurrency, formatDate } from "@/app/utils/formatters";
 import type { ICashRegister } from "@/app/types/cash-register";
