@@ -1,4 +1,3 @@
-// Em src/services/PaymentService.ts
 import { PaymentModel } from "../models/PaymentModel";
 import { CashRegisterModel } from "../models/CashRegisterModel";
 import { OrderModel } from "../models/OrderModel";

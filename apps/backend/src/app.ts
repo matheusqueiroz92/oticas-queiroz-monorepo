@@ -1,6 +1,8 @@
 import express from "express";
+
 import { setupSwagger } from "./config/swagger";
 import { errorMiddleware } from "./middlewares/errorMiddleware";
+
 import authRoutes from "./routes/authRoutes";
 import userRoutes from "./routes/userRoutes";
 import productRoutes from "./routes/productRoutes";
@@ -11,9 +13,10 @@ import cashRegisterRoutes from "./routes/cashRegisterRoutes";
 import legacyClientRoutes from "./routes/legacyClientRoutes";
 import reportRoutes from "./routes/reportRoutes";
 import lensTypeRoutes from "./routes/lensTypeRoutes";
+
 import connectDB from "./config/db";
 import cors from "cors";
-import path from "node:path"; // Importe o módulo 'path'
+import path from "node:path";
 
 class App {
   public app: express.Application;
@@ -28,7 +31,6 @@ class App {
   }
 
   private config(): void {
-    // Configuração do CORS
     this.app.use(
       cors({
         origin: "http://localhost:3000", // Permite requisições do frontend
@@ -36,7 +38,6 @@ class App {
       })
     );
 
-    // Outras configurações
     this.app.use(express.json());
 
     // Servir arquivos estáticos da pasta 'public/images'

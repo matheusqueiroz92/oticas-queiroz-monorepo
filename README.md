@@ -247,6 +247,14 @@ oticas-queiroz-monorepo/
 - GET `/api/orders/:id`: Buscar pedido
 - PUT `/api/orders/:id/status`: Atualizar status do pedido
 - PUT `/api/orders/:id/laboratory`: Atualizar laboratório do pedido
+- POST `/api/orders/:id/cancel`: Cancelar pedido
+- POST `/api/orders/:id/delete`: Exclusão lógica (soft delete) de pedido
+- GET `/api/orders/deleted`: Listar pedidos excluídos logicamente
+- GET `/api/orders/client/:clientId`: Listar pedidos de um cliente específico
+- GET `/api/orders/daily`: Buscar pedidos do dia
+- GET `/api/orders/export`: Exportar pedidos em vários formatos
+- GET `/api/orders/export/daily`: Exportar resumo diário dos pedidos
+- GET `/api/orders/:id/export`: Exportar detalhes de um pedido específico
 
 ### Schema
 
@@ -262,6 +270,7 @@ oticas-queiroz-monorepo/
   paymentMethod: string;
   paymentEntry?: number;
   installments?: number;
+  orderDate: number;
   deliveryDate?: Date;
   status: "pending" | "in_production" | "ready" | "delivered";
   laboratoryId?: string;
@@ -281,6 +290,7 @@ oticas-queiroz-monorepo/
       axis: number;
     };
     nd: number;
+    oc: number;
     addition: number;
   };
   totalPrice: number;

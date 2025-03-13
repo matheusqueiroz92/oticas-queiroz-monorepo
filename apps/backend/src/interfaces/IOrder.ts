@@ -9,6 +9,7 @@ export interface IOrder {
   paymentMethod: string;
   paymentEntry?: number;
   installments?: number;
+  orderDate: Date;
   deliveryDate?: Date;
   status: "pending" | "in_production" | "ready" | "delivered" | "cancelled";
   laboratoryId?: string | null;
@@ -31,8 +32,12 @@ export interface IOrder {
     addition: number;
   };
   lensType?: string;
-  description?: string;
+  observations?: string;
   totalPrice: number;
+  // Campos para soft delete
+  isDeleted?: boolean;
+  deletedAt?: Date;
+  deletedBy?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -71,6 +76,4 @@ export interface ICreateOrderDTO {
   lensType?: string;
   observations?: string;
   totalPrice: number;
-  createdAt?: Date;
-  updatedAt?: Date;
 }

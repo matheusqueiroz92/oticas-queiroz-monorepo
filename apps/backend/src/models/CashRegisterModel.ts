@@ -102,12 +102,106 @@ export class CashRegisterModel {
     };
   }
 
+  async findAll(
+    page = 1,
+    limit = 10,
+    filters: Record<string, unknown> = {}
+  ): Promise<{ registers: ICashRegister[]; total: number }> {
+    const skip = (page - 1) * limit;
+
+    // Criar objeto de consulta
+    const query: Record<string, unknown> = { isDeleted: { $ne: true } };
+
+    // Adicionar filtros extras se fornecidos
+    if (filters.status) {
+      query.status = filters.status;
+    }
+
+    if (filters.startDate && filters.endDate) {
+      query.openingDate = {
+        $gte: new Date(filters.startDate as string),
+        $lte: new Date(filters.endDate as string),
+      };
+    } else if (filters.startDate) {
+      query.openingDate = { $gte: new Date(filters.startDate as string) };
+    } else if (filters.endDate) {
+      query.openingDate = { $lte: new Date(filters.endDate as string) };
+    }
+
+    if (filters.search) {
+      // Se for uma busca por ID
+      if (this.isValidId(filters.search as string)) {
+        query._id = new Types.ObjectId(filters.search as string);
+      } else {
+        // Tentativa de busca por observações
+        query.observations = { $regex: filters.search, $options: "i" };
+      }
+    }
+
+    const [registers, total] = await Promise.all([
+      CashRegister.find(query)
+        .sort({ openingDate: -1 })
+        .skip(skip)
+        .limit(limit)
+        .populate("openedBy", "name email")
+        .populate("closedBy", "name email")
+        .exec() as Promise<CashRegisterDocument[]>,
+      CashRegister.countDocuments(query),
+    ]);
+
+    return {
+      registers: registers.map((register) =>
+        this.convertToICashRegister(register)
+      ),
+      total,
+    };
+  }
+
   async create(
     registerData: Omit<ICashRegister, "_id">
   ): Promise<ICashRegister> {
     const register = new CashRegister(registerData);
     const savedRegister = (await register.save()) as CashRegisterDocument;
     return this.convertToICashRegister(savedRegister);
+  }
+
+  async closeRegister(
+    id: string,
+    closeData: {
+      closingBalance: number;
+      closedBy: string;
+      observations?: string;
+    }
+  ): Promise<ICashRegister | null> {
+    if (!this.isValidId(id)) return null;
+
+    const register = (await CashRegister.findByIdAndUpdate(
+      id,
+      {
+        $set: {
+          status: "closed",
+          closingBalance: closeData.closingBalance,
+          closedBy: closeData.closedBy,
+          closingDate: new Date(),
+          observations: closeData.observations,
+        },
+      },
+      {
+        new: true,
+        runValidators: true,
+      }
+    )
+      .populate("openedBy", "name email")
+      .populate("closedBy", "name email")
+      .exec()) as CashRegisterDocument | null;
+
+    if (!register) return null;
+
+    const result = this.convertToICashRegister(register);
+    return {
+      ...result,
+      closedBy: closeData.closedBy,
+    };
   }
 
   async findOpenRegister(): Promise<ICashRegister | null> {
@@ -219,45 +313,6 @@ export class CashRegisterModel {
       .exec()) as CashRegisterDocument | null;
 
     return register ? this.convertToICashRegister(register) : null;
-  }
-
-  async closeRegister(
-    id: string,
-    closeData: {
-      closingBalance: number;
-      closedBy: string;
-      observations?: string;
-    }
-  ): Promise<ICashRegister | null> {
-    if (!this.isValidId(id)) return null;
-
-    const register = (await CashRegister.findByIdAndUpdate(
-      id,
-      {
-        $set: {
-          status: "closed",
-          closingBalance: closeData.closingBalance,
-          closedBy: closeData.closedBy,
-          closingDate: new Date(),
-          observations: closeData.observations,
-        },
-      },
-      {
-        new: true,
-        runValidators: true,
-      }
-    )
-      .populate("openedBy", "name email")
-      .populate("closedBy", "name email")
-      .exec()) as CashRegisterDocument | null;
-
-    if (!register) return null;
-
-    const result = this.convertToICashRegister(register);
-    return {
-      ...result,
-      closedBy: closeData.closedBy,
-    };
   }
 
   async updateSalesAndPaymentsWithSession(

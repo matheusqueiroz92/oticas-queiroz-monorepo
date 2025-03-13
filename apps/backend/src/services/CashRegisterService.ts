@@ -99,6 +99,35 @@ export class CashRegisterService {
     }
   }
 
+  /**
+   * Obtém todos os registros de caixa com opções de filtro e paginação
+   * @param page Número da página
+   * @param limit Limite de itens por página
+   * @param filters Filtros adicionais
+   * @returns Lista paginada de registros e informações de paginação
+   */
+  async getAllRegisters(
+    page = 1,
+    limit = 10,
+    filters: Record<string, unknown> = {}
+  ): Promise<{
+    registers: ICashRegister[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const result = await this.cashRegisterModel.findAll(page, limit, filters);
+
+    return {
+      registers: result.registers,
+      total: result.total,
+      page,
+      limit,
+      totalPages: Math.ceil(result.total / limit),
+    };
+  }
+
   async openRegister(data: OpenRegisterInput): Promise<ICashRegister> {
     await this.validateNoOpenRegister();
     this.validateBalance(data.openingBalance);

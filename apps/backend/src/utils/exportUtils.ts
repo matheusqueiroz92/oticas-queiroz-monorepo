@@ -3,6 +3,7 @@ import PDFDocument from "pdfkit";
 import { Parser } from "json2csv";
 import type { IPayment } from "../interfaces/IPayment";
 import type { ICashRegister } from "src/interfaces/ICashRegister";
+import type { IOrder } from "../interfaces/IOrder";
 
 export interface ExportOptions {
   format: "excel" | "pdf" | "csv" | "json";
@@ -42,12 +43,88 @@ interface RegisterSummary {
 }
 
 export class ExportUtils {
-  /**
-   * Exporta pagamentos para diferentes formatos
-   * @param payments Lista de pagamentos
-   * @param options Opções de exportação
-   * @returns Buffer com o conteúdo exportado
-   */
+  async exportOrders(
+    orders: IOrder[],
+    options: ExportOptions
+  ): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
+    const filename = options.filename || `orders-export-${Date.now()}`;
+
+    switch (options.format) {
+      case "excel":
+        return this.generateOrdersExcel(orders, filename, options.title);
+      case "pdf":
+        return this.generateOrdersPDF(orders, filename, options.title);
+      case "csv":
+        return this.generateOrdersCSV(orders, filename);
+      default:
+        return this.generateOrdersJSON(orders, filename);
+    }
+  }
+
+  async exportOrdersSummary(
+    summary: {
+      date: string;
+      totalOrders: number;
+      ordersByStatus: {
+        pending: number;
+        in_production: number;
+        ready: number;
+        delivered: number;
+        cancelled: number;
+      };
+      totalValue: number;
+      ordersByType: {
+        glasses: number;
+        lensCleaner: number;
+      };
+      orders: IOrder[];
+    },
+    options: ExportOptions
+  ): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
+    const filename = options.filename || `orders-summary-${summary.date}`;
+
+    switch (options.format) {
+      case "excel":
+        return this.generateOrdersSummaryExcel(
+          summary,
+          filename,
+          options.title
+        );
+      case "pdf":
+        return this.generateOrdersSummaryPDF(summary, filename, options.title);
+      case "csv":
+        return this.generateOrdersSummaryCSV(summary, filename);
+      default:
+        return {
+          buffer: Buffer.from(JSON.stringify(summary, null, 2)),
+          contentType: "application/json",
+          filename: `${filename}.json`,
+        };
+    }
+  }
+
+  async exportOrderDetails(
+    order: IOrder,
+    options: ExportOptions
+  ): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
+    const filename = options.filename || `order-details-${order._id}`;
+
+    switch (options.format) {
+      case "excel":
+        return this.generateOrderDetailsExcel(order, filename, options.title);
+      case "pdf":
+        return this.generateOrderDetailsPDF(order, filename, options.title);
+      case "csv":
+        return this.generateOrderDetailsCSV(order, filename);
+      default:
+        return {
+          buffer: Buffer.from(JSON.stringify(order, null, 2)),
+          contentType: "application/json",
+          filename: `${filename}.json`,
+        };
+    }
+  }
+
   async exportPayments(
     payments: IPayment[],
     options: ExportOptions
@@ -190,6 +267,952 @@ export class ExportUtils {
       cancelled: "Cancelado",
     };
     return statuses[status] || status;
+  }
+
+  private async generateOrdersExcel(
+    orders: IOrder[],
+    filename: string,
+    title?: string
+  ): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
+    const workbook = new Excel.Workbook();
+    const worksheet = workbook.addWorksheet("Pedidos");
+
+    // Adicionar título se fornecido
+    if (title) {
+      worksheet.addRow([title]);
+      worksheet.mergeCells("A1:H1");
+      const titleCell = worksheet.getCell("A1");
+      titleCell.font = { size: 16, bold: true };
+      titleCell.alignment = { horizontal: "center" };
+      worksheet.addRow([]);
+    }
+
+    // Definir cabeçalhos
+    worksheet.columns = [
+      { header: "ID", key: "_id", width: 28 },
+      { header: "Cliente", key: "client", width: 25 },
+      { header: "Funcionário", key: "employee", width: 25 },
+      { header: "Tipo", key: "productType", width: 15 },
+      { header: "Pagamento", key: "paymentMethod", width: 15 },
+      { header: "Valor Total", key: "totalPrice", width: 15 },
+      { header: "Status", key: "status", width: 15 },
+      { header: "Data de Entrega", key: "deliveryDate", width: 20 },
+    ];
+
+    // Formatação dos cabeçalhos
+    worksheet.getRow(title ? 3 : 1).font = { bold: true };
+
+    // Adicionar dados
+    for (const order of orders) {
+      const row = {
+        _id: order._id,
+        client: order.clientId || "",
+        employee: order.employeeId || "",
+        productType: this.translateProductType(order.productType),
+        paymentMethod: order.paymentMethod,
+        totalPrice: order.totalPrice,
+        status: this.translateOrderStatus(order.status),
+        deliveryDate: order.deliveryDate
+          ? new Date(order.deliveryDate).toLocaleDateString()
+          : "N/A",
+      };
+      worksheet.addRow(row);
+    }
+
+    // Formatação de células com valores monetários
+    const priceColumn = worksheet.getColumn("totalPrice");
+    priceColumn.numFmt = "R$ #,##0.00";
+
+    const buffer = await workbook.xlsx.writeBuffer();
+
+    return {
+      buffer: buffer as Buffer,
+      contentType:
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      filename: `${filename}.xlsx`,
+    };
+  }
+
+  private async generateOrdersSummaryExcel(
+    summary: {
+      date: string;
+      totalOrders: number;
+      ordersByStatus: {
+        pending: number;
+        in_production: number;
+        ready: number;
+        delivered: number;
+        cancelled: number;
+      };
+      totalValue: number;
+      ordersByType: {
+        glasses: number;
+        lensCleaner: number;
+      };
+      orders: IOrder[];
+    },
+    filename: string,
+    title?: string
+  ): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
+    const workbook = new Excel.Workbook();
+    const worksheet = workbook.addWorksheet("Resumo de Pedidos");
+
+    // Título do relatório
+    const reportTitle = title || `Resumo de Pedidos - ${summary.date}`;
+    worksheet.addRow([reportTitle]);
+    worksheet.mergeCells("A1:F1");
+    const titleCell = worksheet.getCell("A1");
+    titleCell.font = { size: 16, bold: true };
+    titleCell.alignment = { horizontal: "center" };
+    worksheet.addRow([]);
+
+    // Resumo geral
+    worksheet.addRow(["Data", summary.date]);
+    worksheet.addRow(["Total de Pedidos", summary.totalOrders]);
+    worksheet.addRow(["Valor Total", `R$ ${summary.totalValue.toFixed(2)}`]);
+    worksheet.addRow([]);
+
+    // Pedidos por status
+    worksheet.addRow(["Pedidos por Status"]);
+    worksheet.mergeCells("A7:B7");
+    worksheet.getCell("A7").font = { bold: true };
+
+    worksheet.addRow(["Pendentes", summary.ordersByStatus.pending]);
+    worksheet.addRow(["Em Produção", summary.ordersByStatus.in_production]);
+    worksheet.addRow(["Prontos", summary.ordersByStatus.ready]);
+    worksheet.addRow(["Entregues", summary.ordersByStatus.delivered]);
+    worksheet.addRow(["Cancelados", summary.ordersByStatus.cancelled]);
+    worksheet.addRow([]);
+
+    // Pedidos por tipo
+    worksheet.addRow(["Pedidos por Tipo"]);
+    worksheet.mergeCells("A14:B14");
+    worksheet.getCell("A14").font = { bold: true };
+
+    worksheet.addRow(["Óculos", summary.ordersByType.glasses]);
+    worksheet.addRow(["Limpa Lentes", summary.ordersByType.lensCleaner]);
+    worksheet.addRow([]);
+
+    // Lista de pedidos
+    worksheet.addRow(["Lista de Pedidos"]);
+    worksheet.mergeCells("A18:G18");
+    worksheet.getCell("A18").font = { bold: true };
+
+    worksheet.addRow([
+      "ID",
+      "Cliente",
+      "Tipo",
+      "Valor Total",
+      "Status",
+      "Data de Entrega",
+      "Método de Pagamento",
+    ]);
+
+    for (const order of summary.orders) {
+      worksheet.addRow([
+        order._id,
+        order.clientId || "",
+        this.translateProductType(order.productType),
+        order.totalPrice,
+        this.translateOrderStatus(order.status),
+        order.deliveryDate
+          ? new Date(order.deliveryDate).toLocaleDateString()
+          : "N/A",
+        order.paymentMethod,
+      ]);
+    }
+
+    // Formatação
+    worksheet.getCell("C5").numFmt = "R$ #,##0.00";
+    const priceColumn = worksheet.getColumn(4);
+    priceColumn.numFmt = "R$ #,##0.00";
+
+    const buffer = await workbook.xlsx.writeBuffer();
+
+    return {
+      buffer: buffer as Buffer,
+      contentType:
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      filename: `${filename}.xlsx`,
+    };
+  }
+
+  private async generateOrderDetailsExcel(
+    order: IOrder,
+    filename: string,
+    title?: string
+  ): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
+    const workbook = new Excel.Workbook();
+    const worksheet = workbook.addWorksheet("Detalhes do Pedido");
+
+    // Título do relatório
+    const reportTitle = title || `Detalhes do Pedido - ${order._id}`;
+    worksheet.addRow([reportTitle]);
+    worksheet.mergeCells("A1:C1");
+    const titleCell = worksheet.getCell("A1");
+    titleCell.font = { size: 16, bold: true };
+    titleCell.alignment = { horizontal: "center" };
+    worksheet.addRow([]);
+
+    // Informações gerais
+    worksheet.addRow(["ID", order._id]);
+    worksheet.addRow(["Cliente", order.clientId || ""]);
+    worksheet.addRow(["Funcionário", order.employeeId || ""]);
+    worksheet.addRow(["Status", this.translateOrderStatus(order.status)]);
+    worksheet.addRow([
+      "Data de Criação",
+      new Date(order.orderDate).toLocaleString(),
+    ]);
+    worksheet.addRow([
+      "Data de Entrega",
+      order.deliveryDate
+        ? new Date(order.deliveryDate).toLocaleString()
+        : "N/A",
+    ]);
+    worksheet.addRow([]);
+
+    // Informações do produto
+    worksheet.addRow(["Informações do Produto"]);
+    worksheet.mergeCells("A10:C10");
+    worksheet.getCell("A10").font = { bold: true };
+
+    worksheet.addRow([
+      "Tipo de Produto",
+      this.translateProductType(order.productType),
+    ]);
+    worksheet.addRow(["Produto", order.product]);
+
+    if (order.productType === "glasses") {
+      worksheet.addRow([
+        "Tipo de Óculos",
+        this.translateGlassesType(order.glassesType),
+      ]);
+      worksheet.addRow([
+        "Armação",
+        this.translateGlassesFrame(order.glassesFrame),
+      ]);
+      worksheet.addRow(["Tipo de Lente", order.lensType || "N/A"]);
+    }
+
+    worksheet.addRow([]);
+
+    // Informações de pagamento
+    worksheet.addRow(["Informações de Pagamento"]);
+    worksheet.mergeCells("A16:C16");
+    worksheet.getCell("A16").font = { bold: true };
+
+    worksheet.addRow(["Método de Pagamento", order.paymentMethod]);
+    worksheet.addRow(["Valor Total", `R$ ${order.totalPrice.toFixed(2)}`]);
+
+    if (order.installments) {
+      worksheet.addRow(["Parcelas", order.installments]);
+    }
+
+    if (order.paymentEntry) {
+      worksheet.addRow([
+        "Valor de Entrada",
+        `R$ ${order.paymentEntry.toFixed(2)}`,
+      ]);
+    }
+
+    worksheet.addRow([]);
+
+    // Dados da prescrição (se existirem)
+    if (order.prescriptionData) {
+      worksheet.addRow(["Dados da Prescrição"]);
+      worksheet.mergeCells("A22:C22");
+      worksheet.getCell("A22").font = { bold: true };
+
+      worksheet.addRow(["Médico", order.prescriptionData.doctorName]);
+      worksheet.addRow(["Clínica", order.prescriptionData.clinicName]);
+      worksheet.addRow([
+        "Data da Consulta",
+        new Date(order.prescriptionData.appointmentDate).toLocaleDateString(),
+      ]);
+      worksheet.addRow([]);
+
+      worksheet.addRow(["Olho Esquerdo"]);
+      worksheet.addRow(["SPH", order.prescriptionData.leftEye.sph]);
+      worksheet.addRow(["CYL", order.prescriptionData.leftEye.cyl]);
+      worksheet.addRow(["AXIS", order.prescriptionData.leftEye.axis]);
+      worksheet.addRow([]);
+
+      worksheet.addRow(["Olho Direito"]);
+      worksheet.addRow(["SPH", order.prescriptionData.rightEye.sph]);
+      worksheet.addRow(["CYL", order.prescriptionData.rightEye.cyl]);
+      worksheet.addRow(["AXIS", order.prescriptionData.rightEye.axis]);
+      worksheet.addRow([]);
+
+      worksheet.addRow(["DNP", order.prescriptionData.nd]);
+      worksheet.addRow(["Adição", order.prescriptionData.addition]);
+    }
+
+    // Formatação
+    worksheet.getCell("B18").numFmt = "R$ #,##0.00";
+    if (order.paymentEntry) {
+      worksheet.getCell("B20").numFmt = "R$ #,##0.00";
+    }
+
+    const buffer = await workbook.xlsx.writeBuffer();
+
+    return {
+      buffer: buffer as Buffer,
+      contentType:
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      filename: `${filename}.xlsx`,
+    };
+  }
+
+  private async generateOrdersSummaryPDF(
+    summary: {
+      date: string;
+      totalOrders: number;
+      ordersByStatus: {
+        pending: number;
+        in_production: number;
+        ready: number;
+        delivered: number;
+        cancelled: number;
+      };
+      totalValue: number;
+      ordersByType: {
+        glasses: number;
+        lensCleaner: number;
+      };
+      orders: IOrder[];
+    },
+    filename: string,
+    title?: string
+  ): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
+    return new Promise((resolve, reject) => {
+      try {
+        const doc = new PDFDocument({ margin: 50 });
+        const chunks: Buffer[] = [];
+
+        doc.on("data", (chunk) => chunks.push(chunk));
+        doc.on("end", () => {
+          const buffer = Buffer.concat(chunks);
+          resolve({
+            buffer,
+            contentType: "application/pdf",
+            filename: `${filename}.pdf`,
+          });
+        });
+
+        // Título
+        const reportTitle = title || `Resumo de Pedidos - ${summary.date}`;
+        doc.fontSize(20).text(reportTitle, { align: "center" });
+        doc.moveDown();
+
+        // Data de geração
+        doc.fontSize(12).text(`Gerado em: ${new Date().toLocaleString()}`, {
+          align: "right",
+        });
+        doc.moveDown(2);
+
+        // Resumo geral
+        doc.fontSize(16).text("Resumo Geral", { underline: true });
+        doc.moveDown();
+
+        doc.fontSize(12);
+        doc.text(`Data: ${summary.date}`);
+        doc.text(`Total de Pedidos: ${summary.totalOrders}`);
+        doc.text(`Valor Total: R$ ${summary.totalValue.toFixed(2)}`);
+        doc.moveDown(2);
+
+        // Pedidos por status
+        doc.fontSize(16).text("Pedidos por Status", { underline: true });
+        doc.moveDown();
+
+        doc.fontSize(12);
+        doc.text(`Pendentes: ${summary.ordersByStatus.pending}`);
+        doc.text(`Em Produção: ${summary.ordersByStatus.in_production}`);
+        doc.text(`Prontos: ${summary.ordersByStatus.ready}`);
+        doc.text(`Entregues: ${summary.ordersByStatus.delivered}`);
+        doc.text(`Cancelados: ${summary.ordersByStatus.cancelled}`);
+        doc.moveDown(2);
+
+        // Pedidos por tipo
+        doc.fontSize(16).text("Pedidos por Tipo", { underline: true });
+        doc.moveDown();
+
+        doc.fontSize(12);
+        doc.text(`Óculos: ${summary.ordersByType.glasses}`);
+        doc.text(`Limpa Lentes: ${summary.ordersByType.lensCleaner}`);
+        doc.moveDown(2);
+
+        // Lista de pedidos
+        doc.fontSize(16).text("Lista de Pedidos", { underline: true });
+        doc.moveDown();
+
+        // Limitar a lista a 20 pedidos para não sobrecarregar o PDF
+        const ordersToShow = summary.orders.slice(0, 20);
+
+        // Tabela de pedidos
+        const tableTop = doc.y;
+        const tableHeaders = ["ID", "Cliente", "Tipo", "Valor", "Status"];
+        const columnWidth = 100;
+
+        // Cabeçalho da tabela
+        doc.fontSize(10).font("Helvetica-Bold");
+        tableHeaders.forEach((header, i) => {
+          doc.text(header, 50 + i * columnWidth, tableTop, {
+            width: columnWidth,
+            align: "left",
+          });
+        });
+
+        // Linha separadora
+        doc
+          .moveTo(50, tableTop + 15)
+          .lineTo(50 + tableHeaders.length * columnWidth, tableTop + 15)
+          .stroke();
+
+        // Dados
+        doc.font("Helvetica");
+        let y = tableTop + 25;
+
+        for (const order of ordersToShow) {
+          doc.text(`${order._id.substring(0, 8)}...`, 50, y, {
+            width: columnWidth,
+            align: "left",
+          });
+          doc.text(
+            order.clientId ? `${order.clientId.substring(0, 8)}...` : "-",
+            50 + columnWidth,
+            y,
+            {
+              width: columnWidth,
+              align: "left",
+            }
+          );
+          doc.text(
+            this.translateProductType(order.productType),
+            50 + columnWidth * 2,
+            y,
+            {
+              width: columnWidth,
+              align: "left",
+            }
+          );
+          doc.text(
+            `R$ ${order.totalPrice.toFixed(2)}`,
+            50 + columnWidth * 3,
+            y,
+            {
+              width: columnWidth,
+              align: "left",
+            }
+          );
+          doc.text(
+            this.translateOrderStatus(order.status),
+            50 + columnWidth * 4,
+            y,
+            {
+              width: columnWidth,
+              align: "left",
+            }
+          );
+
+          y += 20;
+
+          // Adicionar nova página se necessário
+          if (y > doc.page.height - 50) {
+            doc.addPage();
+            y = 50;
+          }
+        }
+
+        // Nota sobre limitação
+        if (summary.orders.length > 20) {
+          doc.moveDown();
+          doc.text(
+            `Nota: Mostrando apenas os primeiros 20 de ${summary.orders.length} pedidos.`
+          );
+        }
+
+        doc.end();
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
+  private async generateOrdersSummaryCSV(
+    summary: {
+      date: string;
+      totalOrders: number;
+      ordersByStatus: {
+        pending: number;
+        in_production: number;
+        ready: number;
+        delivered: number;
+        cancelled: number;
+      };
+      totalValue: number;
+      ordersByType: {
+        glasses: number;
+        lensCleaner: number;
+      };
+      orders: IOrder[];
+    },
+    filename: string
+  ): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
+    // Criar CSV com resumo
+    let csv = `"Resumo de Pedidos - ${summary.date}"\n\n`;
+
+    csv += '"Resumo Geral"\n';
+    csv += `"Data","${summary.date}"\n`;
+    csv += `"Total de Pedidos","${summary.totalOrders}"\n`;
+    csv += `"Valor Total","R$ ${summary.totalValue.toFixed(2)}"\n\n`;
+
+    csv += '"Pedidos por Status"\n';
+    csv += `"Pendentes","${summary.ordersByStatus.pending}"\n`;
+    csv += `"Em Produção","${summary.ordersByStatus.in_production}"\n`;
+    csv += `"Prontos","${summary.ordersByStatus.ready}"\n`;
+    csv += `"Entregues","${summary.ordersByStatus.delivered}"\n`;
+    csv += `"Cancelados","${summary.ordersByStatus.cancelled}"\n\n`;
+
+    csv += '"Pedidos por Tipo"\n';
+    csv += `"Óculos","${summary.ordersByType.glasses}"\n`;
+    csv += `"Limpa Lentes","${summary.ordersByType.lensCleaner}"\n\n`;
+
+    csv += '"Lista de Pedidos"\n';
+    csv +=
+      '"ID","Cliente","Tipo","Valor Total","Status","Data de Entrega","Método de Pagamento"\n';
+
+    // Adicionar dados dos pedidos
+    for (const order of summary.orders) {
+      csv += `"${order._id}",`;
+      csv += `"${order.clientId || ""}",`;
+      csv += `"${this.translateProductType(order.productType)}",`;
+      csv += `"R$ ${order.totalPrice.toFixed(2)}",`;
+      csv += `"${this.translateOrderStatus(order.status)}",`;
+      csv += `"${order.deliveryDate ? new Date(order.deliveryDate).toLocaleDateString() : "N/A"}",`;
+      csv += `"${order.paymentMethod}"\n`;
+    }
+
+    return {
+      buffer: Buffer.from(csv),
+      contentType: "text/csv",
+      filename: `${filename}.csv`,
+    };
+  }
+
+  private async generateOrderDetailsPDF(
+    order: IOrder,
+    filename: string,
+    title?: string
+  ): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
+    return new Promise((resolve, reject) => {
+      try {
+        const doc = new PDFDocument({ margin: 50 });
+        const chunks: Buffer[] = [];
+
+        doc.on("data", (chunk) => chunks.push(chunk));
+        doc.on("end", () => {
+          const buffer = Buffer.concat(chunks);
+          resolve({
+            buffer,
+            contentType: "application/pdf",
+            filename: `${filename}.pdf`,
+          });
+        });
+
+        // Título
+        const reportTitle = title || `Detalhes do Pedido - ${order._id}`;
+        doc.fontSize(20).text(reportTitle, { align: "center" });
+        doc.moveDown();
+
+        // Data de geração
+        doc.fontSize(12).text(`Gerado em: ${new Date().toLocaleString()}`, {
+          align: "right",
+        });
+        doc.moveDown(2);
+
+        // Informações gerais
+        doc.fontSize(16).text("Informações Gerais", { underline: true });
+        doc.moveDown();
+
+        doc.fontSize(12);
+        doc.text(`ID: ${order._id}`);
+        doc.text(`Cliente: ${order.clientId || "N/A"}`);
+        doc.text(`Funcionário: ${order.employeeId || "N/A"}`);
+        doc.text(`Status: ${this.translateOrderStatus(order.status)}`);
+        doc.text(
+          `Data de Criação: ${order.createdAt ? new Date(order.createdAt).toLocaleString() : "N/A"}`
+        );
+        doc.text(
+          `Data de Entrega: ${order.deliveryDate ? new Date(order.deliveryDate).toLocaleString() : "N/A"}`
+        );
+
+        if (order.laboratoryId) {
+          doc.text(`Laboratório: ${order.laboratoryId}`);
+        }
+
+        doc.moveDown(2);
+
+        // Informações do produto
+        doc.fontSize(16).text("Informações do Produto", { underline: true });
+        doc.moveDown();
+
+        doc.fontSize(12);
+        doc.text(
+          `Tipo de Produto: ${this.translateProductType(order.productType)}`
+        );
+        doc.text(`Produto: ${order.product}`);
+
+        if (order.productType === "glasses") {
+          doc.text(
+            `Tipo de Óculos: ${this.translateGlassesType(order.glassesType)}`
+          );
+          doc.text(
+            `Armação: ${this.translateGlassesFrame(order.glassesFrame)}`
+          );
+          doc.text(`Tipo de Lente: ${order.lensType || "N/A"}`);
+        }
+
+        doc.moveDown(2);
+
+        // Informações de pagamento
+        doc.fontSize(16).text("Informações de Pagamento", { underline: true });
+        doc.moveDown();
+
+        doc.fontSize(12);
+        doc.text(`Método de Pagamento: ${order.paymentMethod}`);
+        doc.text(`Valor Total: R$ ${order.totalPrice.toFixed(2)}`);
+
+        if (order.installments) {
+          doc.text(`Parcelas: ${order.installments}`);
+        }
+
+        if (order.paymentEntry) {
+          doc.text(`Valor de Entrada: R$ ${order.paymentEntry.toFixed(2)}`);
+        }
+
+        doc.moveDown(2);
+
+        // Dados da prescrição (se existirem)
+        if (order.prescriptionData) {
+          doc.fontSize(16).text("Dados da Prescrição", { underline: true });
+          doc.moveDown();
+
+          doc.fontSize(12);
+          doc.text(`Médico: ${order.prescriptionData.doctorName}`);
+          doc.text(`Clínica: ${order.prescriptionData.clinicName}`);
+          doc.text(
+            `Data da Consulta: ${new Date(order.prescriptionData.appointmentDate).toLocaleDateString()}`
+          );
+          doc.moveDown();
+
+          doc.text("Olho Esquerdo:");
+          doc.text(`SPH: ${order.prescriptionData.leftEye.sph}`);
+          doc.text(`CYL: ${order.prescriptionData.leftEye.cyl}`);
+          doc.text(`AXIS: ${order.prescriptionData.leftEye.axis}`);
+          doc.moveDown();
+
+          doc.text("Olho Direito:");
+          doc.text(`SPH: ${order.prescriptionData.rightEye.sph}`);
+          doc.text(`CYL: ${order.prescriptionData.rightEye.cyl}`);
+          doc.text(`AXIS: ${order.prescriptionData.rightEye.axis}`);
+          doc.moveDown();
+
+          doc.text(`DNP: ${order.prescriptionData.nd}`);
+          doc.text(`Adição: ${order.prescriptionData.addition}`);
+        }
+
+        // Observações (se existirem)
+        if (order.observations) {
+          doc.moveDown();
+          doc.fontSize(16).text("Observações", { underline: true });
+          doc.moveDown();
+          doc.fontSize(12).text(order.observations);
+        }
+
+        doc.end();
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
+  private async generateOrderDetailsCSV(
+    order: IOrder,
+    filename: string
+  ): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
+    let csv = `"Detalhes do Pedido - ${order._id}"\n\n`;
+
+    // Informações gerais
+    csv += `"Informações Gerais"\n`;
+    csv += `"ID","${order._id}"\n`;
+    csv += `"Cliente","${order.clientId || "N/A"}"\n`;
+    csv += `"Funcionário","${order.employeeId || "N/A"}"\n`;
+    csv += `"Status","${this.translateOrderStatus(order.status)}"\n`;
+    csv += `"Data de Criação","${order.createdAt ? new Date(order.createdAt).toLocaleString() : "N/A"}"\n`;
+    csv += `"Data de Entrega","${order.deliveryDate ? new Date(order.deliveryDate).toLocaleString() : "N/A"}"\n`;
+
+    if (order.laboratoryId) {
+      csv += `"Laboratório","${order.laboratoryId}"\n`;
+    }
+
+    csv += "\n";
+
+    // Informações do produto
+    csv += `"Informações do Produto"\n`;
+    csv += `"Tipo de Produto","${this.translateProductType(order.productType)}"\n`;
+    csv += `"Produto","${order.product}"\n`;
+
+    if (order.productType === "glasses") {
+      csv += `"Tipo de Óculos","${this.translateGlassesType(order.glassesType)}"\n`;
+      csv += `"Armação","${this.translateGlassesFrame(order.glassesFrame)}"\n`;
+      csv += `"Tipo de Lente","${order.lensType || "N/A"}"\n`;
+    }
+
+    csv += "\n";
+
+    // Informações de pagamento
+    csv += `"Informações de Pagamento"\n`;
+    csv += `"Método de Pagamento","${order.paymentMethod}"\n`;
+    csv += `"Valor Total","R$ ${order.totalPrice.toFixed(2)}"\n`;
+
+    if (order.installments) {
+      csv += `"Parcelas","${order.installments}"\n`;
+    }
+
+    if (order.paymentEntry) {
+      csv += `"Valor de Entrada","R$ ${order.paymentEntry.toFixed(2)}"\n`;
+    }
+
+    csv += "\n";
+
+    // Dados da prescrição (se existirem)
+    if (order.prescriptionData) {
+      csv += `"Dados da Prescrição"\n`;
+      csv += `"Médico","${order.prescriptionData.doctorName}"\n`;
+      csv += `"Clínica","${order.prescriptionData.clinicName}"\n`;
+      csv += `"Data da Consulta","${new Date(order.prescriptionData.appointmentDate).toLocaleDateString()}"\n`;
+
+      csv += `\n"Olho Esquerdo"\n`;
+      csv += `"SPH","${order.prescriptionData.leftEye.sph}"\n`;
+      csv += `"CYL","${order.prescriptionData.leftEye.cyl}"\n`;
+      csv += `"AXIS","${order.prescriptionData.leftEye.axis}"\n`;
+
+      csv += `\n"Olho Direito"\n`;
+      csv += `"SPH","${order.prescriptionData.rightEye.sph}"\n`;
+      csv += `"CYL","${order.prescriptionData.rightEye.cyl}"\n`;
+      csv += `"AXIS","${order.prescriptionData.rightEye.axis}"\n`;
+
+      csv += "\n";
+      csv += `"DNP","${order.prescriptionData.nd}"\n`;
+      csv += `"Adição","${order.prescriptionData.addition}"\n`;
+    }
+
+    // Observações (se existirem)
+    if (order.observations) {
+      csv += `\n"Observações"\n`;
+      csv += `"${order.observations}"\n`;
+    }
+
+    return {
+      buffer: Buffer.from(csv),
+      contentType: "text/csv",
+      filename: `${filename}.csv`,
+    };
+  }
+
+  private translateProductType(type: string): string {
+    const types: Record<string, string> = {
+      glasses: "Óculos",
+      lensCleaner: "Limpa Lentes",
+    };
+    return types[type] || type;
+  }
+
+  private translateOrderStatus(status: string): string {
+    const statuses: Record<string, string> = {
+      pending: "Pendente",
+      in_production: "Em Produção",
+      ready: "Pronto",
+      delivered: "Entregue",
+      cancelled: "Cancelado",
+    };
+    return statuses[status] || status;
+  }
+
+  private translateGlassesType(type: string): string {
+    const types: Record<string, string> = {
+      prescription: "Grau",
+      sunglasses: "Sol",
+    };
+    return types[type] || type;
+  }
+
+  private translateGlassesFrame(frame: string): string {
+    const frames: Record<string, string> = {
+      with: "Com armação",
+      no: "Sem armação",
+    };
+    return frames[frame] || frame;
+  }
+
+  private async generateOrdersPDF(
+    orders: IOrder[],
+    filename: string,
+    title?: string
+  ): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
+    return new Promise((resolve, reject) => {
+      try {
+        const doc = new PDFDocument({ margin: 50 });
+        const chunks: Buffer[] = [];
+
+        doc.on("data", (chunk) => chunks.push(chunk));
+        doc.on("end", () => {
+          const buffer = Buffer.concat(chunks);
+          resolve({
+            buffer,
+            contentType: "application/pdf",
+            filename: `${filename}.pdf`,
+          });
+        });
+
+        // Título
+        const reportTitle = title || "Relatório de Pedidos";
+        doc.fontSize(20).text(reportTitle, { align: "center" });
+        doc.moveDown();
+
+        // Data de geração
+        doc.fontSize(12).text(`Gerado em: ${new Date().toLocaleString()}`, {
+          align: "right",
+        });
+        doc.moveDown(2);
+
+        // Cabeçalhos da tabela
+        const tableTop = 150;
+        const tableHeaders = ["ID", "Cliente", "Tipo", "Valor Total", "Status"];
+        const columnWidth = 100;
+
+        // Desenhar linha de cabeçalho
+        doc.fontSize(12).font("Helvetica-Bold");
+        tableHeaders.forEach((header, i) => {
+          doc.text(header, 50 + i * columnWidth, tableTop, {
+            width: columnWidth,
+            align: "left",
+          });
+        });
+
+        // Linha separadora
+        doc
+          .moveTo(50, tableTop + 20)
+          .lineTo(50 + tableHeaders.length * columnWidth, tableTop + 20)
+          .stroke();
+
+        // Dados
+        doc.font("Helvetica");
+        let y = tableTop + 30;
+
+        for (const order of orders) {
+          const formattedValue = `R$ ${order.totalPrice.toFixed(2)}`;
+          const type = this.translateProductType(order.productType);
+          const status = this.translateOrderStatus(order.status);
+
+          doc.text(`${order._id.substring(0, 10)}...`, 50, y, {
+            width: columnWidth,
+            align: "left",
+          });
+          doc.text(order.clientId || "", 50 + columnWidth, y, {
+            width: columnWidth,
+            align: "left",
+          });
+          doc.text(type, 50 + columnWidth * 2, y, {
+            width: columnWidth,
+            align: "left",
+          });
+          doc.text(formattedValue, 50 + columnWidth * 3, y, {
+            width: columnWidth,
+            align: "left",
+          });
+          doc.text(status, 50 + columnWidth * 4, y, {
+            width: columnWidth,
+            align: "left",
+          });
+
+          y += 20;
+
+          // Adicionar nova página se necessário
+          if (y > doc.page.height - 50) {
+            doc.addPage();
+            y = 50;
+          }
+        }
+
+        // Resumo
+        doc.moveDown(2);
+        const totalValue = orders.reduce(
+          (sum, order) => sum + order.totalPrice,
+          0
+        );
+        doc
+          .fontSize(14)
+          .font("Helvetica-Bold")
+          .text(`Total: R$ ${totalValue.toFixed(2)}`, { align: "right" });
+
+        doc.end();
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
+  private async generateOrdersCSV(
+    orders: IOrder[],
+    filename: string
+  ): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
+    const fields = [
+      { label: "ID", value: "_id" },
+      { label: "Cliente", value: "clientId" },
+      { label: "Funcionário", value: "employeeId" },
+      {
+        label: "Tipo de Produto",
+        value: (row: IOrder) => this.translateProductType(row.productType),
+      },
+      { label: "Produto", value: "product" },
+      { label: "Valor Total", value: "totalPrice" },
+      {
+        label: "Status",
+        value: (row: IOrder) => this.translateOrderStatus(row.status),
+      },
+      {
+        label: "Data de Entrega",
+        value: (row: IOrder) =>
+          row.deliveryDate
+            ? new Date(row.deliveryDate).toLocaleDateString()
+            : "N/A",
+      },
+      { label: "Método de Pagamento", value: "paymentMethod" },
+    ];
+
+    const parser = new Parser({ fields });
+    const csv = parser.parse(orders);
+    const buffer = Buffer.from(csv);
+
+    return {
+      buffer,
+      contentType: "text/csv",
+      filename: `${filename}.csv`,
+    };
+  }
+
+  private async generateOrdersJSON(
+    orders: IOrder[],
+    filename: string
+  ): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
+    const buffer = Buffer.from(JSON.stringify(orders, null, 2));
+
+    return {
+      buffer,
+      contentType: "application/json",
+      filename: `${filename}.json`,
+    };
   }
 
   private async generateFinancialReportExcel(

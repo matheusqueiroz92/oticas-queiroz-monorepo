@@ -28,6 +28,38 @@ export class CashRegisterController {
     this.cashRegisterService = new CashRegisterService();
   }
 
+  async getAllRegisters(req: Request, res: Response): Promise<void> {
+    try {
+      const page = Number(req.query.page) || 1;
+      const limit = Number(req.query.limit) || 10;
+
+      // Extrair filtros da query
+      const filters: Record<string, unknown> = {};
+      if (req.query.status) filters.status = req.query.status;
+      if (req.query.startDate) filters.startDate = req.query.startDate;
+      if (req.query.endDate) filters.endDate = req.query.endDate;
+      if (req.query.search) filters.search = req.query.search;
+
+      const result = await this.cashRegisterService.getAllRegisters(
+        page,
+        limit,
+        filters
+      );
+
+      res.status(200).json({
+        registers: result.registers,
+        pagination: {
+          page: result.page,
+          limit: result.limit,
+          total: result.total,
+          totalPages: result.totalPages,
+        },
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  }
+
   async openRegister(req: AuthRequest, res: Response): Promise<void> {
     try {
       if (!req.user?.id) {

@@ -103,6 +103,91 @@ const cashRegisterController = new CashRegisterController();
 
 /**
  * @swagger
+ * /api/cash-registers:
+ *   get:
+ *     summary: Lista todos os registros de caixa
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Cash Register]
+ *     description: Retorna uma lista paginada de registros de caixa
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Número da página
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
+ *         description: Limite de itens por página
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [open, closed]
+ *         description: Filtrar por status
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Data inicial
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Data final
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Termo de busca (ID ou texto nas observações)
+ *     responses:
+ *       200:
+ *         description: Lista de registros de caixa
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 registers:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/CashRegister'
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     page:
+ *                       type: integer
+ *                     limit:
+ *                       type: integer
+ *                     total:
+ *                       type: integer
+ *                     totalPages:
+ *                       type: integer
+ *       401:
+ *         description: Não autorizado
+ *       403:
+ *         description: Acesso negado. Requer permissão de administrador ou funcionário.
+ */
+router.get(
+  "/cash-registers",
+  authenticate,
+  authorize(["admin", "employee"]),
+  asyncHandler(
+    cashRegisterController.getAllRegisters.bind(cashRegisterController)
+  )
+);
+
+/**
+ * @swagger
  * /api/cash-registers/open:
  *   post:
  *     summary: Abre um novo caixa
@@ -289,6 +374,130 @@ router.get(
 
 /**
  * @swagger
+ * /api/cash-registers/export/daily:
+ *   get:
+ *     summary: Exporta o resumo diário dos caixas
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Cash Register]
+ *     description: Gera um arquivo com o resumo financeiro de todos os caixas de um dia específico
+ *     parameters:
+ *       - in: query
+ *         name: date
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Data para o relatório (padrão é a data atual)
+ *         example: "2023-12-31"
+ *       - in: query
+ *         name: format
+ *         schema:
+ *           type: string
+ *           enum: [json, excel, pdf, csv]
+ *           default: excel
+ *         description: Formato de exportação
+ *       - in: query
+ *         name: title
+ *         schema:
+ *           type: string
+ *         description: Título personalizado para o relatório
+ *     responses:
+ *       200:
+ *         description: Arquivo exportado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *           application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *           application/pdf:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *           text/csv:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       404:
+ *         description: Nenhum caixa encontrado para a data
+ *       401:
+ *         description: Não autorizado
+ */
+router.get(
+  "/cash-registers/export/daily",
+  authenticate,
+  authorize(["admin", "employee"]),
+  asyncHandler(
+    cashRegisterController.exportDailySummary.bind(cashRegisterController)
+  )
+);
+
+/**
+ * @swagger
+ * /api/cash-registers/deleted:
+ *   get:
+ *     summary: Lista caixas excluídos logicamente
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Cash Register]
+ *     description: Retorna uma lista paginada de registros de caixa marcados como excluídos
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Número da página
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
+ *         description: Limite de itens por página
+ *     responses:
+ *       200:
+ *         description: Lista de caixas excluídos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 registers:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/CashRegister'
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     page:
+ *                       type: integer
+ *                     limit:
+ *                       type: integer
+ *                     total:
+ *                       type: integer
+ *                     totalPages:
+ *                       type: integer
+ *       401:
+ *         description: Não autorizado
+ *       403:
+ *         description: Acesso negado. Requer permissão de administrador.
+ */
+router.get(
+  "/cash-registers/deleted",
+  authenticate,
+  authorize(["admin"]),
+  asyncHandler(
+    cashRegisterController.getDeletedRegisters.bind(cashRegisterController)
+  )
+);
+
+/**
+ * @swagger
  * /api/cash-registers/{id}:
  *   get:
  *     summary: Retorna um caixa específico
@@ -434,68 +643,6 @@ router.post(
 
 /**
  * @swagger
- * /api/cash-registers/deleted:
- *   get:
- *     summary: Lista caixas excluídos logicamente
- *     security:
- *       - bearerAuth: []
- *     tags: [Cash Register]
- *     description: Retorna uma lista paginada de registros de caixa marcados como excluídos
- *     parameters:
- *       - in: query
- *         name: page
- *         schema:
- *           type: integer
- *           minimum: 1
- *           default: 1
- *         description: Número da página
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           minimum: 1
- *           maximum: 100
- *           default: 10
- *         description: Limite de itens por página
- *     responses:
- *       200:
- *         description: Lista de caixas excluídos
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 registers:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/CashRegister'
- *                 pagination:
- *                   type: object
- *                   properties:
- *                     page:
- *                       type: integer
- *                     limit:
- *                       type: integer
- *                     total:
- *                       type: integer
- *                     totalPages:
- *                       type: integer
- *       401:
- *         description: Não autorizado
- *       403:
- *         description: Acesso negado. Requer permissão de administrador.
- */
-router.get(
-  "/cash-registers/deleted",
-  authenticate,
-  authorize(["admin"]),
-  asyncHandler(
-    cashRegisterController.getDeletedRegisters.bind(cashRegisterController)
-  )
-);
-
-/**
- * @swagger
  * /api/cash-registers/{id}/export:
  *   get:
  *     summary: Exporta o resumo de um caixa específico
@@ -553,68 +700,6 @@ router.get(
   authorize(["admin", "employee"]),
   asyncHandler(
     cashRegisterController.exportRegisterSummary.bind(cashRegisterController)
-  )
-);
-
-/**
- * @swagger
- * /api/cash-registers/export/daily:
- *   get:
- *     summary: Exporta o resumo diário dos caixas
- *     security:
- *       - bearerAuth: []
- *     tags: [Cash Register]
- *     description: Gera um arquivo com o resumo financeiro de todos os caixas de um dia específico
- *     parameters:
- *       - in: query
- *         name: date
- *         schema:
- *           type: string
- *           format: date
- *         description: Data para o relatório (padrão é a data atual)
- *         example: "2023-12-31"
- *       - in: query
- *         name: format
- *         schema:
- *           type: string
- *           enum: [json, excel, pdf, csv]
- *           default: excel
- *         description: Formato de exportação
- *       - in: query
- *         name: title
- *         schema:
- *           type: string
- *         description: Título personalizado para o relatório
- *     responses:
- *       200:
- *         description: Arquivo exportado com sucesso
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *           application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
- *             schema:
- *               type: string
- *               format: binary
- *           application/pdf:
- *             schema:
- *               type: string
- *               format: binary
- *           text/csv:
- *             schema:
- *               type: string
- *               format: binary
- *       404:
- *         description: Nenhum caixa encontrado para a data
- *       401:
- *         description: Não autorizado
- */
-router.get(
-  "/cash-registers/export/daily",
-  authenticate,
-  authorize(["admin", "employee"]),
-  asyncHandler(
-    cashRegisterController.exportDailySummary.bind(cashRegisterController)
   )
 );
 

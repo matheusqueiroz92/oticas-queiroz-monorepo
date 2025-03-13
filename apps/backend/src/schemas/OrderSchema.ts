@@ -34,6 +34,7 @@ const orderSchema = new Schema(
     paymentMethod: { type: String, required: true },
     paymentEntry: Number,
     installments: Number,
+    orderDate: { type: Date, required: true },
     deliveryDate: { type: Date, required: true },
     status: {
       type: String,
@@ -68,7 +69,13 @@ const orderSchema = new Schema(
     lensType: String,
     observations: String,
     totalPrice: { type: Number, required: true },
-    createdAt: { type: Date, default: Date.now },
+    // Campos para soft delete
+    isDeleted: { type: Boolean, default: false },
+    deletedAt: Date,
+    deletedBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+    },
   },
   { timestamps: true }
 );
