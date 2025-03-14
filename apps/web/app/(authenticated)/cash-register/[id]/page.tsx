@@ -50,6 +50,13 @@ import {
   getPaymentTypeClass,
 } from "@/app/utils/formatters";
 import type { IPayment } from "@/app/types/payment";
+import { useQuery } from "@tanstack/react-query";
+import { QUERY_KEYS } from "@/app/constants/query-keys";
+import {
+  getCashRegisterById,
+  getCashRegisterSummary,
+} from "@/app/services/cashRegisterService";
+import { getPaymentsByCashRegister } from "@/app/services/paymentService";
 
 interface RegisterSummary {
   register: {
@@ -78,63 +85,59 @@ interface RegisterSummary {
 }
 
 export default function CashRegisterDetailsPage() {
-  const params = useParams<{ id: string }>();
+  const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const [summary, setSummary] = useState<RegisterSummary | null>(null);
   const [payments, setPayments] = useState<IPayment[]>([]);
 
+  const { navigateToCloseRegister } = useCashRegister();
+
+  // Buscar detalhes do caixa
   const {
-    fetchCashRegisterById,
-    fetchCashRegisterSummary,
-    navigateToCloseRegister,
-    currentRegister,
-    loading,
-    error,
-  } = useCashRegister();
+    data: currentRegister,
+    isLoading: isLoadingRegister,
+    error: registerError,
+  } = useQuery({
+    queryKey: QUERY_KEYS.CASH_REGISTERS.DETAIL(id as string),
+    queryFn: () => getCashRegisterById(id as string),
+    enabled: !!id,
+  });
 
-  const { fetchPaymentsByCashRegister } = usePayments();
+  // Buscar resumo do caixa
+  const {
+    data: summary,
+    isLoading: isLoadingSummary,
+    error: summaryError,
+  } = useQuery({
+    queryKey: QUERY_KEYS.CASH_REGISTERS.SUMMARY(id as string),
+    queryFn: () => getCashRegisterSummary(id as string),
+    enabled: !!id,
+  });
 
-  // Buscar dados do caixa
+  // Buscar pagamentos relacionados
+  const {
+    data: paymentsData,
+    isLoading: isLoadingPayments,
+    error: paymentsError,
+  } = useQuery({
+    queryKey: QUERY_KEYS.PAYMENTS.BY_CASH_REGISTER(id as string),
+    queryFn: () => getPaymentsByCashRegister(id as string),
+    enabled: !!id,
+  });
+
   useEffect(() => {
-    const fetchDetails = async () => {
-      if (!params.id) return;
+    if (paymentsData) {
+      setPayments(paymentsData || []);
+    }
+  }, [paymentsData]);
 
-      // Buscar detalhes do caixa
-      await fetchCashRegisterById(params.id);
-
-      // Buscar o resumo do caixa
-      try {
-        const summaryData = await fetchCashRegisterSummary(params.id);
-        if (summaryData) {
-          setSummary(summaryData as RegisterSummary);
-        }
-      } catch (e) {
-        console.error("Erro ao buscar resumo do caixa:", e);
-      }
-
-      // Buscar os pagamentos relacionados ao caixa
-      try {
-        const paymentsList = await fetchPaymentsByCashRegister(params.id);
-        setPayments(paymentsList);
-      } catch (e) {
-        console.error("Erro ao buscar pagamentos do caixa:", e);
-      }
-    };
-
-    fetchDetails();
-  }, [
-    params.id,
-    fetchCashRegisterById,
-    fetchCashRegisterSummary,
-    fetchPaymentsByCashRegister,
-  ]);
-
+  const isLoading = isLoadingRegister || isLoadingSummary || isLoadingPayments;
+  const error = registerError || summaryError || paymentsError;
   // Função para imprimir relatório
   const handlePrint = () => {
     window.print();
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -149,7 +152,9 @@ export default function CashRegisterDetailsPage() {
           <CardHeader>
             <CardTitle className="text-red-800">Erro</CardTitle>
             <CardDescription className="text-red-700">
-              {error || "Não foi possível carregar os detalhes do caixa."}
+              {error
+                ? error.toString()
+                : "Não foi possível carregar os detalhes do caixa."}
             </CardDescription>
           </CardHeader>
           <CardFooter>

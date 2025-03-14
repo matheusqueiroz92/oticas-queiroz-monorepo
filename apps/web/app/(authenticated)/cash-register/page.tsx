@@ -57,7 +57,7 @@ export default function CashRegisterPage() {
   const {
     cashRegisters,
     activeRegister,
-    loading,
+    isLoading,
     error,
     currentPage,
     totalPages,
@@ -67,6 +67,7 @@ export default function CashRegisterPage() {
     navigateToOpenRegister,
     navigateToRegisterDetails,
     navigateToCloseRegister,
+    refetch,
   } = useCashRegister();
 
   // Função para aplicar filtro de data
@@ -173,7 +174,7 @@ export default function CashRegisterPage() {
   };
 
   // Verificar estado vazio
-  const showEmptyState = !loading && !error && cashRegisters.length === 0;
+  const showEmptyState = !isLoading && !error && cashRegisters.length === 0;
 
   return (
     <div className="space-y-4">
@@ -280,7 +281,7 @@ export default function CashRegisterPage() {
         )}
       </div>
 
-      {loading && (
+      {isLoading && (
         <div className="flex justify-center items-center py-12">
           <Loader2 className="h-8 w-8 animate-spin" />
         </div>
@@ -306,7 +307,7 @@ export default function CashRegisterPage() {
         </div>
       )}
 
-      {!loading && !error && cashRegisters.length > 0 && (
+      {!isLoading && !error && cashRegisters.length > 0 && (
         <>
           <Table>
             <TableHeader>

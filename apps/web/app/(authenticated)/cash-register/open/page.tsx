@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useQuery, useMutation } from "@tanstack/react-query";
 
 import {
   Form,
@@ -31,16 +32,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Loader2, DollarSign, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/useToast";
 
-import { useCashRegister } from "../../../../hooks/useCashRegister";
+import { useCashRegister } from "@/hooks/useCashRegister";
+import { checkOpenCashRegister } from "@/app/services/cashRegisterService";
+import { QUERY_KEYS } from "@/app/constants/query-keys";
 import type { OpenCashRegisterDTO } from "@/app/types/cash-register";
 
 // Esquema de validação para o formulário
 const openCashRegisterSchema = z.object({
   openingBalance: z.preprocess(
     (value) =>
-      value === ""
-        ? undefined
-        : Number.parseFloat(String(value).replace(",", ".")),
+      value === "" ? 0 : Number.parseFloat(String(value).replace(",", ".")),
     z.number().min(0, "O valor não pode ser negativo")
   ),
   observations: z.string().optional(),
@@ -50,12 +51,9 @@ type OpenCashRegisterFormValues = z.infer<typeof openCashRegisterSchema>;
 
 export default function OpenCashRegisterPage() {
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasCashRegisterOpen, setHasCashRegisterOpen] = useState(false);
-  const [isChecking, setIsChecking] = useState(true);
   const { toast } = useToast();
-
-  const { handleOpenCashRegister, checkForOpenRegister } = useCashRegister();
+  const { handleOpenCashRegister } = useCashRegister();
 
   // Inicializar o formulário
   const form = useForm<OpenCashRegisterFormValues>({
@@ -66,58 +64,82 @@ export default function OpenCashRegisterPage() {
     },
   });
 
-  // Verificar se já existe um caixa aberto
+  // Verificar se já existe um caixa aberto usando React Query
+  const {
+    data: cashRegisterData,
+    isLoading: isChecking,
+    error: checkError,
+  } = useQuery({
+    queryKey: QUERY_KEYS.CASH_REGISTERS.CURRENT,
+    queryFn: checkOpenCashRegister,
+    retry: false, // Não tentar novamente em caso de erro, pois 404 é esperado
+    refetchOnWindowFocus: false,
+  });
+
+  // Efeito para verificar se há um caixa aberto após o carregamento dos dados
   useEffect(() => {
-    const checkCashRegister = async () => {
-      setIsChecking(true);
-      try {
-        const hasOpenRegister = await checkForOpenRegister();
-        setHasCashRegisterOpen(hasOpenRegister);
+    if (cashRegisterData) {
+      // Se houver dados e isOpen for true, então há um caixa aberto
+      if (cashRegisterData.isOpen) {
+        setHasCashRegisterOpen(true);
 
-        if (hasOpenRegister) {
-          // Se já existe um caixa aberto, exibir aviso e impedir abertura de novo caixa
-          toast({
-            variant: "destructive",
-            title: "Caixa já aberto",
-            description:
-              "Já existe um caixa aberto. Feche-o antes de abrir um novo.",
-          });
+        toast({
+          variant: "destructive",
+          title: "Caixa já aberto",
+          description:
+            "Já existe um caixa aberto. Feche-o antes de abrir um novo.",
+        });
 
-          form.setError("openingBalance", {
-            type: "manual",
-            message:
-              "Já existe um caixa aberto. Feche-o antes de abrir um novo.",
-          });
-        }
-      } catch (error) {
-        console.error("Erro ao verificar caixa aberto:", error);
-      } finally {
-        setIsChecking(false);
+        form.setError("openingBalance", {
+          type: "manual",
+          message: "Já existe um caixa aberto. Feche-o antes de abrir um novo.",
+        });
+      } else {
+        setHasCashRegisterOpen(false);
       }
-    };
+    } else {
+      // Se não houver dados, assumimos que não há caixa aberto
+      setHasCashRegisterOpen(false);
+    }
+  }, [cashRegisterData, form, toast]);
 
-    checkCashRegister();
-  }, [form, toast, checkForOpenRegister]);
+  // Mutation para abrir o caixa
+  const openCashRegisterMutation = useMutation({
+    mutationFn: (data: OpenCashRegisterDTO) => handleOpenCashRegister(data),
+    onSuccess: () => {
+      toast({
+        title: "Caixa aberto",
+        description: "O caixa foi aberto com sucesso.",
+      });
+      router.push("/cash-register");
+    },
+    onError: (error) => {
+      console.error("Erro ao abrir caixa:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível abrir o caixa. Tente novamente.",
+      });
+    },
+  });
 
   // Função para lidar com envio do formulário
   const onSubmit = async (data: OpenCashRegisterFormValues) => {
-    setIsSubmitting(true);
-
-    try {
-      const newCashRegister = await handleOpenCashRegister({
-        openingBalance: data.openingBalance,
-        observations: data.observations,
-        openingDate: new Date(),
+    if (hasCashRegisterOpen) {
+      toast({
+        variant: "destructive",
+        title: "Caixa já aberto",
+        description:
+          "Já existe um caixa aberto. Feche-o antes de abrir um novo.",
       });
-
-      if (newCashRegister) {
-        router.push("/cash-register");
-      }
-    } catch (error) {
-      console.error("Erro ao abrir caixa:", error);
-    } finally {
-      setIsSubmitting(false);
+      return;
     }
+
+    openCashRegisterMutation.mutate({
+      openingBalance: data.openingBalance,
+      observations: data.observations,
+      openingDate: new Date(),
+    });
   };
 
   return (
@@ -197,14 +219,22 @@ export default function OpenCashRegisterPage() {
                             placeholder="0,00"
                             className="pl-10"
                             {...field}
-                            value={field.value ?? ""}
+                            value={
+                              field.value !== undefined
+                                ? String(field.value).replace(".", ",")
+                                : ""
+                            }
                             onChange={(e) => {
                               // Permitir apenas números e vírgula
                               const value = e.target.value.replace(
                                 /[^0-9,.]/g,
                                 ""
                               );
-                              field.onChange(value);
+                              field.onChange(
+                                value === ""
+                                  ? 0
+                                  : Number.parseFloat(value.replace(",", "."))
+                              );
                             }}
                           />
                         </div>
@@ -247,9 +277,9 @@ export default function OpenCashRegisterPage() {
             <Button
               type="submit"
               form="openCashRegisterForm"
-              disabled={isSubmitting}
+              disabled={openCashRegisterMutation.isPending}
             >
-              {isSubmitting ? (
+              {openCashRegisterMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Processando...

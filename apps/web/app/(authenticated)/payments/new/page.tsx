@@ -7,9 +7,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { api } from "@/app/services/authService";
 import { useToast } from "@/hooks/useToast";
+import { usePayments } from "@/hooks/usePayments";
+import { QUERY_KEYS } from "@/app/constants/query-keys";
 
 import {
   Form,
@@ -60,14 +62,14 @@ import {
 import type { Order } from "@/app/types/order";
 import type { User as UserType } from "@/app/types/user";
 import type { LegacyClient } from "@/app/types/legacy-client";
-import type { ICashRegister } from "@/app/types/cash-register";
+import type { CreatePaymentDTO } from "@/app/types/payment";
 
 // Esquema de validação para o formulário
 const paymentFormSchema = z.object({
   amount: z.preprocess(
     (value) =>
       value === ""
-        ? undefined
+        ? 0 // Retorna 0 se o valor for uma string vazia
         : Number.parseFloat(String(value).replace(",", ".")),
     z.number().positive("O valor deve ser positivo")
   ),
@@ -102,25 +104,71 @@ type PaymentFormValues = z.infer<typeof paymentFormSchema>;
 export default function NewPaymentPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [loading, setLoading] = useState(false);
-  const [cashRegisters, setCashRegisters] = useState<ICashRegister[]>([]);
-  const [customers, setCustomers] = useState<UserType[]>([]);
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [legacyClients, setLegacyClients] = useState<LegacyClient[]>([]);
-  const [customerSearch, setCustomerSearch] = useState("");
-  const [orderSearch, setOrderSearch] = useState("");
-  const [legacyClientSearch, setLegacyClientSearch] = useState("");
-  const [showInstallments, setShowInstallments] = useState(false);
   const [step, setStep] = useState(1); // Controle da etapa atual do formulário
   const [selectedEntityType, setSelectedEntityType] = useState<
     "customer" | "legacyClient" | null
   >(null);
+  const [customerSearch, setCustomerSearch] = useState("");
+  const [orderSearch, setOrderSearch] = useState("");
+  const [legacyClientSearch, setLegacyClientSearch] = useState("");
+  const [showInstallments, setShowInstallments] = useState(false);
+
+  // Usar o hook usePayments
+  const {
+    handleCreatePayment,
+    isCreating,
+    checkForOpenCashRegisterBeforePayment,
+  } = usePayments();
+
+  // Query para verificar se há um caixa aberto
+  const { data: cashRegisterData, isLoading: isLoadingCashRegister } = useQuery(
+    {
+      queryKey: QUERY_KEYS.CASH_REGISTERS.CURRENT,
+      queryFn: checkForOpenCashRegisterBeforePayment,
+    }
+  );
+
+  // Queries para buscar clientes, pedidos e clientes legados
+  const { data: customers = [], isLoading: isLoadingCustomers } = useQuery({
+    queryKey: ["customers", customerSearch],
+    queryFn: async () => {
+      if (!customerSearch || customerSearch.length < 3) return [];
+      const response = await api.get(
+        `/api/users?role=customer&search=${customerSearch}`
+      );
+      return response.data || [];
+    },
+    enabled: customerSearch.length >= 3,
+  });
+
+  const { data: legacyClients = [], isLoading: isLoadingLegacyClients } =
+    useQuery({
+      queryKey: ["legacyClients", legacyClientSearch],
+      queryFn: async () => {
+        if (!legacyClientSearch || legacyClientSearch.length < 3) return [];
+        const response = await api.get(
+          `/api/legacy-clients?search=${legacyClientSearch}`
+        );
+        return response.data || [];
+      },
+      enabled: legacyClientSearch.length >= 3,
+    });
+
+  const { data: orders = [], isLoading: isLoadingOrders } = useQuery({
+    queryKey: ["orders", orderSearch],
+    queryFn: async () => {
+      if (!orderSearch || orderSearch.length < 3) return [];
+      const response = await api.get(`/api/orders?search=${orderSearch}`);
+      return response.data || [];
+    },
+    enabled: orderSearch.length >= 3,
+  });
 
   // Inicializar o formulário
   const form = useForm<PaymentFormValues>({
     resolver: zodResolver(paymentFormSchema),
     defaultValues: {
-      amount: undefined,
+      amount: 0,
       type: "sale",
       paymentMethod: "cash",
       paymentDate: new Date(),
@@ -153,127 +201,63 @@ export default function NewPaymentPage() {
     }
   }, [paymentType, setValue]);
 
-  // Efeito para verificar se há um caixa aberto
+  // Efeito para definir o caixa quando estiver disponível
   useEffect(() => {
-    const fetchCashRegisters = async () => {
-      try {
-        setLoading(true);
-        // Usar a rota correta
-        const response = await api.get("/api/cash-registers/current");
-
-        // Se encontrou um caixa aberto
-        if (response.data?._id) {
-          setCashRegisters([response.data]);
-          setValue("cashRegisterId", response.data._id);
-        } else {
-          setCashRegisters([]);
-        }
-      } catch (error) {
-        console.error("Erro ao buscar caixas:", error);
-        toast({
-          variant: "destructive",
-          title: "Erro",
-          description: "Não foi possível carregar os caixas disponíveis.",
-        });
-        setCashRegisters([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCashRegisters();
-  }, [setValue, toast]);
-
-  // Buscar clientes quando o termo de busca mudar
-  useEffect(() => {
-    if (!customerSearch || customerSearch.length < 3) return;
-
-    const fetchCustomers = async () => {
-      try {
-        const response = await api.get(
-          `/api/users?role=customer&search=${customerSearch}`
-        );
-        setCustomers(response.data || []);
-      } catch (error) {
-        console.error("Erro ao buscar clientes:", error);
-      }
-    };
-
-    const timer = setTimeout(() => {
-      fetchCustomers();
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [customerSearch]);
-
-  // Buscar clientes legados quando o termo de busca mudar
-  useEffect(() => {
-    if (!legacyClientSearch || legacyClientSearch.length < 3) return;
-
-    const fetchLegacyClients = async () => {
-      try {
-        const response = await api.get(
-          `/api/legacy-clients?search=${legacyClientSearch}`
-        );
-        setLegacyClients(response.data || []);
-      } catch (error) {
-        console.error("Erro ao buscar clientes legados:", error);
-      }
-    };
-
-    const timer = setTimeout(() => {
-      fetchLegacyClients();
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [legacyClientSearch]);
-
-  // Buscar pedidos quando o termo de busca mudar
-  useEffect(() => {
-    if (!orderSearch || orderSearch.length < 3) return;
-
-    const fetchOrders = async () => {
-      try {
-        const response = await api.get(`/api/orders?search=${orderSearch}`);
-        setOrders(response.data || []);
-      } catch (error) {
-        console.error("Erro ao buscar pedidos:", error);
-      }
-    };
-
-    const timer = setTimeout(() => {
-      fetchOrders();
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [orderSearch]);
-
-  // Mutation para criar um novo pagamento
-  const createPayment = useMutation({
-    mutationFn: async (data: PaymentFormValues) => {
-      return api.post("/api/payments", data);
-    },
-    onSuccess: (response) => {
-      toast({
-        title: "Pagamento registrado",
-        description: "O pagamento foi registrado com sucesso.",
-      });
-      router.push(`/payments/${response.data._id}`);
-    },
-    onError: (error) => {
-      console.error("Erro ao registrar pagamento:", error);
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description:
-          "Não foi possível registrar o pagamento. Verifique os dados e tente novamente.",
-      });
-    },
-  });
+    if (cashRegisterData) {
+      setValue("cashRegisterId", cashRegisterData);
+    }
+  }, [cashRegisterData, setValue]);
 
   // Função para lidar com envio do formulário
   const onSubmit = (data: PaymentFormValues) => {
-    createPayment.mutate(data);
+    // Verificar se estamos no passo 3 antes de enviar o formulário
+    if (step === 3) {
+      console.log("Enviando formulário no passo 3...");
+
+      // Criar objeto para enviar ao backend
+      const paymentData: CreatePaymentDTO = {
+        amount: data.amount,
+        type: data.type,
+        paymentMethod: data.paymentMethod,
+        date: data.paymentDate,
+        description: data.description,
+        category: data.category,
+        cashRegisterId: data.cashRegisterId,
+        customerId: data.customerId,
+        legacyClientId: data.legacyClientId,
+        orderId: data.orderId,
+        status: data.status,
+      };
+
+      // Se for crédito parcelado, adicionar informações de parcelamento
+      if (
+        data.paymentMethod === "credit" &&
+        data.installments &&
+        data.installments > 1
+      ) {
+        paymentData.installments = {
+          current: 1,
+          total: data.installments,
+          value: data.amount / data.installments,
+        };
+      }
+
+      // Enviar dados usando a mutation do hook
+      handleCreatePayment(paymentData)
+        .then((response) => {
+          // Redirecionar para a página de detalhes do pagamento criado
+          if (response && response._id) {
+            router.push(`/payments/${response._id}`);
+          } else {
+            router.push("/payments");
+          }
+        })
+        .catch((error) => {
+          console.error("Erro ao criar pagamento:", error);
+        });
+    } else {
+      console.log("Formulário não enviado: não estamos no passo 3.");
+    }
   };
 
   // Avançar para o próximo passo
@@ -292,9 +276,11 @@ export default function NewPaymentPage() {
       });
 
       if (!step1Valid) {
+        console.log("Validação do passo 1 falhou.");
         return;
       }
     }
+    console.log("Avançando para o próximo passo...");
     setStep(step + 1);
   };
 
@@ -322,9 +308,8 @@ export default function NewPaymentPage() {
                     {...field}
                     value={field.value ?? ""}
                     onChange={(e) => {
-                      // Permitir apenas números e vírgula
                       const value = e.target.value.replace(/[^0-9,.]/g, "");
-                      field.onChange(value);
+                      field.onChange(value === "" ? 0 : value); // Define 0 se o valor for uma string vazia
                     }}
                   />
                 </div>
@@ -470,28 +455,27 @@ export default function NewPaymentPage() {
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
-                {cashRegisters.length === 0 ? (
+                {isLoadingCashRegister ? (
+                  <SelectItem value="loading" disabled>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2 inline" />
+                    Carregando...
+                  </SelectItem>
+                ) : !cashRegisterData ? (
                   <SelectItem value="no-cash" disabled>
                     Nenhum caixa disponível
                   </SelectItem>
                 ) : (
-                  cashRegisters.map((register) => (
-                    <SelectItem key={register._id} value={register._id}>
-                      Caixa{" "}
-                      {register.status === "open" ? "(Aberto)" : "(Fechado)"} -{" "}
-                      {format(new Date(register.openingDate), "dd/MM/yyyy")}
-                    </SelectItem>
-                  ))
+                  <SelectItem value={cashRegisterData}>Caixa Aberto</SelectItem>
                 )}
               </SelectContent>
             </Select>
             <FormDescription>
-              {cashRegisters.length === 0 ? (
+              {!cashRegisterData ? (
                 <span className="text-red-500">
                   Você precisa abrir um caixa primeiro
                 </span>
               ) : (
-                "Selecione o caixa para este pagamento"
+                "Caixa selecionado para este pagamento"
               )}
             </FormDescription>
             <FormMessage />
@@ -630,36 +614,53 @@ export default function NewPaymentPage() {
                 </Button>
               </div>
 
-              {customerSearch && customers.length > 0 && (
-                <div className="border rounded-md p-4 max-h-60 overflow-y-auto">
-                  <ul className="space-y-2">
-                    {customers.map((customer) => (
-                      <li
-                        key={customer._id}
-                        className="flex items-center justify-between"
-                      >
-                        <div>
-                          <p className="font-medium">{customer.name}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {customer.email} - CPF: {customer.cpf}
-                          </p>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setValue("customerId", customer._id);
-                            setCustomerSearch(customer.name);
-                          }}
-                        >
-                          Selecionar
-                        </Button>
-                      </li>
-                    ))}
-                  </ul>
+              {isLoadingCustomers && (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
               )}
+
+              {customerSearch &&
+                customerSearch.length >= 3 &&
+                customers.length > 0 && (
+                  <div className="border rounded-md p-4 max-h-60 overflow-y-auto">
+                    <ul className="space-y-2">
+                      {customers.map((customer: UserType) => (
+                        <li
+                          key={customer._id}
+                          className="flex items-center justify-between"
+                        >
+                          <div>
+                            <p className="font-medium">{customer.name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {customer.email} - CPF: {customer.cpf}
+                            </p>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setValue("customerId", customer._id);
+                              setCustomerSearch(customer.name);
+                            }}
+                          >
+                            Selecionar
+                          </Button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+              {customerSearch &&
+                customerSearch.length >= 3 &&
+                customers.length === 0 &&
+                !isLoadingCustomers && (
+                  <div className="text-center py-4 text-muted-foreground">
+                    Nenhum cliente encontrado
+                  </div>
+                )}
 
               {watch("customerId") && (
                 <div className="bg-green-50 border border-green-200 rounded-md p-4">
@@ -667,8 +668,9 @@ export default function NewPaymentPage() {
                     Cliente selecionado
                   </h4>
                   <p className="text-sm text-green-700 mt-1">
-                    {customers.find((c) => c._id === watch("customerId"))
-                      ?.name || "Cliente"}
+                    {customers.find(
+                      (c: UserType) => c._id === watch("customerId")
+                    )?.name || "Cliente"}
                   </p>
                 </div>
               )}
@@ -689,41 +691,58 @@ export default function NewPaymentPage() {
                 </Button>
               </div>
 
-              {legacyClientSearch && legacyClients.length > 0 && (
-                <div className="border rounded-md p-4 max-h-60 overflow-y-auto">
-                  <ul className="space-y-2">
-                    {legacyClients.map((client) => (
-                      <li
-                        key={client._id}
-                        className="flex items-center justify-between"
-                      >
-                        <div>
-                          <p className="font-medium">{client.name}</p>
-                          <p className="text-sm text-muted-foreground">
-                            Documento: {client.identifier}
-                            {client.totalDebt > 0 && (
-                              <span className="ml-2 text-red-500">
-                                Débito: R$ {client.totalDebt.toFixed(2)}
-                              </span>
-                            )}
-                          </p>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setValue("legacyClientId", client._id);
-                            setLegacyClientSearch(client.name);
-                          }}
-                        >
-                          Selecionar
-                        </Button>
-                      </li>
-                    ))}
-                  </ul>
+              {isLoadingLegacyClients && (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
               )}
+
+              {legacyClientSearch &&
+                legacyClientSearch.length >= 3 &&
+                legacyClients.length > 0 && (
+                  <div className="border rounded-md p-4 max-h-60 overflow-y-auto">
+                    <ul className="space-y-2">
+                      {legacyClients.map((client: LegacyClient) => (
+                        <li
+                          key={client._id}
+                          className="flex items-center justify-between"
+                        >
+                          <div>
+                            <p className="font-medium">{client.name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              Documento: {client.identifier}
+                              {client.totalDebt > 0 && (
+                                <span className="ml-2 text-red-500">
+                                  Débito: R$ {client.totalDebt.toFixed(2)}
+                                </span>
+                              )}
+                            </p>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setValue("legacyClientId", client._id);
+                              setLegacyClientSearch(client.name);
+                            }}
+                          >
+                            Selecionar
+                          </Button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+              {legacyClientSearch &&
+                legacyClientSearch.length >= 3 &&
+                legacyClients.length === 0 &&
+                !isLoadingLegacyClients && (
+                  <div className="text-center py-4 text-muted-foreground">
+                    Nenhum cliente legado encontrado
+                  </div>
+                )}
 
               {watch("legacyClientId") && (
                 <div className="bg-green-50 border border-green-200 rounded-md p-4">
@@ -732,7 +751,7 @@ export default function NewPaymentPage() {
                   </h4>
                   <p className="text-sm text-green-700 mt-1">
                     {legacyClients.find(
-                      (c) => c._id === watch("legacyClientId")
+                      (c: LegacyClient) => c._id === watch("legacyClientId")
                     )?.name || "Cliente legado"}
                   </p>
                 </div>
@@ -762,41 +781,58 @@ export default function NewPaymentPage() {
                   </Button>
                 </div>
 
-                {orderSearch && orders.length > 0 && (
-                  <div className="border rounded-md p-4 max-h-60 overflow-y-auto">
-                    <ul className="space-y-2">
-                      {orders.map((order) => (
-                        <li
-                          key={order._id}
-                          className="flex items-center justify-between"
-                        >
-                          <div>
-                            <p className="font-medium">
-                              Pedido #{order._id.substring(0, 8)}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              Valor: R$ {order.totalPrice.toFixed(2)} - Status:{" "}
-                              {order.status}
-                            </p>
-                          </div>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setValue("orderId", order._id);
-                              setOrderSearch(
-                                `Pedido #${order._id.substring(0, 8)}`
-                              );
-                            }}
-                          >
-                            Selecionar
-                          </Button>
-                        </li>
-                      ))}
-                    </ul>
+                {isLoadingOrders && (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                   </div>
                 )}
+
+                {orderSearch &&
+                  orderSearch.length >= 3 &&
+                  orders.length > 0 && (
+                    <div className="border rounded-md p-4 max-h-60 overflow-y-auto">
+                      <ul className="space-y-2">
+                        {orders.map((order: Order) => (
+                          <li
+                            key={order._id}
+                            className="flex items-center justify-between"
+                          >
+                            <div>
+                              <p className="font-medium">
+                                Pedido #{order._id.substring(0, 8)}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                Valor: R$ {order.totalPrice.toFixed(2)} -
+                                Status: {order.status}
+                              </p>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setValue("orderId", order._id);
+                                setOrderSearch(
+                                  `Pedido #${order._id.substring(0, 8)}`
+                                );
+                              }}
+                            >
+                              Selecionar
+                            </Button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                {orderSearch &&
+                  orderSearch.length >= 3 &&
+                  orders.length === 0 &&
+                  !isLoadingOrders && (
+                    <div className="text-center py-4 text-muted-foreground">
+                      Nenhum pedido encontrado
+                    </div>
+                  )}
 
                 {watch("orderId") && (
                   <div className="bg-green-50 border border-green-200 rounded-md p-4">
@@ -815,123 +851,138 @@ export default function NewPaymentPage() {
     );
   };
 
-  // Renderizar etapa 3 - Descrição e confirmação
-  const renderStep3 = () => (
-    <div className="space-y-6">
-      <FormField
-        control={form.control}
-        name="description"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Descrição</FormLabel>
-            <FormControl>
-              <Textarea
-                placeholder="Descrição ou observações sobre este pagamento..."
-                className="min-h-[120px]"
-                {...field}
-              />
-            </FormControl>
-            <FormDescription>
-              Adicione informações adicionais sobre este pagamento, se
-              necessário
-            </FormDescription>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <div className="bg-blue-50 border border-blue-200 rounded-md p-4 space-y-3">
-        <h3 className="text-md font-medium text-blue-800">
-          Resumo do Pagamento
-        </h3>
-
-        <div className="grid grid-cols-2 gap-2 text-sm">
-          <div className="text-blue-700 font-medium">Valor:</div>
-          <div className="text-blue-900">
-            R$ {watch("amount")?.toFixed(2) || "0.00"}
-          </div>
-
-          <div className="text-blue-700 font-medium">Tipo:</div>
-          <div className="text-blue-900">
-            {watch("type") === "sale" && "Venda"}
-            {watch("type") === "debt_payment" && "Pagamento de Débito"}
-            {watch("type") === "expense" && "Despesa"}
-          </div>
-
-          <div className="text-blue-700 font-medium">Método:</div>
-          <div className="text-blue-900">
-            {watch("paymentMethod") === "cash" && "Dinheiro"}
-            {watch("paymentMethod") === "credit" && "Cartão de Crédito"}
-            {watch("paymentMethod") === "debit" && "Cartão de Débito"}
-            {watch("paymentMethod") === "pix" && "PIX"}
-            {watch("paymentMethod") === "check" && "Cheque"}
-          </div>
-
-          {watch("paymentMethod") === "credit" &&
-            (watch("installments") ?? 0) > 1 && (
-              <>
-                <div className="text-blue-700 font-medium">Parcelas:</div>
-                <div className="text-blue-900">{watch("installments")}x</div>
-              </>
-            )}
-
-          <div className="text-blue-700 font-medium">Data:</div>
-          <div className="text-blue-900">
-            {watch("paymentDate") &&
-              format(watch("paymentDate"), "dd/MM/yyyy", { locale: ptBR })}
-          </div>
-
-          <div className="text-blue-700 font-medium">Status:</div>
-          <div className="text-blue-900">
-            {watch("status") === "completed" && "Concluído"}
-            {watch("status") === "pending" && "Pendente"}
-          </div>
-
-          {watch("category") && (
-            <>
-              <div className="text-blue-700 font-medium">Categoria:</div>
-              <div className="text-blue-900">{watch("category")}</div>
-            </>
+  const renderStep3 = () => {
+    return (
+      <div className="space-y-6">
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Descrição</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="Descrição ou observações sobre este pagamento..."
+                  className="min-h-[120px]"
+                  {...field}
+                />
+              </FormControl>
+              <FormDescription>
+                Adicione informações adicionais sobre este pagamento, se
+                necessário
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
           )}
+        />
 
-          {watch("customerId") &&
-            customers.find((c) => c._id === watch("customerId")) && (
+        <div className="bg-blue-50 border border-blue-200 rounded-md p-4 space-y-3">
+          <h3 className="text-md font-medium text-blue-800">
+            Resumo do Pagamento
+          </h3>
+
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            <div className="text-blue-700 font-medium">Valor:</div>
+            <div className="text-blue-900">
+              R$ {Number(watch("amount"))?.toFixed(2) || "0.00"}
+            </div>
+
+            <div className="text-blue-700 font-medium">Tipo:</div>
+            <div className="text-blue-900">
+              {watch("type") === "sale"
+                ? "Venda"
+                : watch("type") === "debt_payment"
+                  ? "Pagamento de Débito"
+                  : "Despesa"}
+            </div>
+
+            <div className="text-blue-700 font-medium">Método:</div>
+            <div className="text-blue-900">
+              {watch("paymentMethod") === "cash"
+                ? "Dinheiro"
+                : watch("paymentMethod") === "credit"
+                  ? "Cartão de Crédito"
+                  : watch("paymentMethod") === "debit"
+                    ? "Cartão de Débito"
+                    : watch("paymentMethod") === "pix"
+                      ? "PIX"
+                      : "Cheque"}
+            </div>
+
+            <div className="text-blue-700 font-medium">Data:</div>
+            <div className="text-blue-900">
+              {watch("paymentDate")
+                ? format(watch("paymentDate"), "dd/MM/yyyy", { locale: ptBR })
+                : "Não selecionada"}
+            </div>
+
+            <div className="text-blue-700 font-medium">Status:</div>
+            <div className="text-blue-900">
+              {watch("status") === "completed" ? "Concluído" : "Pendente"}
+            </div>
+
+            {watch("paymentMethod") === "credit" &&
+              watch("installments") &&
+              (watch("installments") ?? 0) > 1 && (
+                <>
+                  <div className="text-blue-700 font-medium">Parcelas:</div>
+                  <div className="text-blue-900">
+                    {watch("installments")}x de R${" "}
+                    {(
+                      Number(watch("amount")) / (watch("installments") || 1)
+                    ).toFixed(2)}
+                  </div>
+                </>
+              )}
+
+            {watch("customerId") && (
               <>
                 <div className="text-blue-700 font-medium">Cliente:</div>
                 <div className="text-blue-900">
-                  {customers.find((c) => c._id === watch("customerId"))?.name}
+                  {customers.find(
+                    (c: UserType) => c._id === watch("customerId")
+                  )?.name || "Cliente selecionado"}
                 </div>
               </>
             )}
 
-          {watch("legacyClientId") &&
-            legacyClients.find((c) => c._id === watch("legacyClientId")) && (
+            {watch("legacyClientId") && (
               <>
                 <div className="text-blue-700 font-medium">Cliente Legado:</div>
                 <div className="text-blue-900">
-                  {
-                    legacyClients.find((c) => c._id === watch("legacyClientId"))
-                      ?.name
-                  }
+                  {legacyClients.find(
+                    (c: LegacyClient) => c._id === watch("legacyClientId")
+                  )?.name || "Cliente legado selecionado"}
                 </div>
               </>
             )}
 
-          {watch("orderId") && (
-            <>
-              <div className="text-blue-700 font-medium">Pedido:</div>
-              <div className="text-blue-900">
-                #{watch("orderId")?.substring(0, 8)}
-              </div>
-            </>
-          )}
+            {watch("orderId") && (
+              <>
+                <div className="text-blue-700 font-medium">
+                  Pedido vinculado:
+                </div>
+                <div className="text-blue-900">
+                  #{watch("orderId")?.substring(0, 8) ?? ""}
+                </div>
+              </>
+            )}
+
+            {watch("type") === "expense" && watch("category") && (
+              <>
+                <div className="text-blue-700 font-medium">Categoria:</div>
+                <div className="text-blue-900">{watch("category")}</div>
+              </>
+            )}
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   // Determinar qual etapa renderizar
   const renderStepContent = () => {
+    console.log(`Renderizando passo ${step}...`);
     switch (step) {
       case 1:
         return renderStep1();
@@ -943,6 +994,9 @@ export default function NewPaymentPage() {
         return renderStep1();
     }
   };
+
+  // Verificar se o caixa está aberto
+  const isCashRegisterOpen = !!cashRegisterData;
 
   return (
     <div className="max-w-4xl mx-auto p-4 space-y-6">
@@ -958,7 +1012,7 @@ export default function NewPaymentPage() {
         <h1 className="text-2xl font-bold">Novo Pagamento</h1>
       </div>
 
-      {cashRegisters.length === 0 && (
+      {!isCashRegisterOpen && !isLoadingCashRegister && (
         <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md">
           <h3 className="text-lg font-medium">Nenhum caixa disponível</h3>
           <p className="mt-2">
@@ -973,81 +1027,100 @@ export default function NewPaymentPage() {
         </div>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            {step === 1 && "Informações Básicas"}
-            {step === 2 && "Informações Relacionadas"}
-            {step === 3 && "Detalhes e Confirmação"}
-          </CardTitle>
-          <CardDescription>
-            {step === 1 && "Preencha os detalhes básicos do pagamento"}
-            {step === 2 && "Relacione este pagamento a clientes ou pedidos"}
-            {step === 3 && "Revise os detalhes e confirme o pagamento"}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form id="paymentForm" onSubmit={form.handleSubmit(onSubmit)}>
-              {renderStepContent()}
-            </form>
-          </Form>
-        </CardContent>
-        <CardFooter className="flex justify-between border-t p-4">
-          {step > 1 ? (
-            <Button variant="outline" onClick={prevStep}>
-              Anterior
-            </Button>
-          ) : (
-            <Button variant="outline" onClick={() => router.push("/payments")}>
-              Cancelar
-            </Button>
-          )}
+      {(isCashRegisterOpen || isLoadingCashRegister) && (
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              {step === 1 && "Informações Básicas"}
+              {step === 2 && "Informações Relacionadas"}
+              {step === 3 && "Detalhes e Confirmação"}
+            </CardTitle>
+            <CardDescription>
+              {step === 1 && "Preencha os detalhes básicos do pagamento"}
+              {step === 2 && "Relacione este pagamento a clientes ou pedidos"}
+              {step === 3 && "Revise os detalhes e confirme o pagamento"}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLoadingCashRegister ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <Form {...form}>
+                <form id="paymentForm" onSubmit={form.handleSubmit(onSubmit)}>
+                  {renderStepContent()}
+                </form>
+              </Form>
+            )}
+          </CardContent>
+          <CardFooter className="flex justify-between border-t p-4">
+            {step > 1 ? (
+              <Button variant="outline" onClick={prevStep}>
+                Anterior
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                onClick={() => router.push("/payments")}
+              >
+                Cancelar
+              </Button>
+            )}
 
-          {step < 3 ? (
-            <Button type="button" onClick={nextStep}>
-              Próximo
-            </Button>
-          ) : (
-            <Button
-              type="submit"
-              form="paymentForm"
-              disabled={createPayment.isPending || loading}
-            >
-              {createPayment.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Processando...
-                </>
-              ) : (
-                "Registrar Pagamento"
-              )}
-            </Button>
-          )}
-        </CardFooter>
-      </Card>
+            {step < 3 ? (
+              <Button
+                type="button"
+                onClick={nextStep}
+                disabled={isLoadingCashRegister || !isCashRegisterOpen}
+              >
+                Próximo
+              </Button>
+            ) : (
+              <Button
+                type="submit"
+                form="paymentForm"
+                disabled={
+                  isCreating || isLoadingCashRegister || !isCashRegisterOpen
+                }
+              >
+                {isCreating ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processando...
+                  </>
+                ) : (
+                  "Registrar Pagamento"
+                )}
+              </Button>
+            )}
+          </CardFooter>
+        </Card>
+      )}
 
       {/* Progresso do formulário */}
-      <div className="flex justify-between items-center py-2">
-        <div className="flex space-x-2">
-          <div
-            className={`h-2 w-12 rounded-full ${
-              step >= 1 ? "bg-blue-600" : "bg-gray-200"
-            }`}
-          />
-          <div
-            className={`h-2 w-12 rounded-full ${
-              step >= 2 ? "bg-blue-600" : "bg-gray-200"
-            }`}
-          />
-          <div
-            className={`h-2 w-12 rounded-full ${
-              step >= 3 ? "bg-blue-600" : "bg-gray-200"
-            }`}
-          />
+      {(isCashRegisterOpen || isLoadingCashRegister) && (
+        <div className="flex justify-between items-center py-2">
+          <div className="flex space-x-2">
+            <div
+              className={`h-2 w-12 rounded-full ${
+                step >= 1 ? "bg-blue-600" : "bg-gray-200"
+              }`}
+            />
+            <div
+              className={`h-2 w-12 rounded-full ${
+                step >= 2 ? "bg-blue-600" : "bg-gray-200"
+              }`}
+            />
+            <div
+              className={`h-2 w-12 rounded-full ${
+                step >= 3 ? "bg-blue-600" : "bg-gray-200"
+              }`}
+            />
+          </div>
+          <div className="text-sm text-muted-foreground">Passo {step} de 3</div>
         </div>
-        <div className="text-sm text-muted-foreground">Passo {step} de 3</div>
-      </div>
+      )}
     </div>
   );
 }

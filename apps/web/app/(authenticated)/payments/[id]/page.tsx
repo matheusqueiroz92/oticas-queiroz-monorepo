@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import {
   Card,
   CardContent,
@@ -35,7 +36,9 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-import { usePayments } from "../../../..//hooks/usePayments";
+import { usePayments } from "@/hooks/usePayments";
+import { getPaymentById } from "@/app/services/paymentService";
+import { QUERY_KEYS } from "@/app/constants/query-keys";
 import {
   formatCurrency,
   formatDate,
@@ -52,7 +55,6 @@ import type { LegacyClient } from "@/app/types/legacy-client";
 
 export default function PaymentDetailsPage() {
   const { id } = useParams<{ id: string }>();
-  const [payment, setPayment] = useState<IPayment | null>(null);
   const [customer, setCustomer] = useState<User | null>(null);
   const [employee, setEmployee] = useState<User | null>(null);
   const [order, setOrder] = useState<Order | null>(null);
@@ -60,25 +62,35 @@ export default function PaymentDetailsPage() {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   const router = useRouter();
-  const { fetchPaymentById, handleCancelPayment, loading, error } =
-    usePayments();
+  const { handleCancelPayment } = usePayments();
 
-  // Buscar dados do pagamento
+  // Buscar os dados do pagamento usando React Query
+  const {
+    data: payment,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: QUERY_KEYS.PAYMENTS.DETAIL(id as string),
+    queryFn: () => getPaymentById(id as string),
+    enabled: !!id,
+  });
+
+  // Buscar dados relacionados quando o pagamento for carregado
   useEffect(() => {
-    const loadPaymentData = async () => {
-      if (!id) return;
+    const loadRelatedData = async () => {
+      if (!payment) return;
 
-      const paymentData = await fetchPaymentById(id as string);
-      if (paymentData) {
-        setPayment(paymentData);
-
-        // Aqui poderia buscar dados relacionados como cliente, funcionário, etc.
-        // Isso depende da API retornar ou não esses dados já populados
-      }
+      // try {
+      //   // Aqui você pode implementar a lógica para buscar dados relacionados
+      //   // como cliente, funcionário, pedido, etc. se necessário
+      // } catch (error) {
+      //   console.error("Erro ao carregar dados relacionados:", error.message);
+      // }
     };
 
-    loadPaymentData();
-  }, [id, fetchPaymentById]);
+    loadRelatedData();
+  }, [payment]);
 
   // Função para imprimir comprovante
   const handlePrintReceipt = () => {
@@ -89,11 +101,14 @@ export default function PaymentDetailsPage() {
   const confirmCancelPayment = async () => {
     if (!id) return;
 
-    const result = await handleCancelPayment(id as string);
-    if (result) {
-      setPayment(result);
+    try {
+      await handleCancelPayment(id as string);
+      setShowConfirmDialog(false);
+      // Recarregar dados após o cancelamento
+      refetch();
+    } catch (error) {
+      console.error("Erro ao cancelar pagamento:", error);
     }
-    setShowConfirmDialog(false);
   };
 
   // Função para obter o ícone de status
@@ -110,7 +125,7 @@ export default function PaymentDetailsPage() {
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -121,7 +136,7 @@ export default function PaymentDetailsPage() {
   if (error || !payment) {
     return (
       <div className="p-4 bg-red-50 text-red-600 rounded-md">
-        {error || "Pagamento não encontrado"}
+        {error instanceof Error ? error.message : "Pagamento não encontrado"}
         <Button className="mt-4" onClick={() => router.push("/payments")}>
           Voltar para Pagamentos
         </Button>
@@ -193,6 +208,7 @@ export default function PaymentDetailsPage() {
                   <div className="flex items-center justify-between">
                     <span className="font-medium">Parcelas:</span>
                     <span>
+                      {payment.installments.current}/
                       {payment.installments.total}x de{" "}
                       {formatCurrency(payment.installments.value)}
                     </span>
@@ -370,7 +386,7 @@ export default function PaymentDetailsPage() {
                     onClick={confirmCancelPayment}
                     className="bg-red-600 hover:bg-red-700"
                   >
-                    {loading ? (
+                    {isLoading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         Cancelando...

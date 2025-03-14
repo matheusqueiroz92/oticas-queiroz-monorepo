@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -47,10 +48,15 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-import { api } from "@/app/services/authService";
 import { useToast } from "@/hooks/useToast";
+import { useCashRegister } from "@/hooks/useCashRegister";
+import { getCashRegisterById } from "@/app/services/cashRegisterService";
+import { QUERY_KEYS } from "@/app/constants/query-keys";
 import { formatCurrency, formatDate } from "@/app/utils/formatters";
-import type { ICashRegister } from "@/app/types/cash-register";
+import type {
+  ICashRegister,
+  CloseCashRegisterDTO,
+} from "@/app/types/cash-register";
 
 // Esquema de validação para o formulário
 const closeCashRegisterSchema = z.object({
@@ -67,16 +73,46 @@ const closeCashRegisterSchema = z.object({
 type CloseCashRegisterFormValues = z.infer<typeof closeCashRegisterSchema>;
 
 export default function CloseCashRegisterPage() {
-  const params = useParams<{ id: string }>();
+  const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const [cashRegister, setCashRegister] = useState<ICashRegister | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [difference, setDifference] = useState<number | null>(null);
 
   const { toast } = useToast();
+  const { handleCloseCashRegister } = useCashRegister();
+
+  // Consulta para obter os dados do caixa
+  const {
+    data: cashRegister,
+    isLoading,
+    error: cashRegisterError,
+  } = useQuery({
+    queryKey: QUERY_KEYS.CASH_REGISTERS.DETAIL(id as string),
+    queryFn: () => getCashRegisterById(id as string),
+    enabled: !!id,
+  });
+
+  // Mutation para fechar o caixa
+  const closeCashRegisterMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: CloseCashRegisterDTO }) =>
+      handleCloseCashRegister(id, data),
+    onSuccess: () => {
+      toast({
+        title: "Caixa fechado",
+        description: "O caixa foi fechado com sucesso.",
+      });
+      router.push("/cash-register");
+    },
+    onError: (error) => {
+      console.error("Erro ao fechar caixa:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível fechar o caixa. Tente novamente.",
+      });
+      setShowConfirmDialog(false);
+    },
+  });
 
   // Inicializar o formulário
   const form = useForm<CloseCashRegisterFormValues>({
@@ -87,113 +123,68 @@ export default function CloseCashRegisterPage() {
     },
   });
 
+  useEffect(() => {
+    if (cashRegister && cashRegister.status === "open") {
+      form.setValue("closingBalance", cashRegister.currentBalance);
+      setDifference(0); // Inicialmente não há diferença
+    }
+  }, [cashRegister, form]);
+
   // Observa mudanças no valor de fechamento para calcular a diferença
   const closingBalance = form.watch("closingBalance");
 
+  // Atualizar a diferença quando o valor de fechamento mudar
   useEffect(() => {
-    if (cashRegister && closingBalance !== undefined) {
+    if (cashRegister && typeof closingBalance === "number") {
       setDifference(closingBalance - cashRegister.currentBalance);
     }
   }, [closingBalance, cashRegister]);
 
-  // Buscar dados do caixa
-  useEffect(() => {
-    const fetchCashRegister = async () => {
-      if (!params.id) return;
-
-      try {
-        setLoading(true);
-        setError(null);
-
-        // Buscar detalhes do caixa
-        const response = await api.get(`/api/cash-registers/${params.id}`);
-        const registerData = response.data;
-
-        if (!registerData) {
-          setError("Caixa não encontrado.");
-          return;
-        }
-
-        // Verificar se o caixa está aberto
-        if (registerData.status !== "open") {
-          setError("Este caixa já está fechado.");
-          return;
-        }
-
-        setCashRegister(registerData);
-
-        // Predefinir o saldo de fechamento como o saldo atual
-        form.setValue("closingBalance", registerData.currentBalance);
-
-        // Calcular diferença inicial
-        setDifference(0);
-      } catch (error) {
-        console.error("Erro ao buscar dados do caixa:", error);
-        setError(
-          "Não foi possível carregar os dados do caixa. Tente novamente mais tarde."
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCashRegister();
-  }, [params.id, form]);
-
   // Função para lidar com envio do formulário
   const onSubmit = (data: CloseCashRegisterFormValues) => {
-    if (difference !== null) {
-      setShowConfirmDialog(true);
-    }
-  };
-
-  // Função para confirmar fechamento
-  const confirmClose = async () => {
-    if (!cashRegister || !params.id) return;
-
-    const data = form.getValues();
-    setIsSubmitting(true);
-
-    try {
-      const response = await api.post("/api/cash-registers/close", {
-        closingBalance: data.closingBalance,
-        observations: data.observations,
-      });
-
-      toast({
-        title: "Caixa fechado",
-        description: "O caixa foi fechado com sucesso.",
-      });
-      router.push("/cash-register");
-    } catch (error) {
-      console.error("Erro ao fechar caixa:", error);
+    // Verificar se o caixa existe e está aberto
+    if (!cashRegister || cashRegister.status !== "open") {
       toast({
         variant: "destructive",
         title: "Erro",
-        description: "Não foi possível fechar o caixa. Tente novamente.",
+        description: "Este caixa não pode ser fechado ou não existe.",
       });
-    } finally {
-      setIsSubmitting(false);
-      setShowConfirmDialog(false);
+      return;
     }
+
+    // Mostrar diálogo de confirmação
+    setShowConfirmDialog(true);
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
+  // Função para confirmar fechamento
+  const confirmClose = () => {
+    if (!cashRegister || !id) return;
 
-  if (error || !cashRegister) {
+    const data = form.getValues();
+
+    closeCashRegisterMutation.mutate({
+      id: id as string,
+      data: {
+        closingBalance: data.closingBalance,
+        observations: data.observations,
+      },
+    });
+  };
+
+  // Tratar caso de erro ou caixa não existente
+  if (cashRegisterError) {
+    const errorMessage =
+      cashRegisterError instanceof Error
+        ? cashRegisterError.message
+        : "Erro desconhecido ao carregar os dados do caixa";
+
     return (
       <div className="max-w-3xl mx-auto p-4">
         <Card className="bg-red-50 border-red-200">
           <CardHeader>
             <CardTitle className="text-red-800">Erro</CardTitle>
             <CardDescription className="text-red-700">
-              {error || "Não foi possível carregar os dados do caixa."}
+              {errorMessage}
             </CardDescription>
           </CardHeader>
           <CardFooter>
@@ -202,6 +193,36 @@ export default function CloseCashRegisterPage() {
             </Button>
           </CardFooter>
         </Card>
+      </div>
+    );
+  }
+
+  // Tratar caso de caixa já fechado
+  if (cashRegister && cashRegister.status !== "open") {
+    return (
+      <div className="max-w-3xl mx-auto p-4">
+        <Card className="bg-yellow-50 border-yellow-200">
+          <CardHeader>
+            <CardTitle className="text-yellow-800">Caixa já fechado</CardTitle>
+            <CardDescription className="text-yellow-700">
+              Este caixa já foi fechado e não pode ser fechado novamente.
+            </CardDescription>
+          </CardHeader>
+          <CardFooter>
+            <Button onClick={() => router.push("/cash-register")}>
+              Voltar para Caixas
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  }
+
+  // Mostrar loading
+  if (isLoading || !cashRegister) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
@@ -347,7 +368,11 @@ export default function CloseCashRegisterPage() {
                           placeholder="0,00"
                           className="pl-10"
                           {...field}
-                          value={field.value ?? ""}
+                          value={
+                            field.value !== undefined
+                              ? String(field.value).replace(".", ",")
+                              : ""
+                          }
                           onChange={(e) => {
                             const value = e.target.value.replace(
                               /[^0-9,.]/g,
@@ -355,7 +380,7 @@ export default function CloseCashRegisterPage() {
                             );
                             field.onChange(
                               value === ""
-                                ? ""
+                                ? 0
                                 : Number.parseFloat(value.replace(",", "."))
                             );
                           }}
@@ -422,7 +447,12 @@ export default function CloseCashRegisterPage() {
                 >
                   Cancelar
                 </Button>
-                <Button type="submit">Fechar Caixa</Button>
+                <Button
+                  type="submit"
+                  disabled={closeCashRegisterMutation.isPending}
+                >
+                  Fechar Caixa
+                </Button>
               </div>
             </form>
           </Form>
@@ -473,11 +503,14 @@ export default function CloseCashRegisterPage() {
           </div>
 
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isSubmitting}>
+            <AlertDialogCancel disabled={closeCashRegisterMutation.isPending}>
               Cancelar
             </AlertDialogCancel>
-            <AlertDialogAction onClick={confirmClose} disabled={isSubmitting}>
-              {isSubmitting ? (
+            <AlertDialogAction
+              onClick={confirmClose}
+              disabled={closeCashRegisterMutation.isPending}
+            >
+              {closeCashRegisterMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Processando...

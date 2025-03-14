@@ -38,7 +38,7 @@ export function usePayments() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Query para buscar pagamentos
+  // Query para buscar pagamentos paginados com filtros
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: QUERY_KEYS.PAYMENTS.PAGINATED(currentPage, filters),
     queryFn: () => getAllPayments({ ...filters, page: currentPage }),
@@ -62,13 +62,15 @@ export function usePayments() {
         );
       }
 
-      // Adicionar o ID do caixa aos dados do pagamento
-      return createPayment({
+      // Adicionar o ID do caixa aos dados do pagamento se não foi fornecido
+      const paymentData = {
         ...data,
-        cashRegisterId: cashRegisterResult.data._id,
-      });
+        cashRegisterId: data.cashRegisterId || cashRegisterResult.data._id,
+      };
+
+      return createPayment(paymentData);
     },
-    onSuccess: (newPayment) => {
+    onSuccess: () => {
       toast({
         title: "Pagamento registrado",
         description: "O pagamento foi registrado com sucesso.",
@@ -79,8 +81,6 @@ export function usePayments() {
       queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.CASH_REGISTERS.CURRENT,
       });
-
-      return newPayment;
     },
     onError: (error: unknown) => {
       console.error("Erro ao criar pagamento:", error);
@@ -135,23 +135,12 @@ export function usePayments() {
     },
   });
 
-  // Custom query para buscar um pagamento específico
-  const fetchPaymentById = (id: string) => {
-    return useQuery({
-      queryKey: QUERY_KEYS.PAYMENTS.DETAIL(id),
-      queryFn: () => getPaymentById(id),
-      enabled: !!id,
-    });
-  };
-
-  // Custom query para buscar pagamentos por caixa
-  const fetchPaymentsByCashRegister = (cashRegisterId: string) => {
-    return useQuery({
-      queryKey: QUERY_KEYS.PAYMENTS.BY_CASH_REGISTER(cashRegisterId),
-      queryFn: () => getPaymentsByCashRegister(cashRegisterId),
-      enabled: !!cashRegisterId,
-    });
-  };
+  // Função para buscar pagamentos por caixa (retorna a configuração da query)
+  const getPaymentsByCashRegisterQuery = (cashRegisterId: string) => ({
+    queryKey: QUERY_KEYS.PAYMENTS.BY_CASH_REGISTER(cashRegisterId),
+    queryFn: () => getPaymentsByCashRegister(cashRegisterId),
+    enabled: !!cashRegisterId,
+  });
 
   // Função para verificar se há um caixa aberto
   const checkForOpenCashRegisterBeforePayment = async (): Promise<
@@ -188,7 +177,7 @@ export function usePayments() {
 
   // Função para atualizar filtros
   const updateFilters = (newFilters: PaymentFilters) => {
-    setFilters(newFilters);
+    setFilters((prevFilters) => ({ ...prevFilters, ...newFilters }));
     setCurrentPage(1); // Voltar para a primeira página ao filtrar
   };
 
@@ -227,10 +216,10 @@ export function usePayments() {
     // Ações
     setCurrentPage,
     updateFilters,
-    fetchPaymentById,
+    getPaymentById,
     handleCreatePayment,
     handleCancelPayment,
-    fetchPaymentsByCashRegister,
+    getPaymentsByCashRegisterQuery,
     navigateToPaymentDetails,
     navigateToCreatePayment,
     checkForOpenCashRegisterBeforePayment,

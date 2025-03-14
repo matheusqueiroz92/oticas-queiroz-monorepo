@@ -32,7 +32,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 import { CashRegisterStatus } from "@/components/CashRegister/CashRegisterStatus";
-import { usePayments } from "../../../hooks/usePayments";
+import { usePayments } from "@/hooks/usePayments";
 import {
   formatCurrency,
   formatDate,
@@ -53,14 +53,14 @@ export default function PaymentsPage() {
 
   const {
     payments,
-    loading,
+    isLoading,
     error,
     currentPage,
     totalPages,
     totalPayments,
     setCurrentPage,
     updateFilters,
-    fetchPayments,
+    refetch,
     handleCancelPayment,
     navigateToPaymentDetails,
     navigateToCreatePayment,
@@ -186,7 +186,7 @@ export default function PaymentsPage() {
   };
 
   // Verificar estado vazio
-  const showEmptyState = !loading && !error && payments.length === 0;
+  const showEmptyState = !isLoading && !error && payments.length === 0;
 
   return (
     <div className="space-y-4">
@@ -258,7 +258,7 @@ export default function PaymentsPage() {
         <Button onClick={navigateToCreatePayment}>Novo Pagamento</Button>
       </div>
 
-      {loading && (
+      {isLoading && (
         <div className="flex justify-center items-center py-12">
           <Loader2 className="h-8 w-8 animate-spin" />
         </div>
@@ -283,7 +283,7 @@ export default function PaymentsPage() {
         </div>
       )}
 
-      {!loading && !error && payments.length > 0 && (
+      {!isLoading && !error && payments.length > 0 && (
         <>
           <Table>
             <TableHeader>

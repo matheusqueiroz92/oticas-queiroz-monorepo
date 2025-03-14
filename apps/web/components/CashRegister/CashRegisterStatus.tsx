@@ -1,13 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { DollarSign, Loader2, AlertCircle } from "lucide-react";
 import { checkOpenCashRegister } from "@/app/services/cashRegisterService";
 import { formatCurrency } from "@/app/utils/formatters";
+import { QUERY_KEYS } from "@/app/constants/query-keys";
 import type { ICashRegister } from "@/app/types/cash-register";
+import { useEffect } from "react";
 
 interface CashRegisterStatusProps {
   showOpenButton?: boolean;
@@ -23,38 +25,24 @@ export function CashRegisterStatus({
   showDetailsButton = false,
   onStatusChange,
 }: CashRegisterStatusProps) {
-  const [isLoading, setIsLoading] = useState(true);
-  const [cashRegister, setCashRegister] = useState<ICashRegister | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
+  // Usar React Query para verificar o status do caixa
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: QUERY_KEYS.CASH_REGISTERS.CURRENT,
+    queryFn: checkOpenCashRegister,
+    refetchOnWindowFocus: true, // Recarregar quando a janela ganhar foco
+  });
+
+  // Notificar o componente pai sobre a mudança de status
   useEffect(() => {
-    const fetchCashRegisterStatus = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        const result = await checkOpenCashRegister();
-
-        setCashRegister(result.data);
-
-        // Notificar o componente pai sobre a mudança de status
-        if (onStatusChange) {
-          onStatusChange({
-            isOpen: result.isOpen,
-            data: result.data,
-          });
-        }
-      } catch (error) {
-        console.error("Erro ao verificar status do caixa:", error);
-        setError("Não foi possível verificar o status do caixa.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchCashRegisterStatus();
-  }, [onStatusChange]);
+    if (onStatusChange && data) {
+      onStatusChange({
+        isOpen: data.isOpen,
+        data: data.data,
+      });
+    }
+  }, [data, onStatusChange]);
 
   if (isLoading) {
     return (
@@ -72,13 +60,17 @@ export function CashRegisterStatus({
       <Card className="mb-4 bg-yellow-50 border-yellow-200">
         <CardContent className="p-4 flex items-center">
           <AlertCircle className="h-5 w-5 text-yellow-600 mr-2" />
-          <span className="text-yellow-700">{error}</span>
+          <span className="text-yellow-700">
+            {error instanceof Error
+              ? error.message
+              : "Erro ao verificar status do caixa"}
+          </span>
         </CardContent>
       </Card>
     );
   }
 
-  if (!cashRegister) {
+  if (!data?.isOpen || !data?.data) {
     return (
       <Card className="mb-4 bg-red-50 border-red-200">
         <CardContent className="p-4 flex justify-between items-center">
@@ -100,6 +92,8 @@ export function CashRegisterStatus({
       </Card>
     );
   }
+
+  const cashRegister = data.data;
 
   return (
     <Card className="mb-4 bg-green-50 border-green-200">

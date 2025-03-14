@@ -25,6 +25,7 @@ interface ProductFilters {
 export function useProducts() {
   const [filters, setFilters] = useState<ProductFilters>({});
   const [currentPage, setCurrentPage] = useState(1);
+  const [productId, setProductId] = useState<string | null>(null); // Estado para o ID do produto
 
   const router = useRouter();
   const { toast } = useToast();
@@ -35,6 +36,17 @@ export function useProducts() {
     queryKey: QUERY_KEYS.PRODUCTS.PAGINATED(currentPage, filters),
     queryFn: () => getAllProducts({ ...filters, page: currentPage, limit: 10 }),
     placeholderData: (prevData) => prevData, // Substitui keepPreviousData
+  });
+
+  // Query para buscar um produto específico
+  const {
+    data: productData,
+    isLoading: isProductLoading,
+    error: productError,
+  } = useQuery({
+    queryKey: QUERY_KEYS.PRODUCTS.DETAIL(productId as string),
+    queryFn: () => getProductById(productId as string),
+    enabled: !!productId, // Só executa se o productId for fornecido
   });
 
   // Dados normalizados da query
@@ -124,13 +136,9 @@ export function useProducts() {
     },
   });
 
-  // Custom query para buscar um produto específico
+  // Função para buscar um produto por ID
   const fetchProductById = (id: string) => {
-    return useQuery({
-      queryKey: QUERY_KEYS.PRODUCTS.DETAIL(id),
-      queryFn: () => getProductById(id),
-      enabled: !!id, // Só executa se o ID for fornecido
-    });
+    setProductId(id);
   };
 
   // Função para atualizar filtros
@@ -170,9 +178,9 @@ export function useProducts() {
   return {
     // Dados e estado
     products,
-    isLoading,
-    error: error ? String(error) : null,
-    currentPage,
+    currentProduct: productData, // Dados do produto buscado
+    loading: isLoading || isProductLoading, // Estado de carregamento geral
+    error: error || productError, // Erro geral
     totalPages,
     totalProducts,
     filters,

@@ -22,20 +22,22 @@ export default function ProductDetailsPage() {
   const { canManageProducts } = usePermissions();
 
   const {
-    currentProduct,
-    loading,
-    error,
-    fetchProductById,
-    navigateToEditProduct,
-    formatCurrency,
+    currentProduct, // Dados do produto atual
+    loading, // Estado de carregamento
+    error, // Erro, se houver
+    fetchProductById, // Função para buscar o produto por ID
+    navigateToEditProduct, // Função para navegar para a página de edição
+    formatCurrency, // Função para formatar moeda
   } = useProducts();
 
+  // Dispara a busca do produto quando o ID muda
   useEffect(() => {
     if (id) {
       fetchProductById(id as string);
     }
   }, [id, fetchProductById]);
 
+  // Exibe um spinner enquanto os dados estão sendo carregados
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -44,10 +46,11 @@ export default function ProductDetailsPage() {
     );
   }
 
+  // Exibe uma mensagem de erro se houver um erro ou se o produto não for encontrado
   if (error || !currentProduct) {
     return (
       <div className="p-4 bg-red-50 text-red-600 rounded-md">
-        {error || "Produto não encontrado"}
+        {error?.message || "Produto não encontrado"}
         <Button className="mt-4" onClick={() => router.push("/products")}>
           Voltar para Produtos
         </Button>

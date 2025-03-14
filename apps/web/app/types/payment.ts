@@ -1,4 +1,10 @@
-export type PaymentMethod = "credit" | "debit" | "cash" | "pix" | "installment";
+export type PaymentMethod =
+  | "credit"
+  | "debit"
+  | "cash"
+  | "pix"
+  | "check"
+  | "installment";
 export type PaymentType = "sale" | "debt_payment" | "expense";
 export type PaymentStatus = "pending" | "completed" | "cancelled";
 
