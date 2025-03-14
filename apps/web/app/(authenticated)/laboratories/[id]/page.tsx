@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import {
   Card,
   CardContent,
@@ -27,34 +27,44 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useLaboratories } from "@/hooks/useLaboratories";
+import { getLaboratoryById } from "@/app/services/laboratoryService";
+import { QUERY_KEYS } from "@/app/constants/query-keys";
 
 export default function LaboratoryDetailsPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { canManageLaboratories } = usePermissions();
 
-  const {
-    currentLaboratory,
-    loading,
-    error,
-    fetchLaboratoryById,
-    handleToggleLaboratoryStatus,
-    navigateToEditLaboratory,
-  } = useLaboratories();
+  const { handleToggleLaboratoryStatus, navigateToEditLaboratory } =
+    useLaboratories();
 
-  useEffect(() => {
-    if (id) {
-      fetchLaboratoryById(id as string);
-    }
-  }, [id, fetchLaboratoryById]);
+  // Utilize React Query para buscar os dados do laboratório
+  const {
+    data: currentLaboratory,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: QUERY_KEYS.LABORATORIES.DETAIL(id as string),
+    queryFn: () => getLaboratoryById(id as string),
+    enabled: !!id,
+  });
+
+  // Mutation para alternar o status do laboratório
+  const toggleStatusMutation = useMutation({
+    mutationFn: handleToggleLaboratoryStatus,
+    onSuccess: () => {
+      refetch(); // Recarregar os dados após alteração do status
+    },
+  });
 
   // Status toggle handler
   const toggleStatus = async () => {
     if (!currentLaboratory) return;
-    await handleToggleLaboratoryStatus(currentLaboratory._id);
+    await toggleStatusMutation.mutateAsync(currentLaboratory._id);
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex justify-center items-center py-12">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -65,7 +75,7 @@ export default function LaboratoryDetailsPage() {
   if (error || !currentLaboratory) {
     return (
       <div className="p-4 bg-red-50 text-red-600 rounded-md">
-        {error || "Laboratório não encontrado."}
+        {error instanceof Error ? error.message : "Laboratório não encontrado."}
         <Button className="mt-4" onClick={() => router.push("/laboratories")}>
           Voltar para Laboratórios
         </Button>
@@ -74,9 +84,9 @@ export default function LaboratoryDetailsPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto p-4">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Detalhes do Laboratório</h1>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">{currentLaboratory.name}</h1>
         <Badge
           variant={currentLaboratory.isActive ? "default" : "destructive"}
           className="text-sm px-3 py-1"
@@ -87,108 +97,89 @@ export default function LaboratoryDetailsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl">{currentLaboratory.name}</CardTitle>
+          <CardTitle className="flex items-center">
+            <Building className="mr-2 h-5 w-5" />
+            Informações do Laboratório
+          </CardTitle>
           <CardDescription>
-            {currentLaboratory.isActive
-              ? "Este laboratório está ativo e pode receber pedidos"
-              : "Este laboratório está inativo e não pode receber pedidos"}
+            Detalhes de contato e endereço do laboratório
           </CardDescription>
         </CardHeader>
-
         <CardContent className="space-y-6">
-          {/* Informações de Contato */}
-          <div className="space-y-4">
-            <h3 className="font-medium text-lg flex items-center gap-2">
-              <User className="h-5 w-5" /> Informações de Contato
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-md">
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-4">
               <div>
-                <p className="text-sm text-muted-foreground">Nome do Contato</p>
-                <p>{currentLaboratory.contactName}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Email</p>
-                <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                  <a
-                    href={`mailto:${currentLaboratory.email}`}
-                    className="text-blue-600 hover:underline"
-                  >
-                    {currentLaboratory.email}
-                  </a>
-                </div>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Telefone</p>
-                <div className="flex items-center gap-2">
-                  <Phone className="h-4 w-4 text-muted-foreground" />
-                  <a
-                    href={`tel:${currentLaboratory.phone}`}
-                    className="text-blue-600 hover:underline"
-                  >
-                    {currentLaboratory.phone}
-                  </a>
+                <h3 className="text-sm font-medium text-gray-500">
+                  Informações de Contato
+                </h3>
+                <div className="mt-2 space-y-2">
+                  <div className="flex items-center">
+                    <User className="h-4 w-4 mr-2 text-gray-500" />
+                    <span>{currentLaboratory.contactName}</span>
+                  </div>
+                  <div className="flex items-center">
+                    <Phone className="h-4 w-4 mr-2 text-gray-500" />
+                    <span>{currentLaboratory.phone}</span>
+                  </div>
+                  <div className="flex items-center">
+                    <Mail className="h-4 w-4 mr-2 text-gray-500" />
+                    <span>{currentLaboratory.email}</span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <Separator />
-
-          {/* Endereço */}
-          <div className="space-y-4">
-            <h3 className="font-medium text-lg flex items-center gap-2">
-              <Building className="h-5 w-5" /> Endereço
-            </h3>
-            <div className="bg-gray-50 p-4 rounded-md">
-              <div className="flex items-start gap-3">
-                <MapPin className="h-5 w-5 text-muted-foreground mt-1" />
-                <div className="space-y-1">
-                  <p>
-                    {currentLaboratory.address.street},{" "}
-                    {currentLaboratory.address.number}
-                    {currentLaboratory.address.complement &&
-                      `, ${currentLaboratory.address.complement}`}
-                  </p>
-                  <p>
-                    {currentLaboratory.address.neighborhood},{" "}
-                    {currentLaboratory.address.city}/
-                    {currentLaboratory.address.state}
-                  </p>
-                  <p>CEP: {currentLaboratory.address.zipCode}</p>
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-sm font-medium text-gray-500">Endereço</h3>
+                <div className="mt-2 space-y-2">
+                  <div className="flex items-start">
+                    <MapPin className="h-4 w-4 mr-2 text-gray-500 mt-1" />
+                    <div>
+                      <p>
+                        {currentLaboratory.address.street},{" "}
+                        {currentLaboratory.address.number}
+                        {currentLaboratory.address.complement &&
+                          `, ${currentLaboratory.address.complement}`}
+                      </p>
+                      <p>
+                        {currentLaboratory.address.neighborhood} -{" "}
+                        {currentLaboratory.address.city}/
+                        {currentLaboratory.address.state}
+                      </p>
+                      <p>CEP: {currentLaboratory.address.zipCode}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </CardContent>
-
-        <CardFooter className="flex justify-between border-t p-6">
+        <CardFooter className="flex justify-between">
           <Button
             variant="outline"
             onClick={() => router.push("/laboratories")}
           >
             Voltar
           </Button>
-
           {canManageLaboratories && (
-            <div className="flex gap-2">
+            <div className="flex space-x-2">
               <Button
                 variant="outline"
                 onClick={() => navigateToEditLaboratory(currentLaboratory._id)}
               >
                 Editar
               </Button>
-
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button
                     variant={
                       currentLaboratory.isActive ? "destructive" : "default"
                     }
-                    disabled={loading}
+                    disabled={toggleStatusMutation.isPending}
                   >
-                    {loading ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    {toggleStatusMutation.isPending ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : null}
                     {currentLaboratory.isActive ? "Desativar" : "Ativar"}
                   </Button>
@@ -197,26 +188,19 @@ export default function LaboratoryDetailsPage() {
                   <AlertDialogHeader>
                     <AlertDialogTitle>
                       {currentLaboratory.isActive
-                        ? "Desativar laboratório?"
-                        : "Ativar laboratório?"}
+                        ? "Desativar Laboratório"
+                        : "Ativar Laboratório"}
                     </AlertDialogTitle>
                     <AlertDialogDescription>
                       {currentLaboratory.isActive
-                        ? "Laboratórios inativos não podem ser selecionados para novos pedidos. Você pode ativar o laboratório novamente a qualquer momento."
-                        : "Ao ativar o laboratório, ele poderá ser selecionado para novos pedidos."}
+                        ? "Esta ação desativará o laboratório. Isso afetará os pedidos vinculados a ele."
+                        : "Esta ação ativará o laboratório."}
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={toggleStatus}
-                      className={
-                        currentLaboratory.isActive
-                          ? "bg-destructive hover:bg-destructive/90"
-                          : ""
-                      }
-                    >
-                      Confirmar
+                    <AlertDialogAction onClick={toggleStatus}>
+                      {currentLaboratory.isActive ? "Desativar" : "Ativar"}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>

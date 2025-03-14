@@ -15,13 +15,13 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, FileDown, Loader2, RefreshCw } from "lucide-react";
-import { formatDate } from "@/app/lib/utils";
-import { ReportStatusBadge } from "@/components/reports/report-status-badge";
-import { ReportDataVisualization } from "@/components/reports/report-data-visualization";
-import { ReportFiltersDisplay } from "@/components/reports/report-filters-display";
-import { PageTitle } from "@/components/page-title";
+import { formatDate } from "../../../../app/utils/formatters";
+import { ReportStatusBadge } from "@/components/Reports/ReportStatusBadge";
+import { ReportDataVisualization } from "@/components/Reports/ReportDataVisualization";
+import { ReportFiltersDisplay } from "@/components/Reports/ReportFiltersDisplay";
+import { PageTitle } from "@/components/PageTitle";
 import { reportTypeMap } from "@/app/types/report";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/useToast";
 import {
   DropdownMenu,
   DropdownMenuContent,

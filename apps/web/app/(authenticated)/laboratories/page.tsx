@@ -21,7 +21,7 @@ export default function LaboratoriesPage() {
 
   const {
     laboratories,
-    loading,
+    isLoading,
     error,
     navigateToLaboratoryDetails,
     navigateToCreateLaboratory,
@@ -32,7 +32,7 @@ export default function LaboratoriesPage() {
     updateFilters({ search });
   };
 
-  const showEmptyState = !loading && !error && laboratories.length === 0;
+  const showEmptyState = !isLoading && !error && laboratories.length === 0;
 
   return (
     <div className="space-y-4">
@@ -53,7 +53,7 @@ export default function LaboratoriesPage() {
         <Button onClick={navigateToCreateLaboratory}>Novo Laboratório</Button>
       </div>
 
-      {loading && (
+      {isLoading && (
         <div className="flex justify-center items-center py-12">
           <Loader2 className="h-8 w-8 animate-spin" />
         </div>
@@ -72,7 +72,7 @@ export default function LaboratoriesPage() {
         </div>
       )}
 
-      {!loading && !error && laboratories.length > 0 && (
+      {!isLoading && !error && laboratories.length > 0 && (
         <Table>
           <TableHeader>
             <TableRow>
