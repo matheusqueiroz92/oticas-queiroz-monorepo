@@ -17,6 +17,9 @@ import lensTypeRoutes from "./routes/lensTypeRoutes";
 import connectDB from "./config/db";
 import cors from "cors";
 import path from "node:path";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 class App {
   public app: express.Application;
@@ -31,9 +34,29 @@ class App {
   }
 
   private config(): void {
+    // Configuração do CORS baseada no ambiente
+    const allowedOrigins =
+      process.env.NODE_ENV === "production"
+        ? ["https://app.oticasqueiroz.com.br"]
+        : ["http://localhost:3000"];
+
+    // Permite que a variável CORS_ORIGIN sobrescreva a configuração padrão, se definida
+    if (process.env.CORS_ORIGIN) {
+      allowedOrigins.push(process.env.CORS_ORIGIN);
+    }
+
     this.app.use(
       cors({
-        origin: "http://localhost:3000", // Permite requisições do frontend
+        origin: (origin, callback) => {
+          // Permitir requisições sem origin (como apps mobile ou Postman)
+          if (!origin) return callback(null, true);
+
+          if (allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+          } else {
+            callback(new Error("Não permitido pelo CORS"));
+          }
+        },
         credentials: true, // Permite o envio de cookies e headers de autenticação
       })
     );
@@ -46,6 +69,15 @@ class App {
   }
 
   private routes(): void {
+    this.app.get("/api/health", (_req, res) => {
+      res.status(200).json({
+        status: "ok",
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV || "development",
+        uptime: Math.floor(process.uptime()),
+      });
+    });
+
     this.app.use("/api/auth", authRoutes);
     this.app.use("/api", userRoutes);
     this.app.use("/api", productRoutes);

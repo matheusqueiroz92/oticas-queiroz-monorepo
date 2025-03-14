@@ -11,11 +11,11 @@ export const createAdminUser = async () => {
 
     const adminData = {
       name: "Matheus Queiroz",
-      email: "matheus@oticasqueiroz.com.br",
+      email: "matheusqueiroz@azworkcenter.com.br",
       password: "admin123",
       address: "Rua Ana Nery, nº 121, Alto Maron. Vitória da Conquista-BA",
       phone: "(77)98833-4370",
-      image: "/images/users/matheus.png",
+      image: "images/users/d968bcba-ca42-4d6e-87c8-fba088bfc9f5.png",
       role: "admin" as const,
       cpf: "85804688502",
       rg: "1299106781",
