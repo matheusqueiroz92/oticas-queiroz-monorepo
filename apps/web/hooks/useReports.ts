@@ -12,7 +12,6 @@ import {
 } from "@/app/services/reportService";
 import { QUERY_KEYS } from "../app/constants/query-keys";
 import type {
-  IReport,
   CreateReportDTO,
   ReportType,
   ReportStatus,

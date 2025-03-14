@@ -1,37 +1,44 @@
+import { AlertTriangle, CheckCircle, Clock, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Loader2 } from "lucide-react";
-import { type ReportStatus, reportStatusMap } from "@/app/types/report";
+import type { ReportStatus } from "@/app/types/report";
 
 interface ReportStatusBadgeProps {
   status: ReportStatus;
 }
 
 export function ReportStatusBadge({ status }: ReportStatusBadgeProps) {
-  // Determinar a variante do badge com base no status
-  const getStatusVariant = () => {
-    switch (status) {
-      case "completed":
-        return "secondary" as const;
-      case "pending":
-        return "default" as const;
-      case "processing":
-        return "outline" as const;
-      case "error":
-        return "destructive" as const;
-      default:
-        return "default" as const;
-    }
-  };
+  let variant: "default" | "secondary" | "destructive" | "outline" =
+    "secondary";
+  let label = "";
+  let icon = null;
 
-  // Renderização especial para status em processamento com animação
-  if (status === "processing") {
-    return (
-      <div className="flex items-center gap-1 text-xs bg-slate-100 text-slate-700 px-2 py-1 rounded-full">
-        <Loader2 className="h-3 w-3 animate-spin" />
-        <span>Processando</span>
-      </div>
-    );
+  switch (status) {
+    case "pending":
+      variant = "secondary";
+      label = "Pendente";
+      icon = <Clock className="h-3 w-3 mr-1" />;
+      break;
+    case "processing":
+      variant = "secondary";
+      label = "Processando";
+      icon = <Loader2 className="h-3 w-3 mr-1 animate-spin" />;
+      break;
+    case "completed":
+      variant = "default";
+      label = "Concluído";
+      icon = <CheckCircle className="h-3 w-3 mr-1" />;
+      break;
+    case "error":
+      variant = "destructive";
+      label = "Erro";
+      icon = <AlertTriangle className="h-3 w-3 mr-1" />;
+      break;
   }
 
-  return <Badge variant={getStatusVariant()}>{reportStatusMap[status]}</Badge>;
+  return (
+    <Badge variant={variant} className="flex items-center w-fit">
+      {icon}
+      {label}
+    </Badge>
+  );
 }

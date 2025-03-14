@@ -1,15 +1,29 @@
-import { Card, CardContent } from "@/components/ui/card";
-import type { ReportFilters } from "@/app/types/report";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { formatCurrency } from "@/app/utils/formatters";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { ArrowDown, ArrowUp, Filter } from "lucide-react";
+
+import {
+  paymentMethodOptions,
+  orderStatusOptions,
+  productCategoryOptions,
+} from "@/app/types/report";
+import type { ReportFilters } from "@/app/types/report";
 
 interface ReportFiltersDisplayProps {
   filters: ReportFilters;
 }
 
 export function ReportFiltersDisplay({ filters }: ReportFiltersDisplayProps) {
-  // Verificar se há filtros aplicados
+  // Verificar se existem filtros aplicados
   const hasFilters =
     filters.startDate ||
     filters.endDate ||
@@ -21,144 +35,133 @@ export function ReportFiltersDisplay({ filters }: ReportFiltersDisplayProps) {
 
   if (!hasFilters) {
     return (
-      <div className="text-center py-4">
-        <p className="text-muted-foreground">
-          Nenhum filtro aplicado neste relatório.
-        </p>
-      </div>
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center">
+            <Filter className="mr-2 h-4 w-4" />
+            Filtros Aplicados
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <CardDescription>
+            Nenhum filtro aplicado neste relatório.
+          </CardDescription>
+        </CardContent>
+      </Card>
     );
   }
 
-  // Mapear status para exibição amigável
-  const getStatusLabel = (status: string) => {
-    const statusMap: Record<string, string> = {
-      pending: "Pendente",
-      in_production: "Em Produção",
-      ready: "Pronto",
-      delivered: "Entregue",
-      cancelled: "Cancelado",
-    };
-    return statusMap[status] || status;
+  // Funções para obter o nome a partir do valor
+  const getPaymentMethodLabel = (value: string) => {
+    const option = paymentMethodOptions.find((opt) => opt.value === value);
+    return option ? option.label : value;
   };
 
-  // Mapear métodos de pagamento para exibição amigável
-  const getPaymentMethodLabel = (method: string) => {
-    const methodMap: Record<string, string> = {
-      credit: "Cartão de Crédito",
-      debit: "Cartão de Débito",
-      cash: "Dinheiro",
-      pix: "PIX",
-      installment: "Parcelado",
-    };
-    return methodMap[method] || method;
+  const getOrderStatusLabel = (value: string) => {
+    const option = orderStatusOptions.find((opt) => opt.value === value);
+    return option ? option.label : value;
   };
 
-  // Mapear categorias de produto para exibição amigável
-  const getProductCategoryLabel = (category: string) => {
-    const categoryMap: Record<string, string> = {
-      grau: "Óculos de Grau",
-      solar: "Óculos de Sol",
-      lentes: "Lentes",
-      acessorios: "Acessórios",
-    };
-    return categoryMap[category] || category;
+  const getProductCategoryLabel = (value: string) => {
+    const option = productCategoryOptions.find((opt) => opt.value === value);
+    return option ? option.label : value;
   };
 
   return (
     <Card>
-      <CardContent className="pt-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {filters.startDate && (
-            <div>
-              <h4 className="text-sm font-medium mb-1">Data Inicial</h4>
-              <p className="text-sm">
-                {format(new Date(filters.startDate), "dd 'de' MMMM 'de' yyyy", {
-                  locale: ptBR,
-                })}
-              </p>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-lg flex items-center">
+          <Filter className="mr-2 h-4 w-4" />
+          Filtros Aplicados
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Período */}
+        {(filters.startDate || filters.endDate) && (
+          <div>
+            <h3 className="text-sm font-medium mb-2">Período</h3>
+            <div className="flex items-center gap-2 flex-wrap">
+              {filters.startDate && (
+                <Badge variant="secondary" className="flex items-center">
+                  <ArrowUp className="h-3 w-3 mr-1" />A partir de:{" "}
+                  {format(new Date(filters.startDate), "dd/MM/yyyy", {
+                    locale: ptBR,
+                  })}
+                </Badge>
+              )}
+              {filters.endDate && (
+                <Badge variant="secondary" className="flex items-center">
+                  <ArrowDown className="h-3 w-3 mr-1" />
+                  Até:{" "}
+                  {format(new Date(filters.endDate), "dd/MM/yyyy", {
+                    locale: ptBR,
+                  })}
+                </Badge>
+              )}
             </div>
-          )}
+          </div>
+        )}
 
-          {filters.endDate && (
-            <div>
-              <h4 className="text-sm font-medium mb-1">Data Final</h4>
-              <p className="text-sm">
-                {format(new Date(filters.endDate), "dd 'de' MMMM 'de' yyyy", {
-                  locale: ptBR,
-                })}
-              </p>
+        {/* Status dos Pedidos */}
+        {filters.status && filters.status.length > 0 && (
+          <div>
+            <h3 className="text-sm font-medium mb-2">Status dos Pedidos</h3>
+            <div className="flex flex-wrap gap-2">
+              {filters.status.map((status) => (
+                <Badge key={status} variant="outline">
+                  {getOrderStatusLabel(status)}
+                </Badge>
+              ))}
             </div>
-          )}
+          </div>
+        )}
 
-          {filters.status && filters.status.length > 0 && (
-            <div>
-              <h4 className="text-sm font-medium mb-1">Status</h4>
-              <div className="flex flex-wrap gap-1">
-                {filters.status.map((status) => (
-                  <span
-                    key={status}
-                    className="px-2 py-1 bg-secondary text-secondary-foreground rounded-md text-xs"
-                  >
-                    {getStatusLabel(status)}
-                  </span>
-                ))}
-              </div>
+        {/* Métodos de Pagamento */}
+        {filters.paymentMethod && filters.paymentMethod.length > 0 && (
+          <div>
+            <h3 className="text-sm font-medium mb-2">Métodos de Pagamento</h3>
+            <div className="flex flex-wrap gap-2">
+              {filters.paymentMethod.map((method) => (
+                <Badge key={method} variant="outline">
+                  {getPaymentMethodLabel(method)}
+                </Badge>
+              ))}
             </div>
-          )}
+          </div>
+        )}
 
-          {filters.paymentMethod && filters.paymentMethod.length > 0 && (
-            <div>
-              <h4 className="text-sm font-medium mb-1">Formas de Pagamento</h4>
-              <div className="flex flex-wrap gap-1">
-                {filters.paymentMethod.map((method) => (
-                  <span
-                    key={method}
-                    className="px-2 py-1 bg-secondary text-secondary-foreground rounded-md text-xs"
-                  >
-                    {getPaymentMethodLabel(method)}
-                  </span>
-                ))}
-              </div>
+        {/* Categorias de Produtos */}
+        {filters.productCategory && filters.productCategory.length > 0 && (
+          <div>
+            <h3 className="text-sm font-medium mb-2">Categorias de Produtos</h3>
+            <div className="flex flex-wrap gap-2">
+              {filters.productCategory.map((category) => (
+                <Badge key={category} variant="outline">
+                  {getProductCategoryLabel(category)}
+                </Badge>
+              ))}
             </div>
-          )}
+          </div>
+        )}
 
-          {filters.productCategory && filters.productCategory.length > 0 && (
-            <div>
-              <h4 className="text-sm font-medium mb-1">
-                Categorias de Produto
-              </h4>
-              <div className="flex flex-wrap gap-1">
-                {filters.productCategory.map((category) => (
-                  <span
-                    key={category}
-                    className="px-2 py-1 bg-secondary text-secondary-foreground rounded-md text-xs"
-                  >
-                    {getProductCategoryLabel(category)}
-                  </span>
-                ))}
-              </div>
+        {/* Valores Min/Max */}
+        {(filters.minValue !== undefined || filters.maxValue !== undefined) && (
+          <div>
+            <h3 className="text-sm font-medium mb-2">Faixa de Valor</h3>
+            <div className="flex flex-wrap gap-2">
+              {filters.minValue !== undefined && (
+                <Badge variant="outline">
+                  Valor Mínimo: R$ {filters.minValue.toFixed(2)}
+                </Badge>
+              )}
+              {filters.maxValue !== undefined && (
+                <Badge variant="outline">
+                  Valor Máximo: R$ {filters.maxValue.toFixed(2)}
+                </Badge>
+              )}
             </div>
-          )}
-
-          {(filters.minValue !== undefined ||
-            filters.maxValue !== undefined) && (
-            <div>
-              <h4 className="text-sm font-medium mb-1">Faixa de Valor</h4>
-              <p className="text-sm">
-                {filters.minValue !== undefined &&
-                filters.maxValue !== undefined
-                  ? `De ${formatCurrency(filters.minValue)} até ${formatCurrency(
-                      filters.maxValue
-                    )}`
-                  : filters.minValue !== undefined
-                    ? `A partir de ${formatCurrency(filters.minValue)}`
-                    : filters.maxValue !== undefined
-                      ? `Até ${formatCurrency(filters.maxValue)}`
-                      : ""}
-              </p>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

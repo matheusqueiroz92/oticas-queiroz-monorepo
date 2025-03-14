@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -9,24 +10,24 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { PlusCircle, FileText } from "lucide-react";
+import { PlusCircle, FileText, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/useToast";
-import { useReports } from "../../../hooks/useReports";
-import { ReportList } from "../../../components/Reports/ReportList";
-import { CreateReportModal } from "../../../components/Reports/CreateReportModal";
+import { useReports } from "@/hooks/useReports";
+import { ReportList } from "@/components/Reports/ReportList";
+import { CreateReportModal } from "@/components/Reports/CreateReportModal";
 import { ReportFilters } from "@/components/Reports/ReportFilters";
 import { PageTitle } from "@/components/PageTitle";
-import { EmptyState } from "@/components/ui/empty-state";
-import { DataTableSkeleton } from "../../../components/ui/data-table-skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function ReportsPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const router = useRouter();
   const { toast } = useToast();
 
   // Usar o hook de relatórios
   const {
     reports,
-    loading,
+    isLoading,
     error,
     currentPage,
     pageSize,
@@ -34,8 +35,8 @@ export default function ReportsPage() {
     totalReports,
     setCurrentPage,
     setPageSize,
-    fetchReports,
-    handleCreateReport,
+    refetch,
+    navigateToCreateReport,
   } = useReports();
 
   // Função para atualizar após a criação de relatório
@@ -46,7 +47,7 @@ export default function ReportsPage() {
       description:
         "O relatório está sendo gerado e ficará disponível em breve.",
     });
-    fetchReports();
+    refetch();
   };
 
   return (
@@ -56,10 +57,12 @@ export default function ReportsPage() {
           title="Relatórios"
           description="Gerencie e visualize relatórios da sua ótica"
         />
-        <Button onClick={() => setIsCreateModalOpen(true)}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Novo Relatório
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => setIsCreateModalOpen(true)}>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Novo Relatório
+          </Button>
+        </div>
       </div>
 
       <Card>
@@ -72,26 +75,30 @@ export default function ReportsPage() {
         <CardContent>
           <ReportFilters />
 
-          {loading ? (
-            <DataTableSkeleton columns={5} rows={5} />
-          ) : error ? (
-            <div className="text-center py-10">
-              <p className="text-destructive">
-                Erro ao carregar relatórios. Tente novamente.
-              </p>
+          {isLoading ? (
+            <div className="flex justify-center items-center py-10">
+              <Loader2 className="h-8 w-8 animate-spin" />
+              <span className="ml-2">Carregando relatórios...</span>
             </div>
+          ) : error ? (
+            <Alert variant="destructive" className="my-4">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
           ) : reports.length === 0 ? (
-            <EmptyState
-              icon={<FileText className="h-10 w-10 text-muted-foreground" />}
-              title="Nenhum relatório encontrado"
-              description="Você ainda não criou nenhum relatório. Crie um relatório para começar."
-              action={
-                <Button onClick={() => setIsCreateModalOpen(true)}>
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  Criar Relatório
-                </Button>
-              }
-            />
+            <div className="text-center py-10">
+              <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-semibold">
+                Nenhum relatório encontrado
+              </h3>
+              <p className="text-muted-foreground mt-2 mb-6">
+                Você ainda não criou nenhum relatório. Crie um relatório para
+                começar.
+              </p>
+              <Button onClick={() => setIsCreateModalOpen(true)}>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Criar Relatório
+              </Button>
+            </div>
           ) : (
             <ReportList
               reports={reports}
@@ -103,7 +110,7 @@ export default function ReportsPage() {
                 onPageChange: setCurrentPage,
                 onPageSizeChange: setPageSize,
               }}
-              onRefresh={fetchReports}
+              onRefresh={refetch}
             />
           )}
         </CardContent>

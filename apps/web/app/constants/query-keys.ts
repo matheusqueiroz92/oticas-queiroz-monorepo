@@ -7,6 +7,14 @@ export const QUERY_KEYS = {
   // Autenticação
   AUTH: {
     USER_PROFILE: ["auth", "profile"],
+    USER_DATA: ["auth", "user-data"],
+  },
+
+  USERS: {
+    ALL: ["users"],
+    DETAIL: (id: string) => ["users", "detail", id],
+    CUSTOMERS: (search?: string) => ["users", "customers", search],
+    EMPLOYEES: (search?: string) => ["users", "employees", search],
   },
 
   // Laboratórios

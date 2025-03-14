@@ -1,13 +1,12 @@
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import {
-  FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import type { Product } from "../../../app/types/product";
+import type { Product } from "../../app/types/product";
 
 interface ProductSearchProps {
   products: Product[];

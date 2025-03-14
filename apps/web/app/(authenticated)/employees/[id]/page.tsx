@@ -1,30 +1,34 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { api } from "../../../services/authService";
-import { UserDetailsCard } from "../../../../components/Users/UserDetails";
-import type { Employee } from "../../../types/employee";
+import { Loader2 } from "lucide-react";
+import { UserDetailsCard } from "@/components/Users/UserDetails";
+import { useUsers } from "@/hooks/useUsers";
+import { ErrorAlert } from "@/components/ErrorAlert";
+import type { Employee } from "@/app/types/employee";
 
 export default function EmployeeDetailsPage() {
   const { id } = useParams();
-  const [employee, setEmployee] = useState<Employee | null>(null);
+  const { useUserQuery, getUserImageUrl } = useUsers();
 
-  useEffect(() => {
-    const fetchEmployee = async () => {
-      try {
-        const response = await api.get(`/api/users/${id}`);
-        setEmployee(response.data);
-      } catch (error) {
-        console.error("Erro ao buscar funcionário:", error);
-      }
-    };
+  const { data: employee, isLoading, error } = useUserQuery(id as string);
 
-    fetchEmployee();
-  }, [id]);
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
-  if (!employee) {
-    return <div>Carregando...</div>;
+  if (error || !employee) {
+    return (
+      <ErrorAlert
+        message={
+          (error as Error)?.message || "Erro ao carregar dados do funcionário"
+        }
+      />
+    );
   }
 
   // Defina os campos específicos para funcionários
@@ -42,7 +46,7 @@ export default function EmployeeDetailsPage() {
 
   return (
     <UserDetailsCard
-      user={employee}
+      user={{ ...employee, image: getUserImageUrl(employee.image) }}
       title="Detalhes do Funcionário"
       fields={employeeFields}
     />

@@ -41,6 +41,7 @@ export const API_ROUTES = {
     BASE: "/api/users",
     BY_ID: (id: string) => `/api/users/${id}`,
     CUSTOMERS: "/api/users?role=customer",
+    EMPLOYEES: "/api/users?role=employee",
   },
   REPORTS: {
     BASE: "/api/reports",
@@ -51,6 +52,7 @@ export const API_ROUTES = {
     LOGIN: "/api/auth/login",
     REGISTER: "/api/auth/register",
     PROFILE: "/api/users/profile",
+    CHANGE_PASSWORD: "/api/users/change-password",
     FORGOT_PASSWORD: "/api/auth/forgot-password",
     RESET_PASSWORD: "/api/auth/reset-password",
     VALIDATE_RESET_TOKEN: (token: string) =>

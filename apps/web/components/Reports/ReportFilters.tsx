@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { CalendarIcon, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -11,86 +13,88 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CalendarIcon, FilterX, Search } from "lucide-react";
-import { cn } from "@/lib/utils";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { Badge } from "@/components/ui/badge";
 import { reportTypeOptions } from "@/app/types/report";
+import { useReports } from "@/hooks/useReports";
+import type { ReportType, ReportStatus } from "@/app/types/report";
 
 export function ReportFilters() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+  const { filters, updateFilters } = useReports();
 
-  // Inicializar estado com parâmetros da URL
-  const [search, setSearch] = useState(searchParams.get("search") || "");
-  const [type, setType] = useState(searchParams.get("type") || "all");
-  const [status, setStatus] = useState(searchParams.get("status") || "all");
+  const [search, setSearch] = useState(filters.search || "");
+  const [reportType, setReportType] = useState<ReportType | "all">(
+    (filters.type as ReportType) || "all"
+  );
+  const [status, setStatus] = useState<ReportStatus | "all">(
+    (filters.status as ReportStatus) || "all"
+  );
   const [startDate, setStartDate] = useState<Date | undefined>(
-    searchParams.get("startDate")
-      ? new Date(searchParams.get("startDate") as string)
-      : undefined
+    filters.startDate ? new Date(filters.startDate) : undefined
   );
   const [endDate, setEndDate] = useState<Date | undefined>(
-    searchParams.get("endDate")
-      ? new Date(searchParams.get("endDate") as string)
-      : undefined
+    filters.endDate ? new Date(filters.endDate) : undefined
   );
 
-  // Aplicar filtros e atualizar a URL
-  const handleFilter = () => {
-    const params = new URLSearchParams();
+  // Função para aplicar os filtros
+  const applyFilters = () => {
+    const newFilters: {
+      search?: string;
+      type?: ReportType;
+      status?: ReportStatus;
+      startDate?: string;
+      endDate?: string;
+    } = {};
 
-    // Adicionar filtros não vazios
-    if (search) params.append("search", search);
-    if (type && type !== "all") params.append("type", type);
-    if (status && status !== "all") params.append("status", status);
-    if (startDate)
-      params.append("startDate", startDate.toISOString().split("T")[0]);
-    if (endDate) params.append("endDate", endDate.toISOString().split("T")[0]);
+    if (search) newFilters.search = search;
+    if (reportType !== "all") newFilters.type = reportType;
+    if (status !== "all") newFilters.status = status;
+    if (startDate) newFilters.startDate = format(startDate, "yyyy-MM-dd");
+    if (endDate) newFilters.endDate = format(endDate, "yyyy-MM-dd");
 
-    // Atualizar URL com filtros
-    router.push(`/reports?${params.toString()}`);
+    updateFilters(newFilters);
   };
 
-  // Limpar todos os filtros
+  // Função para limpar todos os filtros
   const clearFilters = () => {
     setSearch("");
-    setType("all");
+    setReportType("all");
     setStatus("all");
     setStartDate(undefined);
     setEndDate(undefined);
-    router.push("/reports");
+    updateFilters({});
   };
 
-  // Verificar se há algum filtro ativo
-  const hasActiveFilters = search || type || status || startDate || endDate;
+  // Verificar se existem filtros ativos
+  const hasActiveFilters =
+    search || reportType !== "all" || status !== "all" || startDate || endDate;
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Campo de busca */}
-        <div className="flex items-center space-x-2">
-          <Input
-            placeholder="Buscar relatório..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleFilter()}
-          />
-          <Button type="submit" size="icon" onClick={handleFilter}>
-            <Search className="h-4 w-4" />
-          </Button>
+    <div className="space-y-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div className="col-span-1 md:col-span-1 lg:col-span-2">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar relatório por nome..."
+              className="pl-8"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
         </div>
 
-        {/* Filtro por tipo de relatório */}
-        <Select value={type} onValueChange={setType}>
+        <Select
+          value={reportType}
+          onValueChange={(value) => setReportType(value as ReportType | "all")}
+        >
           <SelectTrigger>
-            <SelectValue placeholder="Tipo de relatório" />
+            <SelectValue placeholder="Tipo de Relatório" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos os tipos</SelectItem>
@@ -102,8 +106,10 @@ export function ReportFilters() {
           </SelectContent>
         </Select>
 
-        {/* Filtro por status */}
-        <Select value={status} onValueChange={setStatus}>
+        <Select
+          value={status}
+          onValueChange={(value) => setStatus(value as ReportStatus | "all")}
+        >
           <SelectTrigger>
             <SelectValue placeholder="Status" />
           </SelectTrigger>
@@ -116,23 +122,18 @@ export function ReportFilters() {
           </SelectContent>
         </Select>
 
-        {/* Filtro por período */}
-        <div className="flex gap-2">
-          {/* Data inicial */}
+        <div className="flex space-x-2">
           <Popover>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
-                className={cn(
-                  "justify-start text-left font-normal flex-1",
-                  !startDate && "text-muted-foreground"
-                )}
+                className="flex-1 justify-start text-left font-normal"
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
                 {startDate ? (
-                  format(startDate, "dd/MM/yyyy", { locale: ptBR })
+                  format(startDate, "dd/MM/yyyy")
                 ) : (
-                  <span>Data inicial</span>
+                  <span>Data Inicial</span>
                 )}
               </Button>
             </PopoverTrigger>
@@ -145,54 +146,88 @@ export function ReportFilters() {
               />
             </PopoverContent>
           </Popover>
-
-          {/* Data final */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "justify-start text-left font-normal flex-1",
-                  !endDate && "text-muted-foreground"
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {endDate ? (
-                  format(endDate, "dd/MM/yyyy", { locale: ptBR })
-                ) : (
-                  <span>Data final</span>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={endDate}
-                onSelect={setEndDate}
-                disabled={(date) => (startDate ? date < startDate : false)}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
         </div>
       </div>
 
-      {/* Ações dos filtros */}
-      <div className="flex justify-end space-x-2">
-        <Button
-          variant="outline"
-          onClick={clearFilters}
-          disabled={!hasActiveFilters}
-          className={!hasActiveFilters ? "opacity-50 cursor-not-allowed" : ""}
-        >
-          <FilterX className="mr-2 h-4 w-4" />
-          Limpar filtros
-        </Button>
+      <div className="flex items-center justify-between">
+        <div className="flex flex-wrap gap-2 max-w-3xl">
+          {hasActiveFilters && (
+            <>
+              {search && (
+                <Badge variant="secondary" className="flex items-center gap-1">
+                  Busca: {search}
+                  <X
+                    className="h-3 w-3 cursor-pointer"
+                    onClick={() => setSearch("")}
+                  />
+                </Badge>
+              )}
 
-        <Button onClick={handleFilter}>
-          <Search className="mr-2 h-4 w-4" />
-          Aplicar filtros
-        </Button>
+              {reportType !== "all" && (
+                <Badge variant="secondary" className="flex items-center gap-1">
+                  Tipo:{" "}
+                  {
+                    reportTypeOptions.find((opt) => opt.value === reportType)
+                      ?.label
+                  }
+                  <X
+                    className="h-3 w-3 cursor-pointer"
+                    onClick={() => setReportType("all")}
+                  />
+                </Badge>
+              )}
+
+              {status !== "all" && (
+                <Badge variant="secondary" className="flex items-center gap-1">
+                  Status:{" "}
+                  {status === "pending"
+                    ? "Pendente"
+                    : status === "processing"
+                      ? "Em processamento"
+                      : status === "completed"
+                        ? "Concluído"
+                        : "Erro"}
+                  <X
+                    className="h-3 w-3 cursor-pointer"
+                    onClick={() => setStatus("all")}
+                  />
+                </Badge>
+              )}
+
+              {startDate && (
+                <Badge variant="secondary" className="flex items-center gap-1">
+                  A partir de:{" "}
+                  {format(startDate, "dd/MM/yyyy", { locale: ptBR })}
+                  <X
+                    className="h-3 w-3 cursor-pointer"
+                    onClick={() => setStartDate(undefined)}
+                  />
+                </Badge>
+              )}
+
+              {endDate && (
+                <Badge variant="secondary" className="flex items-center gap-1">
+                  Até: {format(endDate, "dd/MM/yyyy", { locale: ptBR })}
+                  <X
+                    className="h-3 w-3 cursor-pointer"
+                    onClick={() => setEndDate(undefined)}
+                  />
+                </Badge>
+              )}
+            </>
+          )}
+        </div>
+
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={clearFilters}
+            disabled={!hasActiveFilters}
+          >
+            Limpar Filtros
+          </Button>
+          <Button onClick={applyFilters}>Aplicar Filtros</Button>
+        </div>
       </div>
     </div>
   );

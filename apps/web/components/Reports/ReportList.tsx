@@ -1,6 +1,16 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import {
+  DownloadCloud,
+  Eye,
+  FileText,
+  MoreHorizontal,
+  RefreshCw,
+} from "lucide-react";
 import {
   Table,
   TableBody,
@@ -9,14 +19,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Eye,
-  FileDown,
-  MoreHorizontal,
-} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,24 +28,18 @@ import {
 import {
   Pagination,
   PaginationContent,
-  PaginationEllipsis,
   PaginationItem,
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { type IReport, reportTypeMap } from "@/app/types/report";
+import { Button } from "@/components/ui/button";
 import { ReportStatusBadge } from "./ReportStatusBadge";
-import { useToast } from "@/hooks/useToast";
-import { formatDate } from "@/app/utils/formatters";
-import { reportService } from "@/app/services/reportService";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
+import type { IReport, ReportFormat } from "@/app/types/report";
+import { reportTypeMap } from "@/app/types/report";
+import { useReports } from "@/hooks/useReports";
 
 interface ReportListProps {
   reports: IReport[];
@@ -64,119 +60,168 @@ export function ReportList({
   onRefresh,
 }: ReportListProps) {
   const router = useRouter();
-  const { toast } = useToast();
+  const { handleDownloadReport } = useReports();
+  const [refreshing, setRefreshing] = useState(false);
 
-  const handleViewReport = (reportId: string) => {
-    router.push(`/reports/${reportId}`);
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await onRefresh();
+    setTimeout(() => setRefreshing(false), 500); // Garantir que o ícone de refresh apareça por pelo menos 500ms
   };
 
-  const handleDownload = async (
-    report: IReport,
-    format: "json" | "excel" | "pdf" | "csv"
-  ) => {
-    try {
-      // Verificar se o relatório está pronto
-      if (report.status !== "completed") {
-        toast({
-          title: "Relatório não está pronto",
-          description:
-            "Aguarde até que o relatório seja concluído para fazer o download.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const blob = await reportService.downloadReport(report._id, format);
-
-      // Criar link para download
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${report.name.replace(/\s+/g, "-").toLowerCase()}.${format}`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-
-      toast({
-        title: "Download iniciado",
-        description: `Seu relatório está sendo baixado no formato ${format.toUpperCase()}.`,
-      });
-    } catch (error) {
-      console.error("Erro ao fazer download do relatório:", error);
-      toast({
-        title: "Erro ao fazer download",
-        description: "Ocorreu um erro ao baixar o relatório. Tente novamente.",
-        variant: "destructive",
-      });
-    }
+  const handleViewReport = (id: string) => {
+    router.push(`/reports/${id}`);
   };
 
-  const { page, pageSize, totalPages, total, onPageChange, onPageSizeChange } =
-    pagination;
+  const handleDownload = async (id: string, format: ReportFormat) => {
+    await handleDownloadReport(id, format);
+  };
 
-  // Gerar números de páginas para a paginação
-  const getPageNumbers = () => {
-    const pageNumbers = [];
+  // Função para gerar os itens de paginação
+  const generatePaginationItems = () => {
+    const items = [];
+    const { page, totalPages } = pagination;
     const maxVisiblePages = 5;
-    const halfVisible = Math.floor(maxVisiblePages / 2);
 
-    let startPage = Math.max(1, page - halfVisible);
-    const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-
-    if (endPage - startPage + 1 < maxVisiblePages) {
-      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    if (totalPages <= maxVisiblePages) {
+      // Se tiver poucas páginas, mostra todas
+      for (let i = 1; i <= totalPages; i++) {
+        items.push(
+          <PaginationItem key={i}>
+            <PaginationLink
+              onClick={() => pagination.onPageChange(i)}
+              isActive={page === i}
+            >
+              {i}
+            </PaginationLink>
+          </PaginationItem>
+        );
+      }
+      return items;
     }
 
-    if (startPage > 1) {
-      pageNumbers.push(1);
-      if (startPage > 2) pageNumbers.push("ellipsis");
+    // Caso contrário, mostra um subconjunto com elipses
+    items.push(
+      <PaginationItem key={1}>
+        <PaginationLink
+          onClick={() => pagination.onPageChange(1)}
+          isActive={page === 1}
+        >
+          1
+        </PaginationLink>
+      </PaginationItem>
+    );
+
+    // Adicionar elipse se necessário
+    if (page > 3) {
+      items.push(
+        <PaginationItem key="ellipsis-start">
+          <span className="px-4">...</span>
+        </PaginationItem>
+      );
     }
+
+    // Páginas próximas à atual
+    const startPage = Math.max(2, page - 1);
+    const endPage = Math.min(totalPages - 1, page + 1);
 
     for (let i = startPage; i <= endPage; i++) {
-      pageNumbers.push(i);
+      if (i <= 1 || i >= totalPages) continue;
+      items.push(
+        <PaginationItem key={i}>
+          <PaginationLink
+            onClick={() => pagination.onPageChange(i)}
+            isActive={page === i}
+          >
+            {i}
+          </PaginationLink>
+        </PaginationItem>
+      );
     }
 
-    if (endPage < totalPages) {
-      if (endPage < totalPages - 1) pageNumbers.push("ellipsis");
-      pageNumbers.push(totalPages);
+    // Adicionar elipse se necessário
+    if (page < totalPages - 2) {
+      items.push(
+        <PaginationItem key="ellipsis-end">
+          <span className="px-4">...</span>
+        </PaginationItem>
+      );
     }
 
-    return pageNumbers;
+    // Última página
+    if (totalPages > 1) {
+      items.push(
+        <PaginationItem key={totalPages}>
+          <PaginationLink
+            onClick={() => pagination.onPageChange(totalPages)}
+            isActive={page === totalPages}
+          >
+            {totalPages}
+          </PaginationLink>
+        </PaginationItem>
+      );
+    }
+
+    return items;
   };
 
+  if (reports.length === 0) {
+    return (
+      <Alert className="my-4">
+        <FileText className="h-4 w-4" />
+        <AlertDescription>
+          Nenhum relatório encontrado com os filtros selecionados.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
   return (
-    <div className="space-y-4">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Nome</TableHead>
-            <TableHead>Tipo</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Data de Criação</TableHead>
-            <TableHead className="text-right">Ações</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {reports.map((report) => (
-            <TableRow key={report._id}>
-              <TableCell className="font-medium">{report.name}</TableCell>
-              <TableCell>{reportTypeMap[report.type]}</TableCell>
-              <TableCell>
-                <ReportStatusBadge status={report.status} />
-              </TableCell>
-              <TableCell>{formatDate(new Date(report.createdAt))}</TableCell>
-              <TableCell className="text-right">
-                <div className="flex justify-end gap-2">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => handleViewReport(report._id)}
-                  >
-                    <Eye className="h-4 w-4" />
-                  </Button>
+    <div>
+      <div className="flex justify-end mb-4">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleRefresh}
+          disabled={refreshing}
+        >
+          <RefreshCw
+            className={`mr-2 h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
+          />
+          Atualizar
+        </Button>
+      </div>
+
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Nome</TableHead>
+              <TableHead>Tipo</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Formato</TableHead>
+              <TableHead>Data de Criação</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {reports.map((report) => (
+              <TableRow key={report._id}>
+                <TableCell className="font-medium">{report.name}</TableCell>
+                <TableCell>{reportTypeMap[report.type]}</TableCell>
+                <TableCell>
+                  <ReportStatusBadge status={report.status} />
+                </TableCell>
+                <TableCell className="uppercase">{report.format}</TableCell>
+                <TableCell>
+                  {format(new Date(report.createdAt), "dd/MM/yyyy HH:mm", {
+                    locale: ptBR,
+                  })}
+                </TableCell>
+                <TableCell className="text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="icon">
+                      <Button variant="ghost" size="icon">
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -184,97 +229,72 @@ export function ReportList({
                       <DropdownMenuItem
                         onClick={() => handleViewReport(report._id)}
                       >
-                        <Eye className="h-4 w-4 mr-2" />
+                        <Eye className="mr-2 h-4 w-4" />
                         Ver Detalhes
                       </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => handleDownload(report, "excel")}
-                        disabled={report.status !== "completed"}
-                      >
-                        <FileDown className="h-4 w-4 mr-2" />
-                        Download Excel
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => handleDownload(report, "pdf")}
-                        disabled={report.status !== "completed"}
-                      >
-                        <FileDown className="h-4 w-4 mr-2" />
-                        Download PDF
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => handleDownload(report, "csv")}
-                        disabled={report.status !== "completed"}
-                      >
-                        <FileDown className="h-4 w-4 mr-2" />
-                        Download CSV
-                      </DropdownMenuItem>
+
+                      {report.status === "completed" && (
+                        <DropdownMenuItem
+                          onClick={() =>
+                            handleDownload(report._id, report.format)
+                          }
+                        >
+                          <DownloadCloud className="mr-2 h-4 w-4" />
+                          Download
+                        </DropdownMenuItem>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-
-      {/* Paginação */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <p className="text-sm text-muted-foreground">
-            Mostrando {reports.length} de {total} relatórios
-          </p>
-          <Select
-            value={String(pageSize)}
-            onValueChange={(value) => onPageSizeChange(Number(value))}
-          >
-            <SelectTrigger className="h-8 w-[70px]">
-              <SelectValue placeholder={pageSize} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="5">5</SelectItem>
-              <SelectItem value="10">10</SelectItem>
-              <SelectItem value="20">20</SelectItem>
-              <SelectItem value="50">50</SelectItem>
-            </SelectContent>
-          </Select>
-          <p className="text-sm text-muted-foreground">por página</p>
-        </div>
-
-        <Pagination>
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious
-                onClick={() => onPageChange(Math.max(1, page - 1))}
-                className={page === 1 ? "disabled" : ""}
-              />
-            </PaginationItem>
-
-            {getPageNumbers().map((pageNumber) =>
-              pageNumber === "ellipsis" ? (
-                <PaginationItem key={`${page}-${Math.random()}`}>
-                  <PaginationEllipsis />
-                </PaginationItem>
-              ) : (
-                <PaginationItem key={pageNumber}>
-                  <PaginationLink
-                    isActive={page === pageNumber}
-                    onClick={() => onPageChange(Number(pageNumber))}
-                  >
-                    {pageNumber}
-                  </PaginationLink>
-                </PaginationItem>
-              )
-            )}
-
-            <PaginationItem>
-              <PaginationNext
-                onClick={() => onPageChange(Math.min(totalPages, page + 1))}
-                className={page === totalPages ? "disabled" : ""}
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
+
+      {pagination.totalPages > 1 && (
+        <div className="mt-4">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  onClick={() =>
+                    pagination.onPageChange(Math.max(1, pagination.page - 1))
+                  }
+                  aria-disabled={pagination.page === 1}
+                  className={
+                    pagination.page === 1
+                      ? "pointer-events-none opacity-50"
+                      : ""
+                  }
+                />
+              </PaginationItem>
+
+              {generatePaginationItems()}
+
+              <PaginationItem>
+                <PaginationNext
+                  onClick={() =>
+                    pagination.onPageChange(
+                      Math.min(pagination.totalPages, pagination.page + 1)
+                    )
+                  }
+                  aria-disabled={pagination.page === pagination.totalPages}
+                  className={
+                    pagination.page === pagination.totalPages
+                      ? "pointer-events-none opacity-50"
+                      : ""
+                  }
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+
+          <div className="text-center text-sm text-muted-foreground mt-2">
+            Mostrando {reports.length} de {pagination.total} relatórios
+          </div>
+        </div>
+      )}
     </div>
   );
 }

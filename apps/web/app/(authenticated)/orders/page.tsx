@@ -30,7 +30,7 @@ export default function OrdersPage() {
 
   const {
     orders,
-    loading,
+    isLoading,
     error,
     currentPage,
     totalPages,
@@ -132,7 +132,7 @@ export default function OrdersPage() {
     return items;
   };
 
-  const showEmptyState = !loading && !error && orders.length === 0;
+  const showEmptyState = !isLoading && !error && orders.length === 0;
 
   return (
     <div className="space-y-4">
@@ -153,7 +153,7 @@ export default function OrdersPage() {
         <Button onClick={navigateToCreateOrder}>Novo Pedido</Button>
       </div>
 
-      {loading && (
+      {isLoading && (
         <div className="flex justify-center items-center py-12">
           <Loader2 className="h-8 w-8 animate-spin" />
         </div>
@@ -173,7 +173,7 @@ export default function OrdersPage() {
         </div>
       )}
 
-      {!loading && !error && orders.length > 0 && (
+      {!isLoading && !error && orders.length > 0 && (
         <>
           <Table>
             <TableHeader>

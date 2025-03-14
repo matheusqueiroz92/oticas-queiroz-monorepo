@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import type { User } from "../app/types/user"; // Certifique-se de que a interface User está definida
+import type { User } from "../../app/types/user"; // Certifique-se de que a interface User está definida
 
 interface UserDetailsCardProps {
   user: User;

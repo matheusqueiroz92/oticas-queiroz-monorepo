@@ -1,30 +1,34 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { api } from "../../../services/authService";
-import { UserDetailsCard } from "../../../../components/Users/UserDetails";
-import type { Customer } from "../../../types/customer";
+import { Loader2 } from "lucide-react";
+import { UserDetailsCard } from "@/components/Users/UserDetails";
+import { useUsers } from "@/hooks/useUsers";
+import { ErrorAlert } from "@/components/ErrorAlert";
+import type { Customer } from "@/app/types/customer";
 
 export default function CustomerDetailsPage() {
   const { id } = useParams();
-  const [customer, setCustomer] = useState<Customer | null>(null);
+  const { useUserQuery, getUserImageUrl } = useUsers();
 
-  useEffect(() => {
-    const fetchCustomer = async () => {
-      try {
-        const response = await api.get(`/api/users/${id}`);
-        setCustomer(response.data);
-      } catch (error) {
-        console.error("Erro ao buscar cliente:", error);
-      }
-    };
+  const { data: customer, isLoading, error } = useUserQuery(id as string);
 
-    fetchCustomer();
-  }, [id]);
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
-  if (!customer) {
-    return <div>Carregando...</div>;
+  if (error || !customer) {
+    return (
+      <ErrorAlert
+        message={
+          (error as Error)?.message || "Erro ao carregar dados do cliente"
+        }
+      />
+    );
   }
 
   // Defina os campos específicos para clientes
@@ -47,7 +51,7 @@ export default function CustomerDetailsPage() {
 
   return (
     <UserDetailsCard
-      user={customer}
+      user={{ ...customer, image: getUserImageUrl(customer.image) }}
       title="Detalhes do Cliente"
       fields={customerFields}
     />

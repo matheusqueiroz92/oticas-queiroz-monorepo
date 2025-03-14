@@ -15,24 +15,28 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, FileDown, Loader2, RefreshCw } from "lucide-react";
-import { formatDate } from "../../../../app/utils/formatters";
+import { formatDate } from "@/app/utils/formatters";
 import { ReportStatusBadge } from "@/components/Reports/ReportStatusBadge";
 import { ReportDataVisualization } from "@/components/Reports/ReportDataVisualization";
 import { ReportFiltersDisplay } from "@/components/Reports/ReportFiltersDisplay";
 import { PageTitle } from "@/components/PageTitle";
 import { reportTypeMap } from "@/app/types/report";
 import { useToast } from "@/hooks/useToast";
+import { useReports } from "@/hooks/useReports";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { QUERY_KEYS } from "@/app/constants/query-keys";
+import type { ReportFormat } from "@/app/types/report";
 
 export default function ReportDetailsPage() {
   const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
+  const { handleDownloadReport } = useReports();
   const reportId = params.id as string;
 
   const {
@@ -41,17 +45,19 @@ export default function ReportDetailsPage() {
     isError,
     refetch,
   } = useQuery({
-    queryKey: ["report", reportId],
+    queryKey: QUERY_KEYS.REPORTS.DETAIL(reportId),
     queryFn: () => reportService.getReportById(reportId),
-    refetchInterval: (data) => {
+    refetchInterval: (query: any) => {
       // Auto refetch if report is still processing
-      return data?.status === "pending" || data?.status === "processing"
+      if (!query || !query.data) return false;
+      const reportStatus = query.data.status;
+      return reportStatus === "pending" || reportStatus === "processing"
         ? 5000 // poll every 5 seconds while processing
         : false; // don't poll if completed or error
     },
   });
 
-  const handleDownload = async (format: "json" | "excel" | "pdf" | "csv") => {
+  const handleDownload = async (format: ReportFormat) => {
     try {
       if (!report) return;
 
@@ -66,23 +72,14 @@ export default function ReportDetailsPage() {
         return;
       }
 
-      const blob = await reportService.downloadReport(reportId, format);
-
-      // Create download link
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${report.name.replace(/\s+/g, "-").toLowerCase()}.${format}`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
+      await handleDownloadReport(reportId, format);
 
       toast({
         title: "Download iniciado",
         description: `Seu relatório está sendo baixado no formato ${format.toUpperCase()}.`,
       });
     } catch (error) {
-      console.error("Error downloading report:", error);
+      console.error("Erro ao fazer download do relatório:", error);
       toast({
         title: "Erro ao fazer download",
         description: "Ocorreu um erro ao baixar o relatório. Tente novamente.",

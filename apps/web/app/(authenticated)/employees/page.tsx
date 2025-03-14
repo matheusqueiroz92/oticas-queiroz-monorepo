@@ -1,113 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { UserTable } from "../../../components/Users/UserTable";
+import { UserTable } from "@/components/Users/UserTable";
 import { Loader2, UserX } from "lucide-react";
-import { api } from "../../services/authService";
-import type { Employee } from "../../types/employee";
-import type { Column, User } from "@/app/types/user";
+import { useEmployees } from "@/hooks/useEmployees";
+import type { Column } from "@/app/types/user";
 import { ErrorAlert } from "@/components/ErrorAlert";
-import axios from "axios";
-
-// Definir tipos para os parâmetros de busca
-interface UserSearchParams {
-  role: string;
-  search?: string;
-}
-
-// Definir tipo para o objeto de erro
-interface ApiError {
-  status: number;
-  message: string;
-}
-
-// Definir tipo para o resultado da função fetchWithErrorHandling
-interface FetchResult<T> {
-  data: T | null;
-  error: ApiError | null;
-}
 
 export default function EmployeesPage() {
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const router = useRouter();
-
-  useEffect(() => {
-    const fetchEmployees = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        // Use uma função auxiliar para capturar o erro 404 específico
-        const { data, error: apiError } = await fetchWithErrorHandling<User[]>(
-          "/api/users",
-          {
-            role: "employee",
-            search,
-          }
-        );
-
-        if (apiError) {
-          // Se for um erro 404 específico, apenas definimos uma lista vazia
-          if (
-            apiError.status === 404 &&
-            apiError.message === "Nenhum usuário com role 'employee' encontrado"
-          ) {
-            setEmployees([]);
-          } else {
-            // Outros erros são tratados normalmente
-            setError(
-              "Erro ao carregar funcionários. Tente novamente mais tarde."
-            );
-          }
-        } else if (data) {
-          // Processo normal quando não há erros
-          const filteredEmployees = data.filter(
-            (user: User) => user.role === "employee"
-          );
-          setEmployees(filteredEmployees);
-        }
-      } catch (error) {
-        // Este catch só deve ser acionado para erros não tratados pelo fetchWithErrorHandling
-        console.error("Erro não tratado:", error);
-        setError("Erro ao carregar funcionários. Tente novamente mais tarde.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchEmployees();
-  }, [search]);
-
-  // Função auxiliar para lidar com erros 404 sem disparar alertas globais
-  const fetchWithErrorHandling = async <T,>(
-    url: string,
-    params: UserSearchParams
-  ): Promise<FetchResult<T>> => {
-    try {
-      const response = await api.get<T>(url, { params });
-      return { data: response.data, error: null };
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        // Retornar um objeto de erro estruturado em vez de lançar exceção
-        return {
-          data: null,
-          error: {
-            status: error.response.status,
-            message: error.response.data?.message || error.message,
-          },
-        };
-      }
-      // Para erros não-Axios, passamos adiante
-      throw error;
-    }
-  };
+  const {
+    employees,
+    isLoading,
+    error,
+    search,
+    setSearch,
+    navigateToEmployeeDetails,
+    navigateToNewEmployee,
+  } = useEmployees();
 
   // Define as colunas para a lista de funcionários
   const employeeColumns: Column[] = [
@@ -126,7 +36,7 @@ export default function EmployeesPage() {
     },
   ];
 
-  const showEmptyState = !loading && !error && employees.length === 0;
+  const showEmptyState = !isLoading && !error && employees.length === 0;
 
   return (
     <div className="space-y-4">
@@ -138,12 +48,10 @@ export default function EmployeesPage() {
           onChange={(e) => setSearch(e.target.value)}
           className="max-w-sm"
         />
-        <Button onClick={() => router.push("/employees/new")}>
-          Novo Funcionário
-        </Button>
+        <Button onClick={navigateToNewEmployee}>Novo Funcionário</Button>
       </div>
 
-      {loading && (
+      {isLoading && (
         <div className="flex justify-center items-center py-12">
           <Loader2 className="h-8 w-8 animate-spin" />
         </div>
@@ -164,11 +72,11 @@ export default function EmployeesPage() {
         </div>
       )}
 
-      {!loading && !error && employees.length > 0 && (
+      {!isLoading && !error && employees.length > 0 && (
         <UserTable
           data={employees}
           columns={employeeColumns}
-          onDetailsClick={(id) => router.push(`/employees/${id}`)}
+          onDetailsClick={navigateToEmployeeDetails}
         />
       )}
     </div>

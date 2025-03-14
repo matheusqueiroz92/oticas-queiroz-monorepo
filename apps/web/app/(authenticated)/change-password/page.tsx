@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { api } from "../../services/authService";
 import { useToast } from "@/hooks/useToast";
+import { useProfile } from "@/hooks/useProfile";
 
 import {
   Form,
@@ -49,7 +49,7 @@ type ChangePasswordFormValues = z.infer<typeof changePasswordSchema>;
 export default function ChangePasswordPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { handleChangePassword, isChangingPassword } = useProfile();
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -66,45 +66,22 @@ export default function ChangePasswordPage() {
   // Função para lidar com envio do formulário
   const onSubmit = async (data: ChangePasswordFormValues) => {
     try {
-      setIsSubmitting(true);
       setError(null);
       setSuccess(null);
 
-      await api.post("/api/users/change-password", {
+      await handleChangePassword({
         currentPassword: data.currentPassword,
         newPassword: data.newPassword,
       });
 
       setSuccess("Senha alterada com sucesso!");
       form.reset();
-
-      // Mostrar mensagem de sucesso
-      toast({
-        title: "Senha alterada",
-        description: "Sua senha foi alterada com sucesso.",
-      });
-
-      // Redirecionar após 2 segundos
-      setTimeout(() => {
-        router.push("/profile");
-      }, 2000);
-      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     } catch (error: any) {
       console.error("Erro ao alterar senha:", error);
-
       const errorMessage =
         error.response?.data?.message ||
         "Ocorreu um erro ao alterar a senha. Tente novamente.";
-
       setError(errorMessage);
-
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: errorMessage,
-      });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -218,9 +195,9 @@ export default function ChangePasswordPage() {
           <Button
             type="submit"
             form="changePasswordForm"
-            disabled={isSubmitting}
+            disabled={isChangingPassword}
           >
-            {isSubmitting ? (
+            {isChangingPassword ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Processando...

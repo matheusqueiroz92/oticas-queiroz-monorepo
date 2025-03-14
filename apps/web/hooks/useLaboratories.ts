@@ -137,7 +137,7 @@ export function useLaboratories() {
   // Mutation para deletar laboratório
   const deleteLaboratoryMutation = useMutation({
     mutationFn: deleteLaboratory,
-    onSuccess: (_, id) => {
+    onSuccess: () => {
       toast({
         title: "Laboratório excluído",
         description: "O laboratório foi excluído com sucesso.",

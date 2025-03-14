@@ -14,7 +14,6 @@ import {
 } from "@/app/services/cashRegisterService";
 import { QUERY_KEYS } from "../app/constants/query-keys";
 import type {
-  ICashRegister,
   OpenCashRegisterDTO,
   CloseCashRegisterDTO,
 } from "@/app/types/cash-register";

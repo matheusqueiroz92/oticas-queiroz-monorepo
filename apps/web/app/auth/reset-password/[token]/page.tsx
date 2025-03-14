@@ -38,7 +38,7 @@ type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
 export default function ResetPasswordPage({
   params,
 }: {
-  params: Promise<{ token: string }> | { token: string };
+  params: Promise<any>;
 }) {
   const router = useRouter();
   const resolvedParams =

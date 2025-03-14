@@ -1,12 +1,10 @@
-// app/(authenticated)/profile/page.tsx
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,9 +27,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/useToast";
-import { api } from "../../services/authService";
-import type { AxiosError } from "axios";
-import type { User } from "@/app/types/user";
+import { useProfile } from "@/hooks/useProfile";
 import Cookies from "js-cookie";
 
 // Schema para validação do formulário de atualização de perfil
@@ -48,144 +44,78 @@ const profileFormSchema = z.object({
 
 type ProfileFormData = z.infer<typeof profileFormSchema>;
 
-interface ApiError {
-  message: string;
-  errors?: Record<string, string[]>;
-}
-
 export default function ProfilePage() {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Usar o hook de perfil
+  const {
+    profile: user,
+    isLoadingProfile: loading,
+    isUpdatingProfile,
+    handleUpdateProfile,
+    refetchProfile,
+    getUserImageUrl,
+  } = useProfile();
+
   // Inicializar o formulário
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
-      name: "",
-      email: "",
-      phone: "",
-      address: "",
+      name: user?.name || "",
+      email: user?.email || "",
+      phone: user?.phone || "",
+      address: user?.address || "",
       image: undefined,
     },
   });
 
-  // Buscar os dados do usuário
-  useEffect(() => {
-    const fetchUserProfile = async () => {
-      try {
-        setLoading(true);
-        const response = await api.get("/api/users/profile");
-        setUser(response.data);
-        console.log(response.data.image);
-        // Preencher o formulário com os dados do usuário
-        form.reset({
-          name: response.data.name,
-          email: response.data.email,
-          phone: response.data.phone || "",
-          address: response.data.address || "",
-        });
-      } catch (error) {
-        console.error("Erro ao buscar perfil:", error);
-        toast({
-          variant: "destructive",
-          title: "Erro",
-          description:
-            "Não foi possível carregar seu perfil. Tente novamente mais tarde.",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Atualizar os valores do formulário quando os dados do usuário carregarem
+  if (user && !form.getValues("name") && !editMode) {
+    form.reset({
+      name: user.name,
+      email: user.email,
+      phone: user.phone || "",
+      address: user.address || "",
+    });
+  }
 
-    fetchUserProfile();
-  }, [form, toast]);
+  const onSubmit = async (data: ProfileFormData) => {
+    try {
+      const formData = new FormData();
 
-  // Mutation para atualizar o perfil
-  const updateProfile = useMutation({
-    mutationFn: async (formData: FormData) => {
-      try {
-        const response = await api.put("/api/users/profile", formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        });
-        return response.data;
-      } catch (error) {
-        const axiosError = error as AxiosError<ApiError>;
-        console.error(
-          "Erro ao atualizar perfil:",
-          axiosError.response?.data || axiosError.message
-        );
-        throw axiosError;
+      // Adicionar campos de texto
+      for (const [key, value] of Object.entries(data)) {
+        if (key !== "image" && value !== undefined) {
+          formData.append(key, String(value));
+        }
       }
-    },
-    onSuccess: (data) => {
-      setUser(data);
-      toast({
-        title: "Perfil atualizado",
-        description: "Suas informações foram atualizadas com sucesso.",
-      });
-      setEditMode(false);
+
+      // Adicionar imagem se existir
+      const file = fileInputRef.current?.files?.[0];
+      if (file) {
+        formData.append("userImage", file);
+      }
+
+      // Enviar dados para atualização
+      const updatedUser = await handleUpdateProfile(formData);
 
       // Atualizar o nome no cookie se foi alterado
-      if (data.name !== Cookies.get("name")) {
-        Cookies.set("name", data.name, { expires: 1 });
+      if (updatedUser && updatedUser.name !== Cookies.get("name")) {
+        Cookies.set("name", updatedUser.name, { expires: 1 });
       }
-    },
-    onError: (error: AxiosError<ApiError>) => {
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description:
-          error.response?.data?.message ||
-          "Erro ao atualizar o perfil. Tente novamente.",
-      });
-    },
-  });
 
-  const onSubmit = (data: ProfileFormData) => {
-    const formData = new FormData();
-
-    // Usar for...of em vez de forEach para evitar o erro de linting
-    for (const [key, value] of Object.entries(data)) {
-      if (key !== "image" && value !== undefined) {
-        formData.append(key, String(value));
-      }
+      setEditMode(false);
+      // Recarregar os dados do perfil
+      refetchProfile();
+    } catch (error) {
+      console.error("Erro ao atualizar perfil:", error);
     }
-
-    // Adicionar imagem se existir
-    const file = fileInputRef.current?.files?.[0];
-    if (file) {
-      formData.append("userImage", file);
-    }
-
-    updateProfile.mutate(formData);
   };
 
-  // Função para obter a URL completa da imagem
-  const getImageUrl = (imagePath?: string): string => {
-    if (!imagePath) return "";
-
-    // Verifica se a URL já é absoluta
-    if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
-      return imagePath;
-    }
-
-    // Construir o caminho correto para as imagens de usuário
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333";
-
-    // Se o caminho já contém 'images/users', não adicione novamente
-    if (imagePath.includes("images/users")) {
-      return `${baseUrl}/${imagePath.startsWith("/") ? imagePath.substring(1) : imagePath}`;
-    }
-
-    // Caso contrário, assume que é apenas o nome do arquivo e adiciona o caminho completo
-    return `${baseUrl}/images/users/${imagePath}`;
-  };
+  // Função para obter a URL completa da imagem foi movida para o hook useProfile
 
   if (loading) {
     return (
@@ -227,7 +157,10 @@ export default function ProfilePage() {
                   </CardDescription>
                 </div>
                 <Avatar className="h-20 w-20">
-                  <AvatarImage src={getImageUrl(user.image)} alt={user.name} />
+                  <AvatarImage
+                    src={getUserImageUrl(user.image)}
+                    alt={user.name}
+                  />
                   <AvatarFallback className="text-xl">
                     {user.name
                       .split(" ")
@@ -337,8 +270,15 @@ export default function ProfilePage() {
                       >
                         Cancelar
                       </Button>
-                      <Button type="submit" disabled={updateProfile.isPending}>
-                        {updateProfile.isPending ? "Salvando..." : "Salvar"}
+                      <Button type="submit" disabled={isUpdatingProfile}>
+                        {isUpdatingProfile ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Salvando...
+                          </>
+                        ) : (
+                          "Salvar"
+                        )}
                       </Button>
                     </div>
                   </form>

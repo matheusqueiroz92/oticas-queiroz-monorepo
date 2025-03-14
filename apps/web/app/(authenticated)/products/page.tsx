@@ -22,9 +22,9 @@ export default function ProductsPage() {
     products,
     loading,
     error,
-    currentPage,
     totalPages,
     updateFilters,
+    currentPage,
     setCurrentPage,
     navigateToProductDetails,
     navigateToCreateProduct,
@@ -45,7 +45,7 @@ export default function ProductsPage() {
       <div className="p-8">
         <Card className="bg-destructive/10 border-destructive">
           <CardContent className="pt-6">
-            <p className="text-destructive">{error}</p>
+            <p className="text-destructive">{error.message}</p>
           </CardContent>
         </Card>
       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import { useState } from "react";
 import {
   Card,
   CardContent,
@@ -8,198 +8,130 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import type {
-  IReport,
-  SalesReportData,
-  InventoryReportData,
-  CustomersReportData,
-  OrdersReportData,
-  FinancialReportData,
-} from "@/app/types/report";
-import { formatCurrency } from "@/app/utils/formatters";
 import {
   BarChart,
   Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
+  LineChart,
+  Line,
   PieChart,
   Pie,
   Cell,
-  LineChart,
-  Line,
+  ResponsiveContainer,
+  XAxis,
+  YAxis,
+  Tooltip,
   Legend,
+  CartesianGrid,
 } from "recharts";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { TableIcon, BarChart2, AlertCircle } from "lucide-react";
+
+import type { IReport } from "@/app/types/report";
 
 interface ReportDataVisualizationProps {
   report: IReport;
 }
 
-// Cores para os gráficos
-const COLORS = [
-  "#0088FE",
-  "#00C49F",
-  "#FFBB28",
-  "#FF8042",
-  "#8884d8",
-  "#82ca9d",
-];
-
 export function ReportDataVisualization({
   report,
 }: ReportDataVisualizationProps) {
+  const [viewMode, setViewMode] = useState<"chart" | "table">("chart");
+
+  // Cores para os gráficos
+  const COLORS = [
+    "#0088FE",
+    "#00C49F",
+    "#FFBB28",
+    "#FF8042",
+    "#8884D8",
+    "#82CA9D",
+    "#A4DE6C",
+    "#D0ED57",
+  ];
+
+  // Verificar se há dados disponíveis
   if (!report.data) {
     return (
-      <div className="p-6 text-center">
-        <p className="text-muted-foreground">
+      <Alert className="my-4">
+        <AlertCircle className="h-4 w-4 mr-2" />
+        <AlertDescription>
           Não há dados disponíveis para este relatório.
-        </p>
-      </div>
+        </AlertDescription>
+      </Alert>
     );
   }
 
-  // Renderizar a visualização apropriada com base no tipo de relatório
-  switch (report.type) {
-    case "sales":
-      return <SalesReportVisualization data={report.data as SalesReportData} />;
-    case "inventory":
-      return (
-        <InventoryReportVisualization
-          data={report.data as InventoryReportData}
-        />
-      );
-    case "customers":
-      return (
-        <CustomersReportVisualization
-          data={report.data as CustomersReportData}
-        />
-      );
-    case "orders":
-      return (
-        <OrdersReportVisualization data={report.data as OrdersReportData} />
-      );
-    case "financial":
-      return (
-        <FinancialReportVisualization
-          data={report.data as FinancialReportData}
-        />
-      );
-    default:
-      return (
-        <div className="p-6 text-center">
-          <p className="text-muted-foreground">
-            Tipo de relatório não suportado.
-          </p>
-        </div>
-      );
-  }
-}
+  // Renderização baseada no tipo de relatório
+  const renderSalesReport = () => {
+    const data = report.data as any;
 
-// Componente para visualização de dados de vendas
-function SalesReportVisualization({ data }: { data: SalesReportData }) {
-  // Preparar dados para o gráfico de métodos de pagamento
-  const paymentMethodData = Object.entries(data.byPaymentMethod).map(
-    ([name, value]) => ({
-      name:
-        name === "credit"
-          ? "Crédito"
-          : name === "debit"
-            ? "Débito"
-            : name === "cash"
-              ? "Dinheiro"
-              : name === "pix"
-                ? "PIX"
-                : name === "installment"
-                  ? "Parcelado"
-                  : name,
-      value,
-    })
-  );
+    // Preparar dados para gráficos
+    const periodData = data.byPeriod || [];
+    const paymentMethodData = Object.entries(data.byPaymentMethod || {}).map(
+      ([name, value]) => ({
+        name,
+        value,
+      })
+    );
 
-  return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Total de Vendas</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">
-              {formatCurrency(data.totalSales)}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Vendas Realizadas</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{data.count}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Ticket Médio</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">
-              {formatCurrency(data.averageSale)}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+    return (
+      <Tabs defaultValue="summary" className="w-full">
+        <TabsList>
+          <TabsTrigger value="summary">Resumo</TabsTrigger>
+          <TabsTrigger value="byPeriod">Por Período</TabsTrigger>
+          <TabsTrigger value="byPaymentMethod">
+            Por Método de Pagamento
+          </TabsTrigger>
+        </TabsList>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Vendas por Período</CardTitle>
-            <CardDescription>
-              Evolução das vendas ao longo do tempo
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={data.byPeriod}
-                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="period" />
-                  <YAxis />
-                  <Tooltip
-                    formatter={(value) => formatCurrency(value as number)}
-                  />
-                  <Legend />
-                  <Line
-                    type="monotone"
-                    dataKey="value"
-                    name="Valor (R$)"
-                    stroke="#8884d8"
-                    activeDot={{ r: 8 }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="count"
-                    name="Quantidade"
-                    stroke="#82ca9d"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
+        <TabsContent value="summary">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 my-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-2xl">
+                  {data.totalSales?.toLocaleString("pt-BR", {
+                    style: "currency",
+                    currency: "BRL",
+                  }) || "R$ 0,00"}
+                </CardTitle>
+                <CardDescription>Total de Vendas</CardDescription>
+              </CardHeader>
+            </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Vendas por Método de Pagamento</CardTitle>
-            <CardDescription>
-              Distribuição de vendas por forma de pagamento
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-2xl">
+                  {data.averageSale?.toLocaleString("pt-BR", {
+                    style: "currency",
+                    currency: "BRL",
+                  }) || "R$ 0,00"}
+                </CardTitle>
+                <CardDescription>Média por Venda</CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-2xl">{data.count || 0}</CardTitle>
+                <CardDescription>Número de Vendas</CardDescription>
+              </CardHeader>
+            </Card>
+          </div>
+
+          <div className="mt-6">
+            <h3 className="text-lg font-medium mb-4">
+              Distribuição por Método de Pagamento
+            </h3>
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -207,484 +139,616 @@ function SalesReportVisualization({ data }: { data: SalesReportData }) {
                     data={paymentMethodData}
                     cx="50%"
                     cy="50%"
-                    labelLine={false}
+                    labelLine={true}
+                    label={({ name, percent }) =>
+                      `${name}: ${(percent * 100).toFixed(0)}%`
+                    }
                     outerRadius={80}
                     fill="#8884d8"
                     dataKey="value"
-                    nameKey="name"
-                    label={(entry) =>
-                      `${entry.name}: ${formatCurrency(entry.value)}`
-                    }
                   >
                     {paymentMethodData.map((entry, index) => (
                       <Cell
-                        key={`cell-${entry.name}`}
+                        key={`cell-${index}`}
                         fill={COLORS[index % COLORS.length]}
                       />
                     ))}
                   </Pie>
                   <Tooltip
-                    formatter={(value) => formatCurrency(value as number)}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
-}
-
-// Componente para visualização de dados de inventário
-function InventoryReportVisualization({ data }: { data: InventoryReportData }) {
-  return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Total de Itens</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{data.totalItems}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Valor Total em Estoque</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">
-              {formatCurrency(data.totalValue)}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Estoque por Categoria</CardTitle>
-            <CardDescription>
-              Distribuição do estoque por categoria de produto
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={data.byCategory}
-                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="category" />
-                  <YAxis yAxisId="left" orientation="left" stroke="#8884d8" />
-                  <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" />
-                  <Tooltip />
-                  <Legend />
-                  <Bar
-                    yAxisId="left"
-                    dataKey="count"
-                    name="Quantidade"
-                    fill="#8884d8"
-                  />
-                  <Bar
-                    yAxisId="right"
-                    dataKey="value"
-                    name="Valor (R$)"
-                    fill="#82ca9d"
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Produtos com Estoque Baixo</CardTitle>
-            <CardDescription>
-              Lista de produtos que precisam de reposição
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="max-h-80 overflow-auto">
-              <table className="w-full">
-                <thead>
-                  <tr>
-                    <th className="text-left font-medium p-2">Produto</th>
-                    <th className="text-right font-medium p-2">Estoque</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.lowStock.map((item) => (
-                    <tr key={item.productId}>
-                      <td className="p-2">{item.name}</td>
-                      <td className="text-right p-2">
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs ${
-                            item.stock <= 2
-                              ? "bg-red-100 text-red-800"
-                              : "bg-yellow-100 text-yellow-800"
-                          }`}
-                        >
-                          {item.stock} un
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
-}
-
-// Componente para visualização de dados de clientes
-function CustomersReportVisualization({ data }: { data: CustomersReportData }) {
-  // Preparar dados para o gráfico de localização
-  const locationData = Object.entries(data.byLocation).map(([name, value]) => ({
-    name,
-    value,
-  }));
-
-  return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Total de Clientes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{data.totalCustomers}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Novos Clientes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{data.newCustomers}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Clientes Recorrentes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{data.recurring}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Média por Cliente</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">
-              {formatCurrency(data.averagePurchase)}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Clientes por Localidade</CardTitle>
-            <CardDescription>
-              Distribuição de clientes por localidade
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={locationData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                    nameKey="name"
-                    label={(entry) => `${entry.name}: ${entry.value}`}
-                  >
-                    {locationData.map((entry, index) => (
-                      <Cell
-                        key={`cell-${entry.name}`}
-                        fill={COLORS[index % COLORS.length]}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
-}
-
-// Componente para visualização de dados de pedidos
-function OrdersReportVisualization({ data }: { data: OrdersReportData }) {
-  // Preparar dados para o gráfico de status
-  const statusData = Object.entries(data.byStatus).map(([status, count]) => ({
-    name:
-      status === "pending"
-        ? "Pendente"
-        : status === "in_production"
-          ? "Em Produção"
-          : status === "ready"
-            ? "Pronto"
-            : status === "delivered"
-              ? "Entregue"
-              : status === "cancelled"
-                ? "Cancelado"
-                : status,
-    value: count,
-  }));
-
-  return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Total de Pedidos</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{data.totalOrders}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Valor Total</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">
-              {formatCurrency(data.totalValue)}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Valor Médio</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">
-              {formatCurrency(data.averageValue)}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Pedidos por Período</CardTitle>
-            <CardDescription>
-              Evolução de pedidos ao longo do tempo
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={data.byPeriod}
-                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="period" />
-                  <YAxis yAxisId="left" orientation="left" stroke="#8884d8" />
-                  <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" />
-                  <Tooltip
-                    formatter={(value, name) => {
-                      if (name === "value")
-                        return formatCurrency(value as number);
-                      return value;
-                    }}
-                  />
-                  <Legend />
-                  <Line
-                    yAxisId="left"
-                    type="monotone"
-                    dataKey="count"
-                    name="Quantidade"
-                    stroke="#8884d8"
-                    activeDot={{ r: 8 }}
-                  />
-                  <Line
-                    yAxisId="right"
-                    type="monotone"
-                    dataKey="value"
-                    name="Valor (R$)"
-                    stroke="#82ca9d"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Pedidos por Status</CardTitle>
-            <CardDescription>
-              Distribuição de pedidos por status
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={statusData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                    nameKey="name"
-                    label={(entry) => `${entry.name}: ${entry.value}`}
-                  >
-                    {statusData.map((entry, index) => (
-                      <Cell
-                        key={`cell-${entry.name}`}
-                        fill={COLORS[index % COLORS.length]}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
-}
-
-// Componente para visualização de dados financeiros
-function FinancialReportVisualization({ data }: { data: FinancialReportData }) {
-  // Preparar dados para o gráfico de categoria
-  const categoryData = Object.entries(data.byCategory).map(([name, value]) => ({
-    name,
-    value,
-  }));
-
-  return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Receita</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{formatCurrency(data.revenue)}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Despesas</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">
-              {formatCurrency(data.expenses)}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Lucro</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p
-              className={`text-2xl font-bold ${data.profit >= 0 ? "text-green-600" : "text-red-600"}`}
-            >
-              {formatCurrency(data.profit)}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Resultados por Período</CardTitle>
-            <CardDescription>
-              Evolução financeira ao longo do tempo
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={data.byPeriod}
-                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="period" />
-                  <YAxis />
-                  <Tooltip
-                    formatter={(value) => formatCurrency(value as number)}
-                  />
-                  <Legend />
-                  <Bar dataKey="revenue" name="Receita" fill="#4ade80" />
-                  <Bar dataKey="expenses" name="Despesas" fill="#f87171" />
-                  <Bar dataKey="profit" name="Lucro" fill="#60a5fa" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Despesas por Categoria</CardTitle>
-            <CardDescription>
-              Distribuição de despesas por categoria
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={categoryData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                    nameKey="name"
-                    label={(entry) =>
-                      `${entry.name}: ${formatCurrency(entry.value)}`
+                    formatter={(value) =>
+                      value.toLocaleString("pt-BR", {
+                        style: "currency",
+                        currency: "BRL",
+                      })
                     }
-                  >
-                    {categoryData.map((entry, index) => (
-                      <Cell
-                        key={`cell-${entry.name}`}
-                        fill={COLORS[index % COLORS.length]}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    formatter={(value) => formatCurrency(value as number)}
                   />
+                  <Legend />
                 </PieChart>
               </ResponsiveContainer>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="byPeriod">
+          <div className="mt-4 h-96">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart
+                data={periodData}
+                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="period" />
+                <YAxis />
+                <Tooltip
+                  formatter={(value) =>
+                    value.toLocaleString("pt-BR", {
+                      style: "currency",
+                      currency: "BRL",
+                    })
+                  }
+                />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="value"
+                  name="Valor"
+                  stroke="#8884d8"
+                  activeDot={{ r: 8 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="count"
+                  name="Quantidade"
+                  stroke="#82ca9d"
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="byPaymentMethod">
+          <div className="mt-4 h-96">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={paymentMethodData}
+                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip
+                  formatter={(value) =>
+                    value.toLocaleString("pt-BR", {
+                      style: "currency",
+                      currency: "BRL",
+                    })
+                  }
+                />
+                <Legend />
+                <Bar dataKey="value" name="Valor" fill="#8884d8" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </TabsContent>
+      </Tabs>
+    );
+  };
+
+  const renderInventoryReport = () => {
+    const data = report.data as any;
+
+    // Preparar dados para gráficos
+    const categoryData = data.byCategory || [];
+
+    return (
+      <Tabs defaultValue="summary" className="w-full">
+        <TabsList>
+          <TabsTrigger value="summary">Resumo</TabsTrigger>
+          <TabsTrigger value="byCategory">Por Categoria</TabsTrigger>
+          <TabsTrigger value="lowStock">Estoque Baixo</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="summary">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-2xl">
+                  {data.totalItems || 0}
+                </CardTitle>
+                <CardDescription>Total de Itens</CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-2xl">
+                  {data.totalValue?.toLocaleString("pt-BR", {
+                    style: "currency",
+                    currency: "BRL",
+                  }) || "R$ 0,00"}
+                </CardTitle>
+                <CardDescription>Valor Total em Estoque</CardDescription>
+              </CardHeader>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="byCategory">
+          <div className="mt-4 h-96">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={categoryData}
+                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="category" />
+                <YAxis />
+                <Tooltip
+                  formatter={(value) =>
+                    value.toLocaleString("pt-BR", {
+                      style: "currency",
+                      currency: "BRL",
+                    })
+                  }
+                />
+                <Legend />
+                <Bar dataKey="value" name="Valor" fill="#8884d8" />
+                <Bar dataKey="count" name="Quantidade" fill="#82ca9d" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="lowStock">
+          <div className="mt-4">
+            {data.lowStock && data.lowStock.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>ID do Produto</TableHead>
+                    <TableHead>Nome</TableHead>
+                    <TableHead className="text-right">Estoque</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data.lowStock.map((item: any) => (
+                    <TableRow key={item.productId}>
+                      <TableCell className="font-mono">
+                        {item.productId}
+                      </TableCell>
+                      <TableCell>{item.name}</TableCell>
+                      <TableCell className="text-right">
+                        <span className="text-amber-600 font-medium">
+                          {item.stock}
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <p className="text-center py-4 text-muted-foreground">
+                Não há produtos com estoque baixo.
+              </p>
+            )}
+          </div>
+        </TabsContent>
+      </Tabs>
+    );
+  };
+
+  const renderCustomersReport = () => {
+    const data = report.data as any;
+
+    // Preparar dados para gráficos
+    const locationData = Object.entries(data.byLocation || {}).map(
+      ([name, value]) => ({
+        name,
+        value,
+      })
+    );
+
+    return (
+      <Tabs defaultValue="summary" className="w-full">
+        <TabsList>
+          <TabsTrigger value="summary">Resumo</TabsTrigger>
+          <TabsTrigger value="byLocation">Por Localização</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="summary">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 my-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-2xl">
+                  {data.totalCustomers || 0}
+                </CardTitle>
+                <CardDescription>Total de Clientes</CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-2xl">
+                  {data.newCustomers || 0}
+                </CardTitle>
+                <CardDescription>Novos Clientes</CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-2xl">
+                  {data.recurring || 0}
+                </CardTitle>
+                <CardDescription>Clientes Recorrentes</CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-2xl">
+                  {data.averagePurchase?.toLocaleString("pt-BR", {
+                    style: "currency",
+                    currency: "BRL",
+                  }) || "R$ 0,00"}
+                </CardTitle>
+                <CardDescription>Compra Média</CardDescription>
+              </CardHeader>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="byLocation">
+          <div className="mt-4 h-96">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={locationData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={true}
+                  label={({ name, percent }) =>
+                    `${name}: ${(percent * 100).toFixed(0)}%`
+                  }
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {locationData.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={COLORS[index % COLORS.length]}
+                    />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </TabsContent>
+      </Tabs>
+    );
+  };
+
+  const renderOrdersReport = () => {
+    const data = report.data as any;
+
+    // Preparar dados para gráficos
+    const statusData = Object.entries(data.byStatus || {}).map(
+      ([name, value]) => ({
+        name,
+        value,
+      })
+    );
+    const periodData = data.byPeriod || [];
+
+    return (
+      <Tabs defaultValue="summary" className="w-full">
+        <TabsList>
+          <TabsTrigger value="summary">Resumo</TabsTrigger>
+          <TabsTrigger value="byStatus">Por Status</TabsTrigger>
+          <TabsTrigger value="byPeriod">Por Período</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="summary">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 my-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-2xl">
+                  {data.totalOrders || 0}
+                </CardTitle>
+                <CardDescription>Total de Pedidos</CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-2xl">
+                  {data.totalValue?.toLocaleString("pt-BR", {
+                    style: "currency",
+                    currency: "BRL",
+                  }) || "R$ 0,00"}
+                </CardTitle>
+                <CardDescription>Valor Total</CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-2xl">
+                  {data.averageValue?.toLocaleString("pt-BR", {
+                    style: "currency",
+                    currency: "BRL",
+                  }) || "R$ 0,00"}
+                </CardTitle>
+                <CardDescription>Valor Médio por Pedido</CardDescription>
+              </CardHeader>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="byStatus">
+          <div className="mt-4 h-96">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={statusData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={true}
+                  label={({ name, percent }) =>
+                    `${name}: ${(percent * 100).toFixed(0)}%`
+                  }
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {statusData.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={COLORS[index % COLORS.length]}
+                    />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="byPeriod">
+          <div className="mt-4 h-96">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart
+                data={periodData}
+                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="period" />
+                <YAxis yAxisId="left" />
+                <YAxis yAxisId="right" orientation="right" />
+                <Tooltip
+                  formatter={(value, name) => {
+                    if (name === "value") {
+                      return value.toLocaleString("pt-BR", {
+                        style: "currency",
+                        currency: "BRL",
+                      });
+                    }
+                    return value;
+                  }}
+                />
+                <Legend />
+                <Line
+                  yAxisId="left"
+                  type="monotone"
+                  dataKey="count"
+                  name="Quantidade"
+                  stroke="#82ca9d"
+                />
+                <Line
+                  yAxisId="right"
+                  type="monotone"
+                  dataKey="value"
+                  name="Valor"
+                  stroke="#8884d8"
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </TabsContent>
+      </Tabs>
+    );
+  };
+
+  const renderFinancialReport = () => {
+    const data = report.data as any;
+
+    // Preparar dados para gráficos
+    const categoryData = Object.entries(data.byCategory || {}).map(
+      ([name, value]) => ({
+        name,
+        value,
+      })
+    );
+    const periodData = data.byPeriod || [];
+
+    return (
+      <Tabs defaultValue="summary" className="w-full">
+        <TabsList>
+          <TabsTrigger value="summary">Resumo</TabsTrigger>
+          <TabsTrigger value="byCategory">Por Categoria</TabsTrigger>
+          <TabsTrigger value="byPeriod">Por Período</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="summary">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 my-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-2xl text-green-600">
+                  {data.revenue?.toLocaleString("pt-BR", {
+                    style: "currency",
+                    currency: "BRL",
+                  }) || "R$ 0,00"}
+                </CardTitle>
+                <CardDescription>Receita</CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-2xl text-red-600">
+                  {data.expenses?.toLocaleString("pt-BR", {
+                    style: "currency",
+                    currency: "BRL",
+                  }) || "R$ 0,00"}
+                </CardTitle>
+                <CardDescription>Despesas</CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle
+                  className={`text-2xl ${data.profit >= 0 ? "text-green-600" : "text-red-600"}`}
+                >
+                  {data.profit?.toLocaleString("pt-BR", {
+                    style: "currency",
+                    currency: "BRL",
+                  }) || "R$ 0,00"}
+                </CardTitle>
+                <CardDescription>Lucro</CardDescription>
+              </CardHeader>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="byCategory">
+          <div className="mt-4 h-96">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={categoryData}
+                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip
+                  formatter={(value) =>
+                    value.toLocaleString("pt-BR", {
+                      style: "currency",
+                      currency: "BRL",
+                    })
+                  }
+                />
+                <Legend />
+                <Bar dataKey="value" name="Valor" fill="#8884d8" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="byPeriod">
+          <div className="mt-4 h-96">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart
+                data={periodData}
+                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="period" />
+                <YAxis />
+                <Tooltip
+                  formatter={(value) =>
+                    value.toLocaleString("pt-BR", {
+                      style: "currency",
+                      currency: "BRL",
+                    })
+                  }
+                />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="revenue"
+                  name="Receita"
+                  stroke="#82ca9d"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="expenses"
+                  name="Despesas"
+                  stroke="#ff7300"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="profit"
+                  name="Lucro"
+                  stroke="#8884d8"
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </TabsContent>
+      </Tabs>
+    );
+  };
+
+  // Alternar entre visualização de gráfico e tabela
+  const toggleViewMode = () => {
+    setViewMode(viewMode === "chart" ? "table" : "chart");
+  };
+
+  // Renderizar relatório com base no tipo
+  const renderReportByType = () => {
+    switch (report.type) {
+      case "sales":
+        return renderSalesReport();
+      case "inventory":
+        return renderInventoryReport();
+      case "customers":
+        return renderCustomersReport();
+      case "orders":
+        return renderOrdersReport();
+      case "financial":
+        return renderFinancialReport();
+      default:
+        return (
+          <Alert className="my-4">
+            <AlertCircle className="h-4 w-4 mr-2" />
+            <AlertDescription>
+              Tipo de relatório não suportado.
+            </AlertDescription>
+          </Alert>
+        );
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={toggleViewMode}
+          className="flex items-center gap-2"
+        >
+          {viewMode === "chart" ? (
+            <>
+              <TableIcon className="h-4 w-4" />
+              Ver como Tabela
+            </>
+          ) : (
+            <>
+              <BarChart2 className="h-4 w-4" />
+              Ver como Gráfico
+            </>
+          )}
+        </Button>
       </div>
+
+      {renderReportByType()}
     </div>
   );
 }

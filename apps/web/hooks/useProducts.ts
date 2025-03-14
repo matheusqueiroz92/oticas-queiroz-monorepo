@@ -13,7 +13,6 @@ import {
   formatCurrency,
 } from "../app/services/productService";
 import { QUERY_KEYS } from "../app/constants/query-keys";
-import type { Product } from "@/app/types/product";
 
 interface ProductFilters {
   search?: string;
@@ -114,7 +113,7 @@ export function useProducts() {
   // Mutation para deletar produto
   const deleteProductMutation = useMutation({
     mutationFn: deleteProduct,
-    onSuccess: (_, id) => {
+    onSuccess: () => {
       toast({
         title: "Produto excluído",
         description: "O produto foi excluído com sucesso.",
@@ -184,6 +183,7 @@ export function useProducts() {
     totalPages,
     totalProducts,
     filters,
+    currentPage,
 
     // Mutações e seus estados
     isCreating: createProductMutation.isPending,

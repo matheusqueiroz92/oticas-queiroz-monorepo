@@ -11,6 +11,7 @@ const nextConfig = {
   },
 
   // Tente também isto
+  // @ts-ignore
   webpack: (config, { dev, isServer }) => {
     // Apenas em desenvolvimento e do lado do cliente
     if (dev && !isServer) {
