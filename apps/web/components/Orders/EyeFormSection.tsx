@@ -1,4 +1,10 @@
 import VisionSection from "./VisionSection";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "@/components/ui/card";
 import type { OrderFormReturn } from "../../app/types/form-types";
 
 interface EyeFormSectionProps {
@@ -13,9 +19,13 @@ export default function EyeFormSection({
   form,
 }: EyeFormSectionProps) {
   return (
-    <div>
-      <h3 className="text-lg font-medium mb-2">{title}</h3>
-      <VisionSection eye={eye} form={form} />
-    </div>
+    <Card className="shadow-sm">
+      <CardHeader>
+        <CardTitle className="text-base">{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <VisionSection eye={eye} form={form} />
+      </CardContent>
+    </Card>
   );
 }

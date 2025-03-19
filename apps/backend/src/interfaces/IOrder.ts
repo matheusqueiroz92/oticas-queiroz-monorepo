@@ -1,33 +1,32 @@
+import { IProduct } from "./IProduct";
+
 export interface IOrder {
   _id?: string;
   clientId: string;
   employeeId: string;
-  productType: "glasses" | "lensCleaner";
-  product: string;
-  // Campos condicionais opcionais para acomodar diferentes tipos de produtos
-  glassesType?: "prescription" | "sunglasses";
-  glassesFrame?: "with" | "no";
+  product: IProduct[];
   paymentMethod: string;
   paymentEntry?: number;
   installments?: number;
   orderDate: Date;
-  deliveryDate: Date;
+  deliveryDate?: Date;
   status: "pending" | "in_production" | "ready" | "delivered" | "cancelled";
   laboratoryId?: string | null;
-  lensType?: string;
   prescriptionData?: {
     doctorName: string;
     clinicName: string;
     appointmentDate: Date;
-    leftEye: {
-      sph: number;
-      cyl: number;
-      axis: number;
-    };
     rightEye: {
       sph: number;
       cyl: number;
       axis: number;
+      pd: number;
+    };
+    leftEye: {
+      sph: number;
+      cyl: number;
+      axis: number;
+      pd: number;
     };
     nd: number;
     oc: number;
@@ -35,6 +34,8 @@ export interface IOrder {
   };
   observations?: string;
   totalPrice: number;
+  discount: number;
+  finalPrice: number;
   isDeleted?: boolean;
   deletedAt?: Date;
   deletedBy?: string;

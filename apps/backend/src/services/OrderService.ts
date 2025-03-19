@@ -1,5 +1,6 @@
 import { OrderModel } from "../models/OrderModel";
 import { UserModel } from "../models/UserModel";
+import { ProductModel } from "../models/ProductModel";
 import type { IOrder } from "../interfaces/IOrder";
 import NodeCache from "node-cache";
 import { ExportUtils, type ExportOptions } from "../utils/exportUtils";
@@ -14,12 +15,14 @@ export class OrderError extends Error {
 export class OrderService {
   private orderModel: OrderModel;
   private userModel: UserModel;
+  private productModel: ProductModel;
   private cache: NodeCache;
   private exportUtils: ExportUtils;
 
   constructor() {
     this.orderModel = new OrderModel();
     this.userModel = new UserModel();
+    this.productModel = new ProductModel();
     this.cache = new NodeCache({ stdTTL: 300 }); // Cache com expiração de 5 minutos
     this.exportUtils = new ExportUtils();
   }
@@ -54,9 +57,34 @@ export class OrderService {
       throw new OrderError("ID fornecido não pertence a um funcionário");
     }
 
-    // Validar dados básicos
+    // Validar produtos
+    if (!orderData.product || orderData.product.length === 0) {
+      throw new OrderError("Pelo menos um produto deve ser adicionado ao pedido");
+    }
+
+    // Verificar cada produto
+    for (const product of orderData.product) {
+      if (!product._id) {
+        throw new OrderError("Todos os produtos devem ter um ID válido");
+      }
+      
+      const productExists = await this.productModel.findById(product._id);
+      if (!productExists) {
+        throw new OrderError(`Produto com ID ${product._id} não encontrado`);
+      }
+    }
+
+    // Validar valores
     if (orderData.totalPrice <= 0) {
       throw new OrderError("Preço total deve ser maior que zero");
+    }
+
+    if (orderData.discount !== undefined && orderData.discount < 0) {
+      throw new OrderError("Desconto não pode ser negativo");
+    }
+
+    if (orderData.discount !== undefined && orderData.discount > orderData.totalPrice) {
+      throw new OrderError("Desconto não pode ser maior que o preço total");
     }
 
     if (orderData.installments && orderData.installments <= 0) {
@@ -89,6 +117,11 @@ export class OrderService {
         orderData.laboratoryId = undefined;
       }
 
+      // Calcular preço final se não fornecido
+      if (orderData.finalPrice === undefined) {
+        orderData.finalPrice = orderData.totalPrice - (orderData.discount || 0);
+      }
+
       await this.validateOrder(orderData);
       const order = await this.orderModel.create(orderData);
 
@@ -116,7 +149,7 @@ export class OrderService {
   async getAllOrders(
     page?: number,
     limit?: number,
-    filters?: Partial<IOrder>
+    filters?: Record<string, any>
   ): Promise<{ orders: IOrder[]; total: number }> {
     const cacheKey = `all_orders_page${page}_limit${limit}_${JSON.stringify(filters)}`;
 
@@ -200,9 +233,9 @@ export class OrderService {
 
     // Validar transição de status
     const validTransitions: Record<IOrder["status"], IOrder["status"][]> = {
-      pending: ["in_production"],
-      in_production: ["ready"],
-      ready: ["delivered"],
+      pending: ["in_production", "cancelled"],
+      in_production: ["ready", "cancelled"],
+      ready: ["delivered", "cancelled"],
       delivered: [],
       cancelled: [],
     };
@@ -267,6 +300,70 @@ export class OrderService {
     return updatedOrder;
   }
 
+  async updateOrder(
+    id: string,
+    orderData: Partial<IOrder>,
+    userId: string,
+    userRole: string
+  ): Promise<IOrder> {
+    const order = await this.orderModel.findById(id);
+    if (!order) {
+      throw new OrderError("Pedido não encontrado");
+    }
+
+    // Verificar permissões
+    if (userRole === "customer" && userId !== order.clientId) {
+      throw new OrderError("Sem permissão para atualizar este pedido");
+    }
+
+    // Se estamos atualizando produtos, validar cada um
+    if (orderData.product && orderData.product.length > 0) {
+      for (const product of orderData.product) {
+        if (!product._id) {
+          throw new OrderError("Todos os produtos devem ter um ID válido");
+        }
+        
+        const productExists = await this.productModel.findById(product._id);
+        if (!productExists) {
+          throw new OrderError(`Produto com ID ${product._id} não encontrado`);
+        }
+      }
+    }
+
+    // Validar outros campos
+    if (orderData.discount !== undefined && orderData.discount < 0) {
+      throw new OrderError("Desconto não pode ser negativo");
+    }
+
+    if (orderData.totalPrice !== undefined && orderData.totalPrice <= 0) {
+      throw new OrderError("Preço total deve ser maior que zero");
+    }
+
+    // Calcular preço final se necessário
+    if ((orderData.totalPrice !== undefined || orderData.discount !== undefined) && 
+        orderData.finalPrice === undefined) {
+      const newTotalPrice = orderData.totalPrice ?? order.totalPrice;
+      const newDiscount = orderData.discount ?? order.discount;
+      orderData.finalPrice = newTotalPrice - newDiscount;
+    }
+
+    // Realizar atualização
+    const updatedOrder = await this.orderModel.update(id, orderData, true);
+    if (!updatedOrder) {
+      throw new OrderError("Erro ao atualizar pedido");
+    }
+
+    // Invalidar caches relacionados
+    this.invalidateCache([
+      `order_${id}`,
+      `client_orders_${order.clientId}`,
+      "daily_orders",
+      "all_orders",
+    ]);
+
+    return updatedOrder;
+  }
+
   async softDeleteOrder(
     id: string,
     userId: string,
@@ -307,7 +404,7 @@ export class OrderService {
   async getDeletedOrders(
     page = 1,
     limit = 10,
-    filters: Partial<IOrder> = {}
+    filters: Record<string, any> = {}
   ): Promise<{ orders: IOrder[]; total: number }> {
     return this.orderModel.findDeletedOrders(page, limit, filters);
   }
@@ -361,7 +458,7 @@ export class OrderService {
     return updatedOrder;
   }
 
-  async getDailyOrders(date: Date): Promise<IOrder[]> {
+  async getDailyOrders(date: Date = new Date()): Promise<IOrder[]> {
     const dateString = date.toISOString().split("T")[0];
     const cacheKey = `daily_orders_${dateString}`;
 
@@ -392,13 +489,10 @@ export class OrderService {
 
   /**
    * Exporta pedidos para diferentes formatos
-   * @param options Opções de exportação
-   * @param filters Filtros para selecionar pedidos
-   * @returns Buffer com os dados exportados e metadados
    */
   async exportOrders(
     options: ExportOptions,
-    filters: Partial<IOrder> = {}
+    filters: Record<string, any> = {}
   ): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
     // Buscar todos os pedidos que correspondem aos filtros (sem paginação)
     const result = await this.orderModel.findAll(1, 1000, filters, true);
@@ -409,46 +503,56 @@ export class OrderService {
 
   /**
    * Exporta resumo diário de pedidos
-   * @param date Data para o resumo
-   * @param options Opções de exportação
-   * @returns Buffer com os dados exportados e metadados
    */
   async exportDailySummary(
     date: Date,
     options: ExportOptions
   ): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
     const orders = await this.getDailyOrders(date);
-
+  
+    // Contar os diferentes tipos de produtos nos pedidos
+    const productTypes = new Map<string, number>();
+    
+    // Processar todos os produtos em todos os pedidos
+    orders.forEach(order => {
+      order.product.forEach(prod => {
+        if (prod.productType) {
+          const count = productTypes.get(prod.productType) || 0;
+          productTypes.set(prod.productType, count + 1);
+        }
+      });
+    });
+  
     // Calcular dados do resumo
     const summary = {
       date: date.toISOString().split("T")[0],
       totalOrders: orders.length,
       ordersByStatus: {
         pending: orders.filter((o) => o.status === "pending").length,
-        in_production: orders.filter((o) => o.status === "in_production")
-          .length,
+        in_production: orders.filter((o) => o.status === "in_production").length,
         ready: orders.filter((o) => o.status === "ready").length,
         delivered: orders.filter((o) => o.status === "delivered").length,
         cancelled: orders.filter((o) => o.status === "cancelled").length,
       },
       totalValue: orders.reduce((sum, order) => sum + order.totalPrice, 0),
+      totalDiscount: orders.reduce((sum, order) => sum + (order.discount || 0), 0),
+      finalValue: orders.reduce((sum, order) => sum + order.finalPrice, 0),
+      // Formatando ordersByType para compatibilidade com exportUtils
       ordersByType: {
-        glasses: orders.filter((o) => o.productType === "glasses").length,
-        lensCleaner: orders.filter((o) => o.productType === "lensCleaner")
-          .length,
+        lenses: productTypes.get("lenses") || 0,
+        clean_lenses: productTypes.get("clean_lenses") || 0,
+        prescription_frame: productTypes.get("prescription_frame") || 0,
+        sunglasses_frame: productTypes.get("sunglasses_frame") || 0
       },
       orders: orders,
     };
-
+  
     // Usar ExportUtils para exportar no formato solicitado
     return this.exportUtils.exportOrdersSummary(summary, options);
   }
 
   /**
    * Exporta detalhes de um pedido específico
-   * @param id ID do pedido
-   * @param options Opções de exportação
-   * @returns Buffer com os dados exportados e metadados
    */
   async exportOrderDetails(
     id: string,

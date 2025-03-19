@@ -1,36 +1,40 @@
 import { z } from "zod";
 
-export const orderFormSchema = z.object({
-  clientId: z.string().min(1, "Cliente é obrigatório"),
-  customClientName: z.string().optional(),
-  employeeId: z.string().min(1, "ID do funcionário é obrigatório"),
-  product: z.string().min(1, "O produto é obrigatório"),
-  glassesType: z.string().min(1, "Tipo de óculos é obrigatório"),
-  paymentMethod: z.string().min(1, "Forma de pagamento é obrigatória"),
-  installments: z.number().optional(),
-  paymentEntry: z.number().optional(),
-  status: z.string().min(1, "Status é obrigatório"),
-  deliveryDate: z.string().min(1, "Data de entrega é obrigatória"),
-  prescriptionData: z
-    .object({
-      doctorName: z.string().min(1, "Nome do médico é obrigatório"),
-      clinicName: z.string().min(1, "Nome da clínica é obrigatório"),
-      appointmentDate: z.string().min(1, "Data da consulta é obrigatória"),
+const orderFormSchema = z
+  .object({
+    clientId: z.string().min(1, "Cliente é obrigatório"),
+    employeeId: z.string().min(1, "ID do funcionário é obrigatório"),
+    product: z.array(z.any()).min(1, "Pelo menos um produto é obrigatório"),
+    paymentMethod: z.string().min(1, "Forma de pagamento é obrigatória"),
+    paymentEntry: z.number().min(0).optional(),
+    installments: z.number().min(1).optional(),
+    orderDate: z.string().optional(),
+    deliveryDate: z.string().optional(),
+    status: z.string().min(1, "Status é obrigatório"),
+    laboratoryId: z.string().optional(),
+    observations: z.string().optional(),
+    totalPrice: z.number().min(0, "O preço total deve ser maior ou igual a zero"),
+    discount: z.number().min(0, "O desconto deve ser maior ou igual a zero"),
+    finalPrice: z.number().min(0, "O preço final deve ser maior ou igual a zero"),
+    prescriptionData: z.object({
+      doctorName: z.string().optional(),
+      clinicName: z.string().optional(),
+      appointmentDate: z.string().optional(),
       leftEye: z.object({
         sph: z.number(),
         cyl: z.number(),
         axis: z.number(),
+        pd: z.number(),
       }),
       rightEye: z.object({
         sph: z.number(),
         cyl: z.number(),
         axis: z.number(),
+        pd: z.number(),
       }),
       nd: z.number(),
+      oc: z.number(),
       addition: z.number(),
-    })
-    .optional(),
-  lensType: z.string().min(1, "O nome da lente é obrigatório"),
-  observations: z.string().optional(),
-  totalPrice: z.number().min(0, "O preço total deve ser maior que zero"),
-});
+    }),
+  })
+  .passthrough();

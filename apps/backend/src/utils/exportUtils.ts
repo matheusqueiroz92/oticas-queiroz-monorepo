@@ -46,6 +46,29 @@ interface RegisterSummary {
   };
 }
 
+interface OrderSummary {
+  date: string;
+  totalOrders: number;
+  ordersByStatus: {
+    pending: number;
+    in_production: number;
+    ready: number;
+    delivered: number;
+    cancelled: number;
+  };
+  totalValue: number;
+  totalDiscount?: number;
+  finalValue?: number;
+  ordersByType: {
+    lenses?: number;
+    clean_lenses?: number;
+    prescription_frame?: number;
+    sunglasses_frame?: number;
+    [key: string]: number | undefined;
+  };
+  orders: IOrder[];
+}
+
 export class ExportUtils {
   async exportOrders(
     orders: IOrder[],
@@ -77,16 +100,20 @@ export class ExportUtils {
         cancelled: number;
       };
       totalValue: number;
+      totalDiscount?: number;
+      finalValue?: number;
       ordersByType: {
-        glasses: number;
-        lensCleaner: number;
+        lenses?: number;
+        clean_lenses?: number;
+        prescription_frame?: number;
+        sunglasses_frame?: number;
       };
       orders: IOrder[];
     },
     options: ExportOptions
   ): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
     const filename = options.filename || `orders-summary-${summary.date}`;
-
+  
     switch (options.format) {
       case "excel":
         return this.generateOrdersSummaryExcel(
@@ -332,8 +359,10 @@ export class ExportUtils {
 
   private translateProductType(type: string): string {
     const types: Record<string, string> = {
-      glasses: "Óculos",
-      lensCleaner: "Limpa Lentes",
+      lenses: "Lentes",
+      clean_lenses: "Limpa Lentes",
+      prescription_frame: "Armação de Grau",
+      sunglasses_frame: "Armação Solar"
     };
     return types[type] || type;
   }
@@ -372,7 +401,7 @@ export class ExportUtils {
   ): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
     const workbook = new Excel.Workbook();
     const worksheet = workbook.addWorksheet("Pedidos");
-
+  
     // Adicionar título se fornecido
     if (title) {
       worksheet.addRow([title]);
@@ -382,31 +411,35 @@ export class ExportUtils {
       titleCell.alignment = { horizontal: "center" };
       worksheet.addRow([]);
     }
-
+  
     // Definir cabeçalhos
     worksheet.columns = [
       { header: "ID", key: "_id", width: 28 },
       { header: "Cliente", key: "client", width: 25 },
       { header: "Funcionário", key: "employee", width: 25 },
-      { header: "Tipo", key: "productType", width: 15 },
+      { header: "Produtos", key: "productCount", width: 15 },
       { header: "Pagamento", key: "paymentMethod", width: 15 },
       { header: "Valor Total", key: "totalPrice", width: 15 },
+      { header: "Desconto", key: "discount", width: 15 },
+      { header: "Valor Final", key: "finalPrice", width: 15 },
       { header: "Status", key: "status", width: 15 },
       { header: "Data de Entrega", key: "deliveryDate", width: 20 },
     ];
-
+  
     // Formatação dos cabeçalhos
     worksheet.getRow(title ? 3 : 1).font = { bold: true };
-
+  
     // Adicionar dados
     for (const order of orders) {
       const row = {
         _id: order._id,
         client: order.clientId || "",
         employee: order.employeeId || "",
-        productType: this.translateProductType(order.productType),
+        productCount: `${order.product?.length || 0} item(s)`,
         paymentMethod: order.paymentMethod,
         totalPrice: order.totalPrice,
+        discount: order.discount || 0,
+        finalPrice: order.finalPrice,
         status: this.translateOrderStatus(order.status),
         deliveryDate: order.deliveryDate
           ? new Date(order.deliveryDate).toLocaleDateString()
@@ -414,13 +447,19 @@ export class ExportUtils {
       };
       worksheet.addRow(row);
     }
-
+  
     // Formatação de células com valores monetários
     const priceColumn = worksheet.getColumn("totalPrice");
     priceColumn.numFmt = "R$ #,##0.00";
-
+    
+    const discountColumn = worksheet.getColumn("discount");
+    discountColumn.numFmt = "R$ #,##0.00";
+    
+    const finalPriceColumn = worksheet.getColumn("finalPrice");
+    finalPriceColumn.numFmt = "R$ #,##0.00";
+  
     const buffer = await workbook.xlsx.writeBuffer();
-
+  
     return {
       buffer: buffer as Buffer,
       contentType:
@@ -441,9 +480,13 @@ export class ExportUtils {
         cancelled: number;
       };
       totalValue: number;
+      totalDiscount?: number;
+      finalValue?: number;
       ordersByType: {
-        glasses: number;
-        lensCleaner: number;
+        lenses?: number;
+        clean_lenses?: number;
+        prescription_frame?: number;
+        sunglasses_frame?: number;
       };
       orders: IOrder[];
     },
@@ -452,7 +495,7 @@ export class ExportUtils {
   ): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
     const workbook = new Excel.Workbook();
     const worksheet = workbook.addWorksheet("Resumo de Pedidos");
-
+  
     // Título do relatório
     const reportTitle = title || `Resumo de Pedidos - ${summary.date}`;
     worksheet.addRow([reportTitle]);
@@ -461,55 +504,93 @@ export class ExportUtils {
     titleCell.font = { size: 16, bold: true };
     titleCell.alignment = { horizontal: "center" };
     worksheet.addRow([]);
-
+  
     // Resumo geral
     worksheet.addRow(["Data", summary.date]);
     worksheet.addRow(["Total de Pedidos", summary.totalOrders]);
     worksheet.addRow(["Valor Total", `R$ ${summary.totalValue.toFixed(2)}`]);
+    
+    // Adicionar informações de desconto e valor final se disponíveis
+    if (summary.totalDiscount !== undefined) {
+      worksheet.addRow(["Total de Descontos", `R$ ${summary.totalDiscount.toFixed(2)}`]);
+    }
+    
+    if (summary.finalValue !== undefined) {
+      worksheet.addRow(["Valor Final", `R$ ${summary.finalValue.toFixed(2)}`]);
+    }
+    
     worksheet.addRow([]);
-
+  
     // Pedidos por status
     worksheet.addRow(["Pedidos por Status"]);
     worksheet.mergeCells("A7:B7");
     worksheet.getCell("A7").font = { bold: true };
-
+  
     worksheet.addRow(["Pendentes", summary.ordersByStatus.pending]);
     worksheet.addRow(["Em Produção", summary.ordersByStatus.in_production]);
     worksheet.addRow(["Prontos", summary.ordersByStatus.ready]);
     worksheet.addRow(["Entregues", summary.ordersByStatus.delivered]);
     worksheet.addRow(["Cancelados", summary.ordersByStatus.cancelled]);
     worksheet.addRow([]);
-
+  
     // Pedidos por tipo
+    const startRow = 14;
     worksheet.addRow(["Pedidos por Tipo"]);
-    worksheet.mergeCells("A14:B14");
-    worksheet.getCell("A14").font = { bold: true };
-
-    worksheet.addRow(["Óculos", summary.ordersByType.glasses]);
-    worksheet.addRow(["Limpa Lentes", summary.ordersByType.lensCleaner]);
+    worksheet.mergeCells(`A${startRow}:B${startRow}`);
+    worksheet.getCell(`A${startRow}`).font = { bold: true };
+  
+    let rowIndex = startRow + 1;
+    
+    if (summary.ordersByType.lenses !== undefined) {
+      worksheet.addRow(["Lentes", summary.ordersByType.lenses]);
+      rowIndex++;
+    }
+    
+    if (summary.ordersByType.clean_lenses !== undefined) {
+      worksheet.addRow(["Limpa-lentes", summary.ordersByType.clean_lenses]);
+      rowIndex++;
+    }
+    
+    if (summary.ordersByType.prescription_frame !== undefined) {
+      worksheet.addRow(["Armação de Grau", summary.ordersByType.prescription_frame]);
+      rowIndex++;
+    }
+    
+    if (summary.ordersByType.sunglasses_frame !== undefined) {
+      worksheet.addRow(["Armação Solar", summary.ordersByType.sunglasses_frame]);
+      rowIndex++;
+    }
+    
     worksheet.addRow([]);
-
+    rowIndex++;
+  
     // Lista de pedidos
     worksheet.addRow(["Lista de Pedidos"]);
-    worksheet.mergeCells("A18:G18");
-    worksheet.getCell("A18").font = { bold: true };
-
+    worksheet.mergeCells(`A${rowIndex}:G${rowIndex}`);
+    worksheet.getCell(`A${rowIndex}`).font = { bold: true };
+    rowIndex++;
+  
     worksheet.addRow([
       "ID",
       "Cliente",
-      "Tipo",
+      "Produtos",
       "Valor Total",
+      "Desconto",
+      "Valor Final",
       "Status",
       "Data de Entrega",
       "Método de Pagamento",
     ]);
-
+  
     for (const order of summary.orders) {
+      const productCount = order.product?.length || 0;
       worksheet.addRow([
         order._id,
         order.clientId || "",
-        this.translateProductType(order.productType),
+        `${productCount} produto(s)`,
         order.totalPrice,
+        order.discount || 0,
+        order.finalPrice,
         this.translateOrderStatus(order.status),
         order.deliveryDate
           ? new Date(order.deliveryDate).toLocaleDateString()
@@ -517,14 +598,29 @@ export class ExportUtils {
         order.paymentMethod,
       ]);
     }
-
+  
     // Formatação
     worksheet.getCell("C5").numFmt = "R$ #,##0.00";
+    
+    if (summary.totalDiscount !== undefined) {
+      worksheet.getCell("C6").numFmt = "R$ #,##0.00";
+    }
+    
+    if (summary.finalValue !== undefined) {
+      worksheet.getCell("C7").numFmt = "R$ #,##0.00";
+    }
+    
     const priceColumn = worksheet.getColumn(4);
     priceColumn.numFmt = "R$ #,##0.00";
-
+    
+    const discountColumn = worksheet.getColumn(5);
+    discountColumn.numFmt = "R$ #,##0.00";
+    
+    const finalPriceColumn = worksheet.getColumn(6);
+    finalPriceColumn.numFmt = "R$ #,##0.00";
+  
     const buffer = await workbook.xlsx.writeBuffer();
-
+  
     return {
       buffer: buffer as Buffer,
       contentType:
@@ -540,7 +636,7 @@ export class ExportUtils {
   ): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
     const workbook = new Excel.Workbook();
     const worksheet = workbook.addWorksheet("Detalhes do Pedido");
-
+  
     // Título do relatório
     const reportTitle = title || `Detalhes do Pedido - ${order._id}`;
     worksheet.addRow([reportTitle]);
@@ -549,7 +645,7 @@ export class ExportUtils {
     titleCell.font = { size: 16, bold: true };
     titleCell.alignment = { horizontal: "center" };
     worksheet.addRow([]);
-
+  
     // Informações gerais
     worksheet.addRow(["ID", order._id]);
     worksheet.addRow(["Cliente", order.clientId || ""]);
@@ -559,98 +655,201 @@ export class ExportUtils {
       "Data de Criação",
       new Date(order.orderDate).toLocaleString(),
     ]);
-    worksheet.addRow([
-      "Data de Entrega",
-      order.deliveryDate
-        ? new Date(order.deliveryDate).toLocaleString()
-        : "N/A",
-    ]);
+    
+    if (order.deliveryDate) {
+      worksheet.addRow([
+        "Data de Entrega",
+        new Date(order.deliveryDate).toLocaleString(),
+      ]);
+    }
+    
     worksheet.addRow([]);
-
-    // Informações do produto
-    worksheet.addRow(["Informações do Produto"]);
+  
+    // Informações dos produtos
+    worksheet.addRow(["Informações dos Produtos"]);
     worksheet.mergeCells("A10:C10");
     worksheet.getCell("A10").font = { bold: true };
-
-    worksheet.addRow([
-      "Tipo de Produto",
-      this.translateProductType(order.productType),
-    ]);
-    worksheet.addRow(["Produto", order.product]);
-
-    if (order.productType === "glasses") {
+  
+    let rowIndex = 11;
+    
+    for (let i = 0; i < order.product.length; i++) {
+      const product = order.product[i];
+      
+      worksheet.addRow([`Produto ${i+1}`, ""]);
+      rowIndex++;
+      
+      worksheet.addRow(["Nome", product.name || ""]);
+      rowIndex++;
+      
       worksheet.addRow([
-        "Tipo de Óculos",
-        this.translateGlassesType(order.glassesType || ""),
+        "Tipo de Produto",
+        this.translateProductType(product.productType),
       ]);
-      worksheet.addRow([
-        "Armação",
-        this.translateGlassesFrame(order.glassesFrame || ""),
-      ]);
-      worksheet.addRow(["Tipo de Lente", order.lensType || "N/A"]);
+      rowIndex++;
+      
+      worksheet.addRow(["Preço", `R$ ${product.sellPrice?.toFixed(2) || "0.00"}`]);
+      rowIndex++;
+      
+      // Adicionar campos específicos com base no tipo
+      if (product.productType === "lenses" && "lensType" in product) {
+        worksheet.addRow(["Tipo de Lente", product.lensType]);
+        rowIndex++;
+      } else if (["prescription_frame", "sunglasses_frame"].includes(product.productType)) {
+        if ("typeFrame" in product) {
+          worksheet.addRow(["Tipo de Armação", product.typeFrame]);
+          rowIndex++;
+        }
+        
+        if ("color" in product) {
+          worksheet.addRow(["Cor", product.color]);
+          rowIndex++;
+        }
+        
+        if ("shape" in product) {
+          worksheet.addRow(["Formato", product.shape]);
+          rowIndex++;
+        }
+        
+        if ("reference" in product) {
+          worksheet.addRow(["Referência", product.reference]);
+          rowIndex++;
+        }
+        
+        if (product.productType === "sunglasses_frame" && "model" in product) {
+          worksheet.addRow(["Modelo", product.model]);
+          rowIndex++;
+        }
+      }
+      
+      // Espaço entre produtos
+      worksheet.addRow([]);
+      rowIndex++;
     }
-
-    worksheet.addRow([]);
-
+  
     // Informações de pagamento
     worksheet.addRow(["Informações de Pagamento"]);
-    worksheet.mergeCells("A16:C16");
-    worksheet.getCell("A16").font = { bold: true };
-
+    worksheet.mergeCells(`A${rowIndex}:C${rowIndex}`);
+    worksheet.getCell(`A${rowIndex}`).font = { bold: true };
+    rowIndex++;
+  
     worksheet.addRow(["Método de Pagamento", order.paymentMethod]);
+    rowIndex++;
+    
     worksheet.addRow(["Valor Total", `R$ ${order.totalPrice.toFixed(2)}`]);
-
+    rowIndex++;
+    
+    worksheet.addRow(["Desconto", `R$ ${(order.discount || 0).toFixed(2)}`]);
+    rowIndex++;
+    
+    worksheet.addRow(["Valor Final", `R$ ${order.finalPrice.toFixed(2)}`]);
+    rowIndex++;
+  
     if (order.installments) {
       worksheet.addRow(["Parcelas", order.installments]);
+      rowIndex++;
     }
-
+  
     if (order.paymentEntry) {
       worksheet.addRow([
         "Valor de Entrada",
         `R$ ${order.paymentEntry.toFixed(2)}`,
       ]);
+      rowIndex++;
     }
-
+  
     worksheet.addRow([]);
-
+    rowIndex++;
+  
     // Dados da prescrição (se existirem)
     if (order.prescriptionData) {
       worksheet.addRow(["Dados da Prescrição"]);
-      worksheet.mergeCells("A22:C22");
-      worksheet.getCell("A22").font = { bold: true };
-
+      worksheet.mergeCells(`A${rowIndex}:C${rowIndex}`);
+      worksheet.getCell(`A${rowIndex}`).font = { bold: true };
+      rowIndex++;
+  
       worksheet.addRow(["Médico", order.prescriptionData.doctorName]);
+      rowIndex++;
+      
       worksheet.addRow(["Clínica", order.prescriptionData.clinicName]);
+      rowIndex++;
+      
       worksheet.addRow([
         "Data da Consulta",
         new Date(order.prescriptionData.appointmentDate).toLocaleDateString(),
       ]);
+      rowIndex++;
+      
       worksheet.addRow([]);
-
+      rowIndex++;
+  
       worksheet.addRow(["Olho Esquerdo"]);
+      rowIndex++;
+      
       worksheet.addRow(["SPH", order.prescriptionData.leftEye.sph]);
+      rowIndex++;
+      
       worksheet.addRow(["CYL", order.prescriptionData.leftEye.cyl]);
+      rowIndex++;
+      
       worksheet.addRow(["AXIS", order.prescriptionData.leftEye.axis]);
+      rowIndex++;
+      
+      if (order.prescriptionData.leftEye.pd) {
+        worksheet.addRow(["PD", order.prescriptionData.leftEye.pd]);
+        rowIndex++;
+      }
+      
       worksheet.addRow([]);
-
+      rowIndex++;
+  
       worksheet.addRow(["Olho Direito"]);
+      rowIndex++;
+      
       worksheet.addRow(["SPH", order.prescriptionData.rightEye.sph]);
+      rowIndex++;
+      
       worksheet.addRow(["CYL", order.prescriptionData.rightEye.cyl]);
+      rowIndex++;
+      
       worksheet.addRow(["AXIS", order.prescriptionData.rightEye.axis]);
+      rowIndex++;
+      
+      if (order.prescriptionData.rightEye.pd) {
+        worksheet.addRow(["PD", order.prescriptionData.rightEye.pd]);
+        rowIndex++;
+      }
+      
       worksheet.addRow([]);
-
-      worksheet.addRow(["DNP", order.prescriptionData.nd]);
-      worksheet.addRow(["Adição", order.prescriptionData.addition]);
+      rowIndex++;
+  
+      if (order.prescriptionData.nd) {
+        worksheet.addRow(["DNP", order.prescriptionData.nd]);
+        rowIndex++;
+      }
+      
+      if (order.prescriptionData.oc) {
+        worksheet.addRow(["OC", order.prescriptionData.oc]);
+        rowIndex++;
+      }
+      
+      if (order.prescriptionData.addition) {
+        worksheet.addRow(["Adição", order.prescriptionData.addition]);
+        rowIndex++;
+      }
     }
-
-    // Formatação
-    worksheet.getCell("B18").numFmt = "R$ #,##0.00";
+  
+    // Formatação de células com valores monetários
+    worksheet.getCell("B11").numFmt = "R$ #,##0.00";
+    worksheet.getCell(`B${rowIndex-4}`).numFmt = "R$ #,##0.00";
+    worksheet.getCell(`B${rowIndex-3}`).numFmt = "R$ #,##0.00";
+    worksheet.getCell(`B${rowIndex-2}`).numFmt = "R$ #,##0.00";
+    
     if (order.paymentEntry) {
-      worksheet.getCell("B20").numFmt = "R$ #,##0.00";
+      worksheet.getCell(`B${rowIndex-1}`).numFmt = "R$ #,##0.00";
     }
-
+  
     const buffer = await workbook.xlsx.writeBuffer();
-
+  
     return {
       buffer: buffer as Buffer,
       contentType:
@@ -671,9 +870,13 @@ export class ExportUtils {
         cancelled: number;
       };
       totalValue: number;
+      totalDiscount?: number;
+      finalValue?: number;
       ordersByType: {
-        glasses: number;
-        lensCleaner: number;
+        lenses?: number;
+        clean_lenses?: number;
+        prescription_frame?: number;
+        sunglasses_frame?: number;
       };
       orders: IOrder[];
     },
@@ -684,7 +887,7 @@ export class ExportUtils {
       try {
         const doc = new PDFDocument({ margin: 50 });
         const chunks: Buffer[] = [];
-
+  
         doc.on("data", (chunk) => chunks.push(chunk));
         doc.on("end", () => {
           const buffer = Buffer.concat(chunks);
@@ -694,32 +897,41 @@ export class ExportUtils {
             filename: `${filename}.pdf`,
           });
         });
-
+  
         // Título
         const reportTitle = title || `Resumo de Pedidos - ${summary.date}`;
         doc.fontSize(20).text(reportTitle, { align: "center" });
         doc.moveDown();
-
+  
         // Data de geração
         doc.fontSize(12).text(`Gerado em: ${new Date().toLocaleString()}`, {
           align: "right",
         });
         doc.moveDown(2);
-
+  
         // Resumo geral
         doc.fontSize(16).text("Resumo Geral", { underline: true });
         doc.moveDown();
-
+  
         doc.fontSize(12);
         doc.text(`Data: ${summary.date}`);
         doc.text(`Total de Pedidos: ${summary.totalOrders}`);
         doc.text(`Valor Total: R$ ${summary.totalValue.toFixed(2)}`);
+        
+        if (summary.totalDiscount !== undefined) {
+          doc.text(`Total de Descontos: R$ ${summary.totalDiscount.toFixed(2)}`);
+        }
+        
+        if (summary.finalValue !== undefined) {
+          doc.text(`Valor Final: R$ ${summary.finalValue.toFixed(2)}`);
+        }
+        
         doc.moveDown(2);
-
+  
         // Pedidos por status
         doc.fontSize(16).text("Pedidos por Status", { underline: true });
         doc.moveDown();
-
+  
         doc.fontSize(12);
         doc.text(`Pendentes: ${summary.ordersByStatus.pending}`);
         doc.text(`Em Produção: ${summary.ordersByStatus.in_production}`);
@@ -727,28 +939,42 @@ export class ExportUtils {
         doc.text(`Entregues: ${summary.ordersByStatus.delivered}`);
         doc.text(`Cancelados: ${summary.ordersByStatus.cancelled}`);
         doc.moveDown(2);
-
+  
         // Pedidos por tipo
         doc.fontSize(16).text("Pedidos por Tipo", { underline: true });
         doc.moveDown();
-
+  
         doc.fontSize(12);
-        doc.text(`Óculos: ${summary.ordersByType.glasses}`);
-        doc.text(`Limpa Lentes: ${summary.ordersByType.lensCleaner}`);
+        if (summary.ordersByType.lenses !== undefined) {
+          doc.text(`Lentes: ${summary.ordersByType.lenses}`);
+        }
+        
+        if (summary.ordersByType.clean_lenses !== undefined) {
+          doc.text(`Limpa-lentes: ${summary.ordersByType.clean_lenses}`);
+        }
+        
+        if (summary.ordersByType.prescription_frame !== undefined) {
+          doc.text(`Armação de Grau: ${summary.ordersByType.prescription_frame}`);
+        }
+        
+        if (summary.ordersByType.sunglasses_frame !== undefined) {
+          doc.text(`Armação Solar: ${summary.ordersByType.sunglasses_frame}`);
+        }
+        
         doc.moveDown(2);
-
+  
         // Lista de pedidos
         doc.fontSize(16).text("Lista de Pedidos", { underline: true });
         doc.moveDown();
-
+  
         // Limitar a lista a 20 pedidos para não sobrecarregar o PDF
         const ordersToShow = summary.orders.slice(0, 20);
-
+  
         // Tabela de pedidos
         const tableTop = doc.y;
-        const tableHeaders = ["ID", "Cliente", "Tipo", "Valor", "Status"];
+        const tableHeaders = ["ID", "Cliente", "Produtos", "Valor", "Status"];
         const columnWidth = 100;
-
+  
         // Cabeçalho da tabela
         doc.fontSize(10).font("Helvetica-Bold");
         tableHeaders.forEach((header, i) => {
@@ -757,18 +983,20 @@ export class ExportUtils {
             align: "left",
           });
         });
-
+  
         // Linha separadora
         doc
           .moveTo(50, tableTop + 15)
           .lineTo(50 + tableHeaders.length * columnWidth, tableTop + 15)
           .stroke();
-
+  
         // Dados
         doc.font("Helvetica");
         let y = tableTop + 25;
-
+  
         for (const order of ordersToShow) {
+          const productCount = order.product?.length || 0;
+          
           doc.text(`${(order._id ?? "").substring(0, 8)}...`, 50, y, {
             width: columnWidth,
             align: "left",
@@ -783,7 +1011,7 @@ export class ExportUtils {
             }
           );
           doc.text(
-            this.translateProductType(order.productType),
+            `${productCount} produto(s)`,
             50 + columnWidth * 2,
             y,
             {
@@ -792,7 +1020,7 @@ export class ExportUtils {
             }
           );
           doc.text(
-            `R$ ${order.totalPrice.toFixed(2)}`,
+            `R$ ${order.finalPrice.toFixed(2)}`,
             50 + columnWidth * 3,
             y,
             {
@@ -809,16 +1037,16 @@ export class ExportUtils {
               align: "left",
             }
           );
-
+  
           y += 20;
-
+  
           // Adicionar nova página se necessário
           if (y > doc.page.height - 50) {
             doc.addPage();
             y = 50;
           }
         }
-
+  
         // Nota sobre limitação
         if (summary.orders.length > 20) {
           doc.moveDown();
@@ -826,13 +1054,14 @@ export class ExportUtils {
             `Nota: Mostrando apenas os primeiros 20 de ${summary.orders.length} pedidos.`
           );
         }
-
+  
         doc.end();
       } catch (error) {
         reject(error);
       }
     });
   }
+  
 
   private async generateOrdersSummaryCSV(
     summary: {
@@ -846,9 +1075,13 @@ export class ExportUtils {
         cancelled: number;
       };
       totalValue: number;
+      totalDiscount?: number;
+      finalValue?: number;
       ordersByType: {
-        glasses: number;
-        lensCleaner: number;
+        lenses?: number;
+        clean_lenses?: number;
+        prescription_frame?: number;
+        sunglasses_frame?: number;
       };
       orders: IOrder[];
     },
@@ -856,38 +1089,68 @@ export class ExportUtils {
   ): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
     // Criar CSV com resumo
     let csv = `"Resumo de Pedidos - ${summary.date}"\n\n`;
-
+  
     csv += '"Resumo Geral"\n';
     csv += `"Data","${summary.date}"\n`;
     csv += `"Total de Pedidos","${summary.totalOrders}"\n`;
-    csv += `"Valor Total","R$ ${summary.totalValue.toFixed(2)}"\n\n`;
-
+    csv += `"Valor Total","R$ ${summary.totalValue.toFixed(2)}"\n`;
+    
+    if (summary.totalDiscount !== undefined) {
+      csv += `"Total de Descontos","R$ ${summary.totalDiscount.toFixed(2)}"\n`;
+    }
+    
+    if (summary.finalValue !== undefined) {
+      csv += `"Valor Final","R$ ${summary.finalValue.toFixed(2)}"\n`;
+    }
+    
+    csv += '\n';
+  
     csv += '"Pedidos por Status"\n';
     csv += `"Pendentes","${summary.ordersByStatus.pending}"\n`;
     csv += `"Em Produção","${summary.ordersByStatus.in_production}"\n`;
     csv += `"Prontos","${summary.ordersByStatus.ready}"\n`;
     csv += `"Entregues","${summary.ordersByStatus.delivered}"\n`;
     csv += `"Cancelados","${summary.ordersByStatus.cancelled}"\n\n`;
-
+  
     csv += '"Pedidos por Tipo"\n';
-    csv += `"Óculos","${summary.ordersByType.glasses}"\n`;
-    csv += `"Limpa Lentes","${summary.ordersByType.lensCleaner}"\n\n`;
-
+    
+    if (summary.ordersByType.lenses !== undefined) {
+      csv += `"Lentes","${summary.ordersByType.lenses}"\n`;
+    }
+    
+    if (summary.ordersByType.clean_lenses !== undefined) {
+      csv += `"Limpa-lentes","${summary.ordersByType.clean_lenses}"\n`;
+    }
+    
+    if (summary.ordersByType.prescription_frame !== undefined) {
+      csv += `"Armação de Grau","${summary.ordersByType.prescription_frame}"\n`;
+    }
+    
+    if (summary.ordersByType.sunglasses_frame !== undefined) {
+      csv += `"Armação Solar","${summary.ordersByType.sunglasses_frame}"\n`;
+    }
+    
+    csv += '\n';
+  
     csv += '"Lista de Pedidos"\n';
     csv +=
-      '"ID","Cliente","Tipo","Valor Total","Status","Data de Entrega","Método de Pagamento"\n';
-
+      '"ID","Cliente","Produtos","Valor Total","Desconto","Valor Final","Status","Data de Entrega","Método de Pagamento"\n';
+  
     // Adicionar dados dos pedidos
     for (const order of summary.orders) {
+      const productCount = order.product?.length || 0;
+      
       csv += `"${order._id}",`;
       csv += `"${order.clientId || ""}",`;
-      csv += `"${this.translateProductType(order.productType)}",`;
+      csv += `"${productCount} produto(s)",`;
       csv += `"R$ ${order.totalPrice.toFixed(2)}",`;
+      csv += `"R$ ${(order.discount || 0).toFixed(2)}",`;
+      csv += `"R$ ${order.finalPrice.toFixed(2)}",`;
       csv += `"${this.translateOrderStatus(order.status)}",`;
       csv += `"${order.deliveryDate ? new Date(order.deliveryDate).toLocaleDateString() : "N/A"}",`;
       csv += `"${order.paymentMethod}"\n`;
     }
-
+  
     return {
       buffer: Buffer.from(csv),
       contentType: "text/csv",
@@ -904,7 +1167,7 @@ export class ExportUtils {
       try {
         const doc = new PDFDocument({ margin: 50 });
         const chunks: Buffer[] = [];
-
+  
         doc.on("data", (chunk) => chunks.push(chunk));
         doc.on("end", () => {
           const buffer = Buffer.concat(chunks);
@@ -914,22 +1177,22 @@ export class ExportUtils {
             filename: `${filename}.pdf`,
           });
         });
-
+  
         // Título
         const reportTitle = title || `Detalhes do Pedido - ${order._id}`;
         doc.fontSize(20).text(reportTitle, { align: "center" });
         doc.moveDown();
-
+  
         // Data de geração
         doc.fontSize(12).text(`Gerado em: ${new Date().toLocaleString()}`, {
           align: "right",
         });
         doc.moveDown(2);
-
+  
         // Informações gerais
         doc.fontSize(16).text("Informações Gerais", { underline: true });
         doc.moveDown();
-
+  
         doc.fontSize(12);
         doc.text(`ID: ${order._id}`);
         doc.text(`Cliente: ${order.clientId || "N/A"}`);
@@ -941,58 +1204,77 @@ export class ExportUtils {
         doc.text(
           `Data de Entrega: ${order.deliveryDate ? new Date(order.deliveryDate).toLocaleString() : "N/A"}`
         );
-
+  
         if (order.laboratoryId) {
           doc.text(`Laboratório: ${order.laboratoryId}`);
         }
-
+  
         doc.moveDown(2);
-
-        // Informações do produto
-        doc.fontSize(16).text("Informações do Produto", { underline: true });
+  
+        // Informações dos produtos
+        doc.fontSize(16).text("Produtos Incluídos", { underline: true });
         doc.moveDown();
-
-        doc.fontSize(12);
-        doc.text(
-          `Tipo de Produto: ${this.translateProductType(order.productType)}`
-        );
-        doc.text(`Produto: ${order.product}`);
-
-        if (order.productType === "glasses") {
-          doc.text(
-            `Tipo de Óculos: ${this.translateGlassesType(order.glassesType || "")}`
-          );
-          doc.text(
-            `Armação: ${this.translateGlassesFrame(order.glassesFrame || "")}`
-          );
-          doc.text(`Tipo de Lente: ${order.lensType || "N/A"}`);
+  
+        // Listar cada produto no pedido
+        for (let i = 0; i < order.product.length; i++) {
+          const product = order.product[i];
+          
+          doc.fontSize(14).text(`Produto ${i+1}: ${product.name || "Sem nome"}`);
+          doc.fontSize(12);
+          doc.text(`Tipo: ${this.translateProductType(product.productType)}`);
+          doc.text(`Preço: R$ ${product.sellPrice?.toFixed(2) || "0.00"}`);
+          
+          // Mostrar detalhes específicos com base no tipo de produto
+          if (product.productType === "lenses" && "lensType" in product) {
+            doc.text(`Tipo de Lente: ${product.lensType}`);
+          } else if (["prescription_frame", "sunglasses_frame"].includes(product.productType)) {
+            if ("typeFrame" in product) {
+              doc.text(`Tipo de Armação: ${product.typeFrame}`);
+            }
+            if ("color" in product) {
+              doc.text(`Cor: ${product.color}`);
+            }
+            if ("shape" in product) {
+              doc.text(`Formato: ${product.shape}`);
+            }
+            if ("reference" in product) {
+              doc.text(`Referência: ${product.reference}`);
+            }
+            if (product.productType === "sunglasses_frame" && "model" in product) {
+              doc.text(`Modelo: ${product.model}`);
+            }
+          }
+          
+          doc.moveDown();
         }
-
-        doc.moveDown(2);
-
+  
+        doc.moveDown();
+  
         // Informações de pagamento
         doc.fontSize(16).text("Informações de Pagamento", { underline: true });
         doc.moveDown();
-
+  
         doc.fontSize(12);
         doc.text(`Método de Pagamento: ${order.paymentMethod}`);
         doc.text(`Valor Total: R$ ${order.totalPrice.toFixed(2)}`);
-
+        doc.text(`Desconto: R$ ${(order.discount || 0).toFixed(2)}`);
+        doc.text(`Valor Final: R$ ${order.finalPrice.toFixed(2)}`);
+  
         if (order.installments) {
           doc.text(`Parcelas: ${order.installments}`);
         }
-
+  
         if (order.paymentEntry) {
           doc.text(`Valor de Entrada: R$ ${order.paymentEntry.toFixed(2)}`);
         }
-
+  
         doc.moveDown(2);
-
+  
         // Dados da prescrição (se existirem)
         if (order.prescriptionData) {
           doc.fontSize(16).text("Dados da Prescrição", { underline: true });
           doc.moveDown();
-
+  
           doc.fontSize(12);
           doc.text(`Médico: ${order.prescriptionData.doctorName}`);
           doc.text(`Clínica: ${order.prescriptionData.clinicName}`);
@@ -1000,23 +1282,36 @@ export class ExportUtils {
             `Data da Consulta: ${new Date(order.prescriptionData.appointmentDate).toLocaleDateString()}`
           );
           doc.moveDown();
-
+  
           doc.text("Olho Esquerdo:");
           doc.text(`SPH: ${order.prescriptionData.leftEye.sph}`);
           doc.text(`CYL: ${order.prescriptionData.leftEye.cyl}`);
           doc.text(`AXIS: ${order.prescriptionData.leftEye.axis}`);
+          if (order.prescriptionData.leftEye.pd) {
+            doc.text(`PD: ${order.prescriptionData.leftEye.pd}`);
+          }
           doc.moveDown();
-
+  
           doc.text("Olho Direito:");
           doc.text(`SPH: ${order.prescriptionData.rightEye.sph}`);
           doc.text(`CYL: ${order.prescriptionData.rightEye.cyl}`);
           doc.text(`AXIS: ${order.prescriptionData.rightEye.axis}`);
+          if (order.prescriptionData.rightEye.pd) {
+            doc.text(`PD: ${order.prescriptionData.rightEye.pd}`);
+          }
           doc.moveDown();
-
-          doc.text(`DNP: ${order.prescriptionData.nd}`);
-          doc.text(`Adição: ${order.prescriptionData.addition}`);
+  
+          if (order.prescriptionData.nd) {
+            doc.text(`DNP: ${order.prescriptionData.nd}`);
+          }
+          if (order.prescriptionData.oc) {
+            doc.text(`OC: ${order.prescriptionData.oc}`);
+          }
+          if (order.prescriptionData.addition) {
+            doc.text(`Adição: ${order.prescriptionData.addition}`);
+          }
         }
-
+  
         // Observações (se existirem)
         if (order.observations) {
           doc.moveDown();
@@ -1024,7 +1319,7 @@ export class ExportUtils {
           doc.moveDown();
           doc.fontSize(12).text(order.observations);
         }
-
+  
         doc.end();
       } catch (error) {
         reject(error);
@@ -1037,7 +1332,7 @@ export class ExportUtils {
     filename: string
   ): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
     let csv = `"Detalhes do Pedido - ${order._id}"\n\n`;
-
+  
     // Informações gerais
     csv += `"Informações Gerais"\n`;
     csv += `"ID","${order._id}"\n`;
@@ -1046,69 +1341,105 @@ export class ExportUtils {
     csv += `"Status","${this.translateOrderStatus(order.status)}"\n`;
     csv += `"Data de Criação","${order.createdAt ? new Date(order.createdAt).toLocaleString() : "N/A"}"\n`;
     csv += `"Data de Entrega","${order.deliveryDate ? new Date(order.deliveryDate).toLocaleString() : "N/A"}"\n`;
-
+  
     if (order.laboratoryId) {
       csv += `"Laboratório","${order.laboratoryId}"\n`;
     }
-
+  
     csv += "\n";
-
-    // Informações do produto
-    csv += `"Informações do Produto"\n`;
-    csv += `"Tipo de Produto","${this.translateProductType(order.productType)}"\n`;
-    csv += `"Produto","${order.product}"\n`;
-
-    if (order.productType === "glasses") {
-      csv += `"Tipo de Óculos","${this.translateGlassesType(order.glassesType || "")}"\n`;
-      csv += `"Armação","${this.translateGlassesFrame(order.glassesFrame || "")}"\n`;
-      csv += `"Tipo de Lente","${order.lensType || "N/A"}"\n`;
+  
+    // Informações dos produtos
+    csv += `"Informações dos Produtos"\n`;
+    
+    for (let i = 0; i < order.product.length; i++) {
+      const product = order.product[i];
+      
+      csv += `"Produto ${i+1}","${product.name || "Sem nome"}"\n`;
+      csv += `"Tipo","${this.translateProductType(product.productType)}"\n`;
+      csv += `"Preço","R$ ${product.sellPrice?.toFixed(2) || "0.00"}"\n`;
+      
+      // Mostrar detalhes específicos com base no tipo de produto
+      if (product.productType === "lenses" && "lensType" in product) {
+        csv += `"Tipo de Lente","${product.lensType}"\n`;
+      } else if (["prescription_frame", "sunglasses_frame"].includes(product.productType)) {
+        if ("typeFrame" in product) {
+          csv += `"Tipo de Armação","${product.typeFrame}"\n`;
+        }
+        if ("color" in product) {
+          csv += `"Cor","${product.color}"\n`;
+        }
+        if ("shape" in product) {
+          csv += `"Formato","${product.shape}"\n`;
+        }
+        if ("reference" in product) {
+          csv += `"Referência","${product.reference}"\n`;
+        }
+        if (product.productType === "sunglasses_frame" && "model" in product) {
+          csv += `"Modelo","${product.model}"\n`;
+        }
+      }
+      
+      csv += "\n";
     }
-
-    csv += "\n";
-
+  
     // Informações de pagamento
     csv += `"Informações de Pagamento"\n`;
     csv += `"Método de Pagamento","${order.paymentMethod}"\n`;
     csv += `"Valor Total","R$ ${order.totalPrice.toFixed(2)}"\n`;
-
+    csv += `"Desconto","R$ ${(order.discount || 0).toFixed(2)}"\n`;
+    csv += `"Valor Final","R$ ${order.finalPrice.toFixed(2)}"\n`;
+  
     if (order.installments) {
       csv += `"Parcelas","${order.installments}"\n`;
     }
-
+  
     if (order.paymentEntry) {
       csv += `"Valor de Entrada","R$ ${order.paymentEntry.toFixed(2)}"\n`;
     }
-
+  
     csv += "\n";
-
+  
     // Dados da prescrição (se existirem)
     if (order.prescriptionData) {
       csv += `"Dados da Prescrição"\n`;
       csv += `"Médico","${order.prescriptionData.doctorName}"\n`;
       csv += `"Clínica","${order.prescriptionData.clinicName}"\n`;
       csv += `"Data da Consulta","${new Date(order.prescriptionData.appointmentDate).toLocaleDateString()}"\n`;
-
+  
       csv += `\n"Olho Esquerdo"\n`;
       csv += `"SPH","${order.prescriptionData.leftEye.sph}"\n`;
       csv += `"CYL","${order.prescriptionData.leftEye.cyl}"\n`;
       csv += `"AXIS","${order.prescriptionData.leftEye.axis}"\n`;
-
+      if (order.prescriptionData.leftEye.pd) {
+        csv += `"PD","${order.prescriptionData.leftEye.pd}"\n`;
+      }
+  
       csv += `\n"Olho Direito"\n`;
       csv += `"SPH","${order.prescriptionData.rightEye.sph}"\n`;
       csv += `"CYL","${order.prescriptionData.rightEye.cyl}"\n`;
       csv += `"AXIS","${order.prescriptionData.rightEye.axis}"\n`;
-
+      if (order.prescriptionData.rightEye.pd) {
+        csv += `"PD","${order.prescriptionData.rightEye.pd}"\n`;
+      }
+  
       csv += "\n";
-      csv += `"DNP","${order.prescriptionData.nd}"\n`;
-      csv += `"Adição","${order.prescriptionData.addition}"\n`;
+      if (order.prescriptionData.nd) {
+        csv += `"DNP","${order.prescriptionData.nd}"\n`;
+      }
+      if (order.prescriptionData.oc) {
+        csv += `"OC","${order.prescriptionData.oc}"\n`;
+      }
+      if (order.prescriptionData.addition) {
+        csv += `"Adição","${order.prescriptionData.addition}"\n`;
+      }
     }
-
+  
     // Observações (se existirem)
     if (order.observations) {
       csv += `\n"Observações"\n`;
       csv += `"${order.observations}"\n`;
     }
-
+  
     return {
       buffer: Buffer.from(csv),
       contentType: "text/csv",
@@ -1125,7 +1456,7 @@ export class ExportUtils {
       try {
         const doc = new PDFDocument({ margin: 50 });
         const chunks: Buffer[] = [];
-
+  
         doc.on("data", (chunk) => chunks.push(chunk));
         doc.on("end", () => {
           const buffer = Buffer.concat(chunks);
@@ -1135,23 +1466,23 @@ export class ExportUtils {
             filename: `${filename}.pdf`,
           });
         });
-
+  
         // Título
         const reportTitle = title || "Relatório de Pedidos";
         doc.fontSize(20).text(reportTitle, { align: "center" });
         doc.moveDown();
-
+  
         // Data de geração
         doc.fontSize(12).text(`Gerado em: ${new Date().toLocaleString()}`, {
           align: "right",
         });
         doc.moveDown(2);
-
+  
         // Cabeçalhos da tabela
         const tableTop = 150;
-        const tableHeaders = ["ID", "Cliente", "Tipo", "Valor Total", "Status"];
+        const tableHeaders = ["ID", "Cliente", "Produtos", "Valor Final", "Status"];
         const columnWidth = 100;
-
+  
         // Desenhar linha de cabeçalho
         doc.fontSize(12).font("Helvetica-Bold");
         tableHeaders.forEach((header, i) => {
@@ -1160,22 +1491,22 @@ export class ExportUtils {
             align: "left",
           });
         });
-
+  
         // Linha separadora
         doc
           .moveTo(50, tableTop + 20)
           .lineTo(50 + tableHeaders.length * columnWidth, tableTop + 20)
           .stroke();
-
+  
         // Dados
         doc.font("Helvetica");
         let y = tableTop + 30;
-
+  
         for (const order of orders) {
-          const formattedValue = `R$ ${order.totalPrice.toFixed(2)}`;
-          const type = this.translateProductType(order.productType);
+          const formattedValue = `R$ ${order.finalPrice.toFixed(2)}`;
+          const productCount = `${order.product?.length || 0} item(s)`;
           const status = this.translateOrderStatus(order.status);
-
+  
           doc.text(`${(order._id ?? "").substring(0, 10)}...`, 50, y, {
             width: columnWidth,
             align: "left",
@@ -1184,7 +1515,7 @@ export class ExportUtils {
             width: columnWidth,
             align: "left",
           });
-          doc.text(type, 50 + columnWidth * 2, y, {
+          doc.text(productCount, 50 + columnWidth * 2, y, {
             width: columnWidth,
             align: "left",
           });
@@ -1196,27 +1527,27 @@ export class ExportUtils {
             width: columnWidth,
             align: "left",
           });
-
+  
           y += 20;
-
+  
           // Adicionar nova página se necessário
           if (y > doc.page.height - 50) {
             doc.addPage();
             y = 50;
           }
         }
-
+  
         // Resumo
         doc.moveDown(2);
         const totalValue = orders.reduce(
-          (sum, order) => sum + order.totalPrice,
+          (sum, order) => sum + order.finalPrice,
           0
         );
         doc
           .fontSize(14)
           .font("Helvetica-Bold")
           .text(`Total: R$ ${totalValue.toFixed(2)}`, { align: "right" });
-
+  
         doc.end();
       } catch (error) {
         reject(error);
@@ -1233,11 +1564,12 @@ export class ExportUtils {
       { label: "Cliente", value: "clientId" },
       { label: "Funcionário", value: "employeeId" },
       {
-        label: "Tipo de Produto",
-        value: (row: IOrder) => this.translateProductType(row.productType),
+        label: "Quantidade de Produtos",
+        value: (row: IOrder) => row.product?.length || 0,
       },
-      { label: "Produto", value: "product" },
       { label: "Valor Total", value: "totalPrice" },
+      { label: "Desconto", value: (row: IOrder) => row.discount || 0 },
+      { label: "Valor Final", value: "finalPrice" },
       {
         label: "Status",
         value: (row: IOrder) => this.translateOrderStatus(row.status),
@@ -1251,11 +1583,11 @@ export class ExportUtils {
       },
       { label: "Método de Pagamento", value: "paymentMethod" },
     ];
-
+  
     const parser = new Parser({ fields });
     const csv = parser.parse(orders);
     const buffer = Buffer.from(csv);
-
+  
     return {
       buffer,
       contentType: "text/csv",

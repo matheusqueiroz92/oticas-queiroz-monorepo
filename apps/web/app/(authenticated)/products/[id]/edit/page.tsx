@@ -1,9 +1,10 @@
+// app/products/[id]/edit/page.tsx
 "use client";
 
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -30,147 +31,73 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useProducts } from "@/hooks/useProducts";
 import { Product } from "@/app/types/product";
 
-// Schema base para todos os produtos
-const baseProductSchema = z.object({
-  name: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
-  productType: z.enum(["lenses", "clean_lenses", "prescription_frame", "sunglasses_frame"], {
-    required_error: "Selecione um tipo de produto",
-  }),
-  description: z.string().min(10, "Descrição muito curta"),
-  image: z.instanceof(File).optional(),
-  brand: z.string().optional(),
-  sellPrice: z.number().min(0, "Preço de venda inválido"),
-  costPrice: z.number().min(0, "Preço de custo inválido").optional(),
-});
+// Reutilize os schemas de validação da página new
 
-// Schemas específicos para cada tipo
-const lensSchema = baseProductSchema.extend({
-  productType: z.literal("lenses"),
-  lensType: z.string().min(2, "Tipo de lente é obrigatório"),
-});
-
-const cleanLensSchema = baseProductSchema.extend({
-  productType: z.literal("clean_lenses"),
-});
-
-const frameBaseSchema = {
-  typeFrame: z.string().min(2, "Tipo de armação é obrigatório"),
-  color: z.string().min(2, "Cor é obrigatória"),
-  shape: z.string().min(2, "Formato é obrigatório"),
-  reference: z.string().min(2, "Referência é obrigatória"),
-};
-
-const prescriptionFrameSchema = baseProductSchema.extend({
-  productType: z.literal("prescription_frame"),
-  ...frameBaseSchema,
-});
-
-const sunglassesFrameSchema = baseProductSchema.extend({
-  productType: z.literal("sunglasses_frame"),
-  modelSunglasses: z.string().min(2, "Modelo é obrigatório"),
-  ...frameBaseSchema,
-});
-
-// Union schema para validação
-const productFormSchema = z.discriminatedUnion("productType", [
-  lensSchema,
-  cleanLensSchema,
-  prescriptionFrameSchema,
-  sunglassesFrameSchema
-]);
-
-type ProductFormData = z.infer<typeof productFormSchema>;
-
-export default function NewProductPage() {
+export default function EditProductPage() {
+  const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { handleCreateProduct } = useProducts();
-  const [selectedProductType, setSelectedProductType] = useState<Product['productType']>("clean_lenses");
+  const { currentProduct, fetchProductById, handleUpdateProduct, loading } = useProducts();
+  const [selectedProductType, setSelectedProductType] = useState<Product['productType'] | null>(null);
 
-  const form = useForm<ProductFormData>({
-    resolver: zodResolver(productFormSchema),
+  // Formulário com dados iniciais vazios
+  const form = useForm<any>({
     defaultValues: {
       name: "",
-      productType: "clean_lenses",
       description: "",
       brand: "",
       sellPrice: 0,
       costPrice: 0,
-      image: undefined,
-    } as any, // O tipo any é necessário devido à discriminated union
+    },
   });
 
-  // Update form fields when product type changes
-  const onProductTypeChange = (value: Product['productType']) => {
-    setSelectedProductType(value);
-    form.setValue("productType", value);
-    
-    // Reset type-specific fields when type changes
-    if (value === "lenses") {
-      form.setValue("lensType", "");
-    } else if (value === "prescription_frame" || value === "sunglasses_frame") {
-      form.setValue("typeFrame", "");
-      form.setValue("color", "");
-      form.setValue("shape", "");
-      form.setValue("reference", "");
-      
-      if (value === "sunglasses_frame") {
-        form.setValue("modelSunglasses", "");
-      }
+  // Buscar produto quando o componente for montado
+  useEffect(() => {
+    if (id) {
+      fetchProductById(id as string);
     }
-  };
+  }, [id, fetchProductById]);
 
-  async function onSubmit(data: ProductFormData) {
-    setIsSubmitting(true);
-    try {
-      const formData = new FormData();
-
-      // Adicionar todos os campos comuns
-      formData.append("name", data.name);
-      formData.append("productType", data.productType);
-      formData.append("description", data.description);
-      formData.append("sellPrice", String(data.sellPrice));
+  // Preencher o formulário quando os dados do produto forem carregados
+  useEffect(() => {
+    if (currentProduct) {
+      setSelectedProductType(currentProduct.productType);
       
-      if (data.brand) formData.append("brand", data.brand);
-      if (data.costPrice !== undefined) formData.append("costPrice", String(data.costPrice));
-
-      // Adicionar campos específicos com base no tipo de produto
-      if (data.productType === "lenses") {
-        formData.append("lensType", (data as any).lensType);
-      } else if (data.productType === "prescription_frame" || data.productType === "sunglasses_frame") {
-        formData.append("typeFrame", (data as any).typeFrame);
-        formData.append("color", (data as any).color);
-        formData.append("shape", (data as any).shape);
-        formData.append("reference", (data as any).reference);
+      // Campos comuns
+      form.reset({
+        name: currentProduct.name,
+        productType: currentProduct.productType,
+        description: currentProduct.description,
+        brand: currentProduct.brand || "",
+        sellPrice: currentProduct.sellPrice,
+        costPrice: currentProduct.costPrice || 0,
+      });
+      
+      // Campos específicos
+      if (currentProduct.productType === "lenses") {
+        form.setValue("lensType", (currentProduct as any).lensType);
+      } else if (currentProduct.productType === "prescription_frame" || currentProduct.productType === "sunglasses_frame") {
+        form.setValue("typeFrame", (currentProduct as any).typeFrame);
+        form.setValue("color", (currentProduct as any).color);
+        form.setValue("shape", (currentProduct as any).shape);
+        form.setValue("reference", (currentProduct as any).reference);
         
-        if (data.productType === "sunglasses_frame") {
-          formData.append("modelSunglasses", (data as any).modelSunglasses);
+        if (currentProduct.productType === "sunglasses_frame") {
+          form.setValue("model", (currentProduct as any).model);
         }
       }
-
-      // Adicionar imagem se existir
-      const file = fileInputRef.current?.files?.[0];
-      if (file) {
-        // O nome do campo DEVE corresponder ao configurado na rota no backend
-        formData.append("productImage", file);
-      }
-
-      const newProduct = await handleCreateProduct(formData);
-      if (newProduct) {
-        router.push("/products");
-      }
-    } finally {
-      setIsSubmitting(false);
     }
-  }
+  }, [currentProduct, form]);
 
-  // Renderiza campos específicos com base no tipo de produto selecionado
+  // Não podemos alterar o tipo de produto na edição
   const renderProductTypeFields = () => {
+    if (!selectedProductType) return null;
+    
     switch (selectedProductType) {
       case "lenses":
         return (
@@ -196,7 +123,7 @@ export default function NewProductPage() {
             {selectedProductType === "sunglasses_frame" && (
               <FormField
                 control={form.control}
-                name="modelSunglasses"
+                name="model"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Modelo</FormLabel>
@@ -275,12 +202,75 @@ export default function NewProductPage() {
     }
   };
 
+  async function onSubmit(data: any) {
+    if (!id || !currentProduct) return;
+    
+    setIsSubmitting(true);
+    try {
+      const formData = new FormData();
+
+      // Adicionar todos os campos comuns
+      formData.append("name", data.name);
+      formData.append("description", data.description);
+      formData.append("sellPrice", String(data.sellPrice));
+      
+      if (data.brand) formData.append("brand", data.brand);
+      if (data.costPrice !== undefined) formData.append("costPrice", String(data.costPrice));
+
+      // Adicionar campos específicos com base no tipo de produto
+      if (currentProduct.productType === "lenses") {
+        formData.append("lensType", data.lensType);
+      } else if (currentProduct.productType === "prescription_frame" || currentProduct.productType === "sunglasses_frame") {
+        formData.append("typeFrame", data.typeFrame);
+        formData.append("color", data.color);
+        formData.append("shape", data.shape);
+        formData.append("reference", data.reference);
+        
+        if (currentProduct.productType === "sunglasses_frame") {
+          formData.append("model", data.model);
+        }
+      }
+
+      // Adicionar imagem se existir
+      const file = fileInputRef.current?.files?.[0];
+      if (file) {
+        formData.append("productImage", file);
+      }
+
+      const updatedProduct = await handleUpdateProduct(id as string, formData);
+      if (updatedProduct) {
+        router.push(`/products/${id}`);
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!currentProduct) {
+    return (
+      <div className="p-4 bg-red-50 text-red-600 rounded-md">
+        Produto não encontrado
+        <Button className="mt-4" onClick={() => router.push("/products")}>
+          Voltar para Produtos
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-2xl mx-auto p-4">
       <Card>
         <CardHeader>
-          <CardTitle>Novo Produto</CardTitle>
-          <CardDescription>Cadastre um novo produto no sistema</CardDescription>
+          <CardTitle>Editar Produto</CardTitle>
+          <CardDescription>Altere os dados do produto</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -291,22 +281,12 @@ export default function NewProductPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Tipo de Produto</FormLabel>
-                    <Select
-                      onValueChange={(value) => onProductTypeChange(value as Product['productType'])}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione o tipo de produto" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="lenses">Lentes</SelectItem>
-                        <SelectItem value="clean_lenses">Limpa-lentes</SelectItem>
-                        <SelectItem value="prescription_frame">Armação de Grau</SelectItem>
-                        <SelectItem value="sunglasses_frame">Armação Solar</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <FormControl>
+                      <Input 
+                        value={currentProduct ? getProductTypeName(currentProduct.productType) : ""} 
+                        disabled 
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -349,7 +329,7 @@ export default function NewProductPage() {
                 name="image"
                 render={({ field: { onChange } }) => (
                   <FormItem>
-                    <FormLabel>Imagem</FormLabel>
+                    <FormLabel>Imagem (opcional)</FormLabel>
                     <FormControl>
                       <Input
                         type="file"
@@ -364,6 +344,18 @@ export default function NewProductPage() {
                       />
                     </FormControl>
                     <FormMessage />
+                    {currentProduct.image && (
+                      <div className="mt-2">
+                        <p className="text-xs text-muted-foreground">Imagem atual:</p>
+                        <div className="h-20 w-20 bg-muted rounded-md overflow-hidden">
+                          <img
+                            src={`http://localhost:3333${currentProduct.image}`}
+                            alt={currentProduct.name}
+                            className="h-full w-full object-cover"
+                          />
+                        </div>
+                      </div>
+                    )}
                   </FormItem>
                 )}
               />
@@ -451,10 +443,10 @@ export default function NewProductPage() {
                   {isSubmitting ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Cadastrando...
+                      Salvando...
                     </>
                   ) : (
-                    "Cadastrar"
+                    "Salvar Alterações"
                   )}
                 </Button>
               </div>
@@ -464,4 +456,20 @@ export default function NewProductPage() {
       </Card>
     </div>
   );
+}
+
+// Função auxiliar para obter o nome amigável do tipo de produto
+function getProductTypeName(productType: Product['productType']): string {
+  switch (productType) {
+    case 'lenses':
+      return 'Lentes';
+    case 'clean_lenses':
+      return 'Limpa-lentes';
+    case 'prescription_frame':
+      return 'Armação de Grau';
+    case 'sunglasses_frame':
+      return 'Armação Solar';
+    default:
+      return 'Produto';
+  }
 }

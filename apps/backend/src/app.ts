@@ -35,29 +35,14 @@ class App {
 
   private config(): void {
     // Configuração do CORS baseada no ambiente
-    const allowedOrigins =
-      process.env.NODE_ENV === "production"
-        ? ["https://app.oticasqueiroz.com.br"]
-        : ["http://localhost:3000"];
-
-    // Permite que a variável CORS_ORIGIN sobrescreva a configuração padrão, se definida
-    if (process.env.CORS_ORIGIN) {
-      allowedOrigins.push(process.env.CORS_ORIGIN);
-    }
+    const allowedOrigins = process.env.NODE_ENV === "production" 
+      ? ["https://app.oticasqueiroz.com.br"]
+      : ["http://localhost:3000"];
 
     this.app.use(
       cors({
-        origin: (origin, callback) => {
-          // Permitir requisições sem origin (como apps mobile ou Postman)
-          if (!origin) return callback(null, true);
-
-          if (allowedOrigins.indexOf(origin) !== -1) {
-            callback(null, true);
-          } else {
-            callback(new Error("Não permitido pelo CORS"));
-          }
-        },
-        credentials: true, // Permite o envio de cookies e headers de autenticação
+        origin: allowedOrigins,
+        credentials: true, // Permite o envio de cookies
       })
     );
 

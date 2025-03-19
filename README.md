@@ -211,6 +211,16 @@ oticas-queiroz-monorepo/
 
 ## 📦 Produtos
 
+### Alterações na Estrutura
+
+O sistema agora suporta quatro tipos específicos de produtos:
+- Lentes (lenses)
+- Limpa-lentes (clean_lenses)
+- Armações de Grau (prescription_frame)
+- Armações Solares (sunglasses_frame)
+
+Cada tipo de produto possui características específicas, mantendo também propriedades em comum.
+
 ### Rotas
 
 - POST `/api/products`: Criar produto
@@ -225,20 +235,35 @@ oticas-queiroz-monorepo/
 {
   _id: string;
   name: string;
-  productType: string;
-  category: string;
+  productType: "lenses" | "clean_lenses" | "prescription_frame" | "sunglasses_frame";
   description: string;
-  brand: string;
-  image: string;
-  modelGlasses: string;
-  price: number;
-  stock: number;
+  image?: string;
+  brand?: string;
+  sellPrice: number;
+  costPrice?: number;
+  // Campos específicos baseados em productType
+  // Para lentes:
+  lensType?: string;
+  // Para armações (prescription_frame e sunglasses_frame):
+  typeFrame?: string;
+  color?: string;
+  shape?: string;
+  reference?: string;
+  // Apenas para armações solares:
+  modelSunglasses?: string;
   createdAt: Date;
   updatedAt: Date;
 }
 ```
 
 ## 🛍️ Pedidos
+
+### Alterações na Estrutura
+
+A estrutura de pedidos foi aprimorada para suportar múltiplos produtos e cálculo de descontos:
+- Agora um pedido pode conter vários produtos
+- Adição de campos para desconto e preço final (totalPrice - discount)
+- Melhor integração com os diferentes tipos de produtos
 
 ### Rotas
 
@@ -260,21 +285,24 @@ oticas-queiroz-monorepo/
 
 ```typescript
 {
-   _id?: string;
+  _id?: string;
   clientId: string;
   employeeId: string;
-  productType: "glasses" | "lensCleaner";
-  product: string;
-  glassesType?: "prescription" | "sunglasses";
-  glassesFrame?: "with" | "no";
+  product: [{ // Array de produtos
+    _id: string;
+    name: string;
+    productType: "lenses" | "clean_lenses" | "prescription_frame" | "sunglasses_frame";
+    description: string;
+    sellPrice: number;
+    // Outros campos específicos por tipo
+  }];
   paymentMethod: string;
   paymentEntry?: number;
   installments?: number;
   orderDate: Date;
-  deliveryDate: Date;
+  deliveryDate?: Date;
   status: "pending" | "in_production" | "ready" | "delivered" | "cancelled";
   laboratoryId?: string | null;
-  lensType?: string;
   prescriptionData?: {
     doctorName: string;
     clinicName: string;
@@ -283,11 +311,13 @@ oticas-queiroz-monorepo/
       sph: number;
       cyl: number;
       axis: number;
+      pd: number;
     };
     rightEye: {
       sph: number;
       cyl: number;
       axis: number;
+      pd: number;
     };
     nd: number;
     oc: number;
@@ -295,6 +325,8 @@ oticas-queiroz-monorepo/
   };
   observations?: string;
   totalPrice: number;
+  discount: number; // Novo campo para desconto
+  finalPrice: number; // Novo campo para preço final (totalPrice - discount)
   isDeleted?: boolean;
   deletedAt?: Date;
   deletedBy?: string;
@@ -555,6 +587,14 @@ git clone https://github.com/matheusqueiroz92/oticas-queiroz-monorepo.git
 cd oticas-queiroz-monorepo
 
 # Instale as dependências
+npm install 
+
+## Entre na pasta do backend
+cd apps/backend
+npm install
+
+## Entre na pasta do frontend
+cd apps/frontend
 npm install
 ```
 
@@ -562,9 +602,24 @@ npm install
 
 ```bash
 # Adicione o arquivo (.env) na pasta raiz do backend para as variáveis de ambiente
-PORT=porta_de_conexao_utilizada
-MONGODB_URI=uri_de_conexao_com_mongoDB
-JWT_SECRET=sua_senha_jwt
+PORT=3333 # porta de conexão utilizada
+MONGODB_URI=uri_de_conexao_com_mongoDB # string de conexão com o MongoDB
+JWT_SECRET=sua_senha_jwt # senha JWT
+NODE_ENV=development_ou_production # ambiente node
+JWT_EXPIRES_IN=24h # tempo de expiração do token JWT
+CORS_ORIGIN=https://localhost:3000 # url de origem da conexão com o frontend
+API_URL=https://localhost:3333 # url da api
+
+# dados de login mongoDB
+USERNAME=usuario_mongodb
+PASSWORD=senha_mongodb
+
+# Node Mailer
+EMAIL_HOST=serviço_de_e-mail
+EMAIL_PORT=porta_de_conexão_utilizada
+EMAIL_SECURE=true_ou_false
+EMAIL_USER=e-mail_do_usuario
+EMAIL_PASSWORD=senha_do_usuario
 ```
 
 ### Desenvolvimento
@@ -606,7 +661,7 @@ npm run dev
 
 - Cadastro, edição e visualização de produtos
 - Listagem com filtros e paginação
-- Detalhes com características e estoque
+- Detalhes com características
 
 ### Gestão de Laboratórios
 
@@ -619,7 +674,8 @@ npm run dev
 - Fluxo completo de criação de pedidos
 - Associação com laboratórios
 - Atualização de status independente
-- Informações específicas para óculos de grau
+- Informações específicas do pedido
+- Integração com sistema de pagamentos e caixa da loja
 - Suporte a dados de prescrição médica
 
 ### Exportação de dados
@@ -725,6 +781,14 @@ npm test
 
 ## ✨ Melhorias Recentes
 
+### Melhorias na Estrutura de Dados
+
+- ✅ **Tipos de Produtos Especializados**: Implementação de um sistema de tipos de produtos que permite características específicas para lentes, limpa-lentes, armações de grau e armações solares.
+- ✅ **Pedidos com Múltiplos Produtos**: Agora os pedidos podem conter vários produtos, facilitando a gestão de compras com itens diversos.
+- ✅ **Sistema de Descontos**: Adição de campos para desconto e preço final nos pedidos, permitindo um controle financeiro mais detalhado.
+- ✅ **Validação por Tipo**: Implementação de validadores específicos para cada tipo de produto, garantindo a integridade dos dados.
+- ✅ **Exportação Aprimorada**: Sistema de exportação de pedidos e relatórios adaptado para a nova estrutura de dados, com informações mais detalhadas.
+
 ### Módulos de Pagamentos e Caixa
 
 - ✅ **Validação Modular**: Refatoração da validação em funções específicas para melhorar manutenção e testabilidade.
@@ -737,16 +801,16 @@ npm test
 
 ### Features de pagamentos
 
-- Registro de diferentes tipos de pagamentos (vendas, recebimentos, despesas)
-- Suporte a múltiplos métodos de pagamento
-- Controle de parcelamentos
-- Relatórios financeiros personalizados
-- Exportação em múltiplos formatos (Excel, PDF, CSV, JSON)
-- Cancelamento com estorno automático
-- Cache para consultas frequentes
-- Transações atômicas para garantir integridade
-- Soft delete para manter histórico completo
-- Validações robustas e modulares
+- ✅ Registro de diferentes tipos de pagamentos (vendas, recebimentos, despesas)
+- ✅ Suporte a múltiplos métodos de pagamento
+- ✅ Controle de parcelamentos
+- ✅ Relatórios financeiros personalizados
+- ✅ Exportação em múltiplos formatos (Excel, PDF, CSV, JSON)
+- ✅ Cancelamento com estorno automático
+- ✅ Cache para consultas frequentes
+- ✅ Transações atômicas para garantir integridade
+- ✅ Soft delete para manter histórico completo
+- ✅ Validações robustas e modulares
 
 ## 🔄 Melhorias Sugeridas
 
@@ -782,13 +846,13 @@ npm test
 ### Testes
 
 - [ ] Adicionar testes de carga com k6
+- [ ] Implementar testes no frontend
 - [ ] Implementar testes E2E
 - [ ] Aumentar cobertura de testes
 - [ ] Adicionar testes de regressão
 
 ### Documentação
 
-- [ ] Melhorar documentação Swagger para todas as APIs
 - [ ] Adicionar exemplos de uso
 - [ ] Documentar erros possíveis
 - [ ] Criar guia de contribuição
@@ -845,13 +909,17 @@ npm test
   - [ ] Modo offline para operação sem internet
   - [ ] Testes de integração da interface
 
+  - [ ] Atualização da interface do usuário para melhor visualização e gestão de pedidos com múltiplos produtos
+  - [ ] Dashboard com análises específicas por tipo de produto
+  - [ ] Funcionalidades avançadas de gestão de estoque para diferentes tipos de produtos
+
 ## 📝 Licença
 
 Este projeto está sob a licença MIT.
 
 ## 📚 Documentação da API
 
-A documentação da API está disponível no Swagger UI: http://localhost:3333/api-docs.
+A documentação da API está disponível no Swagger UI: https://app.oticasqueiroz.com.br/api-docs.
 
 ## 🤖 Docker, Kubernetes e CI/CD
 

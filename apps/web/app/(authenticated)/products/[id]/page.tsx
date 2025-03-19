@@ -15,6 +15,7 @@ import { Loader2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useProducts } from "@/hooks/useProducts";
 import { usePermissions } from "@/hooks/usePermissions";
+import { getProductTypeName } from "@/app/services/productService";
 
 export default function ProductDetailsPage() {
   const { id } = useParams<{ id: string }>();
@@ -22,22 +23,20 @@ export default function ProductDetailsPage() {
   const { canManageProducts } = usePermissions();
 
   const {
-    currentProduct, // Dados do produto atual
-    loading, // Estado de carregamento
-    error, // Erro, se houver
-    fetchProductById, // Função para buscar o produto por ID
-    navigateToEditProduct, // Função para navegar para a página de edição
-    formatCurrency, // Função para formatar moeda
+    currentProduct,
+    loading,
+    error,
+    fetchProductById,
+    navigateToEditProduct,
+    formatCurrency,
   } = useProducts();
 
-  // Dispara a busca do produto quando o ID muda
   useEffect(() => {
     if (id) {
       fetchProductById(id as string);
     }
   }, [id, fetchProductById]);
 
-  // Exibe um spinner enquanto os dados estão sendo carregados
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -46,7 +45,6 @@ export default function ProductDetailsPage() {
     );
   }
 
-  // Exibe uma mensagem de erro se houver um erro ou se o produto não for encontrado
   if (error || !currentProduct) {
     return (
       <div className="p-4 bg-red-50 text-red-600 rounded-md">
@@ -58,14 +56,77 @@ export default function ProductDetailsPage() {
     );
   }
 
+  // Renderização condicional de detalhes baseada no tipo de produto
+  const renderProductSpecificDetails = () => {
+    switch (currentProduct.productType) {
+      case 'lenses':
+        return (
+          <div>
+            <p className="text-sm text-muted-foreground">Tipo de Lente</p>
+            <p className="font-medium">{currentProduct.lensType}</p>
+          </div>
+        );
+      
+      case 'prescription_frame':
+        return (
+          <>
+            <div>
+              <p className="text-sm text-muted-foreground">Tipo de Armação</p>
+              <p className="font-medium">{currentProduct.typeFrame}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Cor</p>
+              <p className="font-medium">{currentProduct.color}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Formato</p>
+              <p className="font-medium">{currentProduct.shape}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Referência</p>
+              <p className="font-medium">{currentProduct.reference}</p>
+            </div>
+          </>
+        );
+      
+      case 'sunglasses_frame':
+        return (
+          <>
+            <div>
+              <p className="text-sm text-muted-foreground">Modelo</p>
+              <p className="font-medium">{currentProduct.modelSunglasses}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Tipo de Armação</p>
+              <p className="font-medium">{currentProduct.typeFrame}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Cor</p>
+              <p className="font-medium">{currentProduct.color}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Formato</p>
+              <p className="font-medium">{currentProduct.shape}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Referência</p>
+              <p className="font-medium">{currentProduct.reference}</p>
+            </div>
+          </>
+        );
+      
+      case 'clean_lenses':
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto p-4">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Detalhes do Produto</h1>
         <Badge variant="outline">
-          {currentProduct.category === "solar"
-            ? "Óculos de Sol"
-            : "Óculos de Grau"}
+          {getProductTypeName(currentProduct.productType)}
         </Badge>
       </div>
 
@@ -91,24 +152,29 @@ export default function ProductDetailsPage() {
             <CardTitle>{currentProduct.name}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {currentProduct.brand && (
+              <div>
+                <p className="text-sm text-muted-foreground">Marca</p>
+                <p className="font-medium">{currentProduct.brand}</p>
+              </div>
+            )}
+            
             <div>
-              <p className="text-sm text-muted-foreground">Marca</p>
-              <p className="font-medium">{currentProduct.brand}</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Modelo</p>
-              <p className="font-medium">{currentProduct.modelGlasses}</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Preço</p>
+              <p className="text-sm text-muted-foreground">Preço de Venda</p>
               <p className="text-2xl font-bold text-green-600">
-                {formatCurrency(currentProduct.price)}
+                {formatCurrency(currentProduct.sellPrice)}
               </p>
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Estoque</p>
-              <p className="font-medium">{currentProduct.stock} unidades</p>
-            </div>
+            
+            {currentProduct.costPrice && (
+              <div>
+                <p className="text-sm text-muted-foreground">Preço de Custo</p>
+                <p className="font-medium">{formatCurrency(currentProduct.costPrice)}</p>
+              </div>
+            )}
+
+            {/* Detalhes específicos por tipo de produto */}
+            {renderProductSpecificDetails()}
 
             <Separator />
 

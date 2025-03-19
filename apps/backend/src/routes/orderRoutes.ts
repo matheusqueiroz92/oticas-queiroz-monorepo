@@ -11,14 +11,64 @@ const orderController = new OrderController();
  * @swagger
  * components:
  *   schemas:
+ *     Product:
+ *       type: object
+ *       required:
+ *         - _id
+ *         - name
+ *         - productType
+ *         - description
+ *         - sellPrice
+ *       properties:
+ *         _id:
+ *           type: string
+ *           description: ID único do produto
+ *         name:
+ *           type: string
+ *           description: Nome do produto
+ *         productType:
+ *           type: string
+ *           enum: [lenses, clean_lenses, prescription_frame, sunglasses_frame]
+ *           description: Tipo do produto
+ *         description:
+ *           type: string
+ *           description: Descrição detalhada do produto
+ *         brand:
+ *           type: string
+ *           description: Marca do produto
+ *         sellPrice:
+ *           type: number
+ *           description: Preço de venda do produto
+ *         costPrice:
+ *           type: number
+ *           description: Preço de custo (opcional)
+ *         lensType:
+ *           type: string
+ *           description: Tipo de lente (para produtos do tipo lentes)
+ *         typeFrame:
+ *           type: string
+ *           description: Tipo de armação (para produtos do tipo armação)
+ *         color:
+ *           type: string
+ *           description: Cor da armação (para produtos do tipo armação)
+ *         shape:
+ *           type: string
+ *           description: Formato da armação (para produtos do tipo armação)
+ *         reference:
+ *           type: string
+ *           description: Referência da armação (para produtos do tipo armação)
+ *         model:
+ *           type: string
+ *           description: Modelo da armação (para produtos do tipo armação de sol)
+ *         
  *     Order:
  *       type: object
  *       required:
  *         - clientId
  *         - employeeId
- *         - productType
  *         - product
  *         - totalPrice
+ *         - finalPrice
  *       properties:
  *         _id:
  *           type: string
@@ -29,21 +79,11 @@ const orderController = new OrderController();
  *         employeeId:
  *           type: string
  *           description: ID do funcionário que registrou o pedido
- *         productType:
- *           type: string
- *           enum: [glasses, lensCleaner]
- *           description: Tipo de produto no pedido
  *         product:
- *           type: string
- *           description: Detalhes do produto
- *         glassesType:
- *           type: string
- *           enum: [prescription, sunglasses]
- *           description: Tipo de óculos (se aplicável)
- *         glassesFrame:
- *           type: string
- *           enum: [with, no]
- *           description: Se inclui armação ou não
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/Product'
+ *           description: Produtos incluídos no pedido
  *         paymentMethod:
  *           type: string
  *           description: Método de pagamento utilizado
@@ -68,9 +108,6 @@ const orderController = new OrderController();
  *         laboratoryId:
  *           type: string
  *           description: ID do laboratório responsável pelo pedido (se aplicável)
- *         lensType:
- *           type: string
- *           description: Tipo de lente utilizado (se aplicável)
  *         prescriptionData:
  *           type: object
  *           properties:
@@ -90,6 +127,8 @@ const orderController = new OrderController();
  *                   type: number
  *                 axis:
  *                   type: number
+ *                 pd:
+ *                   type: number
  *             rightEye:
  *               type: object
  *               properties:
@@ -98,6 +137,8 @@ const orderController = new OrderController();
  *                 cyl:
  *                   type: number
  *                 axis:
+ *                   type: number
+ *                 pd:
  *                   type: number
  *             nd:
  *               type: number
@@ -108,6 +149,12 @@ const orderController = new OrderController();
  *         totalPrice:
  *           type: number
  *           description: Valor total do pedido
+ *         discount:
+ *           type: number
+ *           description: Valor do desconto aplicado
+ *         finalPrice:
+ *           type: number
+ *           description: Valor final (totalPrice - discount)
  *         observations:
  *           type: string
  *           description: Observações sobre o pedido
@@ -149,15 +196,10 @@ const orderController = new OrderController();
  *             required:
  *               - clientId
  *               - employeeId
- *               - productType
  *               - product
- *               - glassesType
- *               - glassesFrame
  *               - paymentMethod
  *               - orderDate
- *               - deliveryDate
  *               - totalPrice
- *               - prescriptionData
  *             properties:
  *               clientId:
  *                 type: string
@@ -165,21 +207,17 @@ const orderController = new OrderController();
  *               employeeId:
  *                 type: string
  *                 description: ID do funcionário
- *               productType:
- *                 type: string
- *                 enum: [glasses, lensCleaner]
- *                 description: Tipo de produto
  *               product:
- *                 type: string
- *                 description: Descrição do produto
- *               glassesType:
- *                 type: string
- *                 enum: [prescription, sunglasses]
- *                 description: Tipo de óculos
- *               glassesFrame:
- *                 type: string
- *                 enum: [with, no]
- *                 description: Com ou sem armação
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   required:
+ *                     - _id
+ *                   properties:
+ *                     _id:
+ *                       type: string
+ *                       description: ID do produto
+ *                 description: Lista de produtos do pedido
  *               paymentMethod:
  *                 type: string
  *                 description: Método de pagamento
@@ -199,7 +237,7 @@ const orderController = new OrderController();
  *                  description: Data do pedido
  *               status:
  *                 type: string
- *                 enum: [pending, in_production, ready, delivered]
+ *                 enum: [pending, in_production, ready, delivered, cancelled]
  *                 default: pending
  *                 description: Status inicial do pedido
  *               laboratoryId:
@@ -224,6 +262,8 @@ const orderController = new OrderController();
  *                         type: number
  *                       axis:
  *                         type: number
+ *                       pd:
+ *                         type: number
  *                   rightEye:
  *                     type: object
  *                     properties:
@@ -233,18 +273,23 @@ const orderController = new OrderController();
  *                         type: number
  *                       axis:
  *                         type: number
+ *                       pd:
+ *                         type: number
  *                   nd:
  *                     type: number
  *                   oc:
  *                     type: number
  *                   addition:
  *                     type: number
- *               lensType:
- *                 type: string
- *                 description: Tipo de lente (para óculos)
  *               totalPrice:
  *                 type: number
  *                 description: Valor total do pedido
+ *               discount:
+ *                 type: number
+ *                 description: Valor do desconto aplicado
+ *               finalPrice:
+ *                 type: number
+ *                 description: Valor final (totalPrice - discount)
  *               observations:
  *                 type: string
  *                 description: Observações adicionais

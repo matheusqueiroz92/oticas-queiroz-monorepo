@@ -8,6 +8,7 @@ interface OrderFilters {
   status?: string;
   startDate?: string;
   endDate?: string;
+  sort?: string;
 }
 
 interface PaginationInfo {
@@ -96,14 +97,27 @@ export async function updateOrderLaboratory(
  * Cria um novo pedido
  */
 export async function createOrder(
-  orderData: Omit<Order, "_id">
+  orderData: Omit<Order, "_id" | "createdAt" | "updatedAt">
 ): Promise<Order | null> {
   try {
-    const response = await api.post("/api/orders", orderData);
+    // Garantir que product é um array
+    const data = {
+      ...orderData,
+      product: Array.isArray(orderData.product) 
+        ? orderData.product 
+        : [orderData.product],
+      // Garantir que os campos de preço estão definidos
+      totalPrice: orderData.totalPrice || 0,
+      discount: orderData.discount || 0,
+      finalPrice: orderData.finalPrice || 
+                (orderData.totalPrice || 0) - (orderData.discount || 0)
+    };
+    
+    const response = await api.post("/api/orders", data);
     return response.data;
   } catch (error) {
     console.error("Erro ao criar pedido:", error);
-    throw error; // Repassar o erro para tratamento pelo chamador
+    throw error;
   }
 }
 
@@ -121,4 +135,22 @@ export function extractName(objectString: string): string {
     console.error("Erro ao extrair nome:", error);
     return "Nome não disponível";
   }
+}
+
+/**
+ * Formata o preço em moeda
+ */
+export function formatCurrency(value: number): string {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL'
+  }).format(value);
+}
+
+/**
+ * Formata a data
+ */
+export function formatDate(date: string | Date | undefined): string {
+  if (!date) return 'N/A';
+  return new Date(date).toLocaleDateString('pt-BR');
 }

@@ -1,52 +1,17 @@
 import type { Request, Response } from "express";
 import { ProductService, ProductError } from "../services/ProductService";
 import { z } from "zod";
-import type { ICreateProductDTO } from "../interfaces/IProduct";
-
-const createProductSchema = z.object({
-  name: z.string().min(2, "Nome deve ter no mínimo 2 caracteres"),
-  category: z.enum(["solar", "grau"], {
-    errorMap: () => ({ message: "Categoria deve ser 'solar' ou 'grau'" }),
-  }),
-  description: z.string().min(10, "Descrição deve ter no mínimo 10 caracteres"),
-  brand: z.string().min(2, "Marca deve ter no mínimo 2 caracteres"),
-  modelGlasses: z.string().min(2, "Modelo deve ter no mínimo 2 caracteres"),
-  price: z.number().positive("Preço deve ser positivo"),
-  stock: z.number().min(0, "Estoque não pode ser negativo"),
-  image: z.string().optional(),
-});
-
-const updateProductSchema = z
-  .object({
-    name: z.string().min(2, "Nome deve ter no mínimo 2 caracteres").optional(),
-    category: z
-      .enum(["solar", "grau"], {
-        errorMap: () => ({ message: "Categoria deve ser 'solar' ou 'grau'" }),
-      })
-      .optional(),
-    description: z
-      .string()
-      .min(10, "Descrição deve ter no mínimo 10 caracteres")
-      .optional(),
-    brand: z
-      .string()
-      .min(2, "Marca deve ter no mínimo 2 caracteres")
-      .optional(),
-    modelGlasses: z
-      .string()
-      .min(2, "Modelo deve ter no mínimo 2 caracteres")
-      .optional(),
-    price: z.number().positive("Preço deve ser positivo").optional(),
-    stock: z.number().min(0, "Estoque não pode ser negativo").optional(),
-    image: z.string().optional(),
-  })
-  .refine(
-    (data) => Object.keys(data).length > 0,
-    "Pelo menos um campo deve ser fornecido para atualização"
-  );
-
-type CreateProductInput = z.infer<typeof createProductSchema>;
-type UpdateProductInput = z.infer<typeof updateProductSchema>;
+import { 
+  ProductType,
+  CreateProductDTO
+} from "../interfaces/IProduct";
+import { 
+  productSchema, 
+  lensSchema, 
+  cleanLensSchema,
+  prescriptionFrameSchema, 
+  sunglassesFrameSchema 
+} from '../validators/productValidators';
 
 export class ProductController {
   private productService: ProductService;
@@ -57,26 +22,38 @@ export class ProductController {
 
   async createProduct(req: Request, res: Response): Promise<void> {
     try {
-      const { name, category, description, brand, modelGlasses, price, stock } =
-        req.body;
+      // Extrair dados do body
+      const data = req.body;
+      
+      // Adicionar imagem se foi enviada
+      if (req.file) {
+        data.image = `/images/products/${req.file.filename}`;
+      }
 
-      // Verifique se o arquivo de imagem foi enviado
-      const image = req.file
-        ? `/images/products/${req.file.filename}`
-        : undefined;
+      // Converter valores numéricos
+      if (data.sellPrice) data.sellPrice = Number(data.sellPrice);
+      if (data.costPrice) data.costPrice = Number(data.costPrice);
+      
+      // Validar data baseado no tipo de produto
+      let validatedData;
+      switch (data.productType) {
+        case 'lenses':
+          validatedData = lensSchema.parse(data);
+          break;
+        case 'clean_lenses':
+          validatedData = cleanLensSchema.parse(data);
+          break;
+        case 'prescription_frame':
+          validatedData = prescriptionFrameSchema.parse(data);
+          break;
+        case 'sunglasses_frame':
+          validatedData = sunglassesFrameSchema.parse(data);
+          break;
+        default:
+          throw new Error(`Tipo de produto inválido: ${data.productType}`);
+      }
 
-      const productData: ICreateProductDTO = {
-        name,
-        category,
-        description,
-        image, // Inclua a imagem no DTO
-        brand,
-        modelGlasses,
-        price: Number(price),
-        stock: Number(stock),
-      };
-
-      const product = await this.productService.createProduct(productData);
+      const product = await this.productService.createProduct(validatedData);
       res.status(201).json(product);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -99,13 +76,36 @@ export class ProductController {
     try {
       const page = Number(req.query.page) || 1;
       const limit = Number(req.query.limit) || 10;
-      const filters: Partial<ICreateProductDTO> = {};
+      const filters: any = {};
 
       // Filtros opcionais
-      if (req.query.category) filters.category = String(req.query.category);
+      if (req.query.productType) filters.productType = String(req.query.productType);
       if (req.query.brand) filters.brand = String(req.query.brand);
-      if (req.query.modelGlasses)
-        filters.modelGlasses = String(req.query.modelGlasses);
+      if (req.query.minSellPrice) filters.sellPrice = { $gte: Number(req.query.minSellPrice) };
+      if (req.query.maxSellPrice) {
+        if (filters.sellPrice) {
+          filters.sellPrice.$lte = Number(req.query.maxSellPrice);
+        } else {
+          filters.sellPrice = { $lte: Number(req.query.maxSellPrice) };
+        }
+      }
+      
+      // Filtros específicos para cada tipo de produto
+      if (req.query.lensType) filters.lensType = String(req.query.lensType);
+      if (req.query.typeFrame) filters.typeFrame = String(req.query.typeFrame);
+      if (req.query.color) filters.color = String(req.query.color);
+      if (req.query.shape) filters.shape = String(req.query.shape);
+      if (req.query.reference) filters.reference = String(req.query.reference);
+      if (req.query.model) filters.model = String(req.query.model);
+
+      // Busca por nome ou descrição
+      if (req.query.search) {
+        const searchRegex = new RegExp(String(req.query.search), 'i');
+        filters.$or = [
+          { name: searchRegex },
+          { description: searchRegex }
+        ];
+      }
 
       const { products, total } = await this.productService.getAllProducts(
         page,
@@ -127,6 +127,7 @@ export class ProductController {
         res.status(404).json({ message: error.message });
         return;
       }
+      console.error("Error fetching products:", error);
       res.status(500).json({ message: "Erro interno do servidor" });
     }
   }
@@ -140,37 +141,55 @@ export class ProductController {
         res.status(404).json({ message: error.message });
         return;
       }
+      console.error("Error fetching product:", error);
       res.status(500).json({ message: "Erro interno do servidor" });
     }
   }
 
   async updateProduct(req: Request, res: Response): Promise<void> {
     try {
-      // Pega apenas os campos que foram enviados
-      const updateData: Partial<ICreateProductDTO> = {};
+      // Pega apenas os campos enviados
+      const updateData: any = {};
+      const data = req.body;
 
-      if (req.body.name) updateData.name = req.body.name;
-      if (req.body.category) updateData.category = req.body.category;
-      if (req.body.description) updateData.description = req.body.description;
-      if (req.body.brand) updateData.brand = req.body.brand;
-      if (req.body.modelGlasses)
-        updateData.modelGlasses = req.body.modelGlasses;
-      if (req.body.price !== undefined)
-        updateData.price = Number(req.body.price);
-      if (req.body.stock !== undefined)
-        updateData.stock = Number(req.body.stock);
+      // Mapeia campos básicos
+      if (data.name !== undefined) updateData.name = data.name;
+      if (data.description !== undefined) updateData.description = data.description;
+      if (data.brand !== undefined) updateData.brand = data.brand;
+      if (data.sellPrice !== undefined) updateData.sellPrice = Number(data.sellPrice);
+      if (data.costPrice !== undefined) updateData.costPrice = Number(data.costPrice);
+      
+      // Mapeia campos específicos com base no tipo do produto
+      // O tipo de produto não pode ser alterado, então precisamos buscar o produto original
+      const originalProduct = await this.productService.getProductById(req.params.id);
+      
+      switch (originalProduct.productType) {
+        case 'lenses':
+          if (data.lensType !== undefined) updateData.lensType = data.lensType;
+          break;
+        case 'prescription_frame':
+        case 'sunglasses_frame':
+          if (data.typeFrame !== undefined) updateData.typeFrame = data.typeFrame;
+          if (data.color !== undefined) updateData.color = data.color;
+          if (data.shape !== undefined) updateData.shape = data.shape;
+          if (data.reference !== undefined) updateData.reference = data.reference;
+          
+          // Campo específico para sunglasses_frame
+          if (originalProduct.productType === 'sunglasses_frame' && data.model !== undefined) {
+            updateData.model = data.model;
+          }
+          break;
+      }
 
       // Adiciona imagem se existir
       if (req.file) {
         updateData.image = `/images/products/${req.file.filename}`;
       }
 
-      // Valida os dados
-      const validatedData = updateProductSchema.parse(updateData);
-
+      // Atualiza o produto
       const product = await this.productService.updateProduct(
         req.params.id,
-        validatedData
+        updateData
       );
 
       res.status(200).json(product);
@@ -186,6 +205,7 @@ export class ProductController {
         res.status(400).json({ message: error.message });
         return;
       }
+      console.error("Error updating product:", error);
       res.status(500).json({ message: "Erro interno do servidor" });
     }
   }
@@ -199,6 +219,7 @@ export class ProductController {
         res.status(404).json({ message: error.message });
         return;
       }
+      console.error("Error deleting product:", error);
       res.status(500).json({ message: "Erro interno do servidor" });
     }
   }

@@ -2,50 +2,6 @@ import { Order } from "../schemas/OrderSchema";
 import type { IOrder } from "../interfaces/IOrder";
 import { type Document, Types, type FilterQuery } from "mongoose";
 
-interface OrderDocument extends Document {
-  _id: Types.ObjectId;
-  clientId: Types.ObjectId;
-  employeeId: Types.ObjectId;
-  productType: "glasses" | "lensCleaner";
-  product: string;
-  glassesType: "prescription" | "sunglasses";
-  glassesFrame: "with" | "no";
-  paymentMethod: string;
-  paymentEntry?: number;
-  installments?: number;
-  orderDate: Date;
-  deliveryDate?: Date;
-  status: "pending" | "in_production" | "ready" | "delivered" | "cancelled";
-  laboratoryId?: Types.ObjectId;
-  prescriptionData?: {
-    doctorName: string;
-    clinicName: string;
-    appointmentDate: Date;
-    leftEye: {
-      sph: number;
-      cyl: number;
-      axis: number;
-    };
-    rightEye: {
-      sph: number;
-      cyl: number;
-      axis: number;
-    };
-    nd: number;
-    oc: number;
-    addition: number;
-  };
-  lensType?: string;
-  observations?: string;
-  totalPrice: number;
-  // Campos para soft delete
-  isDeleted?: boolean;
-  deletedAt?: Date;
-  deletedBy?: Types.ObjectId;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
 export class OrderModel {
   private isValidId(id: string): boolean {
     return Types.ObjectId.isValid(id);
@@ -53,7 +9,7 @@ export class OrderModel {
 
   async create(orderData: Omit<IOrder, "_id">): Promise<IOrder> {
     const order = new Order(orderData);
-    const savedOrder = (await order.save()) as unknown as OrderDocument;
+    const savedOrder = await order.save();
     return this.convertToIOrder(savedOrder);
   }
 
@@ -75,30 +31,28 @@ export class OrderModel {
       query = query
         .populate("clientId", "name email role")
         .populate("employeeId", "name email")
-        .populate("laboratoryId");
+        .populate("laboratoryId")
+        .populate("product"); // Também popula os produtos
 
       if (includeDeleted) {
         query = query.populate("deletedBy", "name email");
       }
     }
 
-    const order = (await query.exec()) as OrderDocument | null;
+    const order = await query.exec();
     return order ? this.convertToIOrder(order) : null;
   }
 
   async findAll(
     page = 1,
     limit = 10,
-    filters: Partial<IOrder> = {},
+    filters: Record<string, any> = {},
     populate = false,
     includeDeleted = false
   ): Promise<{ orders: IOrder[]; total: number }> {
     const skip = (page - 1) * limit;
 
-    const query = Object.entries(filters).reduce((acc, [key, value]) => {
-      if (value) acc[key] = value;
-      return acc;
-    }, {} as FilterQuery<OrderDocument>);
+    const query = this.buildFilterQuery(filters);
 
     // Se não devemos incluir pedidos excluídos, adicionar a condição
     if (!includeDeleted) {
@@ -111,7 +65,8 @@ export class OrderModel {
       orderQuery = orderQuery
         .populate("clientId", "name email role")
         .populate("employeeId", "name email")
-        .populate("laboratoryId");
+        .populate("laboratoryId")
+        .populate("product"); // Também popula os produtos
 
       if (includeDeleted) {
         orderQuery = orderQuery.populate("deletedBy", "name email");
@@ -119,7 +74,7 @@ export class OrderModel {
     }
 
     const [orders, total] = await Promise.all([
-      orderQuery.exec() as unknown as Promise<OrderDocument[]>,
+      orderQuery.exec(),
       Order.countDocuments(query),
     ]);
 
@@ -136,6 +91,16 @@ export class OrderModel {
   ): Promise<IOrder | null> {
     if (!this.isValidId(id)) return null;
 
+    // Se estamos atualizando o totalPrice ou discount, recalcular finalPrice
+    if (orderData.totalPrice !== undefined || orderData.discount !== undefined) {
+      const currentOrder = await Order.findById(id);
+      if (currentOrder) {
+        const newTotalPrice = orderData.totalPrice ?? currentOrder.totalPrice;
+        const newDiscount = orderData.discount ?? currentOrder.discount;
+        orderData.finalPrice = newTotalPrice - newDiscount;
+      }
+    }
+
     let query = Order.findByIdAndUpdate(
       id,
       { $set: orderData },
@@ -146,30 +111,28 @@ export class OrderModel {
       query = query
         .populate("clientId", "name email role")
         .populate("employeeId", "name email")
-        .populate("laboratoryId");
+        .populate("laboratoryId")
+        .populate("product"); // Também popula os produtos
     }
 
-    const order = (await query.exec()) as OrderDocument | null;
+    const order = await query.exec();
     return order ? this.convertToIOrder(order) : null;
   }
 
   async delete(id: string): Promise<IOrder | null> {
     if (!this.isValidId(id)) return null;
 
-    const order = (await Order.findByIdAndDelete(id)) as OrderDocument | null;
+    const order = await Order.findByIdAndDelete(id);
     return order ? this.convertToIOrder(order) : null;
   }
 
   /**
    * Realiza a exclusão lógica (soft delete) de um pedido
-   * @param id ID do pedido
-   * @param userId ID do usuário que está excluindo
-   * @returns Pedido marcado como excluído ou null se não encontrado
    */
   async softDelete(id: string, userId: string): Promise<IOrder | null> {
     if (!this.isValidId(id)) return null;
 
-    const order = (await Order.findByIdAndUpdate(
+    const order = await Order.findByIdAndUpdate(
       id,
       {
         $set: {
@@ -183,33 +146,25 @@ export class OrderModel {
       .populate("clientId", "name email role")
       .populate("employeeId", "name email")
       .populate("laboratoryId")
+      .populate("product")
       .populate("deletedBy", "name email")
-      .exec()) as OrderDocument | null;
+      .exec();
 
     return order ? this.convertToIOrder(order) : null;
   }
 
   /**
    * Recupera pedidos que foram excluídos logicamente
-   * @param page Número da página
-   * @param limit Limite de itens por página
-   * @param filters Filtros adicionais
-   * @returns Lista de pedidos excluídos logicamente e total
    */
   async findDeletedOrders(
     page = 1,
     limit = 10,
-    filters: Partial<IOrder> = {}
+    filters: Record<string, any> = {}
   ): Promise<{ orders: IOrder[]; total: number }> {
     const skip = (page - 1) * limit;
 
-    const query = Object.entries(filters).reduce(
-      (acc, [key, value]) => {
-        if (value) acc[key] = value;
-        return acc;
-      },
-      { isDeleted: true } as FilterQuery<OrderDocument>
-    );
+    const query = this.buildFilterQuery(filters);
+    query.isDeleted = true;
 
     const [orders, total] = await Promise.all([
       Order.find(query)
@@ -218,8 +173,9 @@ export class OrderModel {
         .populate("clientId", "name email role")
         .populate("employeeId", "name email")
         .populate("laboratoryId")
+        .populate("product")
         .populate("deletedBy", "name email")
-        .exec() as unknown as Promise<OrderDocument[]>,
+        .exec(),
       Order.countDocuments(query),
     ]);
 
@@ -236,7 +192,7 @@ export class OrderModel {
   ): Promise<IOrder[]> {
     if (!this.isValidId(clientId)) return [];
 
-    const query: FilterQuery<OrderDocument> = { clientId };
+    const query: FilterQuery<any> = { clientId };
 
     // Se não devemos incluir pedidos excluídos, adicionar a condição
     if (!includeDeleted) {
@@ -249,14 +205,15 @@ export class OrderModel {
       orderQuery = orderQuery
         .populate("clientId", "name email role")
         .populate("employeeId", "name email")
-        .populate("laboratoryId");
+        .populate("laboratoryId")
+        .populate("product");
 
       if (includeDeleted) {
         orderQuery = orderQuery.populate("deletedBy", "name email");
       }
     }
 
-    const orders = (await orderQuery.exec()) as unknown as OrderDocument[];
+    const orders = await orderQuery.exec();
     return orders.map((order) => this.convertToIOrder(order));
   }
 
@@ -283,7 +240,7 @@ export class OrderModel {
     populate = false,
     includeDeleted = false
   ): Promise<IOrder[]> {
-    const query: FilterQuery<OrderDocument> = {
+    const query: FilterQuery<any> = {
       createdAt: {
         $gte: startDate,
         $lte: endDate,
@@ -301,26 +258,149 @@ export class OrderModel {
       orderQuery = orderQuery
         .populate("clientId", "name email role")
         .populate("employeeId", "name email")
-        .populate("laboratoryId");
+        .populate("laboratoryId")
+        .populate("product");
 
       if (includeDeleted) {
         orderQuery = orderQuery.populate("deletedBy", "name email");
       }
     }
 
-    const orders = (await orderQuery.exec()) as unknown as OrderDocument[];
+    const orders = await orderQuery.exec();
     return orders.map((order) => this.convertToIOrder(order));
   }
 
-  private convertToIOrder(doc: OrderDocument): IOrder {
-    const order = doc.toObject();
+  private buildFilterQuery(filters: Record<string, any>): FilterQuery<any> {
+    const query: Record<string, any> = {};
+
+    // Cliente
+    if (filters.clientId) {
+      query.clientId = new Types.ObjectId(filters.clientId);
+    }
+
+    // Funcionário
+    if (filters.employeeId) {
+      query.employeeId = new Types.ObjectId(filters.employeeId);
+    }
+
+    // Status
+    if (filters.status) {
+      query.status = filters.status;
+    }
+
+    // Laboratório
+    if (filters.laboratoryId) {
+      query.laboratoryId = new Types.ObjectId(filters.laboratoryId);
+    }
+
+    // Produtos específicos
+    if (filters.productId) {
+      query.product = { $in: [new Types.ObjectId(filters.productId)] };
+    }
+
+    // Range de datas
+    if (filters.startDate || filters.endDate) {
+      query.orderDate = {};
+
+      if (filters.startDate) {
+        const startDate = new Date(filters.startDate);
+        startDate.setHours(0, 0, 0, 0);
+        query.orderDate.$gte = startDate;
+      }
+
+      if (filters.endDate) {
+        const endDate = new Date(filters.endDate);
+        endDate.setHours(23, 59, 59, 999);
+        query.orderDate.$lte = endDate;
+      }
+    }
+
+    // Range de preço
+    if (filters.minPrice || filters.maxPrice) {
+      query.finalPrice = {};
+
+      if (filters.minPrice) {
+        query.finalPrice.$gte = Number(filters.minPrice);
+      }
+
+      if (filters.maxPrice) {
+        query.finalPrice.$lte = Number(filters.maxPrice);
+      }
+    }
+
+    return query;
+  }
+
+  private convertToIOrder(doc: any): IOrder {
+    const order = doc.toObject ? doc.toObject() : doc;
+    
     return {
-      ...order,
-      _id: doc._id.toString(),
-      clientId: doc.clientId ? doc.clientId.toString() : null,
-      employeeId: doc.employeeId ? doc.employeeId.toString() : null,
-      laboratoryId: doc.laboratoryId ? doc.laboratoryId.toString() : undefined,
-      deletedBy: doc.deletedBy ? doc.deletedBy.toString() : undefined,
+      _id: order._id.toString(),
+      clientId: typeof order.clientId === 'object' && order.clientId?._id
+        ? order.clientId._id.toString()
+        : order.clientId.toString(),
+      employeeId: typeof order.employeeId === 'object' && order.employeeId?._id
+        ? order.employeeId._id.toString()
+        : order.employeeId.toString(),
+      // Convert the product array
+      product: Array.isArray(order.product)
+        ? order.product.map((p: any) => {
+            if (typeof p === 'object' && p._id) {
+              return {
+                _id: p._id.toString(),
+                name: p.name,
+                productType: p.productType,
+                description: p.description,
+                image: p.image,
+                sellPrice: p.sellPrice,
+                brand: p.brand,
+                costPrice: p.costPrice,
+                // Include type-specific fields
+                ...(p.productType === 'lenses' && { lensType: p.lensType }),
+                ...(p.productType === 'prescription_frame' && { 
+                  typeFrame: p.typeFrame,
+                  color: p.color,
+                  shape: p.shape,
+                  reference: p.reference
+                }),
+                ...(p.productType === 'sunglasses_frame' && { 
+                  model: p.model,
+                  typeFrame: p.typeFrame,
+                  color: p.color,
+                  shape: p.shape,
+                  reference: p.reference
+                })
+              };
+            } else {
+              return { _id: p.toString() };
+            }
+          })
+        : [],
+      paymentMethod: order.paymentMethod,
+      paymentEntry: order.paymentEntry,
+      installments: order.installments,
+      orderDate: order.orderDate,
+      deliveryDate: order.deliveryDate,
+      status: order.status,
+      laboratoryId: order.laboratoryId 
+        ? (typeof order.laboratoryId === 'object' && order.laboratoryId._id 
+            ? order.laboratoryId._id.toString()
+            : order.laboratoryId.toString())
+        : undefined,
+      prescriptionData: order.prescriptionData,
+      observations: order.observations,
+      totalPrice: order.totalPrice,
+      discount: order.discount || 0,
+      finalPrice: order.finalPrice,
+      isDeleted: order.isDeleted,
+      deletedAt: order.deletedAt,
+      deletedBy: order.deletedBy 
+        ? (typeof order.deletedBy === 'object' && order.deletedBy._id
+            ? order.deletedBy._id.toString()
+            : order.deletedBy.toString())
+        : undefined,
+      createdAt: order.createdAt,
+      updatedAt: order.updatedAt,
     };
   }
 }

@@ -7,40 +7,25 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Order } from "@/app/types/order";
+import { formatCurrency, formatDate } from "@/app/services/orderService";
 
-interface Order {
-  id: string;
-  customer: string;
-  date: string;
-  status: string;
-  total: number;
+interface RecentOrdersTableProps {
+  orders: Order[];
+  onViewDetails: (id: string) => void;
 }
 
-export const RecentOrdersTable = () => {
-  // Dados de exemplo - substitua por dados reais da API
-  const orders: Order[] = [
-    {
-      id: "ORD001",
-      customer: "João Silva",
-      date: "2024-02-20",
-      status: "Entregue",
-      total: 599.99,
-    },
-    {
-      id: "ORD002",
-      customer: "Maria Santos",
-      date: "2024-02-19",
-      status: "Pendente",
-      total: 299.99,
-    },
-    {
-      id: "ORD003",
-      customer: "Pedro Oliveira",
-      date: "2024-02-18",
-      status: "Em processamento",
-      total: 899.99,
-    },
-  ];
+export const RecentOrdersTable = ({ orders, onViewDetails }: RecentOrdersTableProps) => {
+  if (!orders || orders.length === 0) {
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        Nenhum pedido recente encontrado
+      </div>
+    );
+  }
+
+  // Mostrar apenas os 5 pedidos mais recentes
+  const recentOrders = orders.slice(0, 5);
 
   return (
     <div className="rounded-md border">
@@ -51,28 +36,32 @@ export const RecentOrdersTable = () => {
             <TableHead>Cliente</TableHead>
             <TableHead>Data</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead className="text-right">Total</TableHead>
-            <TableHead className="text-right">Ações</TableHead>
+            <TableHead>Total</TableHead>
+            <TableHead>Ações</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {orders.map((order) => (
-            <TableRow key={order.id}>
-              <TableCell className="font-medium">#{order.id}</TableCell>
-              <TableCell>{order.customer}</TableCell>
+          {recentOrders.map((order) => (
+            <TableRow key={order._id}>
+              <TableCell>#{order._id.substring(0, 8)}</TableCell>
+              <TableCell>{order.clientId}</TableCell>
               <TableCell>
-                {new Date(order.date).toLocaleDateString("pt-BR")}
+                {formatDate(order.createdAt)}
               </TableCell>
               <TableCell>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                  {order.status}
+                <span className={getStatusClass(order.status)}>
+                  {translateStatus(order.status)}
                 </span>
               </TableCell>
-              <TableCell className="text-right">
-                R$ {order.total.toFixed(2)}
+              <TableCell>
+                {formatCurrency(order.finalPrice)}
               </TableCell>
-              <TableCell className="text-right">
-                <Button variant="outline" size="sm">
+              <TableCell>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onViewDetails(order._id)}
+                >
                   Ver detalhes
                 </Button>
               </TableCell>
@@ -83,3 +72,33 @@ export const RecentOrdersTable = () => {
     </div>
   );
 };
+
+// Função auxiliar para traduzir status
+function translateStatus(status: string): string {
+  const statusMap: Record<string, string> = {
+    'pending': 'Pendente',
+    'in_production': 'Em Produção',
+    'ready': 'Pronto',
+    'delivered': 'Entregue',
+    'cancelled': 'Cancelado'
+  };
+  return statusMap[status] || status;
+}
+
+// Função auxiliar para obter classe de estilo do status
+function getStatusClass(status: string): string {
+  switch (status) {
+    case "pending":
+      return "text-yellow-600 bg-yellow-100 px-2 py-1 rounded";
+    case "in_production":
+      return "text-blue-600 bg-blue-100 px-2 py-1 rounded";
+    case "ready":
+      return "text-green-600 bg-green-100 px-2 py-1 rounded";
+    case "delivered":
+      return "text-purple-600 bg-purple-100 px-2 py-1 rounded";
+    case "cancelled":
+      return "text-red-600 bg-red-100 px-2 py-1 rounded";
+    default:
+      return "text-gray-600 bg-gray-100 px-2 py-1 rounded";
+  }
+}

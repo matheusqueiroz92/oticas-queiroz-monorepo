@@ -24,7 +24,7 @@ export default function VisionSection({ eye, form }: VisionSectionProps) {
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 p-3 border rounded-md bg-gray-50">
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
       <FormField
         control={form.control}
         name={`prescriptionData.${eye}Eye.sph`}
@@ -35,8 +35,7 @@ export default function VisionSection({ eye, form }: VisionSectionProps) {
               <Input
                 type="number"
                 step="0.25"
-                placeholder="0.00"
-                value={field.value !== undefined ? field.value : "0"}
+                {...field}
                 onChange={(e) => handleNumericInput(e, field.onChange)}
                 aria-label={`Esférico do olho ${eye === "left" ? "esquerdo" : "direito"}`}
               />
@@ -56,8 +55,7 @@ export default function VisionSection({ eye, form }: VisionSectionProps) {
               <Input
                 type="number"
                 step="0.25"
-                placeholder="0.00"
-                value={field.value !== undefined ? field.value : "0"}
+                {...field}
                 onChange={(e) => handleNumericInput(e, field.onChange)}
                 aria-label={`Cilíndrico do olho ${eye === "left" ? "esquerdo" : "direito"}`}
               />
@@ -76,11 +74,9 @@ export default function VisionSection({ eye, form }: VisionSectionProps) {
             <FormControl>
               <Input
                 type="number"
-                step="1"
                 min="0"
                 max="180"
-                placeholder="0"
-                value={field.value !== undefined ? field.value : "0"}
+                {...field}
                 onChange={(e) => {
                   const value =
                     e.target.value === ""
@@ -92,6 +88,28 @@ export default function VisionSection({ eye, form }: VisionSectionProps) {
                   field.onChange(Number.isNaN(value) ? 0 : value);
                 }}
                 aria-label={`Eixo do olho ${eye === "left" ? "esquerdo" : "direito"}`}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      {/* Novo campo PD (distância pupilar) */}
+      <FormField
+        control={form.control}
+        name={`prescriptionData.${eye}Eye.pd`}
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>PD</FormLabel>
+            <FormControl>
+              <Input
+                type="number"
+                step="0.5"
+                min="0"
+                {...field}
+                onChange={(e) => handleNumericInput(e, field.onChange)}
+                aria-label={`PD do olho ${eye === "left" ? "esquerdo" : "direito"}`}
               />
             </FormControl>
             <FormMessage />

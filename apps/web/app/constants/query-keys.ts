@@ -46,15 +46,10 @@ export const QUERY_KEYS = {
 
   // Produtos
   PRODUCTS: {
-    ALL: ["products"],
-    PAGINATED: (page = 1, filters = {}) => [
-      "products",
-      "paginated",
-      page,
-      filters,
-    ],
-    DETAIL: (id: string) => ["products", "detail", id],
-    BY_CATEGORY: (category: string) => ["products", "category", category],
+    ALL: ['products'],
+    PAGINATED: (page?: number, filters?: Record<string, any>) => 
+      ['products', 'paginated', page, filters],
+    DETAIL: (id: string) => ['products', 'detail', id],
   },
 
   // Pagamentos

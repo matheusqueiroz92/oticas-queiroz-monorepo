@@ -13,18 +13,29 @@ import {
   formatCurrency,
 } from "../app/services/productService";
 import { QUERY_KEYS } from "../app/constants/query-keys";
+import { Product } from "@/app/types/product";
 
 interface ProductFilters {
   search?: string;
   page?: number;
   limit?: number;
   category?: string;
+  productType?: "lenses" | "clean_lenses" | "prescription_frame" | "sunglasses_frame";
+  minSellPrice?: number;
+  maxSellPrice?: number;
+  brand?: string;
+  lensType?: string;
+  typeFrame?: string;
+  color?: string;
+  shape?: string;
+  reference?: string;
+  modelSunglasses?: string;
 }
 
 export function useProducts() {
   const [filters, setFilters] = useState<ProductFilters>({});
   const [currentPage, setCurrentPage] = useState(1);
-  const [productId, setProductId] = useState<string | null>(null); // Estado para o ID do produto
+  const [productId, setProductId] = useState<string | null>(null);
 
   const router = useRouter();
   const { toast } = useToast();
@@ -34,7 +45,7 @@ export function useProducts() {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: QUERY_KEYS.PRODUCTS.PAGINATED(currentPage, filters),
     queryFn: () => getAllProducts({ ...filters, page: currentPage, limit: 10 }),
-    placeholderData: (prevData) => prevData, // Substitui keepPreviousData
+    placeholderData: (prevData) => prevData,
   });
 
   // Query para buscar um produto específico
@@ -45,7 +56,7 @@ export function useProducts() {
   } = useQuery({
     queryKey: QUERY_KEYS.PRODUCTS.DETAIL(productId as string),
     queryFn: () => getProductById(productId as string),
-    enabled: !!productId, // Só executa se o productId for fornecido
+    enabled: !!productId,
   });
 
   // Dados normalizados da query
@@ -62,7 +73,6 @@ export function useProducts() {
         description: "O produto foi criado com sucesso.",
       });
 
-      // Invalidar queries existentes para re-fetch automático
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.PRODUCTS.ALL });
 
       return newProduct;
@@ -90,7 +100,6 @@ export function useProducts() {
         description: "O produto foi atualizado com sucesso.",
       });
 
-      // Invalidar queries específicas
       queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.PRODUCTS.DETAIL(updatedProduct._id),
       });
@@ -119,7 +128,6 @@ export function useProducts() {
         description: "O produto foi excluído com sucesso.",
       });
 
-      // Invalidar queries
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.PRODUCTS.ALL });
 
       return true;
@@ -177,9 +185,9 @@ export function useProducts() {
   return {
     // Dados e estado
     products,
-    currentProduct: productData, // Dados do produto buscado
-    loading: isLoading || isProductLoading, // Estado de carregamento geral
-    error: error || productError, // Erro geral
+    currentProduct: productData as Product | null,
+    loading: isLoading || isProductLoading,
+    error: error || productError,
     totalPages,
     totalProducts,
     filters,

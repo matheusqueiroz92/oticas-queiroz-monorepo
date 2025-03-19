@@ -1,4 +1,4 @@
-// components/OrderDetailsPDF.tsx
+// components/Orders/exports/OrderDetailsPdf.tsx
 import React from "react";
 import {
   PDFDownloadLink,
@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { FileDown } from "lucide-react";
 import type { Order } from "@/app/types/order";
+import type { Product } from "@/app/types/product";
 
 // Estilos para o PDF
 const styles = StyleSheet.create({
@@ -83,6 +84,16 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 2,
   },
+  tableCellSmall: {
+    flex: 1,
+    padding: 2,
+    fontSize: 9,
+  },
+  tableCellRight: {
+    flex: 1,
+    padding: 2,
+    textAlign: "right",
+  },
   additionalInfoSection: {
     marginTop: 10,
     borderTopWidth: 1,
@@ -107,6 +118,26 @@ const styles = StyleSheet.create({
     borderTopStyle: "solid",
     paddingTop: 10,
   },
+  totalRow: {
+    flexDirection: "row",
+    borderTopWidth: 1,
+    borderTopColor: "#000",
+    borderTopStyle: "solid",
+    padding: 5,
+    fontWeight: "bold",
+  },
+  discountRow: {
+    flexDirection: "row",
+    padding: 5,
+  },
+  finalRow: {
+    flexDirection: "row",
+    borderTopWidth: 1,
+    borderTopColor: "#000",
+    borderTopStyle: "solid",
+    padding: 5,
+    fontWeight: "bold",
+  },
 });
 
 // Interface para o documento PDF
@@ -115,6 +146,19 @@ interface OrderPDFDocumentProps {
   clientName: string;
   employeeName: string;
 }
+
+// Função para obter o rótulo do tipo de produto
+const getProductTypeLabel = (type?: string): string => {
+  const types: Record<string, string> = {
+    lenses: "Lentes",
+    clean_lenses: "Limpa-lentes",
+    prescription_frame: "Armação de grau",
+    sunglasses_frame: "Armação solar"
+  };
+  
+  if (!type) return "Não especificado";
+  return types[type] || type;
+};
 
 // Componente do documento PDF
 const OrderPDFDocument = ({
@@ -137,6 +181,7 @@ const OrderPDFDocument = ({
       in_production: "Em Produção",
       ready: "Pronto",
       delivered: "Entregue",
+      cancelled: "Cancelado",
     };
     return statusMap[status] || status;
   };
@@ -160,6 +205,14 @@ const OrderPDFDocument = ({
     return `${prefix}${value.toFixed(2)}`.replace(".", ",");
   };
 
+  // Formatar valores monetários
+  const formatCurrency = (value: number) => {
+    return `R$ ${value.toFixed(2).replace(".", ",")}`;
+  };
+
+  // Verificar se o pedido tem produtos múltiplos
+  const hasMultipleProducts = Array.isArray(order.product) && order.product.length > 0;
+
   return (
     <Document>
       <Page size="A4" style={styles.page}>
@@ -180,6 +233,12 @@ const OrderPDFDocument = ({
             <Text style={styles.label}>Data de Criação:</Text>
             <Text style={styles.value}>{formatDate(order.createdAt)}</Text>
           </View>
+          {order.deliveryDate && (
+            <View style={styles.row}>
+              <Text style={styles.label}>Data de Entrega:</Text>
+              <Text style={styles.value}>{formatDate(order.deliveryDate)}</Text>
+            </View>
+          )}
         </View>
 
         {/* Cliente e Vendedor */}
@@ -195,35 +254,75 @@ const OrderPDFDocument = ({
           </View>
         </View>
 
-        {/* Detalhes do Produto */}
+        {/* Detalhes dos Produtos */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Detalhes do Produto</Text>
-          <View style={styles.row}>
-            <Text style={styles.label}>Produto:</Text>
-            <Text style={styles.value}>{order.product}</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Tipo:</Text>
-            <Text style={styles.value}>
-              {order.glassesType === "prescription"
-                ? "Óculos de Grau"
-                : "Óculos Solar"}
-            </Text>
-          </View>
-          {order.glassesType === "prescription" && (
+          <Text style={styles.sectionTitle}>Detalhes dos Produtos</Text>
+          
+          {hasMultipleProducts ? (
+            <View style={styles.table}>
+              <View style={styles.tableHeader}>
+                <Text style={styles.tableCell}>Produto</Text>
+                <Text style={styles.tableCell}>Tipo</Text>
+                <Text style={styles.tableCellRight}>Preço</Text>
+              </View>
+              
+              {(order.product as Product[]).map((product, index) => (
+                <View style={styles.tableRow} key={`product-${index}`}>
+                  <Text style={styles.tableCellSmall}>{product.name}</Text>
+                  <Text style={styles.tableCellSmall}>
+                    {getProductTypeLabel(product.productType)}
+                  </Text>
+                  <Text style={styles.tableCellRight}>
+                    {formatCurrency(product.sellPrice || 0)}
+                  </Text>
+                </View>
+              ))}
+              
+              {/* Totais */}
+              <View style={styles.totalRow}>
+                <Text style={[styles.tableCell, { flex: 2 }]}>Total:</Text>
+                <Text style={styles.tableCellRight}>
+                  {formatCurrency(order.totalPrice || 0)}
+                </Text>
+              </View>
+              
+              {(order.discount || 0) > 0 && (
+                <View style={styles.discountRow}>
+                  <Text style={[styles.tableCell, { flex: 2 }]}>Desconto:</Text>
+                  <Text style={styles.tableCellRight}>
+                    -{formatCurrency(order.discount || 0)}
+                  </Text>
+                </View>
+              )}
+              
+              <View style={styles.finalRow}>
+                <Text style={[styles.tableCell, { flex: 2 }]}>Preço Final:</Text>
+                <Text style={styles.tableCellRight}>
+                  {formatCurrency(order.finalPrice || order.totalPrice || 0)}
+                </Text>
+              </View>
+            </View>
+          ) : (
+            // Fallback para um único produto (compatibilidade com versões antigas)
             <>
               <View style={styles.row}>
-                <Text style={styles.label}>Tipo de Lente:</Text>
-                <Text style={styles.value}>{order.lensType || "N/A"}</Text>
+                <Text style={styles.label}>Produto:</Text>
+                <Text style={styles.value}>
+                  {typeof order.product === 'string'
+                    ? order.product
+                    : (order.product as any)?.name || 'N/A'}
+                </Text>
               </View>
               <View style={styles.row}>
-                <Text style={styles.label}>Data de Entrega:</Text>
+                <Text style={styles.label}>Preço:</Text>
                 <Text style={styles.value}>
-                  {formatDate(order.deliveryDate)}
+                  {formatCurrency(order.totalPrice || 0)}
                 </Text>
               </View>
             </>
           )}
+          
+          {/* Observações */}
           {order.observations && (
             <View style={styles.row}>
               <Text style={styles.label}>Observações:</Text>
@@ -245,7 +344,7 @@ const OrderPDFDocument = ({
             <View style={styles.row}>
               <Text style={styles.label}>Entrada:</Text>
               <Text style={styles.value}>
-                R$ {order.paymentEntry.toFixed(2).replace(".", ",")}
+                {formatCurrency(order.paymentEntry)}
               </Text>
             </View>
           )}
@@ -258,13 +357,27 @@ const OrderPDFDocument = ({
           <View style={styles.row}>
             <Text style={styles.label}>Valor Total:</Text>
             <Text style={styles.value}>
-              R$ {order.totalPrice.toFixed(2).replace(".", ",")}
+              {formatCurrency(order.totalPrice)}
+            </Text>
+          </View>
+          {(order.discount || 0) > 0 && (
+            <View style={styles.row}>
+              <Text style={styles.label}>Desconto:</Text>
+              <Text style={styles.value}>
+                -{formatCurrency(order.discount || 0)}
+              </Text>
+            </View>
+          )}
+          <View style={styles.row}>
+            <Text style={styles.label}>Valor Final:</Text>
+            <Text style={styles.value}>
+              {formatCurrency(order.finalPrice || order.totalPrice)}
             </Text>
           </View>
         </View>
 
-        {/* Receita Médica (se for óculos de grau) */}
-        {order.prescriptionData && order.glassesType === "prescription" && (
+        {/* Receita Médica */}
+        {order.prescriptionData && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Receita Médica</Text>
             <View style={styles.row}>
@@ -295,6 +408,7 @@ const OrderPDFDocument = ({
                     <Text style={styles.tableCell}>Esf.</Text>
                     <Text style={styles.tableCell}>Cil.</Text>
                     <Text style={styles.tableCell}>Eixo</Text>
+                    <Text style={styles.tableCell}>PD</Text>
                   </View>
                   {order.prescriptionData.leftEye && (
                     <View style={styles.tableRow}>
@@ -311,6 +425,9 @@ const OrderPDFDocument = ({
                       </Text>
                       <Text style={styles.tableCell}>
                         {order.prescriptionData.leftEye.axis || "N/A"}°
+                      </Text>
+                      <Text style={styles.tableCell}>
+                        {order.prescriptionData.leftEye.pd || "N/A"}
                       </Text>
                     </View>
                   )}
@@ -329,6 +446,9 @@ const OrderPDFDocument = ({
                       </Text>
                       <Text style={styles.tableCell}>
                         {order.prescriptionData.rightEye.axis || "N/A"}°
+                      </Text>
+                      <Text style={styles.tableCell}>
+                        {order.prescriptionData.rightEye.pd || "N/A"}
                       </Text>
                     </View>
                   )}

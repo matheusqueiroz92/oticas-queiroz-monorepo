@@ -1,130 +1,21 @@
 import type { Request, Response } from "express";
 import { OrderService, OrderError } from "../services/OrderService";
 import { z } from "zod";
-import type { IOrder } from "../interfaces/IOrder";
+import type { CreateOrderDTO, IOrder } from "../interfaces/IOrder";
 import type { JwtPayload } from "jsonwebtoken";
 import type { ExportOptions } from "../utils/exportUtils";
+import {
+  createOrderSchema,
+  updateOrderSchema,
+  updateOrderStatusSchema,
+  updateOrderLaboratorySchema,
+  orderQuerySchema
+} from "../validators/orderValidators";
+import { IProduct } from "src/interfaces/IProduct";
 
 interface AuthRequest extends Request {
   user?: JwtPayload & { role?: string };
 }
-
-// Esquema base para todos os tipos de pedido
-const baseOrderSchema = z.object({
-  clientId: z.string().min(1, "ID do cliente é obrigatório"),
-  employeeId: z.string().min(1, "ID do funcionário é obrigatório"),
-  productType: z.enum(["glasses", "lensCleaner"]),
-  product: z.string().min(1, "Produto é obrigatório"),
-  paymentMethod: z.string().min(1, "Método de pagamento é obrigatório"),
-  paymentEntry: z.number().min(0).optional(),
-  installments: z.number().min(1).optional(),
-  orderDate: z.coerce.date(),
-  deliveryDate: z.coerce.date(),
-  status: z.enum(["pending", "in_production", "ready", "delivered"]),
-  totalPrice: z.number().positive("Preço total deve ser positivo"),
-  observations: z.string().optional(),
-});
-
-// Esquema para dados de prescrição
-const prescriptionDataSchema = z.object({
-  doctorName: z
-    .string()
-    .min(2, "Nome do médico deve ter no mínimo 2 caracteres"),
-  clinicName: z
-    .string()
-    .min(2, "Nome da clínica deve ter no mínimo 2 caracteres"),
-  appointmentDate: z.coerce.date(),
-  leftEye: z.object({
-    sph: z.number(),
-    cyl: z.number(),
-    axis: z.number(),
-  }),
-  rightEye: z.object({
-    sph: z.number(),
-    cyl: z.number(),
-    axis: z.number(),
-  }),
-  nd: z.number(),
-  oc: z.number(),
-  addition: z.number(),
-});
-
-// Esquema completo do pedido
-const createOrderSchema = baseOrderSchema
-  .extend({
-    // Campos condicionais para óculos
-    glassesType: z.enum(["prescription", "sunglasses"]).optional(),
-    glassesFrame: z.enum(["with", "no"]).optional(),
-    laboratoryId: z.string().optional().nullable(),
-    lensType: z.string().optional(),
-    prescriptionData: prescriptionDataSchema.optional(),
-  })
-  .refine(
-    (data) => {
-      // Se for óculos, precisa de glassesType e glassesFrame
-      if (data.productType === "glasses") {
-        return !!data.glassesType && !!data.glassesFrame && !!data.lensType;
-      }
-      return true;
-    },
-    {
-      message:
-        "Para óculos, é necessário informar o tipo, armação e tipo de lente",
-      path: ["productType"],
-    }
-  )
-  .refine(
-    (data) => {
-      // Se for óculos de grau, precisa ter dados de prescrição
-      if (
-        data.productType === "glasses" &&
-        data.glassesType === "prescription"
-      ) {
-        return !!data.prescriptionData;
-      }
-      return true;
-    },
-    {
-      message: "Dados de prescrição são obrigatórios para óculos de grau",
-      path: ["prescriptionData"],
-    }
-  );
-
-const updateOrderStatusSchema = z.object({
-  status: z.enum([
-    "pending",
-    "in_production",
-    "ready",
-    "delivered",
-    "cancelled",
-  ]),
-});
-
-const updateOrderLaboratorySchema = z.object({
-  laboratoryId: z.string().min(1, "ID do laboratório é obrigatório"),
-});
-
-const querySchema = z.object({
-  page: z
-    .string()
-    .optional()
-    .transform((val) => Number(val) || 1),
-  limit: z
-    .string()
-    .optional()
-    .transform((val) => Number(val) || 10),
-  status: z
-    .enum(["pending", "in_production", "ready", "delivered", "cancelled"])
-    .optional(),
-  clientId: z.string().optional(),
-  laboratoryId: z.string().optional(),
-  startDate: z.string().optional(),
-  endDate: z.string().optional(),
-});
-
-type CreateOrderInput = z.infer<typeof createOrderSchema>;
-type UpdateOrderStatusInput = z.infer<typeof updateOrderStatusSchema>;
-type UpdateOrderLaboratoryInput = z.infer<typeof updateOrderLaboratorySchema>;
 
 export class OrderController {
   private orderService: OrderService;
@@ -139,62 +30,37 @@ export class OrderController {
         res.status(401).json({ message: "Usuário não autenticado" });
         return;
       }
-
-      // Extrair e validar dados da requisição
-      const data = req.body;
-
-      // Validações para produtos do tipo "glasses"
-      if (data.productType === "glasses") {
-        if (!data.glassesType) {
-          res.status(400).json({
-            message: "Dados inválidos",
-            errors: [
-              "Tipo de óculos é obrigatório para produtos do tipo 'glasses'",
-            ],
-          });
-          return;
+  
+      // Validar os dados com o schema do Zod
+      const validatedData = createOrderSchema.parse(req.body);
+  
+      // Garantir que todos os produtos tenham productType definido
+      const validProducts = validatedData.product.map(p => {
+        if (!p.productType) {
+          throw new Error("Todos os produtos devem ter um tipo definido");
         }
-
-        if (!data.glassesFrame) {
-          res.status(400).json({
-            message: "Dados inválidos",
-            errors: [
-              "Informação sobre armação é obrigatória para produtos do tipo 'glasses'",
-            ],
-          });
-          return;
-        }
-
-        if (!data.lensType) {
-          res.status(400).json({
-            message: "Dados inválidos",
-            errors: [
-              "Tipo de lente é obrigatório para produtos do tipo 'glasses'",
-            ],
-          });
-          return;
-        }
-
-        // Se for óculos de grau, verificar dados de prescrição
-        if (data.glassesType === "prescription" && !data.prescriptionData) {
-          res.status(400).json({
-            message: "Dados inválidos",
-            errors: [
-              "Dados de prescrição são obrigatórios para óculos de grau",
-            ],
-          });
-          return;
-        }
+        return {
+          ...p,
+          // Garantir que productType nunca é undefined
+          productType: p.productType as "lenses" | "clean_lenses" | "prescription_frame" | "sunglasses_frame"
+        };
+      });
+  
+      // Calcular o preço final se não fornecido
+      if (validatedData.finalPrice === undefined) {
+        validatedData.finalPrice = validatedData.totalPrice - (validatedData.discount || 0);
       }
-
-      // Se laboratoryId for string vazia, definir como null
-      if (data.laboratoryId === "") {
-        data.laboratoryId = null;
-      }
-
-      const order = await this.orderService.createOrder(data);
+  
+      // Criar o pedido com dados validados
+      const orderData: CreateOrderDTO = {
+        ...validatedData,
+        product: validProducts as IProduct[]
+      };
+  
+      const order = await this.orderService.createOrder(orderData);
       res.status(201).json(order);
     } catch (error) {
+      // Tratamento de erros
       if (error instanceof z.ZodError) {
         res.status(400).json({
           message: "Dados inválidos",
@@ -207,12 +73,16 @@ export class OrderController {
         return;
       }
       console.error("Error creating order:", error);
-      res.status(500).json({ message: "Erro interno do servidor" });
+      res.status(500).json({ 
+        message: "Erro interno do servidor",
+        details: error instanceof Error ? error.message : String(error)
+      });
     }
   }
 
   async getAllOrders(req: Request, res: Response): Promise<void> {
     try {
+      const queryParams = orderQuerySchema.parse(req.query);
       const {
         page,
         limit,
@@ -221,24 +91,24 @@ export class OrderController {
         laboratoryId,
         startDate,
         endDate,
-      } = querySchema.parse(req.query);
+        productId,
+        minPrice,
+        maxPrice
+      } = queryParams;
 
-      const filters: Partial<IOrder> = {};
+      const filters: Record<string, any> = {};
 
       if (status) filters.status = status;
       if (clientId) filters.clientId = clientId;
       if (laboratoryId) filters.laboratoryId = laboratoryId;
+      if (productId) filters.productId = productId;
+      if (minPrice !== undefined) filters.minPrice = minPrice;
+      if (maxPrice !== undefined) filters.maxPrice = maxPrice;
 
       // Adicionar filtro de data se fornecido
       if (startDate && endDate) {
-        const startDateObj = new Date(startDate);
-        const endDateObj = new Date(endDate);
-        endDateObj.setHours(23, 59, 59, 999);
-
-        filters.createdAt = {
-          $gte: startDateObj,
-          $lte: endDateObj,
-        } as unknown as Date;
+        filters.startDate = startDate;
+        filters.endDate = endDate;
       }
 
       const result = await this.orderService.getAllOrders(page, limit, filters);
@@ -280,6 +150,66 @@ export class OrderController {
       }
       console.error("Error getting order:", error);
       res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  }
+
+  async updateOrder(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      if (!req.user?.id || !req.user?.role) {
+        res.status(401).json({ message: "Usuário não autenticado" });
+        return;
+      }
+  
+      const validatedData = updateOrderSchema.parse(req.body);
+      
+      // Garantir que os produtos, se fornecidos, tenham productType definido
+      let validProducts: IProduct[] | undefined;
+      
+      if (validatedData.product) {
+        validProducts = validatedData.product.map(p => {
+          if (!p.productType) {
+            throw new Error("Todos os produtos devem ter um tipo definido");
+          }
+          return {
+            ...p,
+            // Garantir que productType nunca é undefined
+            productType: p.productType as "lenses" | "clean_lenses" | "prescription_frame" | "sunglasses_frame"
+          };
+        }) as IProduct[];
+      }
+      
+      // Criar a atualização com dados validados
+      const updateData: Partial<IOrder> = {
+        ...validatedData,
+        product: validProducts
+      };
+      
+      const order = await this.orderService.updateOrder(
+        req.params.id,
+        updateData,
+        req.user.id,
+        req.user.role
+      );
+      
+      res.status(200).json(order);
+    } catch (error) {
+      // Tratamento de erros
+      if (error instanceof z.ZodError) {
+        res.status(400).json({
+          message: "Dados inválidos",
+          errors: error.errors,
+        });
+        return;
+      }
+      if (error instanceof OrderError) {
+        res.status(400).json({ message: error.message });
+        return;
+      }
+      console.error("Error updating order:", error);
+      res.status(500).json({ 
+        message: "Erro interno do servidor",
+        details: error instanceof Error ? error.message : String(error)
+      });
     }
   }
 
@@ -418,17 +348,12 @@ export class OrderController {
         return;
       }
 
-      const page = Number(req.query.page) || 1;
-      const limit = Number(req.query.limit) || 10;
+      const queryParams = orderQuerySchema.parse(req.query);
+      const { page, limit, status, clientId } = queryParams;
 
-      const filters: Partial<IOrder> = {};
-      if (req.query.status) {
-        filters.status = req.query.status as IOrder["status"];
-      }
-
-      if (req.query.clientId) {
-        filters.clientId = req.query.clientId as string;
-      }
+      const filters: Record<string, any> = {};
+      if (status) filters.status = status;
+      if (clientId) filters.clientId = clientId;
 
       const result = await this.orderService.getDeletedOrders(
         page,
@@ -446,6 +371,13 @@ export class OrderController {
         },
       });
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({
+          message: "Parâmetros de consulta inválidos",
+          errors: error.errors,
+        });
+        return;
+      }
       console.error("Error getting deleted orders:", error);
       res.status(500).json({ message: "Erro interno do servidor" });
     }
@@ -469,30 +401,30 @@ export class OrderController {
     try {
       const { format = "excel", title } = req.query;
 
-      // Construir filtros com base nos parâmetros da query
-      const filters: Partial<IOrder> = {};
+      const queryParams = orderQuerySchema.parse(req.query);
+      const {
+        status,
+        clientId,
+        laboratoryId,
+        startDate,
+        endDate,
+        productId,
+        minPrice,
+        maxPrice
+      } = queryParams;
+      
+      // Construir filtros
+      const filters: Record<string, any> = {};
+      if (status) filters.status = status;
+      if (clientId) filters.clientId = clientId;
+      if (laboratoryId) filters.laboratoryId = laboratoryId;
+      if (productId) filters.productId = productId;
+      if (minPrice !== undefined) filters.minPrice = minPrice;
+      if (maxPrice !== undefined) filters.maxPrice = maxPrice;
 
-      if (req.query.startDate && req.query.endDate) {
-        const startDate = new Date(String(req.query.startDate));
-        const endDate = new Date(String(req.query.endDate));
-        endDate.setHours(23, 59, 59, 999);
-
-        filters.createdAt = {
-          $gte: startDate,
-          $lte: endDate,
-        } as unknown as Date;
-      }
-
-      if (req.query.status) {
-        filters.status = req.query.status as IOrder["status"];
-      }
-
-      if (req.query.clientId) {
-        filters.clientId = req.query.clientId as string;
-      }
-
-      if (req.query.laboratoryId) {
-        filters.laboratoryId = req.query.laboratoryId as string;
+      if (startDate && endDate) {
+        filters.startDate = startDate;
+        filters.endDate = endDate;
       }
 
       // Exportar os pedidos

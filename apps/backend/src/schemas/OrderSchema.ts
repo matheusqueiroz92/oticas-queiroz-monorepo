@@ -12,33 +12,31 @@ const orderSchema = new Schema(
       ref: "User",
       required: true,
     },
-    productType: {
-      type: String,
-      enum: ["glasses", "lensCleaner"],
-      default: "glasses",
-      required: true,
+    // Agora é um array de produtos
+    product: [{
+      type: Schema.Types.ObjectId,
+      ref: "Product",
+      required: true
+    }],
+    paymentMethod: { 
+      type: String, 
+      required: true 
     },
-    product: { type: String, required: true },
-    // Campos para óculos
-    glassesType: {
-      type: String,
-      enum: ["prescription", "sunglasses"],
-      // Não definimos required aqui
-    },
-    glassesFrame: {
-      type: String,
-      enum: ["with", "no"],
-      // Não definimos required aqui
-    },
-    paymentMethod: { type: String, required: true },
     paymentEntry: Number,
     installments: Number,
-    orderDate: { type: Date, required: true },
-    deliveryDate: { type: Date },
+    orderDate: { 
+      type: Date, 
+      required: true,
+      default: Date.now
+    },
+    deliveryDate: { 
+      type: Date 
+    },
     status: {
       type: String,
       enum: ["pending", "in_production", "ready", "delivered", "cancelled"],
       default: "pending",
+      required: true
     },
     laboratoryId: {
       type: Schema.Types.ObjectId,
@@ -51,25 +49,42 @@ const orderSchema = new Schema(
       doctorName: { type: String },
       clinicName: { type: String },
       appointmentDate: { type: Date },
-      leftEye: {
-        sph: Number,
-        cyl: Number,
-        axis: Number,
-      },
       rightEye: {
         sph: Number,
         cyl: Number,
         axis: Number,
+        pd: Number,
+      },
+      leftEye: {
+        sph: Number,
+        cyl: Number,
+        axis: Number,
+        pd: Number,
       },
       nd: Number,
       oc: Number,
       addition: Number,
     },
-    lensType: { type: String },
     observations: String,
-    totalPrice: { type: Number, required: true },
+    totalPrice: { 
+      type: Number, 
+      required: true 
+    },
+    discount: {
+      type: Number,
+      default: 0,
+      required: true
+    },
+    finalPrice: {
+      type: Number,
+      default: 0,
+      required: true,
+    },
     // Campos para soft delete
-    isDeleted: { type: Boolean, default: false },
+    isDeleted: { 
+      type: Boolean, 
+      default: false 
+    },
     deletedAt: Date,
     deletedBy: {
       type: Schema.Types.ObjectId,
@@ -79,39 +94,27 @@ const orderSchema = new Schema(
   { timestamps: true }
 );
 
-// Validação pré-salvamento para garantir que campos de óculos estejam presentes quando necessário
-orderSchema.pre("validate", function (next) {
-  if (this.productType === "glasses") {
-    if (!this.glassesType) {
-      this.invalidate(
-        "glassesType",
-        'Tipo de óculos é obrigatório para produtos do tipo "glasses"'
-      );
-    }
-
-    if (!this.glassesFrame) {
-      this.invalidate(
-        "glassesFrame",
-        'Informação sobre armação é obrigatória para produtos do tipo "glasses"'
-      );
-    }
-
-    if (!this.lensType) {
-      this.invalidate(
-        "lensType",
-        'Tipo de lente é obrigatório para produtos do tipo "glasses"'
-      );
-    }
-
-    if (this.glassesType === "prescription") {
-      if (!this.prescriptionData || !this.prescriptionData.doctorName) {
-        this.invalidate(
-          "prescriptionData",
-          "Dados de prescrição são obrigatórios para óculos de grau"
-        );
-      }
-    }
+// Middleware para calcular o preço final se não for fornecido
+orderSchema.pre("validate", function(next) {
+  if (!this.finalPrice) {
+    this.finalPrice = this.totalPrice - this.discount;
   }
+  
+  // Verificar se há pelo menos um produto no pedido
+  if (!this.product || this.product.length === 0) {
+    this.invalidate("product", "Pelo menos um produto deve ser adicionado ao pedido");
+  }
+
+  // Validar que finalPrice é positivo
+  if (this.finalPrice < 0) {
+    this.invalidate("finalPrice", "O preço final não pode ser negativo");
+  }
+
+  // Validar que discount não é maior que totalPrice
+  if (this.discount > this.totalPrice) {
+    this.invalidate("discount", "O desconto não pode ser maior que o preço total");
+  }
+
   next();
 });
 

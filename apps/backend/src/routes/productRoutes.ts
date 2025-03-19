@@ -16,8 +16,8 @@ const productController = new ProductController();
  *       required:
  *         - name
  *         - productType
- *         - category
- *         - price
+ *         - sellPrice
+ *         - description
  *       properties:
  *         _id:
  *           type: string
@@ -27,10 +27,14 @@ const productController = new ProductController();
  *           description: Nome do produto
  *         productType:
  *           type: string
+ *           enum: [lenses, clean_lenses, prescription_frame, sunglasses_frame]
  *           description: Tipo do produto
- *         category:
- *           type: string
- *           description: Categoria do produto
+ *         sellPrice:
+ *           type: number
+ *           description: Preço de venda
+ *         costPrice:
+ *           type: number
+ *           description: Preço de custo
  *         description:
  *           type: string
  *           description: Descrição detalhada do produto
@@ -40,15 +44,24 @@ const productController = new ProductController();
  *         image:
  *           type: string
  *           description: URL da imagem do produto
- *         modelGlasses:
+ *         lensType:
  *           type: string
- *           description: Modelo dos óculos (se aplicável)
- *         price:
- *           type: number
- *           description: Preço do produto
- *         stock:
- *           type: number
- *           description: Quantidade em estoque
+ *           description: Tipo da lente (apenas para lentes)
+ *         typeFrame:
+ *           type: string
+ *           description: Tipo de armação (para armações)
+ *         color:
+ *           type: string
+ *           description: Cor da armação (para armações)
+ *         shape:
+ *           type: string
+ *           description: Formato da armação (para armações)
+ *         reference:
+ *           type: string
+ *           description: Referência da armação (para armações)
+ *         model:
+ *           type: string
+ *           description: Modelo da armação (apenas para óculos de sol)
  *         createdAt:
  *           type: string
  *           format: date-time

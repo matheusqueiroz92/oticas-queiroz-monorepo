@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
   FormField,
   FormItem,
@@ -67,6 +68,15 @@ export default function ClientSearch({
     }
   };
 
+  const handleNavigateToNewCustomer = () => {
+    // Salvar o estado atual em localStorage para permitir voltar ao pedido
+    if (window) {
+      window.localStorage.setItem('pendingOrderFormData', JSON.stringify(form.getValues()));
+    }
+    // Abrir nova aba para cadastro de cliente
+    window.open('/customers/new', '_blank');
+  };
+
   return (
     <FormField
       control={form.control}
@@ -112,9 +122,18 @@ export default function ClientSearch({
                     ))}
                   </ul>
                 ) : (
-                  <div className="p-3 text-sm text-gray-500">
-                    Nenhum cliente encontrado com este nome. Por favor, cadastre
-                    o cliente primeiro.
+                  <div className="flex flex-col p-3">
+                    <div className="text-sm text-gray-500 mb-2">
+                      Nenhum cliente encontrado com este nome.
+                    </div>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      className="w-full text-blue-600 hover:text-blue-800"
+                      onClick={handleNavigateToNewCustomer}
+                    >
+                      + Cadastrar novo cliente
+                    </Button>
                   </div>
                 )}
               </div>

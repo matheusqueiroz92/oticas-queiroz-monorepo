@@ -1,5 +1,8 @@
+// apps/backend/src/services/ProductService.ts
 import { ProductModel } from "../models/ProductModel";
-import type { IProduct, ICreateProductDTO } from "../interfaces/IProduct";
+import { IProduct } from "../interfaces/IProduct";
+import { z } from 'zod';
+import { productSchema } from '../validators/productValidators';
 
 export class ProductError extends Error {
   constructor(message: string) {
@@ -15,25 +18,24 @@ export class ProductService {
     this.productModel = new ProductModel();
   }
 
-  private validateProductData(productData: ICreateProductDTO): void {
-    if (productData.price < 0) {
-      throw new ProductError("Preço não pode ser negativo");
+  private validateProduct(productData: any): void {
+    try {
+      // Usar o validador Zod discriminated union
+      productSchema.parse(productData);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const errorMessage = error.errors.map(e => e.message).join(', ');
+        throw new ProductError(`Dados inválidos: ${errorMessage}`);
+      }
+      throw error;
     }
-    if (productData.stock < 0) {
-      throw new ProductError("Estoque não pode ser negativo");
-    }
-    if (!productData.name?.trim()) {
-      throw new ProductError("Nome do produto é obrigatório");
-    }
-    // Adicione mais validações conforme necessário
   }
 
-  async createProduct(productData: ICreateProductDTO): Promise<IProduct> {
-    this.validateProductData(productData);
+  async createProduct(productData: any): Promise<IProduct> {
+    // Validar os dados com base no tipo
+    this.validateProduct(productData);
 
-    const existingProduct = await this.productModel.findByName(
-      productData.name
-    );
+    const existingProduct = await this.productModel.findByName(productData.name);
     if (existingProduct) {
       throw new ProductError("Produto já cadastrado com este nome");
     }
@@ -44,44 +46,49 @@ export class ProductService {
   async getAllProducts(
     page?: number,
     limit?: number,
-    filters?: Partial<ICreateProductDTO>
+    filters?: Record<string, any>
   ): Promise<{ products: IProduct[]; total: number }> {
     const result = await this.productModel.findAll(page, limit, filters);
+    
     if (result.total === 0) {
       throw new ProductError("Nenhum produto encontrado");
     }
+    
     return result;
   }
 
   async getProductById(id: string): Promise<IProduct> {
     const product = await this.productModel.findById(id);
+    
     if (!product) {
       throw new ProductError("Produto não encontrado");
     }
+    
     return product;
   }
 
   async updateProduct(
     id: string,
-    productData: Partial<ICreateProductDTO>
+    productData: Partial<IProduct>
   ): Promise<IProduct> {
-    if (productData.price !== undefined && productData.price < 0) {
-      throw new ProductError("Preço não pode ser negativo");
+    // Verificações para os produtos
+    if (productData.sellPrice !== undefined && productData.sellPrice < 0) {
+      throw new ProductError("Preço de venda não pode ser negativo");
     }
-    if (productData.stock !== undefined && productData.stock < 0) {
-      throw new ProductError("Estoque não pode ser negativo");
+    if (productData.costPrice !== undefined && productData.costPrice < 0) {
+      throw new ProductError("Preço de custo não pode ser negativo");
     }
 
+    // Verificar se está tentando alterar o nome para um já existente
     if (productData.name) {
-      const existingProduct = await this.productModel.findByName(
-        productData.name
-      );
+      const existingProduct = await this.productModel.findByName(productData.name);
       if (existingProduct && existingProduct._id !== id) {
         throw new ProductError("Já existe um produto com este nome");
       }
     }
 
     const product = await this.productModel.update(id, productData);
+    
     if (!product) {
       throw new ProductError("Produto não encontrado");
     }
@@ -91,24 +98,11 @@ export class ProductService {
 
   async deleteProduct(id: string): Promise<IProduct> {
     const product = await this.productModel.delete(id);
+    
     if (!product) {
       throw new ProductError("Produto não encontrado");
     }
+    
     return product;
-  }
-
-  async updateStock(id: string, quantity: number): Promise<IProduct> {
-    const product = await this.getProductById(id);
-
-    if (product.stock + quantity < 0) {
-      throw new ProductError("Estoque insuficiente");
-    }
-
-    const updatedProduct = await this.productModel.updateStock(id, quantity);
-    if (!updatedProduct) {
-      throw new ProductError("Erro ao atualizar estoque");
-    }
-
-    return updatedProduct;
   }
 }

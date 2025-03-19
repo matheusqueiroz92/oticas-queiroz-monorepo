@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -30,69 +30,114 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
+  CardFooter,
 } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/useToast";
-import { api } from "../../../services/authService";
-import type { Customer } from "../../../types/customer";
+import { api } from "@/app/services/authService";
+import { Loader2, AlertTriangle } from "lucide-react";
+import type { Customer } from "@/app/types/customer";
+import type { Product } from "@/app/types/product";
 import Cookies from "js-cookie";
+import { formatCurrency } from "@/app/utils/formatters";
 
 // Componentes
-import ClientSearch from "../../../../components/Orders/ClientSearch";
-import LensTypeSelection from "../../../../components/Orders/LensTypeSearch";
-import OrderPdfGenerator from "../../../../components/Orders/exports/OrderPdfGenerator";
-import type { OrderFormValues } from "../../../../app/types/form-types";
-import PrescriptionForm from "../../../../components/Orders/PrescriptionForm";
+import ClientSearch from "@/components/Orders/ClientSearch";
+import ProductSearch from "@/components/Orders/ProductSearch";
+import SelectedProductsList from "@/components/Orders/SelectedProductList";
+import PrescriptionForm from "@/components/Orders/PrescriptionForm";
+import OrderPdfGenerator from "@/components/Orders/exports/OrderPdfGenerator";
+import { QUERY_KEYS } from "@/app/constants/query-keys";
+import { OrderFormReturn } from "@/app/types/form-types";
 
+// Schema para validação de dados do olho
+const eyeDataSchema = z.object({
+  sph: z.number().default(0),
+  cyl: z.number().default(0),
+  axis: z.number().default(0),
+  pd: z.number().default(0),
+});
+
+// Schema para validação de dados de prescrição
 const prescriptionDataSchema = z.object({
   doctorName: z.string().optional(),
   clinicName: z.string().optional(),
   appointmentDate: z.string().optional(),
-  leftEye: z.object({
-    sph: z.number(),
-    cyl: z.number(),
-    axis: z.number(),
-  }),
-  rightEye: z.object({
-    sph: z.number(),
-    cyl: z.number(),
-    axis: z.number(),
-  }),
-  nd: z.number(),
-  oc: z.number(),
-  addition: z.number(),
+  leftEye: eyeDataSchema,
+  rightEye: eyeDataSchema,
+  nd: z.number().default(0),
+  oc: z.number().default(0),
+  addition: z.number().default(0),
 });
 
-const orderFormSchema = z
-  .object({
-    clientId: z.string().min(1, "Cliente é obrigatório"),
-    employeeId: z.string().min(1, "ID do funcionário é obrigatório"),
-    productType: z.enum(["glasses", "lensCleaner"]),
-    product: z.string().min(1, "Descrição do produto é obrigatória"),
-    glassesType: z.enum(["prescription", "sunglasses"]),
-    glassesFrame: z.enum(["with", "no"]),
-    paymentMethod: z.string().min(1, "Forma de pagamento é obrigatória"),
-    paymentEntry: z.number().min(0).optional(),
-    installments: z.number().min(1).optional(),
-    orderDate: z.string().optional(),
-    deliveryDate: z.string().optional(),
-    status: z.string().min(1, "Status é obrigatório"),
-    laboratoryId: z.string().optional(),
-    lensType: z.string().optional(),
-    observations: z.string().optional(),
-    totalPrice: z
-      .number()
-      .min(0, "O preço total deve ser maior ou igual a zero"),
-    // Usando o esquema definido acima e garantindo que não é opcional
-    prescriptionData: prescriptionDataSchema,
-  })
-  .passthrough(); // Permite propriedades adicionais
+// Schema para validação do formulário completo
+const orderFormSchema = z.object({
+  clientId: z.string().min(1, "Cliente é obrigatório"),
+  employeeId: z.string().min(1, "ID do funcionário é obrigatório"),
+  products: z.array(z.any()).min(1, "Pelo menos um produto é obrigatório"),
+  paymentMethod: z.string().min(1, "Forma de pagamento é obrigatória"),
+  paymentEntry: z.number().min(0).default(0),
+  installments: z.number().min(1).optional(),
+  orderDate: z.string().default(() => new Date().toISOString().split("T")[0]),
+  deliveryDate: z.string().optional(),
+  status: z.string().min(1, "Status é obrigatório").default("pending"),
+  laboratoryId: z.string().optional(),
+  observations: z.string().optional(),
+  totalPrice: z.number().min(0, "O preço total deve ser maior ou igual a zero"),
+  discount: z.number().min(0, "O desconto deve ser maior ou igual a zero").default(0),
+  finalPrice: z.number().min(0, "O preço final deve ser maior ou igual a zero"),
+  prescriptionData: prescriptionDataSchema,
+}).refine(data => {
+  // Verificar se o desconto não é maior que o preço total
+  return data.discount <= data.totalPrice;
+}, {
+  message: "O desconto não pode ser maior que o preço total",
+  path: ["discount"]
+});
 
-type OrderFormData = z.infer<typeof orderFormSchema>;
+// Interface para os valores do formulário
+interface OrderFormValues {
+  clientId: string;
+  employeeId: string;
+  products: Product[];
+  paymentMethod: string;
+  paymentEntry: number;
+  installments?: number;
+  orderDate: string;
+  deliveryDate?: string;
+  status: string;
+  laboratoryId?: string;
+  observations?: string;
+  totalPrice: number;
+  discount: number;
+  finalPrice: number;
+  prescriptionData: {
+    doctorName: string;
+    clinicName: string;
+    appointmentDate: string;
+    leftEye: {
+      sph: number;
+      cyl: number;
+      axis: number;
+      pd: number;
+    };
+    rightEye: {
+      sph: number;
+      cyl: number;
+      axis: number;
+      pd: number;
+    };
+    nd: number;
+    oc: number;
+    addition: number;
+  };
+}
 
 export default function NewOrderPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [loggedEmployee, setLoggedEmployee] = useState<{
     id: string;
     name: string;
@@ -100,43 +145,40 @@ export default function NewOrderPage() {
     role: string;
   } | null>(null);
   const [showInstallments, setShowInstallments] = useState(false);
-  const [showPrescription, setShowPrescription] = useState(true);
   const [showPdfDownload, setShowPdfDownload] = useState(false);
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
-    null
-  );
+  const [submittedOrder, setSubmittedOrder] = useState<any>(null);
 
+  // Função para obter a data de amanhã
   const getTomorrowDate = () => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     return tomorrow.toISOString().split("T")[0];
   };
 
+  // Inicialização do formulário com valores padrão
   const form = useForm<OrderFormValues>({
     resolver: zodResolver(orderFormSchema),
     defaultValues: {
       employeeId: "",
       clientId: "",
-      productType: "glasses",
-      product: "",
-      glassesType: "prescription",
-      glassesFrame: "with",
+      products: [],
       paymentMethod: "",
       paymentEntry: 0,
       installments: undefined,
       orderDate: new Date().toISOString().split("T")[0],
-      deliveryDate: getTomorrowDate(), // Formato YYYY-MM-DD
+      deliveryDate: getTomorrowDate(),
       status: "pending",
-      laboratoryId: "", // Valor vazio, será tratado no backend
-      lensType: "",
+      laboratoryId: "",
       observations: "",
       totalPrice: 0,
+      discount: 0,
+      finalPrice: 0,
       prescriptionData: {
         doctorName: "",
         clinicName: "",
         appointmentDate: new Date().toISOString().split("T")[0],
-        leftEye: { sph: 0, cyl: 0, axis: 0 },
-        rightEye: { sph: 0, cyl: 0, axis: 0 },
+        leftEye: { sph: 0, cyl: 0, axis: 0, pd: 0 },
+        rightEye: { sph: 0, cyl: 0, axis: 0, pd: 0 },
         nd: 0,
         oc: 0,
         addition: 0,
@@ -144,31 +186,23 @@ export default function NewOrderPage() {
     },
   });
 
-  // useEffect para atualizar campos ocultos quando o tipo de óculos mudar
-  useEffect(() => {
-    // Observar mudanças no tipo de óculos
-    const subscription = form.watch((value, { name }) => {
-      if (name === "glassesType") {
-        const isGraduated = value.glassesType === "prescription";
-        setShowPrescription(isGraduated);
+  // Consulta para buscar produtos
+  const { data: productsData, isLoading: isLoadingProducts } = useQuery({
+    queryKey: QUERY_KEYS.PRODUCTS.ALL,
+    queryFn: async () => {
+      const response = await api.get("/api/products");
+      return Array.isArray(response.data) ? response.data : response.data.products || [];
+    },
+  });
 
-        // Se não for óculos de grau, definir valores padrão para campos obrigatórios
-        if (!isGraduated) {
-          form.setValue("lensType", "Não aplicável");
-          form.setValue("deliveryDate", new Date().toISOString().split("T")[0]);
-
-          form.setValue("prescriptionData.doctorName", "Não aplicável");
-          form.setValue("prescriptionData.clinicName", "Não aplicável");
-          form.setValue(
-            "prescriptionData.appointmentDate",
-            new Date().toISOString().split("T")[0]
-          );
-        }
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [form]);
+  // Consulta para buscar clientes
+  const { data: customersData, isLoading: isLoadingCustomers } = useQuery({
+    queryKey: [QUERY_KEYS.USERS.CUSTOMERS],
+    queryFn: async () => {
+      const response = await api.get("/api/users", { params: { role: "customer" } });
+      return Array.isArray(response.data) ? response.data : response.data.users || [];
+    },
+  });
 
   // Observar mudanças na forma de pagamento
   useEffect(() => {
@@ -177,10 +211,6 @@ export default function NewOrderPage() {
         const method = value.paymentMethod;
         setShowInstallments(method === "credit" || method === "installment");
       }
-
-      if (name === "glassesType") {
-        setShowPrescription(value.glassesType === "prescription");
-      }
     });
 
     return () => subscription.unsubscribe();
@@ -188,7 +218,6 @@ export default function NewOrderPage() {
 
   // Carregar dados do funcionário logado dos cookies
   useEffect(() => {
-    // Usar cookies em vez da função getLoggedUser
     const userId = Cookies.get("userId");
     const name = Cookies.get("name");
     const email = Cookies.get("email");
@@ -207,42 +236,112 @@ export default function NewOrderPage() {
     }
   }, [form]);
 
-  // Buscar clientes ao carregar a página
+  // Verificar localStorage para recuperar dados de form pendente (para casos de navegação)
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const customersResponse = await api.get("/api/users", {
-          params: { role: "customer" },
-        });
-        const customersData = Array.isArray(customersResponse.data)
-          ? customersResponse.data
-          : customersResponse.data.users || [];
-        setCustomers(customersData);
-      } catch (error) {
-        console.error("Erro ao buscar dados:", error);
-        setCustomers([]);
+    if (typeof window !== 'undefined') {
+      const savedFormData = window.localStorage.getItem('pendingOrderFormData');
+      if (savedFormData) {
+        try {
+          const parsedData = JSON.parse(savedFormData);
+          // Restaurar dados básicos do formulário
+          Object.entries(parsedData).forEach(([key, value]) => {
+            // @ts-ignore
+            form.setValue(key, value);
+          });
+          // Se houver produtos salvos, restaurá-los
+          if (Array.isArray(parsedData.products) && parsedData.products.length > 0) {
+            setSelectedProducts(parsedData.products);
+          }
+          // Limpar dados salvos
+          window.localStorage.removeItem('pendingOrderFormData');
+          toast({
+            title: "Formulário recuperado",
+            description: "Os dados do formulário anterior foram restaurados.",
+          });
+        } catch (error) {
+          console.error("Erro ao restaurar dados do formulário:", error);
+        }
       }
-    };
+    }
+  }, [form, toast]);
 
-    fetchData();
-  }, []);
-
-  const handleClientSelect = (clientId: string, name: string) => {
-    form.setValue("clientId", clientId);
-    const customer = customers.find((c) => c._id === clientId);
-    setSelectedCustomer(customer || null);
-    // if (clientId === "custom") {
-    //   form.setValue("customClientName", name);
-    //   setSelectedCustomer(null);
-    // } else {
-    //   const customer = customers.find((c) => c._id === clientId);
-    //   setSelectedCustomer(customer || null);
-    // }
+  // Funções para gerenciar produtos
+  const handleAddProduct = (product: Product) => {
+    // Verificar se o produto já está selecionado
+    if (selectedProducts.some(p => p._id === product._id)) {
+      toast({
+        variant: "destructive",
+        title: "Produto já adicionado",
+        description: "Este produto já está na lista."
+      });
+      return;
+    }
+    
+    setSelectedProducts([...selectedProducts, product]);
+    form.setValue("products", [...selectedProducts, product]);
+    
+    // Recalcular preço total
+    const newTotal = [...selectedProducts, product].reduce(
+      (sum, p) => sum + (p.sellPrice || 0),
+      0
+    );
+    form.setValue("totalPrice", newTotal);
+    updateFinalPrice(newTotal, form.getValues("discount") || 0);
   };
 
-  // Função para calcular valor das parcelas
+  const handleRemoveProduct = (productId: string) => {
+    const newProducts = selectedProducts.filter(p => p._id !== productId);
+    setSelectedProducts(newProducts);
+    form.setValue("products", newProducts);
+    
+    // Recalcular preço total
+    const newTotal = newProducts.reduce(
+      (sum, p) => sum + (p.sellPrice || 0),
+      0
+    );
+    form.setValue("totalPrice", newTotal);
+    updateFinalPrice(newTotal, form.getValues("discount") || 0);
+  };
+
+  const handleUpdateProductPrice = (productId: string, newPrice: number) => {
+    const updatedProducts = selectedProducts.map(p => 
+      p._id === productId ? { ...p, sellPrice: newPrice } : p
+    );
+    setSelectedProducts(updatedProducts);
+    form.setValue("products", updatedProducts);
+    
+    // Recalcular preço total
+    const newTotal = updatedProducts.reduce(
+      (sum, p) => sum + (p.sellPrice || 0),
+      0
+    );
+    form.setValue("totalPrice", newTotal);
+    updateFinalPrice(newTotal, form.getValues("discount") || 0);
+  };
+
+  // Função para atualizar preço final (total - desconto)
+  const updateFinalPrice = (total: number, discount: number) => {
+    const finalPrice = Math.max(0, total - discount);
+    form.setValue("finalPrice", finalPrice);
+  };
+
+  // Handler para o campo de desconto
+  const handleDiscountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const discount = Number.parseFloat(e.target.value) || 0;
+    form.setValue("discount", discount);
+    updateFinalPrice(form.getValues("totalPrice") || 0, discount);
+  };
+
+  // Função para lidar com a seleção de cliente
+  const handleClientSelect = (clientId: string, name: string) => {
+    form.setValue("clientId", clientId);
+    const customer = customersData?.find((c: Customer) => c._id === clientId);
+    setSelectedCustomer(customer || null);
+  };
+
+  // Calcular valor das parcelas
   const calculateInstallmentValue = () => {
-    const totalPrice = form.getValues("totalPrice") || 0;
+    const totalPrice = form.getValues("finalPrice") || 0;
     const installments = form.getValues("installments") || 1;
     const paymentEntry = form.getValues("paymentEntry") || 0;
 
@@ -252,507 +351,506 @@ export default function NewOrderPage() {
     return remainingAmount <= 0 ? 0 : remainingAmount / installments;
   };
 
-  const calculateInstallmentDisplay = () => {
-    const value = calculateInstallmentValue();
-    return value.toFixed(2);
-  };
-
   // Mutação para criar um novo pedido
-  const createOrder = useMutation({
-    mutationFn: async (data: OrderFormData) => {
+  const createOrderMutation = useMutation({
+    mutationFn: async (data: OrderFormValues) => {
       try {
-        // Valores padrão para campos obrigatórios
-        const defaultDoctorName = "Não aplicável";
-        const defaultClinicName = "Não aplicável";
-
-        // Preparar dados para o backend
+        // Transformar os dados para o formato esperado pela API
         const orderData = {
-          ...data,
-          clientId: data.clientId === "custom" ? undefined : data.clientId,
-          // customClientName:
-          //   data.clientId === "custom" ? data.customClientName : undefined,
-          // Garantir que os campos obrigatórios sejam sempre enviados com valores válidos
-          deliveryDate: data.deliveryDate || getTomorrowDate(),
-          prescriptionData:
-            data.glassesType === "prescription"
-              ? {
-                  // Usar os dados da receita do formulário quando for óculos de grau
-                  doctorName:
-                    data.prescriptionData?.doctorName || defaultDoctorName,
-                  clinicName:
-                    data.prescriptionData?.clinicName || defaultClinicName,
-                  appointmentDate:
-                    data.prescriptionData?.appointmentDate ||
-                    new Date().toISOString().split("T")[0],
-                  // IMPORTANTE: usar os dados de prescrição reais do formulário
-                  leftEye: data.prescriptionData?.leftEye || {
-                    sph: 0,
-                    cyl: 0,
-                    axis: 0,
-                  },
-                  rightEye: data.prescriptionData?.rightEye || {
-                    sph: 0,
-                    cyl: 0,
-                    axis: 0,
-                  },
-                  nd: data.prescriptionData?.nd || 0,
-                  oc: data.prescriptionData?.oc || 0,
-                  addition: data.prescriptionData?.addition || 0,
-                }
-              : {
-                  // Valores padrão para óculos solar
-                  doctorName: defaultDoctorName,
-                  clinicName: defaultClinicName,
-                  appointmentDate: new Date().toISOString().split("T")[0],
-                  leftEye: { sph: 0, cyl: 0, axis: 0 },
-                  rightEye: { sph: 0, cyl: 0, axis: 0 },
-                  nd: 0,
-                  oc: 0,
-                  addition: 0,
-                },
-          // Enviar campos opcionais normalmente
-          lensType:
-            data.glassesType === "prescription"
-              ? data.lensType
-              : "Não aplicável",
+          clientId: data.clientId,
+          employeeId: data.employeeId,
+          product: data.products, // Array de produtos
+          paymentMethod: data.paymentMethod,
+          paymentEntry: data.paymentEntry,
+          installments: data.installments,
+          orderDate: data.orderDate,
+          deliveryDate: data.deliveryDate,
+          status: data.status,
+          laboratoryId: data.laboratoryId && data.laboratoryId.trim() !== "" 
+            ? data.laboratoryId 
+            : undefined,
+          prescriptionData: {
+            doctorName: data.prescriptionData.doctorName || "Não aplicável",
+            clinicName: data.prescriptionData.clinicName || "Não aplicável",
+            appointmentDate: data.prescriptionData.appointmentDate || new Date().toISOString().split("T")[0],
+            leftEye: {
+              sph: data.prescriptionData.leftEye.sph,
+              cyl: data.prescriptionData.leftEye.cyl,
+              axis: data.prescriptionData.leftEye.axis,
+              pd: data.prescriptionData.leftEye.pd,
+            },
+            rightEye: {
+              sph: data.prescriptionData.rightEye.sph,
+              cyl: data.prescriptionData.rightEye.cyl,
+              axis: data.prescriptionData.rightEye.axis,
+              pd: data.prescriptionData.rightEye.pd,
+            },
+            nd: data.prescriptionData.nd,
+            oc: data.prescriptionData.oc,
+            addition: data.prescriptionData.addition,
+          },
+          observations: data.observations,
+          totalPrice: data.totalPrice,
+          discount: data.discount,
+          finalPrice: data.finalPrice,
         };
 
-        console.log("Dados enviados para API:", orderData);
-        console.log("Dados da receita:", orderData.prescriptionData);
-
-        return api.post("/api/orders", orderData);
-      } catch (error: unknown) {
-        // Correção do erro de linting usando 'unknown' em vez de 'any'
+        console.log("Enviando dados para API:", orderData);
+        const response = await api.post("/api/orders", orderData);
+        return response.data;
+      } catch (error: any) {
         let errorMessage = "Erro ao criar pedido. Tente novamente.";
-
-        // Tratamento seguro do tipo desconhecido
-        if (error && typeof error === "object" && "response" in error) {
-          const axiosError = error as {
-            response?: { data?: { message?: string } };
-          };
-          if (axiosError.response?.data?.message) {
-            errorMessage = axiosError.response.data.message;
-          }
-        } else if (error instanceof Error) {
+        
+        if (error.response && error.response.data && error.response.data.message) {
+          errorMessage = error.response.data.message;
+        } else if (error.message) {
           errorMessage = error.message;
         }
-
-        // Lançar um erro personalizado
+        
         throw new Error(errorMessage);
       }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
-        title: "Pedido criado",
-        description: "O pedido foi criado com sucesso.",
+        title: "Pedido criado com sucesso",
+        description: `O pedido foi registrado com o ID: ${data._id.substring(0, 8)}`,
       });
-
+      
+      // Salvar dados do pedido para gerar PDF
+      setSubmittedOrder(data);
+      
       // Mostrar opção de download do PDF
       setShowPdfDownload(true);
     },
     onError: (error: Error) => {
-      console.error("Erro ao criar pedido:", error);
-
       toast({
         variant: "destructive",
-        title: "Erro",
+        title: "Erro ao criar pedido",
         description: error.message,
       });
     },
   });
 
+  // Função principal para enviar o formulário
   const onSubmit = (data: OrderFormValues) => {
-    // Garantir que os campos da receita não sejam undefined
-    const orderData = {
-      ...data,
-      laboratoryId:
-        data.laboratoryId?.trim() === "" ? undefined : data.laboratoryId,
-      // Garantir que prescriptionData tem valores padrão mesmo se alguns campos não forem preenchidos
-      prescriptionData: {
-        doctorName: data.prescriptionData?.doctorName || "Não aplicável",
-        clinicName: data.prescriptionData?.clinicName || "Não aplicável",
-        appointmentDate:
-          data.prescriptionData?.appointmentDate ||
-          new Date().toISOString().split("T")[0],
-        leftEye: {
-          sph: data.prescriptionData?.leftEye?.sph ?? 0,
-          cyl: data.prescriptionData?.leftEye?.cyl ?? 0,
-          axis: data.prescriptionData?.leftEye?.axis ?? 0,
-        },
-        rightEye: {
-          sph: data.prescriptionData?.rightEye?.sph ?? 0,
-          cyl: data.prescriptionData?.rightEye?.cyl ?? 0,
-          axis: data.prescriptionData?.rightEye?.axis ?? 0,
-        },
-        nd: data.prescriptionData?.nd ?? 0,
-        oc: data.prescriptionData?.oc ?? 0,
-        addition: data.prescriptionData?.addition ?? 0,
-      },
-    };
+    // Validações adicionais antes de enviar
+    if (selectedProducts.length === 0) {
+      toast({
+        variant: "destructive",
+        title: "Erro de validação",
+        description: "É necessário adicionar pelo menos um produto."
+      });
+      return;
+    }
 
-    // Log para depuração
-    console.log("Dados processados para envio:", orderData);
-
-    createOrder.mutate(orderData);
+    // Enviar dados do formulário
+    createOrderMutation.mutate(data);
   };
 
   return (
-    <div className="max-w-3xl mx-auto p-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Novo Pedido</CardTitle>
-          <CardDescription>Crie um novo pedido de óculos</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {/* Mostrar informações do funcionário logado */}
-          {loggedEmployee && (
-            <div className="mb-6 p-3 bg-blue-50 rounded-md">
-              <p className="text-sm">
-                <span className="font-medium">Vendedor:</span>{" "}
-                {loggedEmployee.name}
-              </p>
-            </div>
-          )}
+    <div className="max-w-4xl mx-auto p-4 pb-20">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold">Novo Pedido</h1>
+        <p className="text-muted-foreground">Preencha os dados para criar um novo pedido</p>
+      </div>
 
-          {/* Se não estiver mostrando o PDF, mostra o formulário */}
+      {isLoadingProducts || isLoadingCustomers ? (
+        <div className="flex justify-center items-center h-64">
+          <div className="flex flex-col items-center">
+            <Loader2 className="h-8 w-8 animate-spin mb-2" />
+            <p className="text-muted-foreground">Carregando dados...</p>
+          </div>
+        </div>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>Formulário de Pedido</CardTitle>
+            <CardDescription>
+              Adicione produtos, informações do cliente e detalhes de pagamento
+            </CardDescription>
+          </CardHeader>
+
+          {/* Se não estiver mostrando o PDF, mostrar o formulário */}
           {!showPdfDownload ? (
-            <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-6"
-              >
-                {/* Busca de Cliente */}
-                <ClientSearch
-                  customers={customers}
-                  form={form}
-                  onClientSelect={handleClientSelect}
-                />
+            <CardContent className="space-y-6">
+              {/* Informações do Vendedor */}
+              {loggedEmployee && (
+                <div className="bg-blue-50 p-3 rounded-md">
+                  <p className="text-sm">
+                    <span className="font-medium">Vendedor:</span>{" "}
+                    {loggedEmployee.name}
+                  </p>
+                </div>
+              )}
 
-                {/* Tipo de produto */}
-                <FormField
-                  control={form.control}
-                  name="productType"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tipo de produto</FormLabel>
-                      <Select
-                        onValueChange={(value) => {
-                          field.onChange(value);
-                          setShowPrescription(value === "glasses");
-                        }}
-                        value={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione o tipo de produto" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="glasses">Óculos</SelectItem>
-                          <SelectItem value="lensCleaner">
-                            Limpa Lentes
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              <Form {...form}>
+                <form
+                  onSubmit={form.handleSubmit(onSubmit)}
+                  className="space-y-6"
+                >
+                  {/* Seção Cliente */}
+                  <div className="p-4 border rounded-md space-y-4">
+                    <h3 className="text-lg font-medium">Informações do Cliente</h3>
+                    
+                    <ClientSearch
+                      customers={customersData || []}
+                      form={form}
+                      onClientSelect={handleClientSelect}
+                    />
+                  </div>
 
-                {/* Tipo de Óculos */}
-                <FormField
-                  control={form.control}
-                  name="glassesType"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tipo de Óculos</FormLabel>
-                      <Select
-                        onValueChange={(value) => {
-                          field.onChange(value);
-                          setShowPrescription(value === "prescription");
-                        }}
-                        value={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione o tipo de óculos" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="prescription">
-                            Óculos de Grau
-                          </SelectItem>
-                          <SelectItem value="sunglasses">
-                            Óculos Solar
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                  {/* Seção Produtos */}
+                  <div className="p-4 border rounded-md space-y-4">
+                    <h3 className="text-lg font-medium">Produtos</h3>
+                    
+                    <ProductSearch
+                      products={productsData || []}
+                      form={form}
+                      onProductAdd={handleAddProduct}
+                      selectedProducts={selectedProducts}
+                    />
+                    
+                    <SelectedProductsList
+                      products={selectedProducts}
+                      onUpdatePrice={handleUpdateProductPrice}
+                      onRemoveProduct={handleRemoveProduct}
+                    />
+                    
+                    {/* Campos de preço total, desconto e preço final */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 p-3 bg-gray-50 rounded-md">
+                      <FormField
+                        control={form.control}
+                        name="totalPrice"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Preço Total</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                readOnly
+                                {...field}
+                                value={field.value || 0}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="discount"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Desconto</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                {...field}
+                                onChange={handleDiscountChange}
+                                value={field.value || 0}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="finalPrice"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Preço Final</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                readOnly
+                                {...field}
+                                className="font-bold"
+                                value={field.value || 0}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
 
-                {/* Descrição do Produto */}
-                <FormField
-                  control={form.control}
-                  name="product"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Descrição do Produto</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Descreva o produto" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                  {/* Seção de Pagamento */}
+                  <div className="p-4 border rounded-md space-y-4">
+                    <h3 className="text-lg font-medium">Informações de Pagamento</h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Forma de Pagamento */}
+                      <FormField
+                        control={form.control}
+                        name="paymentMethod"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Forma de Pagamento</FormLabel>
+                            <Select
+                              onValueChange={(value) => {
+                                field.onChange(value);
+                                setShowInstallments(
+                                  value === "credit" || value === "installment"
+                                );
+                              }}
+                              value={field.value}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Selecione a forma de pagamento" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="credit">
+                                  Cartão de Crédito
+                                </SelectItem>
+                                <SelectItem value="debit">
+                                  Cartão de Débito
+                                </SelectItem>
+                                <SelectItem value="cash">Dinheiro</SelectItem>
+                                <SelectItem value="pix">PIX</SelectItem>
+                                <SelectItem value="installment">Parcelado</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                {/* Armação de Óculos */}
-                <FormField
-                  control={form.control}
-                  name="glassesFrame"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Armação</FormLabel>
-                      <Select
-                        onValueChange={(value) => {
-                          field.onChange(value);
-                          setShowPrescription(value === "with");
-                        }}
-                        value={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Armação de óculos" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="with">Com</SelectItem>
-                          <SelectItem value="no">Sem</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                      {/* Valor de Entrada */}
+                      <FormField
+                        control={form.control}
+                        name="paymentEntry"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Valor de Entrada</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                placeholder="0.00"
+                                onChange={(e) => {
+                                  const value = Number.parseFloat(e.target.value);
+                                  field.onChange(Number.isNaN(value) ? 0 : value);
+                                }}
+                                value={field.value || 0}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
 
-                {/* Preço do Óculos */}
-                <FormField
-                  control={form.control}
-                  name="totalPrice"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Preço do Óculos</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          placeholder="0.00"
-                          onChange={(e) =>
-                            field.onChange(Number.parseFloat(e.target.value))
-                          }
-                          value={field.value || 0}
+                    {/* Campos condicionais para parcelas */}
+                    {showInstallments && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                        <FormField
+                          control={form.control}
+                          name="installments"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Número de Parcelas</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  min={1}
+                                  max={12}
+                                  placeholder="1"
+                                  onChange={(e) => {
+                                    const value = Number.parseInt(e.target.value);
+                                    field.onChange(Number.isNaN(value) ? 1 : value);
+                                  }}
+                                  value={field.value || ""}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
                         />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
 
-                {/* Forma de Pagamento */}
-                <FormField
-                  control={form.control}
-                  name="paymentMethod"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Forma de Pagamento</FormLabel>
-                      <Select
-                        onValueChange={(value) => {
-                          field.onChange(value);
-                          setShowInstallments(
-                            value === "credit" || value === "installment"
-                          );
-                        }}
-                        value={field.value || ""}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione a forma de pagamento" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="credit">
-                            Cartão de Crédito
-                          </SelectItem>
-                          <SelectItem value="debit">
-                            Cartão de Débito
-                          </SelectItem>
-                          <SelectItem value="cash">Dinheiro</SelectItem>
-                          <SelectItem value="pix">PIX</SelectItem>
-                          <SelectItem value="installment">Parcelado</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                        {/* Exibir valor das parcelas calculado */}
+                        {(form.watch("installments") ?? 0) > 0 && (
+                          <div className="flex items-end">
+                            <div className="p-3 bg-gray-50 rounded-md w-full">
+                              <p className="font-medium">
+                                Valor das parcelas:{" "}
+                                {formatCurrency(calculateInstallmentValue())}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
 
-                {/* Valor de Entrada (sempre mostrado) */}
-                <FormField
-                  control={form.control}
-                  name="paymentEntry"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Valor de Entrada</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          placeholder="0.00"
-                          onChange={(e) => {
-                            const value = Number.parseFloat(e.target.value);
-                            field.onChange(Number.isNaN(value) ? 0 : value);
-                          }}
-                          value={field.value || 0}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                  {/* Seção de Entrega */}
+                  <div className="p-4 border rounded-md space-y-4">
+                    <h3 className="text-lg font-medium">Informações de Entrega</h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Data do Pedido */}
+                      <FormField
+                        control={form.control}
+                        name="orderDate"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Data do Pedido</FormLabel>
+                            <FormControl>
+                              <Input type="date" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                {/* Campos condicionais para parcelas */}
-                {showInstallments && (
+                      {/* Data de Entrega */}
+                      <FormField
+                        control={form.control}
+                        name="deliveryDate"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Data de Entrega Prevista</FormLabel>
+                            <FormControl>
+                              <Input type="date" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Seção de Receita Médica (Sempre visível) */}
+                  <div className="p-4 border rounded-md space-y-4">
+                    <PrescriptionForm form={form as unknown as OrderFormReturn} />
+                    {/* <PrescriptionForm form={form} /> */}
+                  </div>
+
+                  {/* Observações */}
                   <FormField
                     control={form.control}
-                    name="installments"
+                    name="observations"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Número de Parcelas</FormLabel>
+                        <FormLabel>Observações</FormLabel>
                         <FormControl>
-                          <Input
-                            type="number"
-                            min={1}
-                            max={12}
-                            placeholder="1"
-                            onChange={(e) => {
-                              const value = Number.parseInt(e.target.value);
-                              field.onChange(Number.isNaN(value) ? 1 : value);
-                            }}
-                            value={field.value || ""}
+                          <Textarea
+                            placeholder="Observações sobre o pedido..."
+                            className="min-h-[100px]"
+                            {...field}
                           />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                )}
 
-                {/* Exibir valor das parcelas calculado */}
-                {showInstallments && (form.watch("installments") ?? 0) > 0 && (
-                  <div className="p-3 bg-gray-50 rounded-md mt-2">
-                    <p className="font-medium">
-                      Valor das parcelas: R$ {calculateInstallmentDisplay()}
-                    </p>
+                  {/* Botões de Ação */}
+                  <div className="flex justify-end space-x-4 pt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => router.back()}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button 
+                      type="submit" 
+                      disabled={createOrderMutation.isPending || selectedProducts.length === 0}
+                    >
+                      {createOrderMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Criando...
+                        </>
+                      ) : (
+                        "Criar Pedido"
+                      )}
+                    </Button>
                   </div>
-                )}
-
-                {/* Campos condicionais para óculos de grau */}
-                {showPrescription && (
-                  <>
-                    {/* Data de Entrega */}
-                    <FormField
-                      control={form.control}
-                      name="deliveryDate"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Data de Entrega</FormLabel>
-                          <FormControl>
-                            <Input type="date" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    {/* Tipo de Lente */}
-                    <FormField
-                      control={form.control}
-                      name="lensType"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Tipo de Lente</FormLabel>
-                          <FormControl>
-                            <LensTypeSelection form={form} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    {/* Dados da Receita */}
-                    <PrescriptionForm form={form} />
-                  </>
-                )}
-
-                {/* Observações */}
-                <FormField
-                  control={form.control}
-                  name="observations"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Observações</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Observações sobre o pedido..."
-                          className="min-h-[100px]"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Botões de Ação */}
-                <div className="flex justify-end space-x-4 pt-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => router.back()}
-                  >
-                    Cancelar
-                  </Button>
-                  <Button type="submit" disabled={createOrder.isPending}>
-                    {createOrder.isPending ? "Criando..." : "Criar Pedido"}
-                  </Button>
-                </div>
-              </form>
-            </Form>
+                </form>
+              </Form>
+            </CardContent>
           ) : (
             // Tela de sucesso com opção de download do PDF
-            <div className="mt-6 p-4 bg-green-50 rounded-md">
-              <h3 className="text-lg font-medium text-green-800 mb-2">
-                Pedido criado com sucesso!
-              </h3>
-              <p className="mb-4">
-                Você pode baixar o pedido em PDF para impressão.
-              </p>
-
-              <div className="flex flex-col space-y-2">
-                <OrderPdfGenerator
-                  formData={form.getValues()}
-                  customer={selectedCustomer}
-                />
-
-                <Button type="button" onClick={() => router.push("/orders")}>
-                  Voltar para Lista de Pedidos
-                </Button>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
+            <CardContent>
+              <div className="p-6 bg-green-50 rounded-lg">
+                <div className="flex flex-col items-center text-center mb-6">
+                  <div className="h-12 w-12 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-semibold text-green-800 mb-1">
+                    Pedido criado com sucesso!
+                  </h3>
+                  <p className="text-green-600">
+                    ID do pedido: {submittedOrder?._id.substring(0, 8)}
+                  </p>
+                </div>
+                
+                <div className="space-y-4">
+                  <p className="text-center mb-4">
+                    Você pode baixar o pedido em PDF para impressão ou prosseguir.
+                  </p>
+                  
+                  <OrderPdfGenerator
+                    formData={{
+                      ...form.getValues(),
+                      _id: submittedOrder?._id
+                    }}
+                    customer={selectedCustomer}
+                    />
+                  
+                    <div className="grid grid-cols-2 gap-4">
+                      <Button 
+                        type="button" 
+                        variant="outline"
+                        onClick={() => router.push("/orders")}
+                      >
+                        Ver Lista de Pedidos
+                      </Button>
+                      
+                      <Button 
+                        type="button"
+                        onClick={() => {
+                          form.reset();
+                          setSelectedProducts([]);
+                          setSelectedCustomer(null);
+                          setShowPdfDownload(false);
+                        }}
+                      >
+                        Criar Novo Pedido
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            )}
+  
+            {!showPdfDownload && (
+              <CardFooter className="border-t pt-6 flex-col space-y-4">
+                <Alert>
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>Atenção</AlertTitle>
+                  <AlertDescription>
+                    Ao criar um pedido, certifique-se de que todos os dados estão corretos.
+                    Após a criação, algumas informações não poderão ser modificadas.
+                  </AlertDescription>
+                </Alert>
+              </CardFooter>
+            )}
+          </Card>
+        )}
+      </div>
+    );
+  }

@@ -1,77 +1,104 @@
-import { Product } from "../schemas/ProductSchema";
-import type { IProduct, ICreateProductDTO } from "../interfaces/IProduct";
-import { type Document, Types, type FilterQuery } from "mongoose";
-
-interface ProductDocument extends Document {
-  _id: Types.ObjectId;
-  name: string;
-  category: string;
-  description: string;
-  image?: string | null; // Aceita string, null ou undefined
-  brand: string;
-  modelGlasses: string;
-  price: number;
-  stock: number;
-  createdAt: Date;
-  updatedAt: Date;
-}
+// apps/backend/src/models/ProductModel.ts
+import { Types, FilterQuery } from "mongoose";
+import { 
+  Product, 
+  Lens, 
+  CleanLens, 
+  PrescriptionFrame, 
+  SunglassesFrame 
+} from "../schemas/ProductSchema";
+import { 
+  IProduct, 
+  ILens, 
+  ICleanLens, 
+  IPrescriptionFrame, 
+  ISunglassesFrame,
+  ProductType
+} from "../interfaces/IProduct";
 
 export class ProductModel {
   private isValidId(id: string): boolean {
     return Types.ObjectId.isValid(id);
   }
 
-  async create(productData: ICreateProductDTO): Promise<IProduct> {
-    const product = new Product(productData);
-    const savedProduct = (await product.save()) as ProductDocument;
+  async create(productData: any): Promise<IProduct> {
+    let savedProduct;
+    
+    // Criar o produto usando o modelo apropriado
+    switch (productData.productType) {
+      case 'lenses':
+        savedProduct = await new Lens(productData).save();
+        break;
+      case 'clean_lenses':
+        savedProduct = await new CleanLens(productData).save();
+        break;
+      case 'prescription_frame':
+        savedProduct = await new PrescriptionFrame(productData).save();
+        break;
+      case 'sunglasses_frame':
+        savedProduct = await new SunglassesFrame(productData).save();
+        break;
+      default:
+        throw new Error(`Tipo de produto inválido: ${productData.productType}`);
+    }
+
     return this.convertToIProduct(savedProduct);
   }
 
   async findByName(name: string): Promise<IProduct | null> {
-    const product = (await Product.findOne({
+    const product = await Product.findOne({
       name: { $regex: new RegExp(`^${name}$`, "i") },
-    })) as ProductDocument | null;
+    });
+    
     return product ? this.convertToIProduct(product) : null;
   }
 
   async findById(id: string): Promise<IProduct | null> {
     if (!this.isValidId(id)) return null;
-    const product = (await Product.findById(id)) as ProductDocument | null;
+    
+    const product = await Product.findById(id);
     return product ? this.convertToIProduct(product) : null;
   }
 
   async findAll(
     page = 1,
     limit = 10,
-    filters: Partial<ICreateProductDTO> = {}
+    filters: Record<string, any> = {}
   ): Promise<{ products: IProduct[]; total: number }> {
     const skip = (page - 1) * limit;
 
     const query = Object.entries(filters).reduce((acc, [key, value]) => {
       if (value) acc[key] = value;
       return acc;
-    }, {} as FilterQuery<ProductDocument>);
+    }, {} as FilterQuery<any>);
 
-    const [products, total] = await Promise.all([
-      Product.find(query).skip(skip).limit(limit) as Promise<ProductDocument[]>,
+    // Usando Promise.all
+    const [productsResult, total] = await Promise.all([
+      Product.find(query).skip(skip).limit(limit),
       Product.countDocuments(query),
     ]);
 
     return {
-      products: products.map((product) => this.convertToIProduct(product)),
+      products: productsResult.map(product => this.convertToIProduct(product)),
       total,
     };
   }
 
   async update(
     id: string,
-    productData: Partial<ICreateProductDTO>
+    productData: Partial<IProduct>
   ): Promise<IProduct | null> {
     if (!this.isValidId(id)) return null;
+    
+    // Não permitimos alterar o tipo de produto
+    const updateData = { ...productData };
+    if (updateData.productType) {
+      delete updateData.productType;
+    }
 
     const product = await Product.findByIdAndUpdate(
       id,
-      { $set: productData },
+      { $set: updateData },
       {
         new: true,
         runValidators: true,
@@ -90,29 +117,56 @@ export class ProductModel {
     return this.convertToIProduct(product);
   }
 
-  async updateStock(id: string, quantity: number): Promise<IProduct | null> {
-    if (!this.isValidId(id)) return null;
-
-    const product = (await Product.findByIdAndUpdate(
-      id,
-      { $inc: { stock: quantity } },
-      { new: true, runValidators: true }
-    )) as ProductDocument | null;
-
-    return product ? this.convertToIProduct(product) : null;
-  }
-
-  private convertToIProduct(doc: ProductDocument): IProduct {
-    return {
-      _id: doc._id.toString(),
-      name: doc.name,
-      description: doc.description,
-      image: doc.image || undefined, // Converte null para undefined
-      brand: doc.brand,
-      modelGlasses: doc.modelGlasses,
-      price: doc.price,
-      stock: doc.stock,
-      category: doc.category,
+  private convertToIProduct(doc: any): IProduct {
+    // Obter valores brutos do documento MongoDB
+    const rawDoc = doc.toObject ? doc.toObject() : doc;
+    
+    // Preparar o produto base
+    const baseProduct: IProduct = {
+      _id: rawDoc._id.toString(),
+      productType: rawDoc.productType,
+      name: rawDoc.name,
+      description: rawDoc.description,
+      sellPrice: rawDoc.sellPrice,
+      image: rawDoc.image,
+      brand: rawDoc.brand,
+      costPrice: rawDoc.costPrice,
+      createdAt: rawDoc.createdAt,
+      updatedAt: rawDoc.updatedAt
     };
+
+    // Adicionar campos específicos com base no tipo
+    switch (rawDoc.productType) {
+      case 'lenses':
+        return {
+          ...baseProduct,
+          lensType: rawDoc.lensType
+        } as ILens;
+      
+      case 'clean_lenses':
+        return baseProduct as ICleanLens;
+      
+      case 'prescription_frame':
+        return {
+          ...baseProduct,
+          typeFrame: rawDoc.typeFrame,
+          color: rawDoc.color,
+          shape: rawDoc.shape,
+          reference: rawDoc.reference
+        } as IPrescriptionFrame;
+      
+      case 'sunglasses_frame':
+        return {
+          ...baseProduct,
+          modelSunglasses: rawDoc.model,
+          typeFrame: rawDoc.typeFrame,
+          color: rawDoc.color,
+          shape: rawDoc.shape,
+          reference: rawDoc.reference
+        } as ISunglassesFrame;
+      
+      default:
+        return baseProduct;
+    }
   }
 }

@@ -6,8 +6,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import type { UseFormReturn } from "react-hook-form";
-import type { OrderFormValues } from "@/app/types/form-types";
 
 // Definindo opções de tipo de lente para facilitar manutenção
 const LENS_TYPES = [
@@ -22,11 +22,11 @@ const LENS_TYPES = [
 ];
 
 interface LensTypeSelectionProps {
-  form: UseFormReturn<OrderFormValues>;
+  form: UseFormReturn<any>;
 }
 
 export default function LensTypeSelection({ form }: LensTypeSelectionProps) {
-  const [selectedType, setSelectedType] = useState<string>(
+  const [selectedType, setSelectedType] = useState(
     form.getValues("lensType") || ""
   );
 
@@ -46,17 +46,29 @@ export default function LensTypeSelection({ form }: LensTypeSelectionProps) {
   };
 
   return (
-    <Select value={selectedType} onValueChange={handleLensTypeChange}>
-      <SelectTrigger>
-        <SelectValue placeholder="Selecione o tipo de lente" />
-      </SelectTrigger>
-      <SelectContent>
-        {LENS_TYPES.map((type) => (
-          <SelectItem key={type.value} value={type.value}>
-            {type.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <FormField
+      control={form.control}
+      name="lensType"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>Tipo de Lente</FormLabel>
+          <Select onValueChange={handleLensTypeChange} value={selectedType}>
+            <FormControl>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o tipo de lente" />
+              </SelectTrigger>
+            </FormControl>
+            <SelectContent>
+              {LENS_TYPES.map((type) => (
+                <SelectItem key={type.value} value={type.value}>
+                  {type.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
   );
 }

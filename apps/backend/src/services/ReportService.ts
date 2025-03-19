@@ -68,9 +68,9 @@ export class ReportService {
         case "sales":
           data = await this.generateSalesReport(report.filters);
           break;
-        case "inventory":
-          data = await this.generateInventoryReport(report.filters);
-          break;
+        // case "inventory":
+        //   data = await this.generateInventoryReport(report.filters);
+        //   break;
         case "customers":
           data = await this.generateCustomersReport(report.filters);
           break;
@@ -162,57 +162,57 @@ export class ReportService {
     };
   }
 
-  private async generateInventoryReport(
-    filters: ReportFilters
-  ): Promise<InventoryReportData> {
-    const query: Record<string, unknown> = {};
+  // private async generateInventoryReport(
+  //   filters: ReportFilters
+  // ): Promise<InventoryReportData> {
+  //   const query: Record<string, unknown> = {};
 
-    if (filters.productCategory && filters.productCategory.length > 0) {
-      query.category = { $in: filters.productCategory };
-    }
+  //   if (filters.productCategory && filters.productCategory.length > 0) {
+  //     query.category = { $in: filters.productCategory };
+  //   }
 
-    // Dados por categoria
-    const categoryData = await Product.aggregate([
-      { $match: query },
-      {
-        $group: {
-          _id: "$category",
-          count: { $sum: 1 },
-          value: { $sum: { $multiply: ["$price", "$stock"] } },
-        },
-      },
-      { $sort: { value: -1 } },
-    ]);
+  //   // Dados por categoria
+  //   const categoryData = await Product.aggregate([
+  //     { $match: query },
+  //     {
+  //       $group: {
+  //         _id: "$category",
+  //         count: { $sum: 1 },
+  //         value: { $sum: { $multiply: ["$price", "$stock"] } },
+  //       },
+  //     },
+  //     { $sort: { value: -1 } },
+  //   ]);
 
-    const byCategory = categoryData.map((item) => ({
-      category: item._id,
-      count: item.count,
-      value: item.value,
-    }));
+  //   const byCategory = categoryData.map((item) => ({
+  //     category: item._id,
+  //     count: item.count,
+  //     value: item.value,
+  //   }));
 
-    // Produtos com estoque baixo
-    const lowStockProducts = await Product.find({ stock: { $lt: 5 } })
-      .select("_id name stock")
-      .limit(10)
-      .lean();
+  //   // Produtos com estoque baixo
+  //   const lowStockProducts = await Product.find({ stock: { $lt: 5 } })
+  //     .select("_id name stock")
+  //     .limit(10)
+  //     .lean();
 
-    const lowStock = lowStockProducts.map((product) => ({
-      productId: product._id.toString(),
-      name: product.name,
-      stock: product.stock,
-    }));
+  //   const lowStock = lowStockProducts.map((product) => ({
+  //     productId: product._id.toString(),
+  //     name: product.name,
+  //     stock: product.stock,
+  //   }));
 
-    // Calcular totais
-    const totalItems = byCategory.reduce((sum, item) => sum + item.count, 0);
-    const totalValue = byCategory.reduce((sum, item) => sum + item.value, 0);
+  //   // Calcular totais
+  //   const totalItems = byCategory.reduce((sum, item) => sum + item.count, 0);
+  //   const totalValue = byCategory.reduce((sum, item) => sum + item.value, 0);
 
-    return {
-      totalItems,
-      totalValue,
-      byCategory,
-      lowStock,
-    };
-  }
+  //   return {
+  //     totalItems,
+  //     totalValue,
+  //     byCategory,
+  //     lowStock,
+  //   };
+  // }
 
   private async generateCustomersReport(
     filters: ReportFilters

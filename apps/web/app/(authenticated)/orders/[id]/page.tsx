@@ -1,22 +1,27 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
+  CardFooter,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api } from "../../../services/authService";
-import OrderDetailsPDF from "../../../../components/Orders/exports/OrderDetailsPdf";
-import OrderLaboratoryUpdate from "../../../../components/Orders/OrderLaboratoryUpdate";
-import OrderStatusUpdate from "../../../../components/Orders/OrderStatusUpdate";
-import { Beaker } from "lucide-react";
+import OrderDetailsPDF from "@/components/Orders/exports/OrderDetailsPdf";
+import OrderLaboratoryUpdate from "@/components/Orders/OrderLaboratoryUpdate";
+import OrderStatusUpdate from "@/components/Orders/OrderStatusUpdate";
+import { Beaker, Calendar, FileText, User, CreditCard, Truck, ShoppingBag, ChevronLeft } from "lucide-react";
 import type { Order } from "@/app/types/order";
+import { formatCurrency, formatDate } from "@/app/utils/formatters";
+import { getProductTypeLabel } from "@/app/utils/product-utils";
 
 interface Laboratory {
   _id: string;
@@ -32,10 +37,12 @@ interface User {
   name: string;
   email: string;
   role?: string;
+  phone?: string;
 }
 
 export default function OrderDetailsPage() {
   const { id } = useParams();
+  const router = useRouter();
   const [order, setOrder] = useState<Order | null>(null);
   const [client, setClient] = useState<User | null>(null);
   const [employee, setEmployee] = useState<User | null>(null);
@@ -51,27 +58,13 @@ export default function OrderDetailsPage() {
 
       setOrder(orderData);
 
-      // Extrair dados do cliente usando RegExp
+      // Processar dados do cliente
       try {
         if (typeof orderData.clientId === "string") {
-          // Usando expressões regulares para extrair as informações
-          const nameMatch = orderData.clientId.match(/name: ['"](.+?)['"]/);
-          const emailMatch = orderData.clientId.match(/email: ['"](.+?)['"]/);
-          const idMatch = orderData.clientId.match(/ObjectId\(['"](.+?)['"]\)/);
-          const roleMatch = orderData.clientId.match(/role: ['"](.+?)['"]/);
-
-          if (nameMatch && emailMatch) {
-            setClient({
-              _id: idMatch ? idMatch[1] : "unknown-id",
-              name: nameMatch[1],
-              email: emailMatch[1],
-              role: roleMatch ? roleMatch[1] : undefined,
-            });
-          }
-        } else if (
-          typeof orderData.clientId === "object" &&
-          orderData.clientId !== null
-        ) {
+          // Tentativa de extrair dados do cliente de string
+          const response = await api.get(`/api/users/${orderData.clientId}`);
+          setClient(response.data);
+        } else if (typeof orderData.clientId === "object" && orderData.clientId !== null) {
           // Já é um objeto
           setClient(orderData.clientId);
         }
@@ -79,27 +72,13 @@ export default function OrderDetailsPage() {
         console.error("Erro ao processar dados do cliente:", error);
       }
 
-      // Extrair dados do funcionário usando RegExp
+      // Processar dados do funcionário
       try {
         if (typeof orderData.employeeId === "string") {
-          // Usando expressões regulares para extrair as informações
-          const nameMatch = orderData.employeeId.match(/name: ['"](.+?)['"]/);
-          const emailMatch = orderData.employeeId.match(/email: ['"](.+?)['"]/);
-          const idMatch = orderData.employeeId.match(
-            /ObjectId\(['"](.+?)['"]\)/
-          );
-
-          if (nameMatch && emailMatch) {
-            setEmployee({
-              _id: idMatch ? idMatch[1] : "unknown-id",
-              name: nameMatch[1],
-              email: emailMatch[1],
-            });
-          }
-        } else if (
-          typeof orderData.employeeId === "object" &&
-          orderData.employeeId !== null
-        ) {
+          // Tentativa de buscar dados do funcionário
+          const response = await api.get(`/api/users/${orderData.employeeId}`);
+          setEmployee(response.data);
+        } else if (typeof orderData.employeeId === "object" && orderData.employeeId !== null) {
           // Já é um objeto
           setEmployee(orderData.employeeId);
         }
@@ -108,40 +87,20 @@ export default function OrderDetailsPage() {
       }
 
       // Se o pedido tiver um laboratório associado, buscar seus detalhes
-      if (
-        orderData.laboratoryId &&
-        typeof orderData.laboratoryId === "string"
-      ) {
+      if (orderData.laboratoryId) {
         try {
-          // Verificar se é um ID ou uma string de objeto
-          if (orderData.laboratoryId.includes("ObjectId")) {
-            // Extrair o ID do laboratório usando regex
-            const idMatch = orderData.laboratoryId.match(
-              /ObjectId\(['"](.+?)['"]\)/
-            );
-            if (idMatch?.[1]) {
-              const labResponse = await api.get(
-                `/api/laboratories/${idMatch[1]}`
-              );
-              setLaboratoryInfo(labResponse.data);
-            }
-          } else {
-            // Já é um ID simples
-            const labResponse = await api.get(
-              `/api/laboratories/${orderData.laboratoryId}`
-            );
+          // Verificar o formato do laboratoryId
+          if (typeof orderData.laboratoryId === "string") {
+            const labResponse = await api.get(`/api/laboratories/${orderData.laboratoryId}`);
             setLaboratoryInfo(labResponse.data);
+          } else if (typeof orderData.laboratoryId === "object" && orderData.laboratoryId !== null) {
+            // O laboratório já veio como objeto no pedido
+            setLaboratoryInfo(orderData.laboratoryId as Laboratory);
           }
         } catch (labError) {
           console.error("Erro ao buscar informações do laboratório:", labError);
           setLaboratoryInfo(null);
         }
-      } else if (
-        typeof orderData.laboratoryId === "object" &&
-        orderData.laboratoryId !== null
-      ) {
-        // O laboratório já veio como objeto no pedido
-        setLaboratoryInfo(orderData.laboratoryId as Laboratory);
       } else {
         setLaboratoryInfo(null);
       }
@@ -157,6 +116,10 @@ export default function OrderDetailsPage() {
       fetchOrderDetails();
     }
   }, [id, fetchOrderDetails]);
+
+  const handleGoBack = () => {
+    router.back();
+  };
 
   if (loading) {
     return (
@@ -174,16 +137,6 @@ export default function OrderDetailsPage() {
     );
   }
 
-  // Função para formatar a data
-  const formatDate = (dateString?: string | Date) => {
-    if (!dateString) return "N/A";
-    return new Date(dateString).toLocaleDateString("pt-BR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
-  };
-
   // Função para obter o badge de status
   const getStatusBadge = (status: string) => {
     const statusMap: Record<string, { label: string; className: string }> = {
@@ -199,6 +152,10 @@ export default function OrderDetailsPage() {
       delivered: {
         label: "Entregue",
         className: "bg-purple-100 text-purple-800",
+      },
+      cancelled: {
+        label: "Cancelado",
+        className: "bg-red-100 text-red-800",
       },
     };
 
@@ -260,21 +217,6 @@ export default function OrderDetailsPage() {
     return `${prefix}${value.toFixed(2).replace(".", ",")}`;
   };
 
-  const getStatusClass = (status: string) => {
-    switch (status) {
-      case "pending":
-        return "text-yellow-600 bg-yellow-100 px-2 py-1 rounded";
-      case "in_production":
-        return "text-blue-600 bg-blue-100 px-2 py-1 rounded";
-      case "ready":
-        return "text-green-600 bg-green-100 px-2 py-1 rounded";
-      case "delivered":
-        return "text-purple-600 bg-purple-100 px-2 py-1 rounded";
-      default:
-        return "text-gray-600 bg-gray-100 px-2 py-1 rounded";
-    }
-  };
-
   // Função para traduzir o status para português
   const translateStatus = (status: string): string => {
     const statusMap: Record<string, string> = {
@@ -282,15 +224,29 @@ export default function OrderDetailsPage() {
       in_production: "Em Produção",
       ready: "Pronto",
       delivered: "Entregue",
+      cancelled: "Cancelado",
     };
 
     return statusMap[status] || status;
   };
 
+  // Determinar se o pedido tem produtos múltiplos
+  const hasMultipleProducts = Array.isArray(order.product) && order.product.length > 0;
+  
+  // Verificar se há dados de receita
+  const hasPrescriptionData = order.prescriptionData && 
+    order.prescriptionData.leftEye && 
+    order.prescriptionData.rightEye;
+
   return (
     <div className="space-y-6 max-w-4xl mx-auto p-4">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Detalhes do Pedido</h1>
+        <div className="flex items-center space-x-2">
+          <Button variant="ghost" size="icon" onClick={handleGoBack}>
+            <ChevronLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="text-2xl font-bold">Detalhes do Pedido</h1>
+        </div>
         <Badge variant="outline" className="text-sm px-3 py-1">
           {formatDate(order.createdAt)}
         </Badge>
@@ -299,246 +255,277 @@ export default function OrderDetailsPage() {
       <Card>
         <CardHeader className="pb-2">
           <div className="flex justify-between items-center">
-            <CardTitle>Pedido #{order._id}</CardTitle>
+            <CardTitle>Pedido #{order._id.substring(0, 8)}</CardTitle>
             {getStatusBadge(order.status || "")}
           </div>
           <CardDescription>
             Criado em {formatDate(order.createdAt)}
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Informações principais */}
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Coluna Cliente */}
-            <div className="space-y-4">
-              <h3 className="font-medium text-lg">Informações do Cliente</h3>
-              <div className="space-y-2 bg-gray-50 p-3 rounded-md">
-                <p className="text-sm">
-                  <span className="font-semibold">Nome:</span>{" "}
-                  {client ? client.name : "Cliente não encontrado"}
-                </p>
-                {client && (
-                  <p className="text-sm">
-                    <span className="font-semibold">Email:</span> {client.email}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Coluna Vendedor */}
-            <div className="space-y-4">
-              <h3 className="font-medium text-lg">Informações do Vendedor</h3>
-              <div className="space-y-2 bg-gray-50 p-3 rounded-md">
-                <p className="text-sm">
-                  <span className="font-semibold">Nome:</span>{" "}
-                  {employee ? employee.name : "Vendedor não encontrado"}
-                </p>
-                {employee && (
-                  <p className="text-sm">
-                    <span className="font-semibold">Email:</span>{" "}
-                    {employee.email}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Detalhes do Pedido */}
-          <div className="space-y-4">
-            <h3 className="font-medium text-lg">Detalhes do Produto</h3>
-            <div className="bg-gray-50 p-4 rounded-md">
-              <div className="space-y-2">
-                <p className="text-sm">
-                  <span className="font-semibold">Produto:</span>{" "}
-                  {order.product || "N/A"}
-                </p>
-                {order.observations && (
-                  <p className="text-sm">
-                    <span className="font-semibold">Descrição:</span>{" "}
-                    {order.observations}
-                  </p>
-                )}
-                <p className="text-sm">
-                  <span className="font-semibold">Tipo:</span>{" "}
-                  {order.glassesType === "prescription"
-                    ? "Óculos de Grau"
-                    : "Óculos Solar"}
-                </p>
-                {order.glassesType === "prescription" && (
-                  <>
-                    <p className="text-sm">
-                      <span className="font-semibold">Tipo de Lente:</span>{" "}
-                      {order.lensType || "N/A"}
-                    </p>
-                    <p className="text-sm">
-                      <span className="font-semibold">Data de Entrega:</span>{" "}
-                      {formatDate(order.deliveryDate)}
-                    </p>
-                  </>
-                )}
-                {order.observations && (
-                  <div className="mt-3">
-                    <p className="text-sm font-semibold">Observações:</p>
-                    <p className="text-sm bg-white p-2 rounded mt-1">
-                      {order.observations}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Status do Pedido */}
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="font-medium text-lg">Status do Pedido</h3>
-              {/* Componente para atualizar o status */}
-              <OrderStatusUpdate
-                order={order}
-                onUpdateSuccess={fetchOrderDetails}
-              />
-            </div>
-            <div className="bg-gray-50 p-4 rounded-md">
-              <div className="flex items-center">
-                <div className={getStatusClass(order.status)}>
-                  {translateStatus(order.status)}
-                </div>
-                <div className="ml-4 text-sm text-muted-foreground">
-                  {order.status === "pending" &&
-                    "O pedido está aguardando processamento"}
-                  {order.status === "in_production" &&
-                    "O pedido está sendo produzido"}
-                  {order.status === "ready" &&
-                    "O pedido está pronto para retirada"}
-                  {order.status === "delivered" &&
-                    "O pedido foi entregue ao cliente"}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Laboratório (apenas para óculos de grau) */}
-          {order.glassesType === "prescription" && (
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h3 className="font-medium text-lg flex items-center gap-2">
-                  <Beaker className="h-5 w-5" /> Laboratório
-                </h3>
-                {/* Componente para atualizar laboratório */}
-                <OrderLaboratoryUpdate
-                  order={order}
-                  onUpdateSuccess={fetchOrderDetails}
-                />
-              </div>
-
-              {laboratoryInfo ? (
-                <div className="bg-gray-50 p-4 rounded-md">
-                  <div className="space-y-2">
+        
+        <CardContent>
+          <Tabs defaultValue="details" className="w-full">
+            <TabsList className="mb-4">
+              <TabsTrigger value="details">
+                <ShoppingBag className="h-4 w-4 mr-2" />
+                Detalhes
+              </TabsTrigger>
+              {hasPrescriptionData && (
+                <TabsTrigger value="prescription">
+                  <FileText className="h-4 w-4 mr-2" />
+                  Receita
+                </TabsTrigger>
+              )}
+              {laboratoryInfo && (
+                <TabsTrigger value="laboratory">
+                  <Beaker className="h-4 w-4 mr-2" />
+                  Laboratório
+                </TabsTrigger>
+              )}
+            </TabsList>
+            
+            <TabsContent value="details" className="space-y-6">
+              {/* Informações principais */}
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* Coluna Cliente */}
+                <div className="space-y-4">
+                  <h3 className="font-medium text-lg flex items-center">
+                    <User className="h-5 w-5 mr-2" />
+                    Informações do Cliente
+                  </h3>
+                  <div className="space-y-2 bg-gray-50 p-3 rounded-md">
                     <p className="text-sm">
                       <span className="font-semibold">Nome:</span>{" "}
-                      {laboratoryInfo.name}
+                      {client ? client.name : "Cliente não encontrado"}
                     </p>
-                    {laboratoryInfo.contactName && (
+                    {client && (
+                      <>
+                        <p className="text-sm">
+                          <span className="font-semibold">Email:</span> {client.email}
+                        </p>
+                        {client.phone && (
+                          <p className="text-sm">
+                            <span className="font-semibold">Telefone:</span> {client.phone}
+                          </p>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Coluna Vendedor */}
+                <div className="space-y-4">
+                  <h3 className="font-medium text-lg flex items-center">
+                    <User className="h-5 w-5 mr-2" />
+                    Informações do Vendedor
+                  </h3>
+                  <div className="space-y-2 bg-gray-50 p-3 rounded-md">
+                    <p className="text-sm">
+                      <span className="font-semibold">Nome:</span>{" "}
+                      {employee ? employee.name : "Vendedor não encontrado"}
+                    </p>
+                    {employee && (
                       <p className="text-sm">
-                        <span className="font-semibold">Contato:</span>{" "}
-                        {laboratoryInfo.contactName}
+                        <span className="font-semibold">Email:</span>{" "}
+                        {employee.email}
                       </p>
                     )}
-                    {laboratoryInfo.phone && (
-                      <p className="text-sm">
-                        <span className="font-semibold">Telefone:</span>{" "}
-                        {laboratoryInfo.phone}
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Detalhes dos Produtos */}
+              <div className="space-y-4">
+                <h3 className="font-medium text-lg flex items-center">
+                  <ShoppingBag className="h-5 w-5 mr-2" />
+                  Detalhes dos Produtos
+                </h3>
+                <div className="bg-gray-50 p-4 rounded-md">
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="text-left text-sm font-semibold border-b">
+                          <th className="pb-2">Produto</th>
+                          <th className="pb-2">Tipo</th>
+                          <th className="pb-2 text-right">Preço</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {hasMultipleProducts ? (
+                          // Renderizar múltiplos produtos
+                          order.product.map((product, index) => (
+                            <tr key={product._id || index} className="border-b">
+                              <td className="py-2">{product.name}</td>
+                              <td className="py-2">{getProductTypeLabel(product.productType)}</td>
+                              <td className="py-2 text-right">{formatCurrency(product.sellPrice || 0)}</td>
+                            </tr>
+                          ))
+                        ) : (
+                          // Fallback para um único produto (para compatibilidade)
+                          <tr className="border-b">
+                            <td className="py-2">
+                              {typeof order.product === 'string'
+                                ? order.product
+                                : (order.product as any)?.name || 'N/A'}
+                            </td>
+                            <td className="py-2">
+                              {typeof order.product === 'object' && (order.product as any)?.productType
+                                ? getProductTypeLabel((order.product as any).productType)
+                                : 'N/A'}
+                            </td>
+                            <td className="py-2 text-right">
+                              {formatCurrency(typeof order.product === 'object'
+                                ? (order.product as any)?.sellPrice || 0
+                                : 0)}
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                      <tfoot>
+                        <tr className="font-semibold">
+                          <td colSpan={2} className="pt-3 text-right">Total:</td>
+                          <td className="pt-3 text-right">{formatCurrency(order.totalPrice)}</td>
+                        </tr>
+                        <tr>
+                          <td colSpan={2} className="pt-1 text-right">Desconto:</td>
+                          <td className="pt-1 text-right text-red-600">-{formatCurrency(order.discount || 0)}</td>
+                        </tr>
+                        <tr className="font-bold text-lg">
+                          <td colSpan={2} className="pt-2 text-right">Preço Final:</td>
+                          <td className="pt-2 text-right text-green-700">{formatCurrency(order.finalPrice || order.totalPrice)}</td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+
+                  {order.observations && (
+                    <div className="mt-4 pt-3 border-t">
+                      <p className="text-sm font-semibold">Observações:</p>
+                      <p className="text-sm bg-white p-2 rounded mt-1">
+                        {order.observations}
                       </p>
-                    )}
-                    <div className="text-sm">
-                      <span className="font-semibold">Status:</span>{" "}
-                      <Badge
-                        variant={
-                          laboratoryInfo.isActive ? "outline" : "destructive"
-                        }
-                      >
-                        {laboratoryInfo.isActive ? "Ativo" : "Inativo"}
-                      </Badge>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Status do Pedido */}
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="font-medium text-lg flex items-center">
+                    <Truck className="h-5 w-5 mr-2" />
+                    Status do Pedido
+                  </h3>
+                  {/* Componente para atualizar o status */}
+                  <OrderStatusUpdate
+                    order={order}
+                    onUpdateSuccess={fetchOrderDetails}
+                  />
+                </div>
+                <div className="bg-gray-50 p-4 rounded-md">
+                  <div className="flex items-center">
+                    <Badge className={getStatusBadge(order.status).className}>
+                      {translateStatus(order.status)}
+                    </Badge>
+                    <div className="ml-4 text-sm text-muted-foreground">
+                      {order.status === "pending" &&
+                        "O pedido está aguardando processamento"}
+                      {order.status === "in_production" &&
+                        "O pedido está sendo produzido"}
+                      {order.status === "ready" &&
+                        "O pedido está pronto para retirada"}
+                      {order.status === "delivered" &&
+                        "O pedido foi entregue ao cliente"}
+                      {order.status === "cancelled" &&
+                        "O pedido foi cancelado"}
                     </div>
                   </div>
                 </div>
-              ) : (
-                <div className="bg-gray-50 p-4 rounded-md text-center">
-                  <p className="text-sm text-muted-foreground">
-                    Nenhum laboratório associado a este pedido.
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
+              </div>
 
-          <Separator />
+              <Separator />
 
-          {/* Informações de Pagamento */}
-          <div className="space-y-4">
-            <h3 className="font-medium text-lg">Informações de Pagamento</h3>
-            <div className="bg-gray-50 p-4 rounded-md">
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm">
-                    <span className="font-semibold">Método de Pagamento:</span>{" "}
-                    {getPaymentMethodText(order.paymentMethod)}
-                  </p>
-                  {(order.paymentEntry || 0) > 0 && (
-                    <p className="text-sm">
-                      <span className="font-semibold">Entrada:</span> R${" "}
-                      {(order.paymentEntry || 0).toFixed(2)}
-                    </p>
-                  )}
-                  {(order.installments || 0) > 0 && (
-                    <p className="text-sm">
-                      <span className="font-semibold">Parcelas:</span>{" "}
-                      {order.installments}x
-                    </p>
-                  )}
-                </div>
-                <div className="md:text-right">
-                  <p className="text-sm font-semibold">Valor Total:</p>
-                  <p className="text-2xl font-bold text-green-700">
-                    R$ {(order.totalPrice || 0).toFixed(2)}
-                  </p>
+              {/* Informações de Pagamento */}
+              <div className="space-y-4">
+                <h3 className="font-medium text-lg flex items-center">
+                  <CreditCard className="h-5 w-5 mr-2" />
+                  Informações de Pagamento
+                </h3>
+                <div className="bg-gray-50 p-4 rounded-md">
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm">
+                        <span className="font-semibold">Método de Pagamento:</span>{" "}
+                        {getPaymentMethodText(order.paymentMethod)}
+                      </p>
+                      {(order.paymentEntry || 0) > 0 && (
+                        <p className="text-sm">
+                          <span className="font-semibold">Entrada:</span>{" "}
+                          {formatCurrency(order.paymentEntry || 0)}
+                        </p>
+                      )}
+                      {(order.installments || 0) > 0 && (
+                        <p className="text-sm">
+                          <span className="font-semibold">Parcelas:</span>{" "}
+                          {order.installments}x
+                        </p>
+                      )}
+                    </div>
+                    <div className="md:text-right">
+                      <div className="space-y-1">
+                        <p className="text-sm font-semibold">Total:</p>
+                        <p className="text-xl font-bold">
+                          {formatCurrency(order.totalPrice || 0)}
+                        </p>
+                        {(order.discount || 0) > 0 && (
+                          <>
+                            <p className="text-sm font-semibold">Desconto:</p>
+                            <p className="text-sm text-red-600">
+                              -{formatCurrency(order.discount || 0)}
+                            </p>
+                          </>
+                        )}
+                        <p className="text-sm font-semibold mt-2">Preço Final:</p>
+                        <p className="text-2xl font-bold text-green-700">
+                          {formatCurrency(order.finalPrice || order.totalPrice || 0)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
+            </TabsContent>
 
-          <Separator />
+            {/* Aba da Receita Médica */}
+            {hasPrescriptionData && (
+              <TabsContent value="prescription" className="space-y-6">
+                <div className="space-y-4">
+                  <h3 className="font-medium text-lg flex items-center">
+                    <FileText className="h-5 w-5 mr-2" />
+                    Receita Médica
+                  </h3>
+                  <div className="bg-gray-50 p-4 rounded-md">
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-3 gap-4">
+                        <p className="text-sm">
+                          <span className="font-semibold">Médico:</span>{" "}
+                          {order.prescriptionData?.doctorName || "N/A"}
+                        </p>
+                        <p className="text-sm">
+                          <span className="font-semibold">Clínica:</span>{" "}
+                          {order.prescriptionData?.clinicName || "N/A"}
+                        </p>
+                        <p className="text-sm">
+                          <span className="font-semibold">Data da Consulta:</span>{" "}
+                          {formatDate(order.prescriptionData?.appointmentDate)}
+                        </p>
+                      </div>
 
-          {/* Receita médica (somente se for óculos de grau) */}
-          {order.prescriptionData && order.glassesType === "prescription" && (
-            <div className="space-y-4">
-              <h3 className="font-medium text-lg">Receita Médica</h3>
-              <div className="bg-gray-50 p-4 rounded-md">
-                <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-4">
-                    <p className="text-sm">
-                      <span className="font-semibold">Médico:</span>{" "}
-                      {order.prescriptionData.doctorName || "N/A"}
-                    </p>
-                    <p className="text-sm">
-                      <span className="font-semibold">Clínica:</span>{" "}
-                      {order.prescriptionData.clinicName || "N/A"}
-                    </p>
-                  </div>
-                  <p className="text-sm">
-                    <span className="font-semibold">Data da Consulta:</span>{" "}
-                    {formatDate(order.prescriptionData.appointmentDate)}
-                  </p>
-
-                  {/* Tabela de receita */}
-                  {order.prescriptionData.leftEye &&
-                    order.prescriptionData.rightEye && (
+                      {/* Tabela de receita */}
                       <div className="mt-3 overflow-x-auto">
                         <table className="min-w-full bg-white border border-gray-200 text-sm">
                           <thead>
@@ -547,10 +534,11 @@ export default function OrderDetailsPage() {
                               <th className="py-2 px-3 text-center">Esf.</th>
                               <th className="py-2 px-3 text-center">Cil.</th>
                               <th className="py-2 px-3 text-center">Eixo</th>
+                              <th className="py-2 px-3 text-center">PD</th>
                             </tr>
                           </thead>
                           <tbody>
-                            {order.prescriptionData.leftEye && (
+                            {order.prescriptionData?.leftEye && (
                               <tr className="border-t border-gray-200">
                                 <td className="py-2 px-3 font-medium">
                                   Esquerdo
@@ -566,13 +554,15 @@ export default function OrderDetailsPage() {
                                   )}
                                 </td>
                                 <td className="py-2 px-3 text-center">
-                                  {order.prescriptionData.leftEye.axis || "N/A"}
-                                  °
+                                  {order.prescriptionData.leftEye.axis || "N/A"}°
+                                </td>
+                                <td className="py-2 px-3 text-center">
+                                  {order.prescriptionData.leftEye.pd || "N/A"}
                                 </td>
                               </tr>
                             )}
 
-                            {order.prescriptionData.rightEye && (
+                            {order.prescriptionData?.rightEye && (
                               <tr className="border-t border-gray-200">
                                 <td className="py-2 px-3 font-medium">
                                   Direito
@@ -588,56 +578,121 @@ export default function OrderDetailsPage() {
                                   )}
                                 </td>
                                 <td className="py-2 px-3 text-center">
-                                  {order.prescriptionData.rightEye.axis ||
-                                    "N/A"}
-                                  °
+                                  {order.prescriptionData.rightEye.axis || "N/A"}°
+                                </td>
+                                <td className="py-2 px-3 text-center">
+                                  {order.prescriptionData.rightEye.pd || "N/A"}
                                 </td>
                               </tr>
                             )}
                           </tbody>
                           <tfoot>
                             <tr className="bg-gray-100">
-                              <th className="py-2 px-3 text-left" colSpan={4}>
+                              <th className="py-2 px-3 text-left" colSpan={5}>
                                 Informações adicionais
                               </th>
                             </tr>
                             <tr>
                               <td className="py-2 px-3 font-medium">D.N.P.</td>
-                              <td className="py-2 px-3 text-center" colSpan={3}>
-                                {order.prescriptionData.nd || "N/A"}
+                              <td className="py-2 px-3 text-center" colSpan={4}>
+                                {order.prescriptionData?.nd || "N/A"}
                               </td>
                             </tr>
                             <tr>
                               <td className="py-2 px-3 font-medium">C.O.</td>
-                              <td className="py-2 px-3 text-center" colSpan={3}>
-                                {order.prescriptionData.oc || "N/A"}
+                              <td className="py-2 px-3 text-center" colSpan={4}>
+                                {order.prescriptionData?.oc || "N/A"}
                               </td>
                             </tr>
                             <tr>
                               <td className="py-2 px-3 font-medium">Adição</td>
-                              <td className="py-2 px-3 text-center" colSpan={3}>
-                                {order.prescriptionData.addition || "N/A"}
+                              <td className="py-2 px-3 text-center" colSpan={4}>
+                                {order.prescriptionData?.addition || "N/A"}
                               </td>
                             </tr>
                           </tfoot>
                         </table>
                       </div>
-                    )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-          )}
+              </TabsContent>
+            )}
+
+            {/* Aba de Laboratório */}
+            {laboratoryInfo && (
+              <TabsContent value="laboratory" className="space-y-6">
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h3 className="font-medium text-lg flex items-center">
+                      <Beaker className="h-5 w-5 mr-2" /> Laboratório
+                    </h3>
+                    {/* Componente para atualizar laboratório */}
+                    <OrderLaboratoryUpdate
+                      order={order}
+                      onUpdateSuccess={fetchOrderDetails}
+                    />
+                  </div>
+
+                  <div className="bg-gray-50 p-4 rounded-md">
+                    <div className="space-y-2">
+                      <p className="text-sm">
+                        <span className="font-semibold">Nome:</span>{" "}
+                        {laboratoryInfo.name}
+                      </p>
+                      {laboratoryInfo.contactName && (
+                        <p className="text-sm">
+                          <span className="font-semibold">Contato:</span>{" "}
+                          {laboratoryInfo.contactName}
+                        </p>
+                      )}
+                      {laboratoryInfo.phone && (
+                        <p className="text-sm">
+                          <span className="font-semibold">Telefone:</span>{" "}
+                          {laboratoryInfo.phone}
+                        </p>
+                      )}
+                      {laboratoryInfo.email && (
+                        <p className="text-sm">
+                          <span className="font-semibold">Email:</span>{" "}
+                          {laboratoryInfo.email}
+                        </p>
+                      )}
+                      <div className="text-sm mt-2">
+                        <span className="font-semibold">Status:</span>{" "}
+                        <Badge
+                          variant={
+                            laboratoryInfo.isActive ? "outline" : "destructive"
+                          }
+                        >
+                          {laboratoryInfo.isActive ? "Ativo" : "Inativo"}
+                        </Badge>
+                      </div>
+
+                      <div className="mt-4 pt-2 border-t">
+                        <p className="text-sm text-muted-foreground">
+                          Data de entrega prevista: <span className="font-medium">{formatDate(order.deliveryDate)}</span>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+            )}
+          </Tabs>
         </CardContent>
-      </Card>
-      <Card>
-        <CardContent className="pt-6">
-          <h3 className="text-lg font-medium mb-4">Exportar Pedido</h3>
+        
+        <CardFooter className="border-t pt-6 flex justify-between">
+          <Button variant="outline" onClick={handleGoBack}>
+            Voltar para Pedidos
+          </Button>
+          
           <OrderDetailsPDF
             order={order}
             clientName={client ? client.name : "Cliente não encontrado"}
             employeeName={employee ? employee.name : "Vendedor não encontrado"}
           />
-        </CardContent>
+        </CardFooter>
       </Card>
     </div>
   );

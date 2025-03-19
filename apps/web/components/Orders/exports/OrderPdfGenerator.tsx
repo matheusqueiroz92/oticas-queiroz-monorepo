@@ -10,35 +10,8 @@ import {
 import { Button } from "@/components/ui/button";
 import LogoImage from "../../../public/logo-oticas-queiroz.png";
 import type { Customer } from "../../../app/types/customer";
-
-// Interface para os dados do formulário
-interface OrderFormData {
-  _id?: string;
-  clientId: string;
-  customClientName?: string;
-  employeeId: string;
-  productType: "glasses" | "lensCleaner";
-  product: string;
-  glassesType: "prescription" | "sunglasses";
-  paymentMethod: string;
-  paymentEntry?: number;
-  installments?: number;
-  deliveryDate?: string;
-  status: string;
-  lensType?: string;
-  observations?: string;
-  totalPrice: number;
-  prescriptionData?: {
-    doctorName?: string; // Mudado para opcional
-    clinicName?: string; // Mudado para opcional
-    appointmentDate?: string; // Mudado para opcional
-    leftEye: { sph: number; cyl: number; axis: number };
-    rightEye: { sph: number; cyl: number; axis: number };
-    nd: number;
-    oc: number;
-    addition: number;
-  };
-}
+import type { Product } from "../../../app/types/product";
+import type { OrderFormValues } from "@/app/types/form-types";
 
 // Dados da empresa
 const companyInfo = {
@@ -144,6 +117,31 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 3,
   },
+  tableCellRight: {
+    flex: 1,
+    padding: 3,
+    textAlign: "right",
+  },
+  totalRow: {
+    flexDirection: "row",
+    borderTopWidth: 1,
+    borderTopColor: "#000",
+    borderTopStyle: "solid",
+    padding: 5,
+    fontWeight: "bold",
+  },
+  discountRow: {
+    flexDirection: "row",
+    padding: 5,
+  },
+  finalRow: {
+    flexDirection: "row",
+    borderTopWidth: 1,
+    borderTopColor: "#000",
+    borderTopStyle: "solid",
+    padding: 5,
+    fontWeight: "bold",
+  },
   prescriptionTable: {
     marginTop: 5,
     marginBottom: 5,
@@ -219,8 +217,21 @@ const styles = StyleSheet.create({
   },
 });
 
+// Função para obter o rótulo do tipo de produto
+const getProductTypeLabel = (type?: string): string => {
+  const types: Record<string, string> = {
+    lenses: "Lentes",
+    clean_lenses: "Limpa-lentes",
+    prescription_frame: "Armação de grau",
+    sunglasses_frame: "Armação solar"
+  };
+  
+  if (!type) return "Não especificado";
+  return types[type] || type;
+};
+
 interface OrderPDFProps {
-  data: OrderFormData;
+  data: OrderFormValues & { _id?: string };
   customer: Customer | null;
 }
 
@@ -237,7 +248,7 @@ const OrderPDF = ({ data, customer }: OrderPDFProps) => {
 
   // Calcular valor da parcela com verificação para valores undefined
   const calculateInstallmentValue = () => {
-    const totalPrice = data.totalPrice || 0;
+    const totalPrice = data.finalPrice || 0;
     const installments = data.installments || 1;
     const paymentEntry = data.paymentEntry || 0;
 
@@ -245,11 +256,19 @@ const OrderPDF = ({ data, customer }: OrderPDFProps) => {
     return remainingAmount <= 0 ? 0 : remainingAmount / installments;
   };
 
+  // Formatar valores monetários
+  const formatCurrency = (value: number) => {
+    return `R$ ${value.toFixed(2).replace(".", ",")}`;
+  };
+
   // Formatar números dos graus
   const formatRefractionValue = (value: number) => {
     const prefix = value > 0 ? "+" : "";
     return `${prefix}${value.toFixed(2)}`;
   };
+
+  // Verificar se há produtos selecionados
+  const hasProducts = Array.isArray(data.products) && data.products.length > 0;
 
   return (
     <Document>
@@ -277,7 +296,7 @@ const OrderPDF = ({ data, customer }: OrderPDFProps) => {
           <Text style={styles.orderNumber}>Pedido #: {data._id}</Text>
         )}
 
-        <Text style={styles.title}>PEDIDO DE ÓCULOS</Text>
+        <Text style={styles.title}>PEDIDO</Text>
 
         {/* Dados do Cliente */}
         <View style={styles.section}>
@@ -285,7 +304,7 @@ const OrderPDF = ({ data, customer }: OrderPDFProps) => {
           <View style={styles.row}>
             <Text style={styles.label}>Nome:</Text>
             <Text style={styles.value}>
-              {customer?.name || data.customClientName || "N/A"}
+              {customer?.name || "N/A"}
             </Text>
           </View>
           <View style={styles.row}>
@@ -302,45 +321,69 @@ const OrderPDF = ({ data, customer }: OrderPDFProps) => {
           </View>
         </View>
 
-        {/* Dados do Pedido */}
+        {/* Dados do Pedido e Produtos */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>DETALHES DO PEDIDO</Text>
           <View style={styles.row}>
             <Text style={styles.label}>Data do Pedido:</Text>
             <Text style={styles.value}>
-              {formatDate(new Date().toISOString())}
+              {formatDate(data.orderDate)}
             </Text>
           </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Produto:</Text>
-            <Text style={styles.value}>{data.product}</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Tipo de Óculos:</Text>
-            <Text style={styles.value}>
-              {data.glassesType === "prescription"
-                ? "Óculos de Grau"
-                : "Óculos Solar"}
-            </Text>
-          </View>
-
-          {data.glassesType === "prescription" && (
-            <>
-              <View style={styles.row}>
-                <Text style={styles.label}>Data de Entrega:</Text>
-                <Text style={styles.value}>
-                  {formatDate(data.deliveryDate)}
-                </Text>
-              </View>
-              <View style={styles.row}>
-                <Text style={styles.label}>Tipo de Lente:</Text>
-                <Text style={styles.value}>{data.lensType || "N/A"}</Text>
-              </View>
-            </>
+          {data.deliveryDate && (
+            <View style={styles.row}>
+              <Text style={styles.label}>Data de Entrega Prevista:</Text>
+              <Text style={styles.value}>
+                {formatDate(data.deliveryDate)}
+              </Text>
+            </View>
           )}
 
+          {/* Tabela de Produtos */}
+          {hasProducts && (
+            <View style={styles.table}>
+              <Text style={{ fontWeight: "bold", marginBottom: 5 }}>
+                PRODUTOS
+              </Text>
+              <View style={styles.tableRow}>
+                <Text style={[styles.tableCell, styles.tableHeader]}>Produto</Text>
+                <Text style={[styles.tableCell, styles.tableHeader]}>Tipo</Text>
+                <Text style={[styles.tableCellRight, styles.tableHeader]}>Preço</Text>
+              </View>
+              
+              {data.products.map((product, index) => (
+                <View style={styles.tableRow} key={`${index}-${product._id || 'unknown'}`}>
+                  <Text style={styles.tableCell}>{product.name}</Text>
+                  <Text style={styles.tableCell}>{getProductTypeLabel(product.productType)}</Text>
+                  <Text style={styles.tableCellRight}>{formatCurrency(product.sellPrice || 0)}</Text>
+                </View>
+              ))}
+              
+              <View style={styles.totalRow}>
+                <Text style={[styles.tableCell, { flex: 2 }]}>Total:</Text>
+                <Text style={styles.tableCellRight}>{formatCurrency(data.totalPrice || 0)}</Text>
+              </View>
+              
+              {(data.discount > 0) && (
+                <View style={styles.discountRow}>
+                  <Text style={[styles.tableCell, { flex: 2 }]}>Desconto:</Text>
+                  <Text style={styles.tableCellRight}>-{formatCurrency(data.discount)}</Text>
+                </View>
+              )}
+              
+              <View style={styles.finalRow}>
+                <Text style={[styles.tableCell, { flex: 2 }]}>Preço Final:</Text>
+                <Text style={styles.tableCellRight}>{formatCurrency(data.finalPrice)}</Text>
+              </View>
+            </View>
+          )}
+
+          {/* Informações de Pagamento */}
+          <Text style={{ fontWeight: "bold", marginTop: 10, marginBottom: 5 }}>
+            FORMA DE PAGAMENTO
+          </Text>
           <View style={styles.row}>
-            <Text style={styles.label}>Forma de Pagamento:</Text>
+            <Text style={styles.label}>Método:</Text>
             <Text style={styles.value}>
               {data.paymentMethod === "credit" && "Cartão de Crédito"}
               {data.paymentMethod === "debit" && "Cartão de Débito"}
@@ -354,42 +397,36 @@ const OrderPDF = ({ data, customer }: OrderPDFProps) => {
             <View style={styles.row}>
               <Text style={styles.label}>Valor de Entrada:</Text>
               <Text style={styles.value}>
-                R$ {(data.paymentEntry ?? 0).toFixed(2)}
+                {formatCurrency(data.paymentEntry || 0)}
               </Text>
             </View>
           )}
 
-          {(data.installments ?? 0) > 0 && (
+          {data.installments && data.installments > 0 && (
             <View style={styles.row}>
               <Text style={styles.label}>Parcelas:</Text>
               <Text style={styles.value}>
-                {data.installments}x de R${" "}
-                {calculateInstallmentValue().toFixed(2)}
+                {data.installments}x de {formatCurrency(calculateInstallmentValue())}
               </Text>
             </View>
           )}
-
-          <View style={styles.row}>
-            <Text style={styles.label}>Preço Total:</Text>
-            <Text style={styles.value}>R$ {data.totalPrice.toFixed(2)}</Text>
-          </View>
         </View>
 
-        {/* Receita (apenas para óculos de grau) - Formato de tabela para laboratório */}
-        {data.glassesType === "prescription" && data.prescriptionData && (
+        {/* Receita Médica */}
+        {data.prescriptionData && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>INFORMAÇÕES DA RECEITA</Text>
+            <Text style={styles.sectionTitle}>RECEITA MÉDICA</Text>
 
             <View style={styles.row}>
               <Text style={styles.label}>Médico:</Text>
               <Text style={styles.value}>
-                {data.prescriptionData.doctorName}
+                {data.prescriptionData.doctorName || "N/A"}
               </Text>
             </View>
             <View style={styles.row}>
               <Text style={styles.label}>Clínica:</Text>
               <Text style={styles.value}>
-                {data.prescriptionData.clinicName}
+                {data.prescriptionData.clinicName || "N/A"}
               </Text>
             </View>
             <View style={styles.row}>
@@ -399,28 +436,23 @@ const OrderPDF = ({ data, customer }: OrderPDFProps) => {
               </Text>
             </View>
 
-            {/* Tabela da receita para o laboratório */}
-            <View style={[styles.table, { marginTop: 15 }]}>
-              <Text style={{ fontWeight: "bold", marginBottom: 5 }}>
-                MEDIDAS PARA USO DO LABORATÓRIO
-              </Text>
-
-              {/* Cabeçalho da tabela de receita */}
+            {/* Tabela de dados da prescrição */}
+            <View style={styles.prescriptionTable}>
               <View style={styles.prescriptionTableHeader}>
-                <Text style={[styles.prescriptionTableCell, { width: 80 }]}>
+                <Text style={[styles.prescriptionTableCell, { width: 70 }]}>
                   Olho
                 </Text>
                 <Text style={styles.prescriptionTableCell}>SPH</Text>
                 <Text style={styles.prescriptionTableCell}>CYL</Text>
                 <Text style={styles.prescriptionTableCell}>AXIS</Text>
+                <Text style={styles.prescriptionTableCell}>PD</Text>
               </View>
 
-              {/* Olho Esquerdo */}
               <View style={styles.prescriptionTableRow}>
                 <Text
                   style={[
                     styles.prescriptionTableCell,
-                    { width: 80, fontWeight: "bold" },
+                    { width: 70, fontWeight: "bold" },
                   ]}
                 >
                   Esquerdo
@@ -434,14 +466,16 @@ const OrderPDF = ({ data, customer }: OrderPDFProps) => {
                 <Text style={styles.prescriptionTableCell}>
                   {data.prescriptionData.leftEye.axis}°
                 </Text>
+                <Text style={styles.prescriptionTableCell}>
+                  {data.prescriptionData.leftEye.pd}
+                </Text>
               </View>
 
-              {/* Olho Direito */}
               <View style={styles.prescriptionTableRow}>
                 <Text
                   style={[
                     styles.prescriptionTableCell,
-                    { width: 80, fontWeight: "bold" },
+                    { width: 70, fontWeight: "bold" },
                   ]}
                 >
                   Direito
@@ -455,48 +489,24 @@ const OrderPDF = ({ data, customer }: OrderPDFProps) => {
                 <Text style={styles.prescriptionTableCell}>
                   {data.prescriptionData.rightEye.axis}°
                 </Text>
-              </View>
-
-              <View style={styles.prescriptionTableRow}>
-                <Text
-                  style={[
-                    styles.prescriptionTableCell,
-                    { width: 80, fontWeight: "bold" },
-                  ]}
-                >
-                  D.N.P.
-                </Text>
                 <Text style={styles.prescriptionTableCell}>
-                  {data.prescriptionData.nd}mm
+                  {data.prescriptionData.rightEye.pd}
                 </Text>
               </View>
+            </View>
 
-              <View style={styles.prescriptionTableRow}>
-                <Text
-                  style={[
-                    styles.prescriptionTableCell,
-                    { width: 80, fontWeight: "bold" },
-                  ]}
-                >
-                  C.O.
-                </Text>
-                <Text style={styles.prescriptionTableCell}>
-                  {data.prescriptionData.oc}
-                </Text>
+            <View style={{ marginTop: 10 }}>
+              <View style={styles.row}>
+                <Text style={styles.label}>D.N.P.:</Text>
+                <Text style={styles.value}>{data.prescriptionData.nd} mm</Text>
               </View>
-
-              <View style={styles.prescriptionTableRow}>
-                <Text
-                  style={[
-                    styles.prescriptionTableCell,
-                    { width: 80, fontWeight: "bold" },
-                  ]}
-                >
-                  Adição
-                </Text>
-                <Text style={styles.prescriptionTableCell}>
-                  {data.prescriptionData.addition}
-                </Text>
+              <View style={styles.row}>
+                <Text style={styles.label}>C.O.:</Text>
+                <Text style={styles.value}>{data.prescriptionData.oc}</Text>
+              </View>
+              <View style={styles.row}>
+                <Text style={styles.label}>Adição:</Text>
+                <Text style={styles.value}>{data.prescriptionData.addition}</Text>
               </View>
             </View>
           </View>
@@ -528,7 +538,7 @@ const OrderPDF = ({ data, customer }: OrderPDFProps) => {
 };
 
 interface OrderPdfGeneratorProps {
-  formData: OrderFormData;
+  formData: OrderFormValues & { _id?: string };
   customer: Customer | null;
 }
 
@@ -539,7 +549,7 @@ export default function OrderPdfGenerator({
   return (
     <PDFDownloadLink
       document={<OrderPDF data={formData} customer={customer} />}
-      fileName={`pedido-oculos-${new Date().toISOString().split("T")[0]}.pdf`}
+      fileName={`pedido-${formData._id || new Date().toISOString().split("T")[0]}.pdf`}
       className="block w-full"
     >
       {({ loading, error }) => (

@@ -13,10 +13,12 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Search, Loader2 } from "lucide-react";
+import { Product } from "@/app/types/product";
+import { getProductTypeName } from "@/app/services/productService";
 
 export default function ProductsPage() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [category, setCategory] = useState("all");
+  const [productType, setProductType] = useState("all");
 
   const {
     products,
@@ -28,6 +30,7 @@ export default function ProductsPage() {
     setCurrentPage,
     navigateToProductDetails,
     navigateToCreateProduct,
+    formatCurrency,
   } = useProducts();
 
   const handleSearch = (event: React.FormEvent) => {
@@ -35,9 +38,11 @@ export default function ProductsPage() {
     updateFilters({ search: searchTerm });
   };
 
-  const handleCategoryChange = (value: string) => {
-    setCategory(value);
-    updateFilters({ category: value !== "all" ? value : undefined });
+  const handleProductTypeChange = (value: string) => {
+    setProductType(value);
+    updateFilters({ 
+      productType: value !== "all" ? value as "lenses" | "clean_lenses" | "prescription_frame" | "sunglasses_frame" : undefined 
+    });
   };
 
   if (error) {
@@ -72,14 +77,16 @@ export default function ProductsPage() {
                 Buscar
               </Button>
             </form>
-            <Select value={category} onValueChange={handleCategoryChange}>
+            <Select value={productType} onValueChange={handleProductTypeChange}>
               <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Categoria" />
+                <SelectValue placeholder="Tipo de Produto" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todas Categorias</SelectItem>
-                <SelectItem value="solar">Óculos de Sol</SelectItem>
-                <SelectItem value="grau">Óculos de Grau</SelectItem>
+                <SelectItem value="all">Todos os Tipos</SelectItem>
+                <SelectItem value="lenses">Lentes</SelectItem>
+                <SelectItem value="clean_lenses">Limpa-lentes</SelectItem>
+                <SelectItem value="prescription_frame">Armação de Grau</SelectItem>
+                <SelectItem value="sunglasses_frame">Armação Solar</SelectItem>
               </SelectContent>
             </Select>
             <Button onClick={navigateToCreateProduct}>Novo Produto</Button>
@@ -109,14 +116,11 @@ export default function ProductsPage() {
                   <CardContent className="p-4">
                     <h3 className="font-semibold truncate">{product.name}</h3>
                     <p className="text-sm text-muted-foreground mb-2">
-                      {product.brand} - {product.modelGlasses}
+                      {product.brand} - {getProductTypeName(product.productType)}
                     </p>
                     <div className="flex items-center justify-between">
                       <span className="text-lg font-bold">
-                        R$ {product.price.toFixed(2)}
-                      </span>
-                      <span className="text-sm text-muted-foreground">
-                        Estoque: {product.stock}
+                        {formatCurrency(product.sellPrice)}
                       </span>
                     </div>
                     <Button

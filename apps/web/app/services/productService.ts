@@ -1,11 +1,20 @@
 import { api } from "./authService";
-import type { Product } from "../types/product";
+import { BaseProduct, Product } from "../types/product";
 
 interface ProductFilters {
   search?: string;
   page?: number;
   limit?: number;
-  category?: string;
+  productType?: "lenses" | "clean_lenses" | "prescription_frame" | "sunglasses_frame";
+  minSellPrice?: number;
+  maxSellPrice?: number;
+  brand?: string;
+  lensType?: string;
+  typeFrame?: string;
+  color?: string;
+  shape?: string;
+  reference?: string;
+  modelSunglasses?: string;
 }
 
 interface PaginationInfo {
@@ -107,4 +116,22 @@ export function formatCurrency(value: number): string {
     style: "currency",
     currency: "BRL",
   }).format(value);
+}
+
+/**
+ * Obtém o nome amigável para o tipo de produto
+ */
+export function getProductTypeName(productType: Product['productType']): string {
+  switch (productType) {
+    case 'lenses':
+      return 'Lentes';
+    case 'clean_lenses':
+      return 'Limpa-lentes';
+    case 'prescription_frame':
+      return 'Armação de Grau';
+    case 'sunglasses_frame':
+      return 'Armação Solar';
+    default:
+      return 'Produto';
+  }
 }
