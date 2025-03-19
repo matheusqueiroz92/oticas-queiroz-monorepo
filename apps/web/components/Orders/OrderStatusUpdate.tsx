@@ -29,6 +29,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useOrders } from "@/hooks/useOrders";
+import { useToast } from "@/hooks/useToast";
 
 // Interface para o pedido
 interface OrderDetail {
@@ -56,6 +57,7 @@ export default function OrderStatusUpdate({
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { handleUpdateOrderStatus, translateOrderStatus } = useOrders();
+  const { toast } = useToast();
 
   // Inicializar o formulário apenas com o campo de status
   const form = useForm<UpdateStatusFormData>({
@@ -67,13 +69,32 @@ export default function OrderStatusUpdate({
 
   // Função de submissão do formulário
   async function onSubmit(data: UpdateStatusFormData) {
+    // Se o status não mudou, não fazer nada
+    if (data.status === order.status) {
+      toast({
+        description: "Nenhuma alteração foi feita no status.",
+      });
+      setOpen(false);
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const result = await handleUpdateOrderStatus(order._id, data.status);
       if (result) {
+        toast({
+          title: "Status atualizado",
+          description: `O pedido foi atualizado para ${translateOrderStatus(data.status)}.`,
+        });
         setOpen(false);
         onUpdateSuccess();
       }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível atualizar o status do pedido.",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -116,6 +137,7 @@ export default function OrderStatusUpdate({
                       <SelectItem value="in_production">Em Produção</SelectItem>
                       <SelectItem value="ready">Pronto</SelectItem>
                       <SelectItem value="delivered">Entregue</SelectItem>
+                      <SelectItem value="cancelled">Cancelado</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />

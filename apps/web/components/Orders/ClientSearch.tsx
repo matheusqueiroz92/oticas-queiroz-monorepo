@@ -13,7 +13,7 @@ import type { OrderFormValues } from "@/app/types/form-types";
 
 interface ClientSearchProps {
   customers: Customer[];
-  form: UseFormReturn<OrderFormValues>;
+  form: UseFormReturn<OrderFormValues, any, undefined>; // Corrigido com todos os parâmetros genéricos
   onClientSelect: (clientId: string, name: string) => void;
 }
 

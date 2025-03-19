@@ -18,10 +18,11 @@ import { api } from "../../../services/authService";
 import OrderDetailsPDF from "@/components/Orders/exports/OrderDetailsPdf";
 import OrderLaboratoryUpdate from "@/components/Orders/OrderLaboratoryUpdate";
 import OrderStatusUpdate from "@/components/Orders/OrderStatusUpdate";
-import { Beaker, Calendar, FileText, User, CreditCard, Truck, ShoppingBag, ChevronLeft } from "lucide-react";
-import type { Order } from "@/app/types/order";
+import { Beaker, FileText, User, CreditCard, Truck, ShoppingBag, ChevronLeft } from "lucide-react";
 import { formatCurrency, formatDate } from "@/app/utils/formatters";
 import { getProductTypeLabel } from "@/app/utils/product-utils";
+import { useOrders } from "@/hooks/useOrders";
+import { useToast } from "@/hooks/useToast";
 
 interface Laboratory {
   _id: string;
@@ -41,101 +42,90 @@ interface User {
 }
 
 export default function OrderDetailsPage() {
-  const { id } = useParams();
+  const { id } = useParams() as { id: string };
   const router = useRouter();
-  const [order, setOrder] = useState<Order | null>(null);
+  const { toast } = useToast();
+  
+  // Usar hook useOrders para aproveitar suas funcionalidades
+  const { 
+    invalidateOrdersCache, 
+    fetchOrderById, 
+    getOrderStatusClass, 
+    translateOrderStatus 
+  } = useOrders();
+  
   const [client, setClient] = useState<User | null>(null);
   const [employee, setEmployee] = useState<User | null>(null);
   const [laboratoryInfo, setLaboratoryInfo] = useState<Laboratory | null>(null);
-  const [loading, setLoading] = useState(true);
+  
+  // Usar a query do hook useOrders para buscar o pedido
+  const { data: order, isLoading, error, refetch } = fetchOrderById(id);
 
-  // Usando useCallback para que possamos referenciar essa função no componente filho
-  const fetchOrderDetails = useCallback(async () => {
+  // Função para buscar detalhes complementares (cliente, funcionário, laboratório)
+  const fetchComplementaryDetails = useCallback(async () => {
+    if (!order) return;
+
     try {
-      setLoading(true);
-      const response = await api.get(`/api/orders/${id}`);
-      const orderData = response.data;
-
-      setOrder(orderData);
-
       // Processar dados do cliente
-      try {
-        if (typeof orderData.clientId === "string") {
-          // Tentativa de extrair dados do cliente de string
-          const response = await api.get(`/api/users/${orderData.clientId}`);
-          setClient(response.data);
-        } else if (typeof orderData.clientId === "object" && orderData.clientId !== null) {
-          // Já é um objeto
-          setClient(orderData.clientId);
-        }
-      } catch (error) {
-        console.error("Erro ao processar dados do cliente:", error);
+      if (typeof order.clientId === "string") {
+        const response = await api.get(`/api/users/${order.clientId}`);
+        setClient(response.data);
+      } else if (typeof order.clientId === "object" && order.clientId !== null) {
+        setClient(order.clientId);
       }
 
       // Processar dados do funcionário
-      try {
-        if (typeof orderData.employeeId === "string") {
-          // Tentativa de buscar dados do funcionário
-          const response = await api.get(`/api/users/${orderData.employeeId}`);
-          setEmployee(response.data);
-        } else if (typeof orderData.employeeId === "object" && orderData.employeeId !== null) {
-          // Já é um objeto
-          setEmployee(orderData.employeeId);
-        }
-      } catch (error) {
-        console.error("Erro ao processar dados do funcionário:", error);
+      if (typeof order.employeeId === "string") {
+        const response = await api.get(`/api/users/${order.employeeId}`);
+        setEmployee(response.data);
+      } else if (typeof order.employeeId === "object" && order.employeeId !== null) {
+        setEmployee(order.employeeId);
       }
 
       // Se o pedido tiver um laboratório associado, buscar seus detalhes
-      if (orderData.laboratoryId) {
-        try {
-          // Verificar o formato do laboratoryId
-          if (typeof orderData.laboratoryId === "string") {
-            const labResponse = await api.get(`/api/laboratories/${orderData.laboratoryId}`);
-            setLaboratoryInfo(labResponse.data);
-          } else if (typeof orderData.laboratoryId === "object" && orderData.laboratoryId !== null) {
-            // O laboratório já veio como objeto no pedido
-            setLaboratoryInfo(orderData.laboratoryId as Laboratory);
-          }
-        } catch (labError) {
-          console.error("Erro ao buscar informações do laboratório:", labError);
-          setLaboratoryInfo(null);
+      if (order.laboratoryId) {
+        if (typeof order.laboratoryId === "string") {
+          const labResponse = await api.get(`/api/laboratories/${order.laboratoryId}`);
+          setLaboratoryInfo(labResponse.data);
+        } else if (typeof order.laboratoryId === "object" && order.laboratoryId !== null) {
+          setLaboratoryInfo(order.laboratoryId as Laboratory);
         }
       } else {
         setLaboratoryInfo(null);
       }
     } catch (error) {
-      console.error("Erro ao buscar pedido:", error);
-    } finally {
-      setLoading(false);
+      console.error("Erro ao buscar detalhes complementares:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Falha ao carregar detalhes complementares do pedido.",
+      });
     }
-  }, [id]);
+  }, [order, toast]);
 
+  // Efeito para buscar detalhes complementares quando o pedido for carregado
   useEffect(() => {
-    if (id) {
-      fetchOrderDetails();
+    if (order) {
+      fetchComplementaryDetails();
     }
-  }, [id, fetchOrderDetails]);
+  }, [order, fetchComplementaryDetails]);
 
+  // Função para atualizar todos os dados do pedido e detalhes relacionados
+  const handleRefreshData = useCallback(() => {
+    refetch();
+  }, [refetch]);
+
+  // Função para voltar à página de listagem
   const handleGoBack = () => {
+    // Sinalizar que houve uma atualização
+    localStorage.setItem('orders_updated', 'true');
+    
+    // Invalidar o cache para garantir que a lista será atualizada quando voltar
+    invalidateOrdersCache();
+    
+    // Navegar de volta
     router.back();
   };
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-700" />
-      </div>
-    );
-  }
-
-  if (!order) {
-    return (
-      <div className="p-4 bg-red-50 text-red-600 rounded-md">
-        Pedido não encontrado ou ocorreu um erro ao carregar os dados.
-      </div>
-    );
-  }
 
   // Função para obter as informações de status (retorna apenas dados, não o componente)
   const getStatusBadge = (status: string) => {
@@ -187,26 +177,26 @@ export default function OrderDetailsPage() {
   const formatRefractionValue = (value?: number) => {
     if (value === undefined || value === null) return "N/A";
 
-    // Se o valor for exatamente zero, verificar se todos os valores estão zerados
+    // Se o valor for exatamente zero
     if (value === 0) {
-      // Se todos os valores da receita forem zero, isso pode indicar que a informação não foi preenchida
-      const allZeros =
-        order.prescriptionData &&
-        (!order.prescriptionData.leftEye?.sph ||
-          order.prescriptionData.leftEye.sph === 0) &&
-        (!order.prescriptionData.leftEye?.cyl ||
-          order.prescriptionData.leftEye.cyl === 0) &&
-        (!order.prescriptionData.rightEye?.sph ||
-          order.prescriptionData.rightEye.sph === 0) &&
-        (!order.prescriptionData.rightEye?.cyl ||
-          order.prescriptionData.rightEye.cyl === 0) &&
-        (!order.prescriptionData.nd || order.prescriptionData.nd === 0) &&
-        (!order.prescriptionData.oc || order.prescriptionData.oc === 0) &&
-        (!order.prescriptionData.addition ||
-          order.prescriptionData.addition === 0);
+      // Verificar se todos os valores da receita são zero
+      if (order && order.prescriptionData) {
+        const allZeros =
+          (!order.prescriptionData.leftEye?.sph ||
+            order.prescriptionData.leftEye.sph === 0) &&
+          (!order.prescriptionData.leftEye?.cyl ||
+            order.prescriptionData.leftEye.cyl === 0) &&
+          (!order.prescriptionData.rightEye?.sph ||
+            order.prescriptionData.rightEye.sph === 0) &&
+          (!order.prescriptionData.rightEye?.cyl ||
+            order.prescriptionData.rightEye.cyl === 0) &&
+          (!order.prescriptionData.nd || order.prescriptionData.nd === 0) &&
+          (!order.prescriptionData.oc || order.prescriptionData.oc === 0) &&
+          (!order.prescriptionData.addition ||
+            order.prescriptionData.addition === 0);
 
-      // Se todos forem zero, mostrar "Neutro" ou "Plano" em vez de "0,00"
-      if (allZeros) return "Neutro";
+        if (allZeros) return "Neutro";
+      }
     }
 
     // Para outros valores, mostrar sinal de + para positivos
@@ -214,27 +204,33 @@ export default function OrderDetailsPage() {
     return `${prefix}${value.toFixed(2).replace(".", ",")}`;
   };
 
-  // Função para traduzir o status para português
-  const translateStatus = (status: string): string => {
-    const statusMap: Record<string, string> = {
-      pending: "Pendente",
-      in_production: "Em Produção",
-      ready: "Pronto",
-      delivered: "Entregue",
-      cancelled: "Cancelado",
-    };
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-700" />
+      </div>
+    );
+  }
 
-    return statusMap[status] || status;
-  };
+  // Error state
+  if (error || !order) {
+    return (
+      <div className="p-4 bg-red-50 text-red-600 rounded-md">
+        Pedido não encontrado ou ocorreu um erro ao carregar os dados.
+      </div>
+    );
+  }
 
-  // Determinar se o pedido tem produtos múltiplos
-  const hasMultipleProducts = Array.isArray(order.product) && order.product.length > 0;
-  
   // Verificar se há dados de receita
   const hasPrescriptionData = order.prescriptionData && 
     order.prescriptionData.leftEye && 
     order.prescriptionData.rightEye;
 
+  // Determinar se o pedido tem produtos múltiplos
+  const hasMultipleProducts = Array.isArray(order.product) && order.product.length > 0;
+
+  // Componente para exibir badge de status
   const StatusBadge = ({ status }: { status: string }) => {
     const statusInfo = getStatusBadge(status || "");
     return (
@@ -260,10 +256,10 @@ export default function OrderDetailsPage() {
 
       <Card>
         <CardHeader className="pb-2">
-        <div className="flex justify-between items-center">
-        <CardTitle>Pedido #{order._id.substring(0, 8)}</CardTitle>
-        <StatusBadge status={order.status} />
-        </div>
+          <div className="flex justify-between items-center">
+            <CardTitle>Pedido #{order._id.substring(0, 8)}</CardTitle>
+            <StatusBadge status={order.status} />
+          </div>
           <CardDescription>
             Criado em {formatDate(order.createdAt)}
           </CardDescription>
@@ -290,6 +286,7 @@ export default function OrderDetailsPage() {
               )}
             </TabsList>
             
+            {/* Conteúdo das abas permanece o mesmo */}
             <TabsContent value="details" className="space-y-6">
               {/* Informações principais */}
               <div className="grid md:grid-cols-2 gap-6">
@@ -429,13 +426,13 @@ export default function OrderDetailsPage() {
                   {/* Componente para atualizar o status */}
                   <OrderStatusUpdate
                     order={order}
-                    onUpdateSuccess={fetchOrderDetails}
+                    onUpdateSuccess={handleRefreshData}
                   />
                 </div>
                 <div className="bg-gray-50 p-4 rounded-md">
                   <div className="flex items-center">
                     <Badge className={getStatusBadge(order.status).className}>
-                      {translateStatus(order.status)}
+                      {translateOrderStatus(order.status)}
                     </Badge>
                     <div className="ml-4 text-sm text-muted-foreground">
                       {order.status === "pending" &&
@@ -506,125 +503,6 @@ export default function OrderDetailsPage() {
               </div>
             </TabsContent>
 
-            {/* Aba da Receita Médica */}
-            {hasPrescriptionData && (
-              <TabsContent value="prescription" className="space-y-6">
-                <div className="space-y-4">
-                  <h3 className="font-medium text-lg flex items-center">
-                    <FileText className="h-5 w-5 mr-2" />
-                    Receita Médica
-                  </h3>
-                  <div className="bg-gray-50 p-4 rounded-md">
-                    <div className="space-y-3">
-                      <div className="grid grid-cols-3 gap-4">
-                        <p className="text-sm">
-                          <span className="font-semibold">Médico:</span>{" "}
-                          {order.prescriptionData?.doctorName || "N/A"}
-                        </p>
-                        <p className="text-sm">
-                          <span className="font-semibold">Clínica:</span>{" "}
-                          {order.prescriptionData?.clinicName || "N/A"}
-                        </p>
-                        <p className="text-sm">
-                          <span className="font-semibold">Data da Consulta:</span>{" "}
-                          {formatDate(order.prescriptionData?.appointmentDate)}
-                        </p>
-                      </div>
-
-                      {/* Tabela de receita */}
-                      <div className="mt-3 overflow-x-auto">
-                        <table className="min-w-full bg-white border border-gray-200 text-sm">
-                          <thead>
-                            <tr className="bg-gray-100">
-                              <th className="py-2 px-3 text-left">Olho</th>
-                              <th className="py-2 px-3 text-center">Esf.</th>
-                              <th className="py-2 px-3 text-center">Cil.</th>
-                              <th className="py-2 px-3 text-center">Eixo</th>
-                              <th className="py-2 px-3 text-center">PD</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {order.prescriptionData?.leftEye && (
-                              <tr className="border-t border-gray-200">
-                                <td className="py-2 px-3 font-medium">
-                                  Esquerdo
-                                </td>
-                                <td className="py-2 px-3 text-center">
-                                  {formatRefractionValue(
-                                    order.prescriptionData.leftEye.sph
-                                  )}
-                                </td>
-                                <td className="py-2 px-3 text-center">
-                                  {formatRefractionValue(
-                                    order.prescriptionData.leftEye.cyl
-                                  )}
-                                </td>
-                                <td className="py-2 px-3 text-center">
-                                  {order.prescriptionData.leftEye.axis || "N/A"}°
-                                </td>
-                                <td className="py-2 px-3 text-center">
-                                  {order.prescriptionData.leftEye.pd || "N/A"}
-                                </td>
-                              </tr>
-                            )}
-
-                            {order.prescriptionData?.rightEye && (
-                              <tr className="border-t border-gray-200">
-                                <td className="py-2 px-3 font-medium">
-                                  Direito
-                                </td>
-                                <td className="py-2 px-3 text-center">
-                                  {formatRefractionValue(
-                                    order.prescriptionData.rightEye.sph
-                                  )}
-                                </td>
-                                <td className="py-2 px-3 text-center">
-                                  {formatRefractionValue(
-                                    order.prescriptionData.rightEye.cyl
-                                  )}
-                                </td>
-                                <td className="py-2 px-3 text-center">
-                                  {order.prescriptionData.rightEye.axis || "N/A"}°
-                                </td>
-                                <td className="py-2 px-3 text-center">
-                                  {order.prescriptionData.rightEye.pd || "N/A"}
-                                </td>
-                              </tr>
-                            )}
-                          </tbody>
-                          <tfoot>
-                            <tr className="bg-gray-100">
-                              <th className="py-2 px-3 text-left" colSpan={5}>
-                                Informações adicionais
-                              </th>
-                            </tr>
-                            <tr>
-                              <td className="py-2 px-3 font-medium">D.N.P.</td>
-                              <td className="py-2 px-3 text-center" colSpan={4}>
-                                {order.prescriptionData?.nd || "N/A"}
-                              </td>
-                            </tr>
-                            <tr>
-                              <td className="py-2 px-3 font-medium">C.O.</td>
-                              <td className="py-2 px-3 text-center" colSpan={4}>
-                                {order.prescriptionData?.oc || "N/A"}
-                              </td>
-                            </tr>
-                            <tr>
-                              <td className="py-2 px-3 font-medium">Adição</td>
-                              <td className="py-2 px-3 text-center" colSpan={4}>
-                                {order.prescriptionData?.addition || "N/A"}
-                              </td>
-                            </tr>
-                          </tfoot>
-                        </table>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </TabsContent>
-            )}
-
             {/* Aba de Laboratório */}
             {laboratoryInfo && (
               <TabsContent value="laboratory" className="space-y-6">
@@ -636,7 +514,7 @@ export default function OrderDetailsPage() {
                     {/* Componente para atualizar laboratório */}
                     <OrderLaboratoryUpdate
                       order={order}
-                      onUpdateSuccess={fetchOrderDetails}
+                      onUpdateSuccess={handleRefreshData}
                     />
                   </div>
 

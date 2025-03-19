@@ -31,6 +31,12 @@ export function useOrders() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Função para forçar atualização de todas as queries de pedidos
+  const invalidateOrdersCache = () => {
+    queryClient.invalidateQueries({ queryKey: QUERY_KEYS.ORDERS.ALL });
+    queryClient.invalidateQueries({ queryKey: QUERY_KEYS.ORDERS.PAGINATED() });
+  };
+
   // Query para buscar pedidos paginados
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: QUERY_KEYS.ORDERS.PAGINATED(currentPage, filters),
@@ -160,8 +166,15 @@ export function useOrders() {
   };
 
   // Funções que utilizam as mutations
-  const handleUpdateOrderStatus = (id: string, status: string) => {
-    return updateOrderStatusMutation.mutateAsync({ id, status });
+  const handleUpdateOrderStatus = async (id: string, status: string) => {
+    const result = await updateOrderStatusMutation.mutateAsync({ id, status });
+    
+    // Forçar invalidação do cache após atualizar o status
+    if (result) {
+      invalidateOrdersCache();
+    }
+    
+    return result;
   };
 
   const handleUpdateOrderLaboratory = (id: string, laboratoryId: string) => {
@@ -223,6 +236,7 @@ export function useOrders() {
     isUpdatingLaboratory: updateOrderLaboratoryMutation.isPending,
 
     // Ações
+    invalidateOrdersCache,
     setCurrentPage,
     updateFilters,
     fetchOrderById,

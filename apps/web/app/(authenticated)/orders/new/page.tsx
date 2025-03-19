@@ -4,8 +4,6 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -41,6 +39,16 @@ import type { Product } from "@/app/types/product";
 import Cookies from "js-cookie";
 import { formatCurrency } from "@/app/utils/formatters";
 
+// Importar o hook useOrders
+import { useOrders } from "@/hooks/useOrders";
+
+// Importando os tipos atualizados
+import { 
+  OrderFormValues, 
+  OrderFormReturn,
+  orderFormSchema 
+} from "@/app/types/form-types";
+
 // Componentes
 import ClientSearch from "@/components/Orders/ClientSearch";
 import ProductSearch from "@/components/Orders/ProductSearch";
@@ -48,90 +56,7 @@ import SelectedProductsList from "@/components/Orders/SelectedProductList";
 import PrescriptionForm from "@/components/Orders/PrescriptionForm";
 import OrderPdfGenerator from "@/components/Orders/exports/OrderPdfGenerator";
 import { QUERY_KEYS } from "@/app/constants/query-keys";
-import { OrderFormReturn } from "@/app/types/form-types";
-
-// Schema para validação de dados do olho
-const eyeDataSchema = z.object({
-  sph: z.number().default(0),
-  cyl: z.number().default(0),
-  axis: z.number().default(0),
-  pd: z.number().default(0),
-});
-
-// Schema para validação de dados de prescrição
-const prescriptionDataSchema = z.object({
-  doctorName: z.string().optional(),
-  clinicName: z.string().optional(),
-  appointmentDate: z.string().optional(),
-  leftEye: eyeDataSchema,
-  rightEye: eyeDataSchema,
-  nd: z.number().default(0),
-  oc: z.number().default(0),
-  addition: z.number().default(0),
-});
-
-// Schema para validação do formulário completo
-const orderFormSchema = z.object({
-  clientId: z.string().min(1, "Cliente é obrigatório"),
-  employeeId: z.string().min(1, "ID do funcionário é obrigatório"),
-  products: z.array(z.any()).min(1, "Pelo menos um produto é obrigatório"),
-  paymentMethod: z.string().min(1, "Forma de pagamento é obrigatória"),
-  paymentEntry: z.number().min(0).default(0),
-  installments: z.number().min(1).optional(),
-  orderDate: z.string().default(() => new Date().toISOString().split("T")[0]),
-  deliveryDate: z.string().optional(),
-  status: z.string().min(1, "Status é obrigatório").default("pending"),
-  laboratoryId: z.string().optional(),
-  observations: z.string().optional(),
-  totalPrice: z.number().min(0, "O preço total deve ser maior ou igual a zero"),
-  discount: z.number().min(0, "O desconto deve ser maior ou igual a zero").default(0),
-  finalPrice: z.number().min(0, "O preço final deve ser maior ou igual a zero"),
-  prescriptionData: prescriptionDataSchema,
-}).refine(data => {
-  // Verificar se o desconto não é maior que o preço total
-  return data.discount <= data.totalPrice;
-}, {
-  message: "O desconto não pode ser maior que o preço total",
-  path: ["discount"]
-});
-
-// Interface para os valores do formulário
-interface OrderFormValues {
-  clientId: string;
-  employeeId: string;
-  products: Product[];
-  paymentMethod: string;
-  paymentEntry: number;
-  installments?: number;
-  orderDate: string;
-  deliveryDate?: string;
-  status: string;
-  laboratoryId?: string;
-  observations?: string;
-  totalPrice: number;
-  discount: number;
-  finalPrice: number;
-  prescriptionData: {
-    doctorName: string;
-    clinicName: string;
-    appointmentDate: string;
-    leftEye: {
-      sph: number;
-      cyl: number;
-      axis: number;
-      pd: number;
-    };
-    rightEye: {
-      sph: number;
-      cyl: number;
-      axis: number;
-      pd: number;
-    };
-    nd: number;
-    oc: number;
-    addition: number;
-  };
-}
+import { useQuery } from "@tanstack/react-query";
 
 export default function NewOrderPage() {
   const router = useRouter();
@@ -148,6 +73,9 @@ export default function NewOrderPage() {
   const [showPdfDownload, setShowPdfDownload] = useState(false);
   const [submittedOrder, setSubmittedOrder] = useState<any>(null);
 
+  // Utilizar o hook useOrders
+  const { handleCreateOrder, isCreating } = useOrders();
+
   // Função para obter a data de amanhã
   const getTomorrowDate = () => {
     const tomorrow = new Date();
@@ -157,7 +85,7 @@ export default function NewOrderPage() {
 
   // Inicialização do formulário com valores padrão
   const form = useForm<OrderFormValues>({
-    resolver: zodResolver(orderFormSchema),
+    resolver: zodResolver(orderFormSchema) as any, // Usamos 'as any' para resolver o problema de tipo temporariamente
     defaultValues: {
       employeeId: "",
       clientId: "",
@@ -197,7 +125,7 @@ export default function NewOrderPage() {
 
   // Consulta para buscar clientes
   const { data: customersData, isLoading: isLoadingCustomers } = useQuery({
-    queryKey: [QUERY_KEYS.USERS.CUSTOMERS],
+    queryKey: [QUERY_KEYS.USERS.CUSTOMERS()],
     queryFn: async () => {
       const response = await api.get("/api/users", { params: { role: "customer" } });
       return Array.isArray(response.data) ? response.data : response.data.users || [];
@@ -351,88 +279,8 @@ export default function NewOrderPage() {
     return remainingAmount <= 0 ? 0 : remainingAmount / installments;
   };
 
-  // Mutação para criar um novo pedido
-  const createOrderMutation = useMutation({
-    mutationFn: async (data: OrderFormValues) => {
-      try {
-        // Transformar os dados para o formato esperado pela API
-        const orderData = {
-          clientId: data.clientId,
-          employeeId: data.employeeId,
-          product: data.products, // Array de produtos
-          paymentMethod: data.paymentMethod,
-          paymentEntry: data.paymentEntry,
-          installments: data.installments,
-          orderDate: data.orderDate,
-          deliveryDate: data.deliveryDate,
-          status: data.status,
-          laboratoryId: data.laboratoryId && data.laboratoryId.trim() !== "" 
-            ? data.laboratoryId 
-            : undefined,
-          prescriptionData: {
-            doctorName: data.prescriptionData.doctorName || "Não aplicável",
-            clinicName: data.prescriptionData.clinicName || "Não aplicável",
-            appointmentDate: data.prescriptionData.appointmentDate || new Date().toISOString().split("T")[0],
-            leftEye: {
-              sph: data.prescriptionData.leftEye.sph,
-              cyl: data.prescriptionData.leftEye.cyl,
-              axis: data.prescriptionData.leftEye.axis,
-              pd: data.prescriptionData.leftEye.pd,
-            },
-            rightEye: {
-              sph: data.prescriptionData.rightEye.sph,
-              cyl: data.prescriptionData.rightEye.cyl,
-              axis: data.prescriptionData.rightEye.axis,
-              pd: data.prescriptionData.rightEye.pd,
-            },
-            nd: data.prescriptionData.nd,
-            oc: data.prescriptionData.oc,
-            addition: data.prescriptionData.addition,
-          },
-          observations: data.observations,
-          totalPrice: data.totalPrice,
-          discount: data.discount,
-          finalPrice: data.finalPrice,
-        };
-
-        console.log("Enviando dados para API:", orderData);
-        const response = await api.post("/api/orders", orderData);
-        return response.data;
-      } catch (error: any) {
-        let errorMessage = "Erro ao criar pedido. Tente novamente.";
-        
-        if (error.response && error.response.data && error.response.data.message) {
-          errorMessage = error.response.data.message;
-        } else if (error.message) {
-          errorMessage = error.message;
-        }
-        
-        throw new Error(errorMessage);
-      }
-    },
-    onSuccess: (data) => {
-      toast({
-        title: "Pedido criado com sucesso",
-        description: `O pedido foi registrado com o ID: ${data._id.substring(0, 8)}`,
-      });
-      
-      // Salvar dados do pedido para gerar PDF
-      setSubmittedOrder(data);
-      
-      // Mostrar opção de download do PDF
-      setShowPdfDownload(true);
-    },
-    onError: (error: Error) => {
-      toast({
-        variant: "destructive",
-        title: "Erro ao criar pedido",
-        description: error.message,
-      });
-    },
-  });
-
-  // Função principal para enviar o formulário
-  const onSubmit = (data: OrderFormValues) => {
+  // Função principal para enviar o formulário - agora usando o hook useOrders
+  const onSubmit = async (data: OrderFormValues) => {
     // Validações adicionais antes de enviar
     if (selectedProducts.length === 0) {
       toast({
@@ -443,8 +291,77 @@ export default function NewOrderPage() {
       return;
     }
 
-    // Enviar dados do formulário
-    createOrderMutation.mutate(data);
+    try {
+      // Transformar os dados para o formato esperado pela API
+      const orderData = {
+        clientId: data.clientId,
+        employeeId: data.employeeId,
+        product: data.products, // Array de produtos
+        paymentMethod: data.paymentMethod,
+        paymentEntry: data.paymentEntry,
+        installments: data.installments,
+        orderDate: data.orderDate,
+        deliveryDate: data.deliveryDate,
+        status: data.status,
+        laboratoryId: data.laboratoryId && data.laboratoryId.trim() !== "" 
+          ? data.laboratoryId 
+          : undefined,
+        prescriptionData: {
+          doctorName: data.prescriptionData.doctorName || "Não aplicável",
+          clinicName: data.prescriptionData.clinicName || "Não aplicável",
+          appointmentDate: data.prescriptionData.appointmentDate || new Date().toISOString().split("T")[0],
+          leftEye: {
+            sph: data.prescriptionData.leftEye.sph,
+            cyl: data.prescriptionData.leftEye.cyl,
+            axis: data.prescriptionData.leftEye.axis,
+            pd: data.prescriptionData.leftEye.pd,
+          },
+          rightEye: {
+            sph: data.prescriptionData.rightEye.sph,
+            cyl: data.prescriptionData.rightEye.cyl,
+            axis: data.prescriptionData.rightEye.axis,
+            pd: data.prescriptionData.rightEye.pd,
+          },
+          nd: data.prescriptionData.nd,
+          oc: data.prescriptionData.oc,
+          addition: data.prescriptionData.addition,
+        },
+        observations: data.observations,
+        totalPrice: data.totalPrice,
+        discount: data.discount,
+        finalPrice: data.finalPrice,
+      };
+
+      // Usar o handleCreateOrder do hook useOrders
+      const newOrder = await handleCreateOrder(orderData as any);
+      
+      if (newOrder) {
+        // Salvar dados do pedido para gerar PDF
+        setSubmittedOrder(newOrder);
+        
+        // Mostrar opção de download do PDF
+        setShowPdfDownload(true);
+
+        toast({
+          title: "Pedido criado com sucesso",
+          description: `O pedido foi registrado com o ID: ${newOrder._id.substring(0, 8)}`,
+        });
+      }
+    } catch (error: any) {
+      let errorMessage = "Erro ao criar pedido. Tente novamente.";
+      
+      if (error.response && error.response.data && error.response.data.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      toast({
+        variant: "destructive",
+        title: "Erro ao criar pedido",
+        description: errorMessage,
+      });
+    }
   };
 
   return (
@@ -729,10 +646,9 @@ export default function NewOrderPage() {
                     </div>
                   </div>
 
-                  {/* Seção de Receita Médica (Sempre visível) */}
+                  {/* Seção de Receita Médica */}
                   <div className="p-4 border rounded-md space-y-4">
-                    <PrescriptionForm form={form as unknown as OrderFormReturn} />
-                    {/* <PrescriptionForm form={form} /> */}
+                    <PrescriptionForm form={form as OrderFormReturn} />
                   </div>
 
                   {/* Observações */}
@@ -765,9 +681,9 @@ export default function NewOrderPage() {
                     </Button>
                     <Button 
                       type="submit" 
-                      disabled={createOrderMutation.isPending || selectedProducts.length === 0}
+                      disabled={isCreating || selectedProducts.length === 0}
                     >
-                      {createOrderMutation.isPending ? (
+                      {isCreating ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                           Criando...
@@ -809,48 +725,48 @@ export default function NewOrderPage() {
                       _id: submittedOrder?._id
                     }}
                     customer={selectedCustomer}
-                    />
+                  />
                   
-                    <div className="grid grid-cols-2 gap-4">
-                      <Button 
-                        type="button" 
-                        variant="outline"
-                        onClick={() => router.push("/orders")}
-                      >
-                        Ver Lista de Pedidos
-                      </Button>
-                      
-                      <Button 
-                        type="button"
-                        onClick={() => {
-                          form.reset();
-                          setSelectedProducts([]);
-                          setSelectedCustomer(null);
-                          setShowPdfDownload(false);
-                        }}
-                      >
-                        Criar Novo Pedido
-                      </Button>
-                    </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <Button 
+                      type="button" 
+                      variant="outline"
+                      onClick={() => router.push("/orders")}
+                    >
+                      Ver Lista de Pedidos
+                    </Button>
+                    
+                    <Button 
+                      type="button"
+                      onClick={() => {
+                        form.reset();
+                        setSelectedProducts([]);
+                        setSelectedCustomer(null);
+                        setShowPdfDownload(false);
+                      }}
+                    >
+                      Criar Novo Pedido
+                    </Button>
                   </div>
                 </div>
-              </CardContent>
-            )}
+              </div>
+            </CardContent>
+          )}
   
-            {!showPdfDownload && (
-              <CardFooter className="border-t pt-6 flex-col space-y-4">
-                <Alert>
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertTitle>Atenção</AlertTitle>
-                  <AlertDescription>
-                    Ao criar um pedido, certifique-se de que todos os dados estão corretos.
-                    Após a criação, algumas informações não poderão ser modificadas.
-                  </AlertDescription>
-                </Alert>
-              </CardFooter>
-            )}
-          </Card>
-        )}
-      </div>
-    );
-  }
+          {!showPdfDownload && (
+            <CardFooter className="border-t pt-6 flex-col space-y-4">
+              <Alert>
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Atenção</AlertTitle>
+                <AlertDescription>
+                  Ao criar um pedido, certifique-se de que todos os dados estão corretos.
+                  Após a criação, algumas informações não poderão ser modificadas.
+                </AlertDescription>
+              </Alert>
+            </CardFooter>
+          )}
+        </Card>
+      )}
+    </div>
+  );
+}

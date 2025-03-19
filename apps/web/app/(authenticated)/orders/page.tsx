@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -36,10 +36,16 @@ import {
 } from "@/components/ui/card";
 import { Loader2, FileX, FilterIcon } from "lucide-react";
 import { useOrders } from "@/hooks/useOrders";
+import { api } from "@/app/services/authService";
 import { formatCurrency, formatDate } from "@/app/utils/formatters";
-import { extractName } from "@/app/services/orderService";
+import { Badge } from "@/components/ui/badge";
+import { useQuery } from "@tanstack/react-query";
+import { QUERY_KEYS } from "@/app/constants/query-keys";
+import { usePathname } from "next/navigation";
 
 export default function OrdersPage() {
+  const pathname = usePathname();
+  const [shouldRefresh, setShouldRefresh] = useState(false);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [showFilters, setShowFilters] = useState(false);
@@ -47,6 +53,9 @@ export default function OrdersPage() {
     startDate: '',
     endDate: ''
   });
+  
+  // Mapas de IDs para nomes
+  const [usersMap, setUsersMap] = useState<Record<string, string>>({});
 
   const {
     orders,
@@ -59,9 +68,54 @@ export default function OrdersPage() {
     updateFilters,
     navigateToOrderDetails,
     navigateToCreateOrder,
-    translateOrderStatus,
-    getOrderStatusClass,
+    refetch,
+    invalidateOrdersCache
   } = useOrders();
+
+  // Buscar TODOS os usuários para criar um mapa de IDs para nomes
+  const { data: allUsersData, isLoading: isLoadingUsers } = useQuery({
+    queryKey: QUERY_KEYS.USERS.ALL,
+    queryFn: async () => {
+      const response = await api.get("/api/users");
+      return Array.isArray(response.data) ? response.data : response.data.users || [];
+    },
+  });
+
+  // Função para obter nome de usuário por ID (cliente ou vendedor)
+  const getUserNameById = (userId: string): string => {
+    return usersMap[userId] || userId;
+  };
+
+  // Função para obter o badge de status
+  const getStatusBadge = (status: string) => {
+    const statusMap: Record<string, { label: string; className: string }> = {
+      pending: {
+        label: "Pendente",
+        className: "bg-yellow-100 text-yellow-800",
+      },
+      in_production: {
+        label: "Em Produção",
+        className: "bg-blue-100 text-blue-800",
+      },
+      ready: { 
+        label: "Pronto", 
+        className: "bg-green-100 text-green-800" 
+      },
+      delivered: {
+        label: "Entregue",
+        className: "bg-purple-100 text-purple-800",
+      },
+      cancelled: {
+        label: "Cancelado",
+        className: "bg-red-100 text-red-800",
+      },
+    };
+
+    return statusMap[status] || {
+      label: status,
+      className: "bg-gray-100 text-gray-800",
+    };
+  };
 
   // Aplicar filtros
   const handleApplyFilters = () => {
@@ -178,6 +232,76 @@ export default function OrdersPage() {
 
   const showEmptyState = !isLoading && !error && orders.length === 0;
 
+  // Criar mapa de IDs para nomes quando os dados de usuários forem carregados
+  useEffect(() => {
+    if (allUsersData) {
+      const map: Record<string, string> = {};
+      allUsersData.forEach((user: any) => {
+        if (user._id && user.name) {
+          map[user._id] = user.name;
+        }
+      });
+      setUsersMap(map);
+    }
+  }, [allUsersData]);
+  
+  // Configurar um intervalo para revalidar os dados periodicamente
+  useEffect(() => {
+    // Revalidar a lista de pedidos a cada 30 segundos
+    const intervalId = setInterval(() => {
+      refetch();
+    }, 10000);
+
+    // Adicionar um evento de foco para revalidar quando o usuário retorna à página
+    const handleFocus = () => {
+      refetch();
+    };
+    window.addEventListener('focus', handleFocus);
+
+    // Limpar intervalo e event listener quando o componente for desmontado
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [refetch]);
+
+  // Efeito para detectar quando a página é remontada/visitada novamente
+  useEffect(() => {
+    // Se estivermos na página de listagem de pedidos
+    if (pathname === '/orders' && shouldRefresh) {
+      // Forçar atualização
+      refetch();
+      setShouldRefresh(false);
+    }
+  }, [pathname, shouldRefresh, refetch]);
+
+  // Efeito para monitorar quando a página ganha foco (ex: volta de outra aba)
+  useEffect(() => {
+    const handleFocus = () => {
+      if (pathname === '/orders') {
+        setShouldRefresh(true);
+      }
+    };
+    
+    // Adicionar event listener para quando a janela ganha foco
+    window.addEventListener('focus', handleFocus);
+    
+    // Adicionar event listener para navegação no Next.js
+    const handleRouteChange = () => {
+      if (pathname === '/orders') {
+        setShouldRefresh(true);
+      }
+    };
+    
+    // Escutar evento personalizado que pode ser disparado quando voltamos à página
+    document.addEventListener('order-updated', handleRouteChange);
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('order-updated', handleRouteChange);
+    };
+  }, [pathname]);
+
   return (
     <div className="space-y-4 p-6">
       <div className="flex justify-between items-center">
@@ -267,7 +391,7 @@ export default function OrdersPage() {
             </div>
           )}
 
-          {isLoading && (
+          {(isLoading || isLoadingUsers) && (
             <div className="flex justify-center items-center py-12">
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>
@@ -287,7 +411,7 @@ export default function OrdersPage() {
             </div>
           )}
 
-          {!isLoading && !error && orders.length > 0 && (
+          {!isLoading && !isLoadingUsers && !error && orders.length > 0 && (
             <>
               <div className="rounded-md border overflow-hidden">
                 <Table>
@@ -302,43 +426,43 @@ export default function OrdersPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {orders.map((order) => (
-                      <TableRow key={order._id}>
-                        <TableCell>
-                          {typeof order.clientId === "string"
-                            ? extractName(order.clientId)
-                            : "Cliente não identificado"}
-                        </TableCell>
+                    {orders.map((order) => {
+                      const statusInfo = getStatusBadge(order.status);
+                      
+                      return (
+                        <TableRow key={order._id}>
+                          <TableCell>
+                            {getUserNameById(order.clientId)}
+                          </TableCell>
 
-                        <TableCell>{formatDate(order.createdAt)}</TableCell>
+                          <TableCell>{formatDate(order.createdAt)}</TableCell>
 
-                        <TableCell>
-                          <span className={getOrderStatusClass(order.status)}>
-                            {translateOrderStatus(order.status)}
-                          </span>
-                        </TableCell>
+                          <TableCell>
+                            <Badge className={statusInfo.className}>
+                              {statusInfo.label}
+                            </Badge>
+                          </TableCell>
 
-                        <TableCell>
-                          {typeof order.employeeId === "string"
-                            ? extractName(order.employeeId)
-                            : "Funcionário não identificado"}
-                        </TableCell>
+                          <TableCell>
+                            {getUserNameById(order.employeeId)}
+                          </TableCell>
 
-                        <TableCell className="text-right">
-                          {formatCurrency(order.finalPrice || order.totalPrice)}
-                        </TableCell>
+                          <TableCell className="text-right">
+                            {formatCurrency(order.finalPrice || order.totalPrice)}
+                          </TableCell>
 
-                        <TableCell>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => navigateToOrderDetails(order._id)}
-                          >
-                            Detalhes
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                          <TableCell>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => navigateToOrderDetails(order._id)}
+                            >
+                              Detalhes
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>

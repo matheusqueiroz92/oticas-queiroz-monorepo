@@ -119,8 +119,23 @@ export default function OrderLaboratoryUpdate({
     }
   }
 
-  // Só mostrar o botão para atualizar se for óculos de grau
-  if (order.glassesType !== "prescription") {
+  // Verificar se o pedido contém alguma lente que precise de laboratório
+  const needsLaboratory = () => {
+    // Se o produto for um array (novo formato)
+    if (Array.isArray(order.product)) {
+      return order.product.some(product => product.productType === "lenses");
+    }
+    
+    // Caso seja um único produto (compatibilidade com formato antigo)
+    if (typeof order.product === 'object' && order.product !== null) {
+      return (order.product as any).productType === "lenses";
+    }
+    
+    return false;
+  };
+
+  // Só mostrar o botão para atualizar se o pedido contiver lentes
+  if (!needsLaboratory()) {
     return null;
   }
 
@@ -139,7 +154,7 @@ export default function OrderLaboratoryUpdate({
               : "Associar Laboratório"}
           </DialogTitle>
           <DialogDescription>
-            Selecione o laboratório que confeccionará os óculos.
+            Selecione o laboratório que confeccionará as lentes.
           </DialogDescription>
         </DialogHeader>
 

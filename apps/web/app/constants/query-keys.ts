@@ -15,6 +15,8 @@ export const QUERY_KEYS = {
     DETAIL: (id: string) => ["users", "detail", id],
     CUSTOMERS: (search?: string) => ["users", "customers", search],
     EMPLOYEES: (search?: string) => ["users", "employees", search],
+    ADMINS: (search?: string) => ["users", "admins", search],
+    VENDORS: (search?: string) => ["users", "vendors", search],
   },
 
   // Laboratórios
