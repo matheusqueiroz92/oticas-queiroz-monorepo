@@ -26,7 +26,7 @@ const createUploadDirs = () => {
   }
 };
 
-// Criar diretórios na inicialização
+// Criar diretórios na inicialização da aplicação
 createUploadDirs();
 
 const storage = multer.diskStorage({

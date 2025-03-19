@@ -137,7 +137,7 @@ export default function OrderDetailsPage() {
     );
   }
 
-  // Função para obter o badge de status
+  // Função para obter as informações de status (retorna apenas dados, não o componente)
   const getStatusBadge = (status: string) => {
     const statusMap: Record<string, { label: string; className: string }> = {
       pending: {
@@ -148,7 +148,10 @@ export default function OrderDetailsPage() {
         label: "Em Produção",
         className: "bg-blue-100 text-blue-800",
       },
-      ready: { label: "Pronto", className: "bg-green-100 text-green-800" },
+      ready: { 
+        label: "Pronto", 
+        className: "bg-green-100 text-green-800" 
+      },
       delivered: {
         label: "Entregue",
         className: "bg-purple-100 text-purple-800",
@@ -159,16 +162,10 @@ export default function OrderDetailsPage() {
       },
     };
 
-    const statusInfo = statusMap[status] || {
+    return statusMap[status] || {
       label: status,
       className: "bg-gray-100 text-gray-800",
     };
-
-    return (
-      <Badge className={`${statusInfo.className} font-medium`}>
-        {statusInfo.label}
-      </Badge>
-    );
   };
 
   // Função para obter texto do método de pagamento
@@ -238,6 +235,15 @@ export default function OrderDetailsPage() {
     order.prescriptionData.leftEye && 
     order.prescriptionData.rightEye;
 
+  const StatusBadge = ({ status }: { status: string }) => {
+    const statusInfo = getStatusBadge(status || "");
+    return (
+      <Badge className={statusInfo.className}>
+        {statusInfo.label}
+      </Badge>
+    );
+  };
+
   return (
     <div className="space-y-6 max-w-4xl mx-auto p-4">
       <div className="flex justify-between items-center">
@@ -254,10 +260,10 @@ export default function OrderDetailsPage() {
 
       <Card>
         <CardHeader className="pb-2">
-          <div className="flex justify-between items-center">
-            <CardTitle>Pedido #{order._id.substring(0, 8)}</CardTitle>
-            {getStatusBadge(order.status || "")}
-          </div>
+        <div className="flex justify-between items-center">
+        <CardTitle>Pedido #{order._id.substring(0, 8)}</CardTitle>
+        <StatusBadge status={order.status} />
+        </div>
           <CardDescription>
             Criado em {formatDate(order.createdAt)}
           </CardDescription>
