@@ -2,6 +2,8 @@ import swaggerJsdoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
 import dotenv from "dotenv";
 
+dotenv.config();
+
 const options: swaggerJsdoc.Options = {
   definition: {
     openapi: "3.0.0",
@@ -17,7 +19,7 @@ const options: swaggerJsdoc.Options = {
       },
     ],
   },
-  apis: ["./src/routes/*.ts"], // Caminho para os arquivos de rotas
+  apis: ["./src/routes/*.ts"], // Caminho para os arquivos de rotas da aplicação
 };
 
 const swaggerSpec = swaggerJsdoc(options);
