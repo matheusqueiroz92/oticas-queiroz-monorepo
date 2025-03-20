@@ -103,3 +103,6 @@
 [2025-03-20 20:44:02] Configurando PM2 para iniciar com o sistema
 [2025-03-20 20:44:03] AVISO: Falha ao configurar inicialização automática do PM2
 [2025-03-20 20:44:03] Deploy concluído com sucesso!
+[2025-03-20 22:31:38] Iniciando deploy da aplicação Óticas Queiroz
+[2025-03-20 22:31:38] Obtendo as alterações mais recentes do repositório
+[2025-03-20 22:31:38] ERRO: Falha ao obter as alterações mais recentes
