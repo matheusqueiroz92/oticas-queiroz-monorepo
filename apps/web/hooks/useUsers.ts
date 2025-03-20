@@ -58,41 +58,37 @@ export function useUsers() {
   // Função para buscar múltiplos usuários por IDs
   const fetchUsers = useCallback(async (userIds: string[]): Promise<void> => {
     if (!userIds.length) return;
-    
+  
     setIsLoading(true);
-    
+  
     try {
-      // Filtrar apenas IDs que ainda não temos no cache
-      const idsToFetch = userIds.filter(id => !usersMap[id]);
+      const idsToFetch = userIds.filter(id => !usersMap[id]);  // Evitar duplicação de requisições
       
-      if (!idsToFetch.length) {
+      if (idsToFetch.length === 0) {
         setIsLoading(false);
         return;
       }
-      
-      // Buscar em paralelo
+  
       const userPromises = idsToFetch.map(id => 
         api.get(API_ROUTES.USERS.BY_ID(id))
-          .then(response => ({ id, data: response.data }))
+          .then(response => { 
+            console.log("Usuário encontrado:", response.data);
+            return { id, data: response.data };
+          })
           .catch(() => ({ id, data: null }))
       );
-      
+  
       const results = await Promise.all(userPromises);
-      
-      // Atualizar o mapa
+  
       const newEntries = results.reduce((acc, { id, data }) => {
         if (data) {
           acc[id] = data;
-          // Também armazenar no cache do React Query
-          queryClient.setQueryData(QUERY_KEYS.USERS.DETAIL(id), data);
+          queryClient.setQueryData(QUERY_KEYS.USERS.DETAIL(id), data); // Atualizar cache React Query
         }
         return acc;
       }, {} as Record<string, any>);
-      
-      setUsersMap(prev => ({
-        ...prev,
-        ...newEntries
-      }));
+  
+      setUsersMap(prev => ({ ...prev, ...newEntries }));
     } catch (error) {
       console.error("Erro ao buscar múltiplos usuários:", error);
     } finally {

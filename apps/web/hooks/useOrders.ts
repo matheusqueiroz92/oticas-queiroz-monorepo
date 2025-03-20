@@ -51,15 +51,17 @@ export function useOrders() {
   // Efeito para buscar usuários quando os pedidos são carregados
   useEffect(() => {
     if ((data?.orders ?? []).length > 0) {
-      // Extrair IDs únicos de clientes e vendedores
       const userIdsToFetch = [
         ...(data?.orders ?? []).map(order => order.clientId),
         ...(data?.orders ?? []).map(order => order.employeeId),
-      ]
-      .filter((value, index, self) => self.indexOf(value) === index); // Garantir IDs únicos
-  
-      // Chamar fetchUsers uma única vez para carregar os dados dos usuários
-      fetchUsers(userIdsToFetch);
+      ].filter((value, index, self) => self.indexOf(value) === index); // IDs únicos
+      
+      console.log("Buscando usuários com IDs:", userIdsToFetch);
+      
+      // Verifica se há usuários para buscar
+      if (userIdsToFetch.length > 0) {
+        fetchUsers(userIdsToFetch);
+      }
     }
   }, [data, fetchUsers]);
 
