@@ -126,6 +126,10 @@ export class OrderModel {
         .populate("employeeId", "name email")
         .populate("laboratoryId", "name")
         .populate("product", "name productType description price");
+
+      if (includeDeleted) {
+        orderQuery = orderQuery.populate("deletedBy", "name email");
+      }
     }
 
     const [orders, total] = await Promise.all([
