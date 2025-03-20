@@ -104,10 +104,10 @@ export class OrderModel {
 
     if (populate) {
       query = query
-        .populate("clientId", "name email role")
-        .populate("employeeId", "name email")
-        .populate("laboratoryId")
-        .populate("product"); // Também popula os produtos
+        .populate("clientId", "_id")
+        .populate("employeeId", "_id")
+        .populate("laboratoryId", "_id")
+        .populate("product", "_id");
 
       if (includeDeleted) {
         query = query.populate("deletedBy", "name email");
@@ -143,14 +143,10 @@ export class OrderModel {
 
     if (populate) {
       orderQuery = orderQuery
-        .populate("clientId", "name email role")
-        .populate("employeeId", "name email")
-        .populate("laboratoryId")
-        .populate("product"); // Também popula os produtos
-
-      if (includeDeleted) {
-        orderQuery = orderQuery.populate("deletedBy", "name email");
-      }
+        .populate("clientId", "_id")
+        .populate("employeeId","_id")
+        .populate("laboratoryId", "_id")
+        .populate("product", "_id");
     }
 
     const [orders, total] = await Promise.all([
@@ -189,10 +185,10 @@ export class OrderModel {
 
     if (populate) {
       query = query
-        .populate("clientId", "name email role")
-        .populate("employeeId", "name email")
-        .populate("laboratoryId")
-        .populate("product"); // Também popula os produtos
+        .populate("clientId", "_id")
+        .populate("employeeId", "_id")
+        .populate("laboratoryId", "_id")
+        .populate("product", "_id");
     }
 
     const order = await query.exec();
@@ -223,11 +219,11 @@ export class OrderModel {
       },
       { new: true, runValidators: true }
     )
-      .populate("clientId", "name email role")
-      .populate("employeeId", "name email")
-      .populate("laboratoryId")
-      .populate("product")
-      .populate("deletedBy", "name email")
+      .populate("clientId", "_id")
+      .populate("employeeId", "_id")
+      .populate("laboratoryId", "_id")
+      .populate("product", "_id")
+      .populate("deletedBy", "_id")
       .exec();
 
     return order ? this.convertToIOrder(order) : null;
@@ -250,11 +246,11 @@ export class OrderModel {
       Order.find(query)
         .skip(skip)
         .limit(limit)
-        .populate("clientId", "name email role")
-        .populate("employeeId", "name email")
-        .populate("laboratoryId")
-        .populate("product")
-        .populate("deletedBy", "name email")
+        .populate("clientId", "_id")
+        .populate("employeeId", "_id")
+        .populate("laboratoryId", "_id")
+        .populate("product", "_id")
+        .populate("deletedBy", "_id")
         .exec(),
       Order.countDocuments(query),
     ]);
@@ -283,10 +279,10 @@ export class OrderModel {
 
     if (populate) {
       orderQuery = orderQuery
-        .populate("clientId", "name email role")
-        .populate("employeeId", "name email")
-        .populate("laboratoryId")
-        .populate("product");
+        .populate("clientId", "_id")
+        .populate("employeeId", "_id")
+        .populate("laboratoryId", "_id")
+        .populate("product", "_id");
 
       if (includeDeleted) {
         orderQuery = orderQuery.populate("deletedBy", "name email");
@@ -336,10 +332,10 @@ export class OrderModel {
 
     if (populate) {
       orderQuery = orderQuery
-        .populate("clientId", "name email role")
-        .populate("employeeId", "name email")
-        .populate("laboratoryId")
-        .populate("product");
+        .populate("clientId", "_id")
+        .populate("employeeId", "_id")
+        .populate("laboratoryId", "_id")
+        .populate("product", "_id");
 
       if (includeDeleted) {
         orderQuery = orderQuery.populate("deletedBy", "name email");
