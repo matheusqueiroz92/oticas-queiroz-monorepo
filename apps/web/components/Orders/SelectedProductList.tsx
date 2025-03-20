@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Product } from "../../app/types/product";
-import { formatCurrency } from "../../app/services/orderService";
+import { formatCurrency } from "../../app/utils/formatters";
 
 interface SelectedProductsListProps {
   products: Product[];

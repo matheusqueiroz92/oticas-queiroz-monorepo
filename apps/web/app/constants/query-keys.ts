@@ -34,14 +34,9 @@ export const QUERY_KEYS = {
 
   // Pedidos
   ORDERS: {
-    ALL: ["orders"],
-    PAGINATED: (page = 1, filters = {}) => [
-      "orders",
-      "paginated",
-      page,
-      filters,
-    ],
-    DETAIL: (id: string) => ["orders", "detail", id],
+    ALL: 'orders',
+    PAGINATED: (page = 1, filters = {}) => ['orders', 'list', page, JSON.stringify(filters)],
+    DETAIL: (id: string) => ['orders', 'detail', id],
     CLIENT: (clientId: string) => ["orders", "client", clientId],
     DAILY: ["orders", "daily"],
   },

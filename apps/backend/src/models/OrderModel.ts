@@ -1,10 +1,83 @@
 import { Order } from "../schemas/OrderSchema";
 import type { IOrder } from "../interfaces/IOrder";
-import { type Document, Types, type FilterQuery } from "mongoose";
+import { Types, type FilterQuery } from "mongoose";
 
 export class OrderModel {
   private isValidId(id: string): boolean {
     return Types.ObjectId.isValid(id);
+  }
+
+  private convertToIOrder(doc: any): IOrder {
+    const order = doc.toObject ? doc.toObject() : doc;
+    
+    return {
+      _id: order._id.toString(),
+      clientId: typeof order.clientId === 'object' && order.clientId?._id
+        ? order.clientId._id.toString()
+        : order.clientId.toString(),
+      employeeId: typeof order.employeeId === 'object' && order.employeeId?._id
+        ? order.employeeId._id.toString()
+        : order.employeeId.toString(),
+      // Convert the product array
+      product: Array.isArray(order.product)
+        ? order.product.map((p: any) => {
+            if (typeof p === 'object' && p._id) {
+              return {
+                _id: p._id.toString(),
+                name: p.name,
+                productType: p.productType,
+                description: p.description,
+                image: p.image,
+                sellPrice: p.sellPrice,
+                brand: p.brand,
+                costPrice: p.costPrice,
+                // Include type-specific fields
+                ...(p.productType === 'lenses' && { lensType: p.lensType }),
+                ...(p.productType === 'prescription_frame' && { 
+                  typeFrame: p.typeFrame,
+                  color: p.color,
+                  shape: p.shape,
+                  reference: p.reference
+                }),
+                ...(p.productType === 'sunglasses_frame' && { 
+                  model: p.model,
+                  typeFrame: p.typeFrame,
+                  color: p.color,
+                  shape: p.shape,
+                  reference: p.reference
+                })
+              };
+            } else {
+              return { _id: p.toString() };
+            }
+          })
+        : [],
+      paymentMethod: order.paymentMethod,
+      paymentEntry: order.paymentEntry,
+      installments: order.installments,
+      orderDate: order.orderDate,
+      deliveryDate: order.deliveryDate,
+      status: order.status,
+      laboratoryId: order.laboratoryId 
+        ? (typeof order.laboratoryId === 'object' && order.laboratoryId._id 
+            ? order.laboratoryId._id.toString()
+            : order.laboratoryId.toString())
+        : undefined,
+      prescriptionData: order.prescriptionData,
+      observations: order.observations,
+      totalPrice: order.totalPrice,
+      discount: order.discount || 0,
+      finalPrice: order.finalPrice,
+      isDeleted: order.isDeleted,
+      deletedAt: order.deletedAt,
+      deletedBy: order.deletedBy 
+        ? (typeof order.deletedBy === 'object' && order.deletedBy._id
+            ? order.deletedBy._id.toString()
+            : order.deletedBy.toString())
+        : undefined,
+      createdAt: order.createdAt,
+      updatedAt: order.updatedAt,
+    };
   }
 
   async create(orderData: Omit<IOrder, "_id">): Promise<IOrder> {
@@ -329,78 +402,5 @@ export class OrderModel {
     }
 
     return query;
-  }
-
-  private convertToIOrder(doc: any): IOrder {
-    const order = doc.toObject ? doc.toObject() : doc;
-    
-    return {
-      _id: order._id.toString(),
-      clientId: typeof order.clientId === 'object' && order.clientId?._id
-        ? order.clientId._id.toString()
-        : order.clientId.toString(),
-      employeeId: typeof order.employeeId === 'object' && order.employeeId?._id
-        ? order.employeeId._id.toString()
-        : order.employeeId.toString(),
-      // Convert the product array
-      product: Array.isArray(order.product)
-        ? order.product.map((p: any) => {
-            if (typeof p === 'object' && p._id) {
-              return {
-                _id: p._id.toString(),
-                name: p.name,
-                productType: p.productType,
-                description: p.description,
-                image: p.image,
-                sellPrice: p.sellPrice,
-                brand: p.brand,
-                costPrice: p.costPrice,
-                // Include type-specific fields
-                ...(p.productType === 'lenses' && { lensType: p.lensType }),
-                ...(p.productType === 'prescription_frame' && { 
-                  typeFrame: p.typeFrame,
-                  color: p.color,
-                  shape: p.shape,
-                  reference: p.reference
-                }),
-                ...(p.productType === 'sunglasses_frame' && { 
-                  model: p.model,
-                  typeFrame: p.typeFrame,
-                  color: p.color,
-                  shape: p.shape,
-                  reference: p.reference
-                })
-              };
-            } else {
-              return { _id: p.toString() };
-            }
-          })
-        : [],
-      paymentMethod: order.paymentMethod,
-      paymentEntry: order.paymentEntry,
-      installments: order.installments,
-      orderDate: order.orderDate,
-      deliveryDate: order.deliveryDate,
-      status: order.status,
-      laboratoryId: order.laboratoryId 
-        ? (typeof order.laboratoryId === 'object' && order.laboratoryId._id 
-            ? order.laboratoryId._id.toString()
-            : order.laboratoryId.toString())
-        : undefined,
-      prescriptionData: order.prescriptionData,
-      observations: order.observations,
-      totalPrice: order.totalPrice,
-      discount: order.discount || 0,
-      finalPrice: order.finalPrice,
-      isDeleted: order.isDeleted,
-      deletedAt: order.deletedAt,
-      deletedBy: order.deletedBy 
-        ? (typeof order.deletedBy === 'object' && order.deletedBy._id
-            ? order.deletedBy._id.toString()
-            : order.deletedBy.toString())
-        : undefined,
-      createdAt: order.createdAt,
-      updatedAt: order.updatedAt,
-    };
   }
 }

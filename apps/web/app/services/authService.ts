@@ -17,7 +17,6 @@ export interface LoginResponse {
 
 // Definir a URL base da API e registrar no console para diagnóstico
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333";
-console.log(`API configurada para: ${API_URL}`);
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -40,11 +39,6 @@ api.interceptors.request.use(
       if (!config.url.startsWith("/api/") && !config.url.startsWith("/auth/")) {
         // Não adicionar prefixo se já for uma rota /auth/
         config.url = `/api${config.url.startsWith("/") ? config.url : `/${config.url}`}`;
-      }
-
-      // Log apenas em ambiente de desenvolvimento
-      if (process.env.NODE_ENV === "development") {
-        console.log(`Requisição para: ${config.baseURL}${config.url}`);
       }
     }
 

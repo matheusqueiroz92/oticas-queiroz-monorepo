@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Order } from "@/app/types/order";
-import { formatCurrency, formatDate } from "@/app/services/orderService";
+import { formatCurrency, formatDate } from "@/app/utils/formatters";
 
 interface RecentOrdersTableProps {
   orders: Order[];

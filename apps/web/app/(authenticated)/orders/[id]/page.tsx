@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Card,
   CardContent,
@@ -45,21 +46,26 @@ export default function OrderDetailsPage() {
   const { id } = useParams() as { id: string };
   const router = useRouter();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   // Usar hook useOrders para aproveitar suas funcionalidades
   const { 
-    invalidateOrdersCache, 
-    fetchOrderById, 
-    getOrderStatusClass, 
-    translateOrderStatus 
+    translateOrderStatus,
+    fetchOrderById 
   } = useOrders();
-  
+
+  // Estado para armazenar dados complementares
   const [client, setClient] = useState<User | null>(null);
   const [employee, setEmployee] = useState<User | null>(null);
   const [laboratoryInfo, setLaboratoryInfo] = useState<Laboratory | null>(null);
   
-  // Usar a query do hook useOrders para buscar o pedido
-  const { data: order, isLoading, error, refetch } = fetchOrderById(id);
+  // Buscar detalhes do pedido
+  const { 
+    data: order, 
+    isLoading,
+    error, 
+    refetch 
+  } = fetchOrderById(id);
 
   // Função para buscar detalhes complementares (cliente, funcionário, laboratório)
   const fetchComplementaryDetails = useCallback(async () => {
@@ -68,27 +74,39 @@ export default function OrderDetailsPage() {
     try {
       // Processar dados do cliente
       if (typeof order.clientId === "string") {
-        const response = await api.get(`/api/users/${order.clientId}`);
-        setClient(response.data);
+        try {
+          const response = await api.get(`/api/users/${order.clientId}`);
+          setClient(response.data);
+        } catch (clientError) {
+          console.error("Erro ao buscar cliente:", clientError);
+        }
       } else if (typeof order.clientId === "object" && order.clientId !== null) {
         setClient(order.clientId);
       }
 
       // Processar dados do funcionário
       if (typeof order.employeeId === "string") {
-        const response = await api.get(`/api/users/${order.employeeId}`);
-        setEmployee(response.data);
+        try {
+          const response = await api.get(`/api/users/${order.employeeId}`);
+          setEmployee(response.data);
+        } catch (employeeError) {
+          console.error("Erro ao buscar funcionário:", employeeError);
+        }
       } else if (typeof order.employeeId === "object" && order.employeeId !== null) {
         setEmployee(order.employeeId);
       }
 
       // Se o pedido tiver um laboratório associado, buscar seus detalhes
       if (order.laboratoryId) {
-        if (typeof order.laboratoryId === "string") {
-          const labResponse = await api.get(`/api/laboratories/${order.laboratoryId}`);
-          setLaboratoryInfo(labResponse.data);
-        } else if (typeof order.laboratoryId === "object" && order.laboratoryId !== null) {
-          setLaboratoryInfo(order.laboratoryId as Laboratory);
+        try {
+          if (typeof order.laboratoryId === "string") {
+            const labResponse = await api.get(`/api/laboratories/${order.laboratoryId}`);
+            setLaboratoryInfo(labResponse.data);
+          } else if (typeof order.laboratoryId === "object" && order.laboratoryId !== null) {
+            setLaboratoryInfo(order.laboratoryId as Laboratory);
+          }
+        } catch (labError) {
+          console.error("Erro ao buscar laboratório:", labError);
         }
       } else {
         setLaboratoryInfo(null);
@@ -111,23 +129,18 @@ export default function OrderDetailsPage() {
   }, [order, fetchComplementaryDetails]);
 
   // Função para atualizar todos os dados do pedido e detalhes relacionados
-  const handleRefreshData = useCallback(() => {
-    refetch();
-  }, [refetch]);
+  const handleRefreshData = () => {
+    refetch()
+  }
 
   // Função para voltar à página de listagem
   const handleGoBack = () => {
-    // Sinalizar que houve uma atualização
-    localStorage.setItem('orders_updated', 'true');
-    
-    // Invalidar o cache para garantir que a lista será atualizada quando voltar
-    invalidateOrdersCache();
-    
-    // Navegar de volta
-    router.back();
+    // Garantir que a lista seja atualizada quando voltar
+    queryClient.invalidateQueries({ queryKey: ['orders'] });
+    router.push('/orders');
   };
 
-  // Função para obter as informações de status (retorna apenas dados, não o componente)
+  // Função para obter as informações de status
   const getStatusBadge = (status: string) => {
     const statusMap: Record<string, { label: string; className: string }> = {
       pending: {
@@ -173,37 +186,6 @@ export default function OrderDetailsPage() {
     return methodMap[method] || method;
   };
 
-  // Função para formatar valores de grau
-  const formatRefractionValue = (value?: number) => {
-    if (value === undefined || value === null) return "N/A";
-
-    // Se o valor for exatamente zero
-    if (value === 0) {
-      // Verificar se todos os valores da receita são zero
-      if (order && order.prescriptionData) {
-        const allZeros =
-          (!order.prescriptionData.leftEye?.sph ||
-            order.prescriptionData.leftEye.sph === 0) &&
-          (!order.prescriptionData.leftEye?.cyl ||
-            order.prescriptionData.leftEye.cyl === 0) &&
-          (!order.prescriptionData.rightEye?.sph ||
-            order.prescriptionData.rightEye.sph === 0) &&
-          (!order.prescriptionData.rightEye?.cyl ||
-            order.prescriptionData.rightEye.cyl === 0) &&
-          (!order.prescriptionData.nd || order.prescriptionData.nd === 0) &&
-          (!order.prescriptionData.oc || order.prescriptionData.oc === 0) &&
-          (!order.prescriptionData.addition ||
-            order.prescriptionData.addition === 0);
-
-        if (allZeros) return "Neutro";
-      }
-    }
-
-    // Para outros valores, mostrar sinal de + para positivos
-    const prefix = value > 0 ? "+" : "";
-    return `${prefix}${value.toFixed(2).replace(".", ",")}`;
-  };
-
   // Loading state
   if (isLoading) {
     return (
@@ -217,7 +199,7 @@ export default function OrderDetailsPage() {
   if (error || !order) {
     return (
       <div className="p-4 bg-red-50 text-red-600 rounded-md">
-        Pedido não encontrado ou ocorreu um erro ao carregar os dados.
+        {error ? String(error) : "Pedido não encontrado ou ocorreu um erro ao carregar os dados."}
       </div>
     );
   }
@@ -229,6 +211,11 @@ export default function OrderDetailsPage() {
 
   // Determinar se o pedido tem produtos múltiplos
   const hasMultipleProducts = Array.isArray(order.product) && order.product.length > 0;
+  
+  // Normalizar produtos para garantir que sempre seja um array
+  const products = hasMultipleProducts 
+    ? order.product 
+    : (order.product ? [order.product] : []);
 
   // Componente para exibir badge de status
   const StatusBadge = ({ status }: { status: string }) => {
@@ -278,15 +265,13 @@ export default function OrderDetailsPage() {
                   Receita
                 </TabsTrigger>
               )}
-              {laboratoryInfo && (
-                <TabsTrigger value="laboratory">
-                  <Beaker className="h-4 w-4 mr-2" />
-                  Laboratório
-                </TabsTrigger>
-              )}
+              <TabsTrigger value="laboratory">
+                <Beaker className="h-4 w-4 mr-2" />
+                Laboratório
+              </TabsTrigger>
             </TabsList>
             
-            {/* Conteúdo das abas permanece o mesmo */}
+            {/* Conteúdo da aba de detalhes */}
             <TabsContent value="details" className="space-y-6">
               {/* Informações principais */}
               <div className="grid md:grid-cols-2 gap-6">
@@ -356,35 +341,13 @@ export default function OrderDetailsPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {hasMultipleProducts ? (
-                          // Renderizar múltiplos produtos
-                          order.product.map((product, index) => (
-                            <tr key={product._id || index} className="border-b">
-                              <td className="py-2">{product.name}</td>
-                              <td className="py-2">{getProductTypeLabel(product.productType)}</td>
-                              <td className="py-2 text-right">{formatCurrency(product.sellPrice || 0)}</td>
-                            </tr>
-                          ))
-                        ) : (
-                          // Fallback para um único produto (para compatibilidade)
-                          <tr className="border-b">
-                            <td className="py-2">
-                              {typeof order.product === 'string'
-                                ? order.product
-                                : (order.product as any)?.name || 'N/A'}
-                            </td>
-                            <td className="py-2">
-                              {typeof order.product === 'object' && (order.product as any)?.productType
-                                ? getProductTypeLabel((order.product as any).productType)
-                                : 'N/A'}
-                            </td>
-                            <td className="py-2 text-right">
-                              {formatCurrency(typeof order.product === 'object'
-                                ? (order.product as any)?.sellPrice || 0
-                                : 0)}
-                            </td>
+                        {products.map((product: any, index: number) => (
+                          <tr key={product._id || index} className="border-b">
+                            <td className="py-2">{product.name}</td>
+                            <td className="py-2">{getProductTypeLabel(product.productType)}</td>
+                            <td className="py-2 text-right">{formatCurrency(product.sellPrice || 0)}</td>
                           </tr>
-                        )}
+                        ))}
                       </tbody>
                       <tfoot>
                         <tr className="font-semibold">
@@ -503,21 +466,149 @@ export default function OrderDetailsPage() {
               </div>
             </TabsContent>
 
-            {/* Aba de Laboratório */}
-            {laboratoryInfo && (
-              <TabsContent value="laboratory" className="space-y-6">
+            {/* Aba de Receita Médica */}
+            {hasPrescriptionData && (
+              <TabsContent value="prescription" className="space-y-6">
                 <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <h3 className="font-medium text-lg flex items-center">
-                      <Beaker className="h-5 w-5 mr-2" /> Laboratório
-                    </h3>
-                    {/* Componente para atualizar laboratório */}
-                    <OrderLaboratoryUpdate
-                      order={order}
-                      onUpdateSuccess={handleRefreshData}
-                    />
+                  <h3 className="font-medium text-lg flex items-center">
+                    <FileText className="h-5 w-5 mr-2" /> Receita Médica
+                  </h3>
+                  <div className="bg-gray-50 p-4 rounded-md">
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <div>
+                        <h4 className="font-semibold mb-2">Informações da Receita</h4>
+                        <div className="space-y-2">
+                          <p className="text-sm">
+                            <span className="font-semibold">Médico:</span>{" "}
+                            {order.prescriptionData?.doctorName || "Não informado"}
+                          </p>
+                          <p className="text-sm">
+                            <span className="font-semibold">Clínica:</span>{" "}
+                            {order.prescriptionData?.clinicName || "Não informada"}
+                          </p>
+                          <p className="text-sm">
+                            <span className="font-semibold">Data da Consulta:</span>{" "}
+                            {formatDate(order.prescriptionData?.appointmentDate) || "Não informada"}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <h4 className="font-semibold mb-2">Valores Adicionais</h4>
+                        <div className="space-y-2">
+                          <p className="text-sm">
+                            <span className="font-semibold">Adição:</span>{" "}
+                            {(order.prescriptionData?.addition || 0).toFixed(2)}
+                          </p>
+                          <p className="text-sm">
+                            <span className="font-semibold">ND:</span>{" "}
+                            {(order.prescriptionData?.nd || 0).toFixed(2)}
+                          </p>
+                          <p className="text-sm">
+                            <span className="font-semibold">OC:</span>{" "}
+                            {(order.prescriptionData?.oc || 0).toFixed(2)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-6 grid md:grid-cols-2 gap-6">
+                      <div>
+                        <h4 className="font-semibold mb-2">Olho Esquerdo (OE)</h4>
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b">
+                              <th className="text-left py-1">Medida</th>
+                              <th className="text-right py-1">Valor</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr className="border-b">
+                              <td className="py-1">Esférico (sph)</td>
+                              <td className="text-right py-1">
+                                {(order.prescriptionData?.leftEye.sph || 0).toFixed(2)}
+                              </td>
+                            </tr>
+                            <tr className="border-b">
+                              <td className="py-1">Cilíndrico (cyl)</td>
+                              <td className="text-right py-1">
+                                {(order.prescriptionData?.leftEye.cyl || 0).toFixed(2)}
+                              </td>
+                            </tr>
+                            <tr className="border-b">
+                              <td className="py-1">Eixo (axis)</td>
+                              <td className="text-right py-1">
+                                {order.prescriptionData?.leftEye.axis || 0}°
+                              </td>
+                            </tr>
+                            <tr>
+                              <td className="py-1">Distância Pupilar (PD)</td>
+                              <td className="text-right py-1">
+                                {order.prescriptionData?.leftEye.pd || 0} mm
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      
+                      <div>
+                        <h4 className="font-semibold mb-2">Olho Direito (OD)</h4>
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b">
+                              <th className="text-left py-1">Medida</th>
+                              <th className="text-right py-1">Valor</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr className="border-b">
+                              <td className="py-1">Esférico (sph)</td>
+                              <td className="text-right py-1">
+                                {(order.prescriptionData?.rightEye.sph || 0).toFixed(2)}
+                              </td>
+                            </tr>
+                            <tr className="border-b">
+                              <td className="py-1">Cilíndrico (cyl)</td>
+                              <td className="text-right py-1">
+                                {(order.prescriptionData?.rightEye.cyl || 0).toFixed(2)}
+                              </td>
+                            </tr>
+                            <tr className="border-b">
+                              <td className="py-1">Eixo (axis)</td>
+                              <td className="text-right py-1">
+                                {order.prescriptionData?.rightEye.axis || 0}°
+                              </td>
+                            </tr>
+                            <tr>
+                              <td className="py-1">Distância Pupilar (PD)</td>
+                              <td className="text-right py-1">
+                                {order.prescriptionData?.rightEye.pd || 0} mm
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
                   </div>
+                </div>
+              </TabsContent>
+            )}
 
+            {/* Aba de Laboratório */}
+            <TabsContent value="laboratory" className="space-y-6">
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="font-medium text-lg flex items-center">
+                    <Beaker className="h-5 w-5 mr-2" /> Laboratório
+                  </h3>
+                  {/* Componente para atualizar laboratório - independente do tipo de produto */}
+                  <OrderLaboratoryUpdate
+                    order={order}
+                    onUpdateSuccess={handleRefreshData}
+                  />
+                </div>
+
+                {laboratoryInfo ? (
                   <div className="bg-gray-50 p-4 rounded-md">
                     <div className="space-y-2">
                       <p className="text-sm">
@@ -560,9 +651,18 @@ export default function OrderDetailsPage() {
                       </div>
                     </div>
                   </div>
-                </div>
-              </TabsContent>
-            )}
+                ) : (
+                  <div className="bg-gray-50 p-4 rounded-md">
+                    <p className="text-sm text-muted-foreground">
+                      Nenhum laboratório associado a este pedido.
+                    </p>
+                    <p className="text-sm mt-2">
+                      Use o botão "Associar Laboratório" para vincular um laboratório a este pedido.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
           </Tabs>
         </CardContent>
         

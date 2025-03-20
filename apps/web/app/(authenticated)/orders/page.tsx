@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,18 +34,14 @@ import {
   CardTitle,
   CardDescription
 } from "@/components/ui/card";
-import { Loader2, FileX, FilterIcon } from "lucide-react";
+import { Loader2, FileX, FilterIcon, RefreshCw } from "lucide-react";
 import { useOrders } from "@/hooks/useOrders";
-import { api } from "@/app/services/authService";
+import { useUsers } from "@/hooks/useUsers";
 import { formatCurrency, formatDate } from "@/app/utils/formatters";
 import { Badge } from "@/components/ui/badge";
-import { useQuery } from "@tanstack/react-query";
-import { QUERY_KEYS } from "@/app/constants/query-keys";
-import { usePathname } from "next/navigation";
+import { useToast } from "@/hooks/useToast";
 
 export default function OrdersPage() {
-  const pathname = usePathname();
-  const [shouldRefresh, setShouldRefresh] = useState(false);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [showFilters, setShowFilters] = useState(false);
@@ -54,8 +50,8 @@ export default function OrdersPage() {
     endDate: ''
   });
   
-  // Mapas de IDs para nomes
-  const [usersMap, setUsersMap] = useState<Record<string, string>>({});
+  const { toast } = useToast();
+  const { fetchUsers, getUserName } = useUsers();
 
   const {
     orders,
@@ -68,23 +64,27 @@ export default function OrdersPage() {
     updateFilters,
     navigateToOrderDetails,
     navigateToCreateOrder,
-    refetch,
-    invalidateOrdersCache
+    refreshOrdersList
   } = useOrders();
 
-  // Buscar TODOS os usuários para criar um mapa de IDs para nomes
-  const { data: allUsersData, isLoading: isLoadingUsers } = useQuery({
-    queryKey: QUERY_KEYS.USERS.ALL,
-    queryFn: async () => {
-      const response = await api.get("/api/users");
-      return Array.isArray(response.data) ? response.data : response.data.users || [];
-    },
-  });
+  // Efeito para recarregar dados quando a página é montada
+  useEffect(() => {
+    refreshOrdersList();
+  }, [refreshOrdersList]);
 
-  // Função para obter nome de usuário por ID (cliente ou vendedor)
-  const getUserNameById = (userId: string): string => {
-    return usersMap[userId] || userId;
-  };
+  // Efeito para buscar usuários quando os pedidos são carregados
+  useEffect(() => {
+    if (orders.length > 0) {
+      // Extrair IDs únicos de clientes e vendedores
+      const userIdsToFetch = [...new Set([
+        ...orders.map(order => typeof order.clientId === 'string' ? order.clientId : ''),
+        ...orders.map(order => typeof order.employeeId === 'string' ? order.employeeId : '')
+      ])].filter(Boolean);
+      
+      // Buscar usuários
+      fetchUsers(userIdsToFetch);
+    }
+  }, [orders, fetchUsers]);
 
   // Função para obter o badge de status
   const getStatusBadge = (status: string) => {
@@ -230,83 +230,16 @@ export default function OrdersPage() {
     return items;
   };
 
+  // Verificar se não há pedidos para mostrar
   const showEmptyState = !isLoading && !error && orders.length === 0;
-
-  // Criar mapa de IDs para nomes quando os dados de usuários forem carregados
-  useEffect(() => {
-    if (allUsersData) {
-      const map: Record<string, string> = {};
-      allUsersData.forEach((user: any) => {
-        if (user._id && user.name) {
-          map[user._id] = user.name;
-        }
-      });
-      setUsersMap(map);
-    }
-  }, [allUsersData]);
-  
-  // Configurar um intervalo para revalidar os dados periodicamente
-  useEffect(() => {
-    // Revalidar a lista de pedidos a cada 30 segundos
-    const intervalId = setInterval(() => {
-      refetch();
-    }, 10000);
-
-    // Adicionar um evento de foco para revalidar quando o usuário retorna à página
-    const handleFocus = () => {
-      refetch();
-    };
-    window.addEventListener('focus', handleFocus);
-
-    // Limpar intervalo e event listener quando o componente for desmontado
-    return () => {
-      clearInterval(intervalId);
-      window.removeEventListener('focus', handleFocus);
-    };
-  }, [refetch]);
-
-  // Efeito para detectar quando a página é remontada/visitada novamente
-  useEffect(() => {
-    // Se estivermos na página de listagem de pedidos
-    if (pathname === '/orders' && shouldRefresh) {
-      // Forçar atualização
-      refetch();
-      setShouldRefresh(false);
-    }
-  }, [pathname, shouldRefresh, refetch]);
-
-  // Efeito para monitorar quando a página ganha foco (ex: volta de outra aba)
-  useEffect(() => {
-    const handleFocus = () => {
-      if (pathname === '/orders') {
-        setShouldRefresh(true);
-      }
-    };
-    
-    // Adicionar event listener para quando a janela ganha foco
-    window.addEventListener('focus', handleFocus);
-    
-    // Adicionar event listener para navegação no Next.js
-    const handleRouteChange = () => {
-      if (pathname === '/orders') {
-        setShouldRefresh(true);
-      }
-    };
-    
-    // Escutar evento personalizado que pode ser disparado quando voltamos à página
-    document.addEventListener('order-updated', handleRouteChange);
-    
-    return () => {
-      window.removeEventListener('focus', handleFocus);
-      document.removeEventListener('order-updated', handleRouteChange);
-    };
-  }, [pathname]);
 
   return (
     <div className="space-y-4 p-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Pedidos</h1>
-        <Button onClick={navigateToCreateOrder}>Novo Pedido</Button>
+        <div className="flex space-x-2">
+          <Button onClick={navigateToCreateOrder}>Novo Pedido</Button>
+        </div>
       </div>
       
       <Card>
@@ -391,7 +324,7 @@ export default function OrdersPage() {
             </div>
           )}
 
-          {(isLoading || isLoadingUsers) && (
+          {isLoading && (
             <div className="flex justify-center items-center py-12">
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>
@@ -411,7 +344,7 @@ export default function OrdersPage() {
             </div>
           )}
 
-          {!isLoading && !isLoadingUsers && !error && orders.length > 0 && (
+          {!isLoading && !error && orders.length > 0 && (
             <>
               <div className="rounded-md border overflow-hidden">
                 <Table>
@@ -432,7 +365,7 @@ export default function OrdersPage() {
                       return (
                         <TableRow key={order._id}>
                           <TableCell>
-                            {getUserNameById(order.clientId)}
+                            {getUserName(order.clientId)}
                           </TableCell>
 
                           <TableCell>{formatDate(order.createdAt)}</TableCell>
@@ -444,7 +377,7 @@ export default function OrdersPage() {
                           </TableCell>
 
                           <TableCell>
-                            {getUserNameById(order.employeeId)}
+                            {getUserName(order.employeeId)}
                           </TableCell>
 
                           <TableCell className="text-right">
@@ -452,13 +385,15 @@ export default function OrdersPage() {
                           </TableCell>
 
                           <TableCell>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => navigateToOrderDetails(order._id)}
-                            >
-                              Detalhes
-                            </Button>
+                            <div className="flex space-x-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => navigateToOrderDetails(order._id)}
+                              >
+                                Detalhes
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       );

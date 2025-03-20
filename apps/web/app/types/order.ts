@@ -1,11 +1,11 @@
-import { Product } from "./product";
+import type { Product } from "./product";
 
 export interface Order {
   _id: string;
   clientId: string;
   employeeId: string;
-  product: Product[]; // Agora é um array de produtos, pois um pedido pode ter mais de um produto
-  paymentMethod: string; // 
+  product: Product[];
+  paymentMethod: string;
   paymentEntry?: number;
   installments?: number;
   orderDate: string | Date;
@@ -20,22 +20,31 @@ export interface Order {
       sph: number;
       cyl: number;
       axis: number;
-      pd: number; // Novo campo
+      pd: number;
     };
     rightEye: {
       sph: number;
       cyl: number;
       axis: number;
-      pd: number; // Novo campo
+      pd: number;
     };
     nd: number;
     oc: number;
     addition: number;
   };
   observations?: string;
-  totalPrice: number; // soma dos preços dos produtos
+  totalPrice: number;
   discount: number;
-  finalPrice: number; // totalprice - discount
+  finalPrice: number;
   createdAt?: string | Date;
   updatedAt?: string | Date;
+  
+  // Dados normalizados para uso no frontend
+  _normalized?: {
+    clientName: string;
+    clientId: string | null;
+    employeeName: string;
+    employeeId: string | null;
+    laboratoryName: string | null;
+  };
 }

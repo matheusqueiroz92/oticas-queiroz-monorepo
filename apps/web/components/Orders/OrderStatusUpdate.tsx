@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -31,19 +33,16 @@ import {
 import { useOrders } from "@/hooks/useOrders";
 import { useToast } from "@/hooks/useToast";
 
-// Interface para o pedido
 interface OrderDetail {
   _id: string;
   status: string;
 }
 
-// Props do componente
 interface OrderStatusUpdateProps {
   order: OrderDetail;
   onUpdateSuccess: () => void;
 }
 
-// Schema para validação - apenas para status
 const updateStatusSchema = z.object({
   status: z.string().min(1, "Status é obrigatório"),
 });
@@ -59,7 +58,6 @@ export default function OrderStatusUpdate({
   const { handleUpdateOrderStatus, translateOrderStatus } = useOrders();
   const { toast } = useToast();
 
-  // Inicializar o formulário apenas com o campo de status
   const form = useForm<UpdateStatusFormData>({
     resolver: zodResolver(updateStatusSchema),
     defaultValues: {
@@ -67,9 +65,7 @@ export default function OrderStatusUpdate({
     },
   });
 
-  // Função de submissão do formulário
   async function onSubmit(data: UpdateStatusFormData) {
-    // Se o status não mudou, não fazer nada
     if (data.status === order.status) {
       toast({
         description: "Nenhuma alteração foi feita no status.",
@@ -90,6 +86,7 @@ export default function OrderStatusUpdate({
         onUpdateSuccess();
       }
     } catch (error) {
+      console.error("Erro ao atualizar status:", error);
       toast({
         variant: "destructive",
         title: "Erro",

@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/useToast";
-import { useState } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   getAllOrders,
   getOrderById,
@@ -13,6 +13,7 @@ import {
 } from "@/app/services/orderService";
 import { QUERY_KEYS } from "../app/constants/query-keys";
 import type { Order } from "@/app/types/order";
+import { useUsers } from "@/hooks/useUsers";
 
 interface OrderFilters {
   search?: string;
@@ -30,24 +31,36 @@ export function useOrders() {
   const router = useRouter();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-
-  // Função para forçar atualização de todas as queries de pedidos
-  const invalidateOrdersCache = () => {
-    queryClient.invalidateQueries({ queryKey: QUERY_KEYS.ORDERS.ALL });
-    queryClient.invalidateQueries({ queryKey: QUERY_KEYS.ORDERS.PAGINATED() });
-  };
+  const { fetchUsers, getUserName } = useUsers();
 
   // Query para buscar pedidos paginados
-  const { data, isLoading, error, refetch } = useQuery({
+  const { 
+    data, 
+    isLoading, 
+    error, 
+    refetch 
+  } = useQuery({
     queryKey: QUERY_KEYS.ORDERS.PAGINATED(currentPage, filters),
-    queryFn: () =>
-      getAllOrders({
-        ...filters,
-        page: currentPage,
-        sort: "-createdAt",
-      } as OrderFilters),
-    placeholderData: (prevData) => prevData, // Substitui keepPreviousData
+    queryFn: () => getAllOrders({
+      ...filters,
+      page: currentPage,
+      sort: "-createdAt",
+    }),
   });
+
+  // Efeito para buscar usuários quando os pedidos são carregados
+  useEffect(() => {
+    if ((data?.orders ?? []).length > 0) {
+      // Extrair IDs únicos de clientes e vendedores
+      const userIdsToFetch = [...new Set([
+        ...(data?.orders ?? []).map(order => typeof order.clientId === 'string' ? order.clientId : ''),
+        ...(data?.orders ?? []).map(order => typeof order.employeeId === 'string' ? order.employeeId : '')
+      ])].filter(Boolean);
+      
+      // Buscar usuários
+      fetchUsers(userIdsToFetch);
+    }
+  }, [data, fetchUsers]);
 
   // Dados normalizados
   const orders = data?.orders || [];
@@ -67,68 +80,46 @@ export function useOrders() {
   const updateOrderStatusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: string }) =>
       updateOrderStatus(id, status),
-    onSuccess: (updatedOrder) => {
-      if (updatedOrder) {
-        toast({
-          title: "Status atualizado",
-          description: "O status do pedido foi atualizado com sucesso.",
-        });
-
-        // Invalidar queries
-        queryClient.invalidateQueries({
-          queryKey: QUERY_KEYS.ORDERS.DETAIL(updatedOrder._id),
-        });
-        queryClient.invalidateQueries({
-          queryKey: QUERY_KEYS.ORDERS.PAGINATED(),
-        });
-      }
-      return updatedOrder;
+    onSuccess: () => {
+      toast({
+        title: "Status atualizado",
+        description: "O status do pedido foi atualizado com sucesso.",
+      });
+      
+      // Invalidar todas as queries relacionadas
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
     },
-    onError: (error, variables) => {
-      console.error(
-        `Erro ao atualizar status do pedido ${variables.id}:`,
-        error
-      );
+    onError: (error) => {
+      console.error("Erro ao atualizar status:", error);
       toast({
         variant: "destructive",
         title: "Erro",
         description: "Não foi possível atualizar o status do pedido.",
       });
-    },
+    }
   });
 
   // Mutation para atualizar laboratório do pedido
   const updateOrderLaboratoryMutation = useMutation({
     mutationFn: ({ id, laboratoryId }: { id: string; laboratoryId: string }) =>
       updateOrderLaboratory(id, laboratoryId),
-    onSuccess: (updatedOrder) => {
-      if (updatedOrder) {
-        toast({
-          title: "Laboratório atualizado",
-          description: "O laboratório do pedido foi atualizado com sucesso.",
-        });
+    onSuccess: () => {
+      toast({
+        title: "Laboratório atualizado",
+        description: "O laboratório do pedido foi atualizado com sucesso.",
+      });
 
-        // Invalidar queries
-        queryClient.invalidateQueries({
-          queryKey: QUERY_KEYS.ORDERS.DETAIL(updatedOrder._id),
-        });
-        queryClient.invalidateQueries({
-          queryKey: QUERY_KEYS.ORDERS.PAGINATED(),
-        });
-      }
-      return updatedOrder;
+      // Invalidar todas as queries relacionadas
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
     },
-    onError: (error, variables) => {
-      console.error(
-        `Erro ao atualizar laboratório do pedido ${variables.id}:`,
-        error
-      );
+    onError: (error) => {
+      console.error("Erro ao atualizar laboratório:", error);
       toast({
         variant: "destructive",
         title: "Erro",
         description: "Não foi possível atualizar o laboratório do pedido.",
       });
-    },
+    }
   });
 
   // Mutation para criar pedido
@@ -141,71 +132,72 @@ export function useOrders() {
           description: "O pedido foi criado com sucesso.",
         });
 
-        // Invalidar queries
-        queryClient.invalidateQueries({ queryKey: QUERY_KEYS.ORDERS.ALL });
+        // Invalidar todas as queries relacionadas
+        queryClient.invalidateQueries({ queryKey: ['orders'] });
+        
+        // Navegar para a página de detalhes do novo pedido
+        if (newOrder._id) {
+          router.push(`/orders/${newOrder._id}`);
+        }
       }
-      return newOrder;
     },
     onError: (error) => {
       console.error("Erro ao criar pedido:", error);
       toast({
         variant: "destructive",
         title: "Erro",
-        description:
-          typeof error === "object" && error !== null && "message" in error
-            ? String(error.message)
-            : "Não foi possível criar o pedido.",
+        description: "Não foi possível criar o pedido.",
       });
-    },
+    }
   });
 
   // Função para atualizar filtros
-  const updateFilters = (newFilters: OrderFilters) => {
+  const updateFilters = useCallback((newFilters: OrderFilters) => {
     setFilters(newFilters);
     setCurrentPage(1); // Voltar para a primeira página ao filtrar
-  };
+  }, []);
 
   // Funções que utilizam as mutations
-  const handleUpdateOrderStatus = async (id: string, status: string) => {
-    const result = await updateOrderStatusMutation.mutateAsync({ id, status });
-    
-    // Forçar invalidação do cache após atualizar o status
-    if (result) {
-      invalidateOrdersCache();
-    }
-    
-    return result;
-  };
+  const handleUpdateOrderStatus = useCallback((id: string, status: string) => {
+    return updateOrderStatusMutation.mutateAsync({ id, status });
+  }, [updateOrderStatusMutation]);
 
-  const handleUpdateOrderLaboratory = (id: string, laboratoryId: string) => {
+  const handleUpdateOrderLaboratory = useCallback((id: string, laboratoryId: string) => {
     return updateOrderLaboratoryMutation.mutateAsync({ id, laboratoryId });
-  };
+  }, [updateOrderLaboratoryMutation]);
 
-  const handleCreateOrder = (orderData: Omit<Order, "_id">) => {
+  const handleCreateOrder = useCallback((orderData: Omit<Order, "_id">) => {
     return createOrderMutation.mutateAsync(orderData);
-  };
+  }, [createOrderMutation]);
 
   // Funções de navegação
-  const navigateToOrderDetails = (id: string) => {
+  const navigateToOrderDetails = useCallback((id: string) => {
     router.push(`/orders/${id}`);
-  };
+  }, [router]);
 
-  const navigateToCreateOrder = () => {
+  const navigateToCreateOrder = useCallback(() => {
     router.push("/orders/new");
-  };
+  }, [router]);
+
+  // Função para forçar atualização da lista
+  const refreshOrdersList = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: ['orders'] });
+    await refetch();
+  }, [queryClient, refetch]);
 
   // Funções de utilidade
-  const translateOrderStatus = (status: string): string => {
+  const translateOrderStatus = useCallback((status: string): string => {
     const statusMap: Record<string, string> = {
       pending: "Pendente",
       in_production: "Em Produção",
       ready: "Pronto",
       delivered: "Entregue",
+      cancelled: "Cancelado",
     };
     return statusMap[status] || status;
-  };
+  }, []);
 
-  const getOrderStatusClass = (status: string): string => {
+  const getOrderStatusClass = useCallback((status: string): string => {
     switch (status) {
       case "pending":
         return "text-yellow-600 bg-yellow-100 px-2 py-1 rounded";
@@ -215,10 +207,21 @@ export function useOrders() {
         return "text-green-600 bg-green-100 px-2 py-1 rounded";
       case "delivered":
         return "text-purple-600 bg-purple-100 px-2 py-1 rounded";
+      case "cancelled":
+        return "text-red-600 bg-red-100 px-2 py-1 rounded";
       default:
         return "text-gray-600 bg-gray-100 px-2 py-1 rounded";
     }
-  };
+  }, []);
+
+  // Funções específicas para obter nomes
+  const getClientName = useCallback((clientId: string) => {
+    return getUserName(clientId);
+  }, [getUserName]);
+
+  const getEmployeeName = useCallback((employeeId: string) => {
+    return getUserName(employeeId);
+  }, [getUserName]);
 
   return {
     // Dados e estado
@@ -236,7 +239,6 @@ export function useOrders() {
     isUpdatingLaboratory: updateOrderLaboratoryMutation.isPending,
 
     // Ações
-    invalidateOrdersCache,
     setCurrentPage,
     updateFilters,
     fetchOrderById,
@@ -247,6 +249,9 @@ export function useOrders() {
     navigateToCreateOrder,
     translateOrderStatus,
     getOrderStatusClass,
+    getClientName,
+    getEmployeeName,
     refetch,
+    refreshOrdersList,
   };
 }

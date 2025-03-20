@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -33,20 +35,17 @@ import { useOrders } from "@/hooks/useOrders";
 import { API_ROUTES } from "../../app/constants/api-routes";
 import type { Order } from "@/app/types/order";
 
-// Interface para laboratório
 interface Laboratory {
   _id: string;
   name: string;
   isActive: boolean;
 }
 
-// Props do componente
 interface OrderLaboratoryUpdateProps {
   order: Order;
   onUpdateSuccess: () => void;
 }
 
-// Schema para validação
 const updateLaboratorySchema = z.object({
   laboratoryId: z.string().min(1, "Laboratório é obrigatório"),
 });
@@ -62,7 +61,6 @@ export default function OrderLaboratoryUpdate({
   const [loading, setLoading] = useState(false);
   const { handleUpdateOrderLaboratory } = useOrders();
 
-  // Inicializar o formulário
   const form = useForm<UpdateLaboratoryFormData>({
     resolver: zodResolver(updateLaboratorySchema),
     defaultValues: {
@@ -70,17 +68,14 @@ export default function OrderLaboratoryUpdate({
     },
   });
 
-  // Buscar lista de laboratórios ativos
   useEffect(() => {
     const fetchLaboratories = async () => {
       if (!open) return;
 
       try {
         setLoading(true);
-        // Buscar apenas laboratórios ativos
         const response = await api.get(API_ROUTES.LABORATORIES.ACTIVE);
 
-        // Verificar o formato da resposta
         let labData: Laboratory[] = [];
         if (Array.isArray(response.data)) {
           labData = response.data;
@@ -102,7 +97,6 @@ export default function OrderLaboratoryUpdate({
     fetchLaboratories();
   }, [open]);
 
-  // Função de submissão do formulário
   async function onSubmit(data: UpdateLaboratoryFormData) {
     try {
       setLoading(true);
@@ -114,29 +108,11 @@ export default function OrderLaboratoryUpdate({
         setOpen(false);
         onUpdateSuccess();
       }
+    } catch (error) {
+      console.error("Erro ao atualizar laboratório:", error);
     } finally {
       setLoading(false);
     }
-  }
-
-  // Verificar se o pedido contém alguma lente que precise de laboratório
-  const needsLaboratory = () => {
-    // Se o produto for um array (novo formato)
-    if (Array.isArray(order.product)) {
-      return order.product.some(product => product.productType === "lenses");
-    }
-    
-    // Caso seja um único produto (compatibilidade com formato antigo)
-    if (typeof order.product === 'object' && order.product !== null) {
-      return (order.product as any).productType === "lenses";
-    }
-    
-    return false;
-  };
-
-  // Só mostrar o botão para atualizar se o pedido contiver lentes
-  if (!needsLaboratory()) {
-    return null;
   }
 
   return (
@@ -158,7 +134,7 @@ export default function OrderLaboratoryUpdate({
           </DialogDescription>
         </DialogHeader>
 
-        {loading ? (
+        {loading && !laboratories.length ? (
           <div className="flex justify-center items-center py-4">
             <Loader2 className="h-6 w-6 animate-spin" />
           </div>

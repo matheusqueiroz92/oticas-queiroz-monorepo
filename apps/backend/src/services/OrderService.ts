@@ -23,18 +23,47 @@ export class OrderService {
     this.orderModel = new OrderModel();
     this.userModel = new UserModel();
     this.productModel = new ProductModel();
-    this.cache = new NodeCache({ stdTTL: 300 }); // Cache com expiração de 5 minutos
+    this.cache = new NodeCache({ stdTTL: 30 }); // Cache com expiração de 5 minutos
     this.exportUtils = new ExportUtils();
   }
 
   // Método para invalidar cache quando houver alterações
   private invalidateCache(keys: string | string[]): void {
+    console.log('Invalidando cache para chaves:', keys);
+    
     if (Array.isArray(keys)) {
       for (const key of keys) {
-        this.cache.del(key);
+        // Para invalidar consultas paginadas, remove todas as chaves que começam com certos padrões
+        if (key === 'all_orders') {
+          const cacheKeys = this.cache.keys();
+          const orderKeys = cacheKeys.filter(k => 
+            k.startsWith('all_orders_page') || 
+            k === 'all_orders'
+          );
+          console.log('Invalidando todas as chaves de pedidos:', orderKeys);
+          for (let i = 0; i < orderKeys.length; i++) {
+            const orderKey = orderKeys[i];
+            this.cache.del(orderKey);
+          }
+        } else {
+          this.cache.del(key);
+        }
       }
     } else {
-      this.cache.del(keys);
+      if (keys === 'all_orders') {
+        const cacheKeys = this.cache.keys();
+        const orderKeys = cacheKeys.filter(k => 
+          k.startsWith('all_orders_page') || 
+          k === 'all_orders'
+        );
+        console.log('Invalidando todas as chaves de pedidos:', orderKeys);
+        for (let i = 0; i < orderKeys.length; i++) {
+          const orderKey = orderKeys[i];
+          this.cache.del(orderKey);
+        }
+      } else {
+        this.cache.del(keys);
+      }
     }
   }
 
@@ -162,7 +191,10 @@ export class OrderService {
       return cachedResult;
     }
 
+    console.log(`Cache miss for ${cacheKey}, fetching from database`);
+    
     const result = await this.orderModel.findAll(page, limit, filters, true);
+
     if (!result.orders.length) {
       throw new OrderError("Nenhum pedido encontrado");
     }
