@@ -105,7 +105,7 @@ export function useUsers() {
     if (!userId) return "Usuário não disponível";
     
     const user = usersMap[userId];
-    return user?.name || "Usuário";
+    return user?.name || "Carregando..."; // Retorna "Carregando..." até o nome ser carregado
   }, [usersMap]);
 
   // Mutation para criar usuário

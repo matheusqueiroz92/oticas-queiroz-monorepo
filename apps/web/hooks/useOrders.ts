@@ -34,7 +34,7 @@ export function useOrders() {
   const { fetchUsers, getUserName } = useUsers();
 
   // Query para buscar pedidos paginados
-  const { 
+  const {
     data, 
     isLoading, 
     error, 
@@ -52,12 +52,13 @@ export function useOrders() {
   useEffect(() => {
     if ((data?.orders ?? []).length > 0) {
       // Extrair IDs únicos de clientes e vendedores
-      const userIdsToFetch = [...new Set([
-        ...(data?.orders ?? []).map(order => typeof order.clientId === 'string' ? order.clientId : ''),
-        ...(data?.orders ?? []).map(order => typeof order.employeeId === 'string' ? order.employeeId : '')
-      ])].filter(Boolean);
-      
-      // Buscar usuários
+      const userIdsToFetch = [
+        ...(data?.orders ?? []).map(order => order.clientId),
+        ...(data?.orders ?? []).map(order => order.employeeId),
+      ]
+      .filter((value, index, self) => self.indexOf(value) === index); // Garantir IDs únicos
+  
+      // Chamar fetchUsers uma única vez para carregar os dados dos usuários
       fetchUsers(userIdsToFetch);
     }
   }, [data, fetchUsers]);
