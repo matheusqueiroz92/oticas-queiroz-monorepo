@@ -236,6 +236,8 @@ export default function NewOrderPage() {
       p._id === productId ? { ...p, sellPrice: newPrice } : p
     );
     setSelectedProducts(updatedProducts);
+    console.log(updatedProducts);
+    
     form.setValue("products", updatedProducts);
     
     // Recalcular preço total

@@ -36,7 +36,6 @@ import {
 } from "@/components/ui/card";
 import { Loader2, FileX, FilterIcon, RefreshCw } from "lucide-react";
 import { useOrders } from "@/hooks/useOrders";
-import { useUsers } from "@/hooks/useUsers";
 import { formatCurrency, formatDate } from "@/app/utils/formatters";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/useToast";
@@ -45,13 +44,13 @@ export default function OrdersPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [showFilters, setShowFilters] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [dateRange, setDateRange] = useState({
     startDate: '',
     endDate: ''
   });
   
   const { toast } = useToast();
-  const { fetchUsers, getUserName } = useUsers();
 
   const {
     orders,
@@ -64,7 +63,9 @@ export default function OrdersPage() {
     updateFilters,
     navigateToOrderDetails,
     navigateToCreateOrder,
-    refreshOrdersList
+    refreshOrdersList,
+    getClientName,
+    getEmployeeName
   } = useOrders();
 
   // Efeito para recarregar dados quando a página é montada
@@ -72,19 +73,26 @@ export default function OrdersPage() {
     refreshOrdersList();
   }, [refreshOrdersList]);
 
-  // Efeito para buscar usuários quando os pedidos são carregados
-  useEffect(() => {
-    if (orders.length > 0) {
-      // Extrair IDs únicos de clientes e vendedores
-      const userIdsToFetch = [...new Set([
-        ...orders.map(order => typeof order.clientId === 'string' ? order.clientId : ''),
-        ...orders.map(order => typeof order.employeeId === 'string' ? order.employeeId : '')
-      ])].filter(Boolean);
-      
-      // Buscar usuários
-      fetchUsers(userIdsToFetch);
+  // Função para atualização manual
+  const handleManualRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await refreshOrdersList();
+      toast({
+        title: "Atualizado",
+        description: "Lista de pedidos atualizada com sucesso.",
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar lista:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Falha ao atualizar lista de pedidos.",
+      });
+    } finally {
+      setIsRefreshing(false);
     }
-  }, [orders, fetchUsers]);
+  };
 
   // Função para obter o badge de status
   const getStatusBadge = (status: string) => {
@@ -238,6 +246,14 @@ export default function OrdersPage() {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Pedidos</h1>
         <div className="flex space-x-2">
+          <Button 
+            variant="outline"
+            onClick={handleManualRefresh}
+            disabled={isRefreshing || isLoading}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+            Atualizar
+          </Button>
           <Button onClick={navigateToCreateOrder}>Novo Pedido</Button>
         </div>
       </div>
@@ -365,7 +381,7 @@ export default function OrdersPage() {
                       return (
                         <TableRow key={order._id}>
                           <TableCell>
-                            {getUserName(order.clientId)}
+                            {getClientName(order.clientId)}
                           </TableCell>
 
                           <TableCell>{formatDate(order.createdAt)}</TableCell>
@@ -377,7 +393,7 @@ export default function OrdersPage() {
                           </TableCell>
 
                           <TableCell>
-                            {getUserName(order.employeeId)}
+                            {getEmployeeName(order.employeeId)}
                           </TableCell>
 
                           <TableCell className="text-right">

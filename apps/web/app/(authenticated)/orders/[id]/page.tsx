@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useQueryClient } from "@tanstack/react-query";
 import {
   Card,
   CardContent,
@@ -46,13 +45,9 @@ export default function OrderDetailsPage() {
   const { id } = useParams() as { id: string };
   const router = useRouter();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   
   // Usar hook useOrders para aproveitar suas funcionalidades
-  const { 
-    translateOrderStatus,
-    fetchOrderById 
-  } = useOrders();
+  const { translateOrderStatus, fetchOrderById } = useOrders();
 
   // Estado para armazenar dados complementares
   const [client, setClient] = useState<User | null>(null);
@@ -60,12 +55,7 @@ export default function OrderDetailsPage() {
   const [laboratoryInfo, setLaboratoryInfo] = useState<Laboratory | null>(null);
   
   // Buscar detalhes do pedido
-  const { 
-    data: order, 
-    isLoading,
-    error, 
-    refetch 
-  } = fetchOrderById(id);
+  const { data: order, isLoading, error, refetch } = fetchOrderById(id);
 
   // Função para buscar detalhes complementares (cliente, funcionário, laboratório)
   const fetchComplementaryDetails = useCallback(async () => {
@@ -129,14 +119,13 @@ export default function OrderDetailsPage() {
   }, [order, fetchComplementaryDetails]);
 
   // Função para atualizar todos os dados do pedido e detalhes relacionados
-  const handleRefreshData = () => {
-    refetch()
-  }
+  const handleRefreshData = useCallback(() => {
+    // Refetch do pedido atual
+    refetch();
+  }, [refetch]);
 
   // Função para voltar à página de listagem
   const handleGoBack = () => {
-    // Garantir que a lista seja atualizada quando voltar
-    queryClient.invalidateQueries({ queryKey: ['orders'] });
     router.push('/orders');
   };
 
@@ -199,7 +188,7 @@ export default function OrderDetailsPage() {
   if (error || !order) {
     return (
       <div className="p-4 bg-red-50 text-red-600 rounded-md">
-        {error ? String(error) : "Pedido não encontrado ou ocorreu um erro ao carregar os dados."}
+        {error instanceof Error ? error.message : error || "Pedido não encontrado ou ocorreu um erro ao carregar os dados."}
       </div>
     );
   }

@@ -2,7 +2,7 @@ import { OrderModel } from "../models/OrderModel";
 import { UserModel } from "../models/UserModel";
 import { ProductModel } from "../models/ProductModel";
 import type { IOrder } from "../interfaces/IOrder";
-import NodeCache from "node-cache";
+// import NodeCache from "node-cache";
 import { ExportUtils, type ExportOptions } from "../utils/exportUtils";
 
 export class OrderError extends Error {
@@ -16,56 +16,56 @@ export class OrderService {
   private orderModel: OrderModel;
   private userModel: UserModel;
   private productModel: ProductModel;
-  private cache: NodeCache;
+  // private cache: NodeCache;
   private exportUtils: ExportUtils;
 
   constructor() {
     this.orderModel = new OrderModel();
     this.userModel = new UserModel();
     this.productModel = new ProductModel();
-    this.cache = new NodeCache({ stdTTL: 30 }); // Cache com expiração de 5 minutos
+    // this.cache = new NodeCache({ stdTTL: 30 }); // Cache com expiração de 5 minutos
     this.exportUtils = new ExportUtils();
   }
 
   // Método para invalidar cache quando houver alterações
-  private invalidateCache(keys: string | string[]): void {
-    console.log('Invalidando cache para chaves:', keys);
+  // private invalidateCache(keys: string | string[]): void {
+  //   console.log('Invalidando cache para chaves:', keys);
     
-    if (Array.isArray(keys)) {
-      for (const key of keys) {
-        // Para invalidar consultas paginadas, remove todas as chaves que começam com certos padrões
-        if (key === 'all_orders') {
-          const cacheKeys = this.cache.keys();
-          const orderKeys = cacheKeys.filter(k => 
-            k.startsWith('all_orders_page') || 
-            k === 'all_orders'
-          );
-          console.log('Invalidando todas as chaves de pedidos:', orderKeys);
-          for (let i = 0; i < orderKeys.length; i++) {
-            const orderKey = orderKeys[i];
-            this.cache.del(orderKey);
-          }
-        } else {
-          this.cache.del(key);
-        }
-      }
-    } else {
-      if (keys === 'all_orders') {
-        const cacheKeys = this.cache.keys();
-        const orderKeys = cacheKeys.filter(k => 
-          k.startsWith('all_orders_page') || 
-          k === 'all_orders'
-        );
-        console.log('Invalidando todas as chaves de pedidos:', orderKeys);
-        for (let i = 0; i < orderKeys.length; i++) {
-          const orderKey = orderKeys[i];
-          this.cache.del(orderKey);
-        }
-      } else {
-        this.cache.del(keys);
-      }
-    }
-  }
+  //   if (Array.isArray(keys)) {
+  //     for (const key of keys) {
+  //       // Para invalidar consultas paginadas, remove todas as chaves que começam com certos padrões
+  //       if (key === 'all_orders') {
+  //         const cacheKeys = this.cache.keys();
+  //         const orderKeys = cacheKeys.filter(k => 
+  //           k.startsWith('all_orders_page') || 
+  //           k === 'all_orders'
+  //         );
+  //         console.log('Invalidando todas as chaves de pedidos:', orderKeys);
+  //         for (let i = 0; i < orderKeys.length; i++) {
+  //           const orderKey = orderKeys[i];
+  //           this.cache.del(orderKey);
+  //         }
+  //       } else {
+  //         this.cache.del(key);
+  //       }
+  //     }
+  //   } else {
+  //     if (keys === 'all_orders') {
+  //       const cacheKeys = this.cache.keys();
+  //       const orderKeys = cacheKeys.filter(k => 
+  //         k.startsWith('all_orders_page') || 
+  //         k === 'all_orders'
+  //       );
+  //       console.log('Invalidando todas as chaves de pedidos:', orderKeys);
+  //       for (let i = 0; i < orderKeys.length; i++) {
+  //         const orderKey = orderKeys[i];
+  //         this.cache.del(orderKey);
+  //       }
+  //     } else {
+  //       this.cache.del(keys);
+  //     }
+  //   }
+  // }
 
   private async validateOrder(orderData: Omit<IOrder, "_id">): Promise<void> {
     // Validar cliente
@@ -155,11 +155,11 @@ export class OrderService {
       const order = await this.orderModel.create(orderData);
 
       // Invalidar caches relacionados
-      this.invalidateCache([
-        `client_orders_${orderData.clientId}`,
-        "daily_orders",
-        "all_orders",
-      ]);
+      // this.invalidateCache([
+      //   `client_orders_${orderData.clientId}`,
+      //   "daily_orders",
+      //   "all_orders",
+      // ]);
 
       return order;
     } catch (error) {
@@ -183,15 +183,15 @@ export class OrderService {
     const cacheKey = `all_orders_page${page}_limit${limit}_${JSON.stringify(filters)}`;
 
     // Verificar cache
-    const cachedResult = this.cache.get<{ orders: IOrder[]; total: number }>(
-      cacheKey
-    );
-    if (cachedResult) {
-      console.log(`Cache hit for ${cacheKey}`);
-      return cachedResult;
-    }
+    // const cachedResult = this.cache.get<{ orders: IOrder[]; total: number }>(
+    //   cacheKey
+    // );
+    // if (cachedResult) {
+    //   console.log(`Cache hit for ${cacheKey}`);
+    //   return cachedResult;
+    // }
 
-    console.log(`Cache miss for ${cacheKey}, fetching from database`);
+    // console.log(`Cache miss for ${cacheKey}, fetching from database`);
     
     const result = await this.orderModel.findAll(page, limit, filters, true);
 
@@ -200,7 +200,7 @@ export class OrderService {
     }
 
     // Armazenar em cache
-    this.cache.set(cacheKey, result);
+    // this.cache.set(cacheKey, result);
 
     return result;
   }
@@ -209,11 +209,11 @@ export class OrderService {
     const cacheKey = `order_${id}`;
 
     // Verificar cache
-    const cachedOrder = this.cache.get<IOrder>(cacheKey);
-    if (cachedOrder) {
-      console.log(`Cache hit for ${cacheKey}`);
-      return cachedOrder;
-    }
+    // const cachedOrder = this.cache.get<IOrder>(cacheKey);
+    // if (cachedOrder) {
+    //   console.log(`Cache hit for ${cacheKey}`);
+    //   return cachedOrder;
+    // }
 
     const order = await this.orderModel.findById(id, true);
     if (!order) {
@@ -221,7 +221,7 @@ export class OrderService {
     }
 
     // Armazenar em cache
-    this.cache.set(cacheKey, order);
+    // this.cache.set(cacheKey, order);
 
     return order;
   }
@@ -230,11 +230,11 @@ export class OrderService {
     const cacheKey = `client_orders_${clientId}`;
 
     // Verificar cache
-    const cachedOrders = this.cache.get<IOrder[]>(cacheKey);
-    if (cachedOrders) {
-      console.log(`Cache hit for ${cacheKey}`);
-      return cachedOrders;
-    }
+    // const cachedOrders = this.cache.get<IOrder[]>(cacheKey);
+    // if (cachedOrders) {
+    //   console.log(`Cache hit for ${cacheKey}`);
+    //   return cachedOrders;
+    // }
 
     const orders = await this.orderModel.findByClientId(clientId, true);
     if (!orders.length) {
@@ -242,7 +242,7 @@ export class OrderService {
     }
 
     // Armazenar em cache
-    this.cache.set(cacheKey, orders);
+    // this.cache.set(cacheKey, orders);
 
     return orders;
   }
@@ -284,12 +284,12 @@ export class OrderService {
     }
 
     // Invalidar caches relacionados
-    this.invalidateCache([
-      `order_${id}`,
-      `client_orders_${order.clientId}`,
-      "daily_orders",
-      "all_orders",
-    ]);
+    // this.invalidateCache([
+    //   `order_${id}`,
+    //   `client_orders_${order.clientId}`,
+    //   "daily_orders",
+    //   "all_orders",
+    // ]);
 
     return updatedOrder;
   }
@@ -323,11 +323,11 @@ export class OrderService {
     }
 
     // Invalidar caches relacionados
-    this.invalidateCache([
-      `order_${id}`,
-      `client_orders_${order.clientId}`,
-      "all_orders",
-    ]);
+    // this.invalidateCache([
+    //   `order_${id}`,
+    //   `client_orders_${order.clientId}`,
+    //   "all_orders",
+    // ]);
 
     return updatedOrder;
   }
@@ -386,12 +386,12 @@ export class OrderService {
     }
 
     // Invalidar caches relacionados
-    this.invalidateCache([
-      `order_${id}`,
-      `client_orders_${order.clientId}`,
-      "daily_orders",
-      "all_orders",
-    ]);
+    // this.invalidateCache([
+    //   `order_${id}`,
+    //   `client_orders_${order.clientId}`,
+    //   "daily_orders",
+    //   "all_orders",
+    // ]);
 
     return updatedOrder;
   }
@@ -419,12 +419,12 @@ export class OrderService {
       }
 
       // Invalidar caches relacionados
-      this.invalidateCache([
-        `order_${id}`,
-        `client_orders_${order.clientId}`,
-        "daily_orders",
-        "all_orders",
-      ]);
+      // this.invalidateCache([
+      //   `order_${id}`,
+      //   `client_orders_${order.clientId}`,
+      //   "daily_orders",
+      //   "all_orders",
+      // ]);
 
       return deletedOrder;
     }
@@ -480,12 +480,12 @@ export class OrderService {
     }
 
     // Invalidar caches relacionados
-    this.invalidateCache([
-      `order_${id}`,
-      `client_orders_${order.clientId}`,
-      "daily_orders",
-      "all_orders",
-    ]);
+    // this.invalidateCache([
+    //   `order_${id}`,
+    //   `client_orders_${order.clientId}`,
+    //   "daily_orders",
+    //   "all_orders",
+    // ]);
 
     return updatedOrder;
   }
@@ -495,11 +495,11 @@ export class OrderService {
     const cacheKey = `daily_orders_${dateString}`;
 
     // Verificar cache
-    const cachedOrders = this.cache.get<IOrder[]>(cacheKey);
-    if (cachedOrders) {
-      console.log(`Cache hit for ${cacheKey}`);
-      return cachedOrders;
-    }
+    // const cachedOrders = this.cache.get<IOrder[]>(cacheKey);
+    // if (cachedOrders) {
+    //   console.log(`Cache hit for ${cacheKey}`);
+    //   return cachedOrders;
+    // }
 
     const startOfDay = new Date(date);
     startOfDay.setHours(0, 0, 0, 0);
@@ -514,7 +514,7 @@ export class OrderService {
     );
 
     // Armazenar em cache
-    this.cache.set(cacheKey, orders);
+    // this.cache.set(cacheKey, orders);
 
     return orders;
   }
