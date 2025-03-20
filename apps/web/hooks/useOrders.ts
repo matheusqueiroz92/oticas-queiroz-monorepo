@@ -52,9 +52,9 @@ export function useOrders() {
   useEffect(() => {
     if ((data?.orders ?? []).length > 0) {
       const userIdsToFetch = [
-        ...(data?.orders ?? []).map(order => order.clientId),
-        ...(data?.orders ?? []).map(order => order.employeeId),
-      ].filter((value, index, self) => self.indexOf(value) === index); // IDs únicos
+        ...(data?.orders ?? []).map(order => typeof order.clientId === 'string' ? order.clientId : (order.clientId as { _id: string })?._id),
+        ...(data?.orders ?? []).map(order => typeof order.employeeId === 'string' ? order.employeeId : (order.employeeId as { _id: string })?._id),
+      ].filter((value, index, self) => self.indexOf(value) === index);
       
       console.log("Buscando usuários com IDs:", userIdsToFetch);
       
