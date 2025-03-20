@@ -100,8 +100,8 @@ pm2 startup | tail -n 1 | bash || {
 }
 
 log "Deploy concluído com sucesso!"
-echo "============================================="
+echo "============================================================================"
 echo "Aplicação disponível em: https://app.oticasqueiroz.com.br"
 echo "API disponível em: https://app.oticasqueiroz.com.br/api"
 echo "Documentação Swagger: https://app.oticasqueiroz.com.br/api-docs"
-echo "============================================="m
+echo "============================================================================"
