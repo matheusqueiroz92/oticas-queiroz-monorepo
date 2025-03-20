@@ -3,6 +3,8 @@ import type { IOrder } from "../interfaces/IOrder";
 import { Types, type FilterQuery } from "mongoose";
 
 export class OrderModel {
+
+  
   private isValidId(id: string): boolean {
     return Types.ObjectId.isValid(id);
   }
@@ -113,6 +115,11 @@ export class OrderModel {
     }
 
     const order = await query.exec();
+    
+    // Verifique os dados populados de 'clientId' e 'employeeId'
+    console.log(order?.clientId); // Verifica o que está sendo retornado após o populate
+    console.log(order?.employeeId); // Verifica o que está sendo retornado após o populate
+    
     return order ? this.convertToIOrder(order) : null;
   }
 

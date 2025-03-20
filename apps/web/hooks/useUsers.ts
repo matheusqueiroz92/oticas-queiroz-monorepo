@@ -20,6 +20,37 @@ export function useUsers() {
     return response.data;
   };
 
+  // Função para buscar usuário por ID
+  const getUserById = async (id: string) => {
+    try {
+      // Verificar se já temos no cache local
+      if (usersMap[id]) {
+        return usersMap[id];
+      }
+      
+      // Verificar se está no cache do React Query
+      const cachedUser = queryClient.getQueryData(QUERY_KEYS.USERS.DETAIL(id));
+      if (cachedUser) {
+        return cachedUser;
+      }
+      
+      // Buscar da API
+      const response = await api.get(API_ROUTES.USERS.BY_ID(id));
+      
+      // Atualizar cache local
+      setUsersMap(prev => ({
+        ...prev,
+        [id]: response.data
+      }));
+      
+      return response.data;
+    } catch (error: any) {
+      throw new Error(
+        error.response?.data?.message || "Erro ao buscar usuário"
+      );
+    }
+  };
+
   // Função para buscar múltiplos usuários por IDs
   const fetchUsers = useCallback(async (userIds: string[]) => {
     if (!userIds.length) return;
@@ -55,37 +86,6 @@ export function useUsers() {
       queryFn: () => getUserById(id),
       enabled: !!id,
     });
-  };
-
-  // Função para buscar usuário por ID
-  const getUserById = async (id: string) => {
-    try {
-      // Verificar se já temos no cache local
-      if (usersMap[id]) {
-        return usersMap[id];
-      }
-      
-      // Verificar se está no cache do React Query
-      const cachedUser = queryClient.getQueryData(QUERY_KEYS.USERS.DETAIL(id));
-      if (cachedUser) {
-        return cachedUser;
-      }
-      
-      // Buscar da API
-      const response = await api.get(API_ROUTES.USERS.BY_ID(id));
-      
-      // Atualizar cache local
-      setUsersMap(prev => ({
-        ...prev,
-        [id]: response.data
-      }));
-      
-      return response.data;
-    } catch (error: any) {
-      throw new Error(
-        error.response?.data?.message || "Erro ao buscar usuário"
-      );
-    }
   };
 
   // Função para obter o nome do usuário
