@@ -15,6 +15,48 @@ export function useUsers() {
   const [usersMap, setUsersMap] = useState<Record<string, any>>({});
   const [isLoading, setIsLoading] = useState(false);
 
+  const fetchUserById = async (id: string) => {
+    const response = await api.get(`/api/users/${id}`);
+    return response.data;
+  };
+
+  // Função para buscar múltiplos usuários por IDs
+  const fetchUsers = useCallback(async (userIds: string[]) => {
+    if (!userIds.length) return;
+
+    try {
+      // Usando Promise.all para carregar todos os usuários simultaneamente
+      const users = await Promise.all(userIds.map(id => fetchUserById(id)));
+
+      // Atualiza o mapa de usuários
+      const updatedUsersMap = users.reduce((acc, user) => {
+        acc[user._id] = user;
+        return acc;
+      }, {} as Record<string, any>);
+
+      setUsersMap(prevState => ({
+        ...prevState,
+        ...updatedUsersMap
+      }));
+
+      // Opcional: Atualizar o cache do React Query
+      users.forEach(user => {
+        queryClient.setQueryData(['users', 'detail', user._id], user);
+      });
+    } catch (error) {
+      console.error('Erro ao buscar usuários:', error);
+    }
+  }, [queryClient]);
+
+  // Query para buscar um usuário específico
+  const useUserQuery = (id: string) => {
+    return useQuery({
+      queryKey: QUERY_KEYS.USERS.DETAIL(id),
+      queryFn: () => getUserById(id),
+      enabled: !!id,
+    });
+  };
+
   // Função para buscar usuário por ID
   const getUserById = async (id: string) => {
     try {
@@ -45,56 +87,6 @@ export function useUsers() {
       );
     }
   };
-
-  // Query para buscar um usuário específico
-  const useUserQuery = (id: string) => {
-    return useQuery({
-      queryKey: QUERY_KEYS.USERS.DETAIL(id),
-      queryFn: () => getUserById(id),
-      enabled: !!id,
-    });
-  };
-
-  // Função para buscar múltiplos usuários por IDs
-  const fetchUsers = useCallback(async (userIds: string[]): Promise<void> => {
-    if (!userIds.length) return;
-  
-    setIsLoading(true);
-  
-    try {
-      const idsToFetch = userIds.filter(id => !usersMap[id]);  // Evitar duplicação de requisições
-      
-      if (idsToFetch.length === 0) {
-        setIsLoading(false);
-        return;
-      }
-  
-      const userPromises = idsToFetch.map(id => 
-        api.get(API_ROUTES.USERS.BY_ID(id))
-          .then(response => { 
-            console.log("Usuário encontrado:", response.data);
-            return { id, data: response.data };
-          })
-          .catch(() => ({ id, data: null }))
-      );
-  
-      const results = await Promise.all(userPromises);
-  
-      const newEntries = results.reduce((acc, { id, data }) => {
-        if (data) {
-          acc[id] = data;
-          queryClient.setQueryData(QUERY_KEYS.USERS.DETAIL(id), data); // Atualizar cache React Query
-        }
-        return acc;
-      }, {} as Record<string, any>);
-  
-      setUsersMap(prev => ({ ...prev, ...newEntries }));
-    } catch (error) {
-      console.error("Erro ao buscar múltiplos usuários:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [usersMap, queryClient]);
 
   // Função para obter o nome do usuário
   const getUserName = useCallback((userId: string | null | undefined): string => {

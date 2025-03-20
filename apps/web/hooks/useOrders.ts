@@ -51,12 +51,19 @@ export function useOrders() {
   // Efeito para buscar usuários quando os pedidos são carregados
   useEffect(() => {
     if ((data?.orders ?? []).length > 0) {
+      // Buscar IDs únicos de usuários
       const userIdsToFetch = [
-        ...(data?.orders ?? []).map(order => typeof order.clientId === 'string' ? order.clientId : (order.clientId as { _id: string })?._id),
-        ...(data?.orders ?? []).map(order => typeof order.employeeId === 'string' ? order.employeeId : (order.employeeId as { _id: string })?._id),
-      ].filter((value, index, self) => self.indexOf(value) === index);
+        ...(data?.orders ? data.orders.map(order => 
+          // Verifica se 'clientId' ou 'employeeId' é um objeto com '_id'
+          order.clientId ? (typeof order.clientId === 'string' ? order.clientId : (order.clientId as { _id: string })._id) : null
+        ) : []),
+        ...(data?.orders ? data.orders.map(order => 
+          order.employeeId ? (typeof order.employeeId === 'string' ? order.employeeId : (order.employeeId as { _id: string })._id) : null
+        ) : [])
+      ]
+        .filter((value): value is string => value !== null); // Remove valores null e garante que a lista seja apenas de strings
       
-      console.log("Buscando usuários com IDs:", userIdsToFetch);
+      console.log("User IDs to fetch:", userIdsToFetch);
       
       // Verifica se há usuários para buscar
       if (userIdsToFetch.length > 0) {
