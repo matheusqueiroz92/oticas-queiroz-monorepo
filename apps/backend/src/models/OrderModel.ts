@@ -3,56 +3,45 @@ import type { IOrder } from "../interfaces/IOrder";
 import { Types, type FilterQuery } from "mongoose";
 
 export class OrderModel {
-
-  
   private isValidId(id: string): boolean {
     return Types.ObjectId.isValid(id);
   }
 
+  // Função para converter os dados do pedido
   private convertToIOrder(doc: any): IOrder {
     const order = doc.toObject ? doc.toObject() : doc;
-    
+
     return {
       _id: order._id.toString(),
-      clientId: typeof order.clientId === 'object' && order.clientId?._id
-        ? order.clientId._id.toString()
-        : order.clientId.toString(),
-      employeeId: typeof order.employeeId === 'object' && order.employeeId?._id
-        ? order.employeeId._id.toString()
-        : order.employeeId.toString(),
-      // Convert the product array
+      clientId: order.clientId ? order.clientId.toString() : null, // Garantir que seja uma string
+      employeeId: order.employeeId ? order.employeeId.toString() : null, // Garantir que seja uma string
+      laboratoryId: order.laboratoryId ? order.laboratoryId.toString() : undefined, // Caso tenha laboratório
       product: Array.isArray(order.product)
-        ? order.product.map((p: any) => {
-            if (typeof p === 'object' && p._id) {
-              return {
-                _id: p._id.toString(),
-                name: p.name,
-                productType: p.productType,
-                description: p.description,
-                image: p.image,
-                sellPrice: p.sellPrice,
-                brand: p.brand,
-                costPrice: p.costPrice,
-                // Include type-specific fields
-                ...(p.productType === 'lenses' && { lensType: p.lensType }),
-                ...(p.productType === 'prescription_frame' && { 
-                  typeFrame: p.typeFrame,
-                  color: p.color,
-                  shape: p.shape,
-                  reference: p.reference
-                }),
-                ...(p.productType === 'sunglasses_frame' && { 
-                  model: p.model,
-                  typeFrame: p.typeFrame,
-                  color: p.color,
-                  shape: p.shape,
-                  reference: p.reference
-                })
-              };
-            } else {
-              return { _id: p.toString() };
-            }
-          })
+        ? order.product.map((p: any) => ({
+            _id: p._id.toString(),
+            name: p.name,
+            productType: p.productType,
+            description: p.description,
+            image: p.image,
+            sellPrice: p.sellPrice,
+            brand: p.brand,
+            costPrice: p.costPrice,
+            // Campos específicos do tipo de produto
+            ...(p.productType === "lenses" && { lensType: p.lensType }),
+            ...(p.productType === "prescription_frame" && {
+              typeFrame: p.typeFrame,
+              color: p.color,
+              shape: p.shape,
+              reference: p.reference,
+            }),
+            ...(p.productType === "sunglasses_frame" && {
+              model: p.model,
+              typeFrame: p.typeFrame,
+              color: p.color,
+              shape: p.shape,
+              reference: p.reference,
+            }),
+          }))
         : [],
       paymentMethod: order.paymentMethod,
       paymentEntry: order.paymentEntry,
@@ -60,23 +49,13 @@ export class OrderModel {
       orderDate: order.orderDate,
       deliveryDate: order.deliveryDate,
       status: order.status,
-      laboratoryId: order.laboratoryId 
-        ? (typeof order.laboratoryId === 'object' && order.laboratoryId._id 
-            ? order.laboratoryId._id.toString()
-            : order.laboratoryId.toString())
-        : undefined,
-      prescriptionData: order.prescriptionData,
       observations: order.observations,
       totalPrice: order.totalPrice,
       discount: order.discount || 0,
       finalPrice: order.finalPrice,
       isDeleted: order.isDeleted,
       deletedAt: order.deletedAt,
-      deletedBy: order.deletedBy 
-        ? (typeof order.deletedBy === 'object' && order.deletedBy._id
-            ? order.deletedBy._id.toString()
-            : order.deletedBy.toString())
-        : undefined,
+      deletedBy: order.deletedBy ? order.deletedBy.toString() : undefined,
       createdAt: order.createdAt,
       updatedAt: order.updatedAt,
     };
@@ -104,10 +83,10 @@ export class OrderModel {
 
     if (populate) {
       query = query
-        .populate("clientId", "_id")
-        .populate("employeeId", "_id")
-        .populate("laboratoryId", "_id")
-        .populate("product", "_id");
+        .populate("clientId", "name email role")
+        .populate("employeeId", "name email")
+        .populate("laboratoryId", "name")
+        .populate("product", "name productType description price");
 
       if (includeDeleted) {
         query = query.populate("deletedBy", "name email");
@@ -143,10 +122,10 @@ export class OrderModel {
 
     if (populate) {
       orderQuery = orderQuery
-        .populate("clientId", "_id")
-        .populate("employeeId","_id")
-        .populate("laboratoryId", "_id")
-        .populate("product", "_id");
+        .populate("clientId", "name email role")
+        .populate("employeeId", "name email")
+        .populate("laboratoryId", "name")
+        .populate("product", "name productType description price");
     }
 
     const [orders, total] = await Promise.all([
@@ -167,16 +146,6 @@ export class OrderModel {
   ): Promise<IOrder | null> {
     if (!this.isValidId(id)) return null;
 
-    // Se estamos atualizando o totalPrice ou discount, recalcular finalPrice
-    if (orderData.totalPrice !== undefined || orderData.discount !== undefined) {
-      const currentOrder = await Order.findById(id);
-      if (currentOrder) {
-        const newTotalPrice = orderData.totalPrice ?? currentOrder.totalPrice;
-        const newDiscount = orderData.discount ?? currentOrder.discount;
-        orderData.finalPrice = newTotalPrice - newDiscount;
-      }
-    }
-
     let query = Order.findByIdAndUpdate(
       id,
       { $set: orderData },
@@ -185,10 +154,10 @@ export class OrderModel {
 
     if (populate) {
       query = query
-        .populate("clientId", "_id")
-        .populate("employeeId", "_id")
-        .populate("laboratoryId", "_id")
-        .populate("product", "_id");
+        .populate("clientId", "name email role")
+        .populate("employeeId", "name email")
+        .populate("laboratoryId", "name")
+        .populate("product", "name productType description price");
     }
 
     const order = await query.exec();
@@ -200,113 +169,6 @@ export class OrderModel {
 
     const order = await Order.findByIdAndDelete(id);
     return order ? this.convertToIOrder(order) : null;
-  }
-
-  /**
-   * Realiza a exclusão lógica (soft delete) de um pedido
-   */
-  async softDelete(id: string, userId: string): Promise<IOrder | null> {
-    if (!this.isValidId(id)) return null;
-
-    const order = await Order.findByIdAndUpdate(
-      id,
-      {
-        $set: {
-          isDeleted: true,
-          deletedAt: new Date(),
-          deletedBy: userId,
-        },
-      },
-      { new: true, runValidators: true }
-    )
-      .populate("clientId", "_id")
-      .populate("employeeId", "_id")
-      .populate("laboratoryId", "_id")
-      .populate("product", "_id")
-      .populate("deletedBy", "_id")
-      .exec();
-
-    return order ? this.convertToIOrder(order) : null;
-  }
-
-  /**
-   * Recupera pedidos que foram excluídos logicamente
-   */
-  async findDeletedOrders(
-    page = 1,
-    limit = 10,
-    filters: Record<string, any> = {}
-  ): Promise<{ orders: IOrder[]; total: number }> {
-    const skip = (page - 1) * limit;
-
-    const query = this.buildFilterQuery(filters);
-    query.isDeleted = true;
-
-    const [orders, total] = await Promise.all([
-      Order.find(query)
-        .skip(skip)
-        .limit(limit)
-        .populate("clientId", "_id")
-        .populate("employeeId", "_id")
-        .populate("laboratoryId", "_id")
-        .populate("product", "_id")
-        .populate("deletedBy", "_id")
-        .exec(),
-      Order.countDocuments(query),
-    ]);
-
-    return {
-      orders: orders.map((order) => this.convertToIOrder(order)),
-      total,
-    };
-  }
-
-  async findByClientId(
-    clientId: string,
-    populate = false,
-    includeDeleted = false
-  ): Promise<IOrder[]> {
-    if (!this.isValidId(clientId)) return [];
-
-    const query: FilterQuery<any> = { clientId };
-
-    // Se não devemos incluir pedidos excluídos, adicionar a condição
-    if (!includeDeleted) {
-      query.isDeleted = { $ne: true };
-    }
-
-    let orderQuery = Order.find(query);
-
-    if (populate) {
-      orderQuery = orderQuery
-        .populate("clientId", "_id")
-        .populate("employeeId", "_id")
-        .populate("laboratoryId", "_id")
-        .populate("product", "_id");
-
-      if (includeDeleted) {
-        orderQuery = orderQuery.populate("deletedBy", "name email");
-      }
-    }
-
-    const orders = await orderQuery.exec();
-    return orders.map((order) => this.convertToIOrder(order));
-  }
-
-  async updateStatus(
-    id: string,
-    status: IOrder["status"],
-    populate = false
-  ): Promise<IOrder | null> {
-    return this.update(id, { status }, populate);
-  }
-
-  async updateLaboratory(
-    id: string,
-    laboratoryId: IOrder["laboratoryId"],
-    populate = false
-  ): Promise<IOrder | null> {
-    return this.update(id, { laboratoryId }, populate);
   }
 
   // Método para buscar pedidos por período de data
@@ -332,10 +194,10 @@ export class OrderModel {
 
     if (populate) {
       orderQuery = orderQuery
-        .populate("clientId", "_id")
-        .populate("employeeId", "_id")
-        .populate("laboratoryId", "_id")
-        .populate("product", "_id");
+        .populate("clientId", "name email role")
+        .populate("employeeId", "name email")
+        .populate("laboratoryId", "name")
+        .populate("product", "name productType description price");
 
       if (includeDeleted) {
         orderQuery = orderQuery.populate("deletedBy", "name email");
