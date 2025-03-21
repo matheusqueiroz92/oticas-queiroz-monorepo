@@ -50,21 +50,54 @@ export function useOrders() {
 
   // Efeito para buscar usuários quando os pedidos são carregados
   useEffect(() => {
-    console.log("Orders data:", data);
+    console.log("1º -> pega os dados de getAllOrders:", data);
     if ((data?.orders ?? []).length > 0) {
       // Buscar IDs únicos de usuários
       const userIdsToFetch = [
-        ...(data?.orders ? data.orders.map(order => 
-          // Verifica se 'clientId' ou 'employeeId' é um objeto com '_id'
-          order.clientId ? (typeof order.clientId === 'string' ? order.clientId : (order.clientId as { _id: string })._id) : null  // Agora, extraímos apenas o ID (_id)
-        ) : []),
-        ...(data?.orders ? data.orders.map(order => 
-          order.employeeId ? (typeof order.employeeId === 'string' ? order.employeeId : (order.employeeId as { _id: string })._id) : null  // Extraímos apenas o ID (_id)
-        ) : []),
-      ]
-      .filter((value): value is string => value !== null); // Remove valores null e garante que a lista seja apenas de strings
-      
-      console.log("User IDs to fetch:", userIdsToFetch);
+        ...(data?.orders ? data.orders.map(order => {
+          let clientId = order.clientId;
+          // Se for uma string, mas parecer um objeto JSON
+          if (typeof clientId === 'string' && clientId.includes('ObjectId')) {
+            try {
+              // Extrai apenas o ID do ObjectId
+              const matches = clientId.match(/ObjectId\('([^']+)'\)/);
+              if (matches && matches[1]) {
+                return matches[1];
+              }
+            } catch (err) {
+              console.error("Erro ao extrair ID do cliente:", err);
+            }
+          }
+          // Se for um objeto
+          if (typeof clientId === 'object' && clientId && '_id' in (clientId as { _id: string })) {
+            return (clientId as { _id: string })._id;
+          }
+          // Se for apenas uma string de ID
+          return clientId;
+        }).filter(Boolean) : []),
+        
+        ...(data?.orders ? data.orders.map(order => {
+          let employeeId = order.employeeId;
+          // Se for uma string, mas parecer um objeto JSON
+          if (typeof employeeId === 'string' && employeeId.includes('ObjectId')) {
+            try {
+              // Extrai apenas o ID do ObjectId
+              const matches = employeeId.match(/ObjectId\('([^']+)'\)/);
+              if (matches && matches[1]) {
+                return matches[1];
+              }
+            } catch (err) {
+              console.error("Erro ao extrair ID do funcionário:", err);
+            }
+          }
+          // Se for um objeto
+          if (typeof employeeId === 'object' && employeeId && '_id' in (employeeId as { _id: string })) {
+            return (employeeId as { _id: string })._id;
+          }
+          // Se for apenas uma string de ID
+          return employeeId;
+        }).filter(Boolean) : [])
+      ];
       
       // Verifica se há usuários para buscar
       if (userIdsToFetch.length > 0) {
@@ -229,13 +262,44 @@ export function useOrders() {
   // Funções específicas para obter nomes
   const getClientName = useCallback((clientId: string) => {
     console.log("Getting clientID:", clientId);
+    
+    // Se for uma string, mas parecer um objeto JSON
+    if (typeof clientId === 'string' && clientId.includes('ObjectId')) {
+      try {
+        // Extrai apenas o ID do ObjectId
+        const matches = clientId.match(/ObjectId\('([^']+)'\)/);
+        if (matches && matches[1]) {
+          clientId = matches[1];
+        }
+      } catch (err) {
+        console.error("Erro ao extrair ID do cliente:", err);
+      }
+    }
+    
     const getName = getUserName(clientId);
     console.log("Client name:", getName);
-    return getName
+    return getName;
   }, [getUserName]);
 
   const getEmployeeName = useCallback((employeeId: string) => {
-    return getUserName(employeeId);
+    console.log("Getting employeeID:", employeeId);
+    
+    // Se for uma string, mas parecer um objeto JSON
+    if (typeof employeeId === 'string' && employeeId.includes('ObjectId')) {
+      try {
+        // Extrai apenas o ID do ObjectId
+        const matches = employeeId.match(/ObjectId\('([^']+)'\)/);
+        if (matches && matches[1]) {
+          employeeId = matches[1];
+        }
+      } catch (err) {
+        console.error("Erro ao extrair ID do funcionário:", err);
+      }
+    }
+    
+    const getName = getUserName(employeeId);
+    console.log("Client name:", getName);
+    return getName;
   }, [getUserName]);
 
   return {
