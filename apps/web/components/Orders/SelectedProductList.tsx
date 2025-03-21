@@ -1,14 +1,22 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Product } from "../../app/types/product";
+import type { Product } from "../../app/types/product";
 import { formatCurrency } from "../../app/utils/formatters";
-import { normalizeProducts } from "@/app/utils/data-normalizers";
+import { normalizeProduct } from "@/app/utils/data-normalizers";
 
 interface SelectedProductsListProps {
   products: Product[];
   onUpdatePrice: (id: string, price: number) => void;
   onRemoveProduct: (id: string) => void;
 }
+
+// Tradução dos tipos de produto
+const productTypeTranslations: Record<string, string> = {
+  lenses: "Lentes",
+  clean_lenses: "Limpa-lentes",
+  prescription_frame: "Armação de grau",
+  sunglasses_frame: "Armação solar"
+};
 
 export default function SelectedProductsList({
   products,
@@ -25,15 +33,29 @@ export default function SelectedProductsList({
   console.log('Produtos originais:', products);
   console.log('-----------------------------------------------');
 
-  const normalizedProducts = normalizeProducts(products);
+  // Garantir que todos os produtos estejam normalizados
+  const normalizedProducts = products.map(product => {
+    // Sempre normalizar para garantir consistência
+    const normalized = normalizeProduct(product) as Product;
+    
+    // Garantir explicitamente que o preço é numérico
+    if (typeof normalized.sellPrice !== 'number' || isNaN(normalized.sellPrice)) {
+      normalized.sellPrice = 0;
+    }
+    
+    return normalized;
+  });
+  
   console.log('Produtos normalizados:', normalizedProducts);
   console.log('-----------------------------------------------');
   
-  const total = normalizedProducts.reduce((sum, p) => {
-    // Garantir que o preço seja tratado como número
-    const price = typeof p.sellPrice === 'number' 
-      ? p.sellPrice 
-      : (p.sellPrice ? parseFloat(String(p.sellPrice)) : 0);
+  // Calcular total com validação extra de tipo
+  const total = normalizedProducts.reduce((sum, product) => {
+    // Garantir que o preço seja um número válido
+    const price = typeof product.sellPrice === 'number' && !isNaN(product.sellPrice)
+      ? product.sellPrice
+      : 0;
+      
     console.log('Preço:', price);
     console.log('-----------------------------------------------');
     
@@ -65,7 +87,7 @@ export default function SelectedProductsList({
                   onChange={(e) =>
                     onUpdatePrice(
                       product._id,
-                      Number.parseFloat(e.target.value)
+                      parseFloat(e.target.value) || 0
                     )
                   }
                   className="w-24 inline-block"
@@ -93,12 +115,8 @@ export default function SelectedProductsList({
   );
 }
 
+// Função para obter o rótulo do tipo de produto em português
 function getProductTypeLabel(type: Product['productType']): string {
-  const types = {
-    'lenses': 'Lentes',
-    'clean_lenses': 'Limpa-lentes',
-    'prescription_frame': 'Armação de grau',
-    'sunglasses_frame': 'Armação solar'
-  };
-  return types[type] || type;
+  if (!type) return "Tipo não especificado";
+  return productTypeTranslations[type] || String(type);
 }

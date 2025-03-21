@@ -155,9 +155,18 @@ export function extractEmail(entity: any): string | null {
 
 /**
  * Normaliza um produto que pode vir em diferentes formatos
+ * Versão corrigida para lidar melhor com campos ausentes e garantir valores padrão adequados
  */
 export function normalizeProduct(product: any): Product {
-  if (!product) return {} as Product;
+  if (!product) {
+    return {
+      _id: '',
+      name: 'Produto desconhecido',
+      productType: 'lenses', // Usando um tipo válido como padrão
+      description: '',
+      sellPrice: 0
+    } as Product;
+  }
 
   // Se for string, tentar parsear como objeto ou extrair informações
   if (typeof product === 'string') {
@@ -171,20 +180,47 @@ export function normalizeProduct(product: any): Product {
     const nameMatch = product.match(namePattern);
     const name = nameMatch ? (nameMatch[1] || nameMatch[2]) : 'Produto desconhecido';
     
-    // Extrair tipo
+    // Extrair tipo com validação
     const typePattern = /productType[\s:]?\s*(?:['"]([^'"]+)['"]|([^,}\s]+))/i;
     const typeMatch = product.match(typePattern);
-    const type = typeMatch ? (typeMatch[1] || typeMatch[2]) : 'unknown';
+    let type = typeMatch ? (typeMatch[1] || typeMatch[2]) : '';
     
-    // Extrair preço
+    // Garantir que o tipo seja válido
+    const validTypes = ['lenses', 'clean_lenses', 'prescription_frame', 'sunglasses_frame'];
+    if (!validTypes.includes(type)) {
+      type = 'lenses'; // Valor padrão seguro
+    }
+    
+    // Extrair preço com melhor detecção
+    // Primeiro tenta buscar um padrão sellPrice: 123
     const pricePattern = /sellPrice[\s:]?\s*([\d.]+)/i;
     const priceMatch = product.match(pricePattern);
-    const price = priceMatch ? parseFloat(priceMatch[1]) : 0;
+    
+    // Se não encontrar, tenta buscar diretamente o número
+    let price = 0;
+    if (priceMatch && priceMatch[1]) {
+      price = parseFloat(priceMatch[1]);
+    } else {
+      // Busca qualquer número no texto para o caso do formato variar
+      const numberPattern = /(\d+(?:\.\d+)?)/g;
+      const numbers = product.match(numberPattern);
+      if (numbers && numbers.length > 0) {
+        // Assumimos que o primeiro número significativo é o preço
+        // Filtramos apenas números com valor significativo (maiores que 0)
+        const significantNumbers = numbers
+          .map(n => parseFloat(n))
+          .filter(n => !isNaN(n) && n > 0);
+        
+        if (significantNumbers.length > 0) {
+          price = significantNumbers[0];
+        }
+      }
+    }
     
     return {
       _id: id,
       name: name,
-      productType: type,
+      productType: type as "lenses" | "clean_lenses" | "prescription_frame" | "sunglasses_frame",
       description: '',
       sellPrice: price
     } as Product;
@@ -192,23 +228,77 @@ export function normalizeProduct(product: any): Product {
   
   // Se já for um objeto
   if (typeof product === 'object' && product !== null) {
-    return {
+    // Determina o tipo do produto - verifica se o tipo está entre os valores válidos
+    const validTypes = ['lenses', 'clean_lenses', 'prescription_frame', 'sunglasses_frame'];
+    let productType = product.productType || 'lenses'; // Valor padrão seguro
+    
+    // Se o tipo não for válido, tenta inferir com base em outros campos
+    if (!validTypes.includes(productType)) {
+      if (product.lensType) {
+        productType = 'lenses';
+      } else if (product.typeFrame && product.modelSunglasses) {
+        productType = 'sunglasses_frame';
+      } else if (product.typeFrame) {
+        productType = 'prescription_frame';
+      } else {
+        productType = 'lenses'; // Valor padrão seguro
+      }
+    }
+    
+    // Garante que o preço seja um número válido
+    let sellPrice = 0;
+    if (typeof product.sellPrice === 'number' && !isNaN(product.sellPrice)) {
+      sellPrice = product.sellPrice;
+    } else if (typeof product.sellPrice === 'string' && product.sellPrice.trim() !== '') {
+      const parsed = parseFloat(product.sellPrice.replace(/[^\d.-]/g, ''));
+      sellPrice = !isNaN(parsed) ? parsed : 0;
+    }
+    
+    // Para casos onde o API retorna cost_price em vez de costPrice
+    const costPrice = typeof product.costPrice === 'number' 
+      ? product.costPrice 
+      : (typeof product.cost_price === 'number' 
+          ? product.cost_price 
+          : 0);
+    
+    // Cria um novo objeto com os campos básicos
+    const result = {
       _id: product._id || '',
       name: product.name || 'Produto sem nome',
-      productType: product.productType || 'unknown',
       description: product.description || '',
-      sellPrice: typeof product.sellPrice === 'number' ? product.sellPrice : 0,
-      ...product
+      brand: product.brand || '',
+      costPrice: costPrice,
+      // Usar campos normalizados
+      productType: productType as "lenses" | "clean_lenses" | "prescription_frame" | "sunglasses_frame",
+      sellPrice: sellPrice
     };
+    
+    // Adiciona outros campos extras do objeto original
+    for (const key in product) {
+      if (
+        key !== '_id' && 
+        key !== 'name' && 
+        key !== 'description' && 
+        key !== 'brand' && 
+        key !== 'productType' && 
+        key !== 'sellPrice' && 
+        key !== 'costPrice'
+      ) {
+        // @ts-ignore - Adicionando propriedades dinâmicas
+        result[key] = product[key];
+      }
+    }
+    
+    return result as Product;
   }
   
   return {
     _id: '',
     name: 'Produto desconhecido',
-    productType: 'unknown',
+    productType: 'lenses', // Valor padrão seguro
     description: '',
     sellPrice: 0
-  } as unknown as Product;
+  } as Product;
 }
 
 /**

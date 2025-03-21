@@ -57,6 +57,7 @@ import PrescriptionForm from "@/components/Orders/PrescriptionForm";
 import OrderPdfGenerator from "@/components/Orders/exports/OrderPdfGenerator";
 import { QUERY_KEYS } from "@/app/constants/query-keys";
 import { useQuery } from "@tanstack/react-query";
+import { normalizeProduct } from "@/app/utils/data-normalizers";
 
 export default function NewOrderPage() {
   const router = useRouter();
@@ -193,43 +194,55 @@ export default function NewOrderPage() {
     }
   }, [form, toast]);
 
-  // Funções para gerenciar produtos
-  const handleAddProduct = (product: Product) => {
-    // Verificar se o produto já está selecionado
-    if (selectedProducts.some(p => p._id === product._id)) {
-      toast({
-        variant: "destructive",
-        title: "Produto já adicionado",
-        description: "Este produto já está na lista."
-      });
-      return;
-    }
-    
-    // Garantir que o produto tenha sellPrice
-    const productWithPrice = {
-      ...product,
-      sellPrice: typeof product.sellPrice === 'number' ? product.sellPrice : 0
-    };
-    
-    console.log("Produto normalizado:", productWithPrice);
-    
-    setSelectedProducts([...selectedProducts, productWithPrice]);
-    
-    // Atualizar os produtos no formulário
-    const updatedProducts = [...selectedProducts, productWithPrice];
-    form.setValue("products", updatedProducts);
-    
-    // Recalcular preço total garantindo valores numéricos
-    const newTotal = updatedProducts.reduce(
-      (sum, p) => sum + (typeof p.sellPrice === 'number' ? p.sellPrice : 0),
-      0
-    );
-    
-    console.log("Novo total calculado:", newTotal);
-    
-    form.setValue("totalPrice", newTotal);
-    updateFinalPrice(newTotal, form.getValues("discount") || 0);
+ // Funções para gerenciar produtos
+const handleAddProduct = (product: Product) => {
+  // Verificar se o produto já está selecionado
+  if (selectedProducts.some(p => p._id === product._id)) {
+    toast({
+      variant: "destructive",
+      title: "Produto já adicionado",
+      description: "Este produto já está na lista."
+    });
+    return;
+  }
+  
+  // Normalizar o produto para garantir consistência
+  const normalizedProduct = normalizeProduct(product) as Product;
+  
+  // Garantir explicitamente que o preço é um número válido
+  const sellPrice = typeof normalizedProduct.sellPrice === 'number' && !isNaN(normalizedProduct.sellPrice)
+    ? normalizedProduct.sellPrice
+    : 0;
+  
+  // Criar cópia com valores garantidos
+  const productWithGuaranteedValues: Product = {
+    ...normalizedProduct,
+    sellPrice
   };
+  
+  console.log("Produto normalizado:", productWithGuaranteedValues);
+  
+  setSelectedProducts([...selectedProducts, productWithGuaranteedValues]);
+  
+  // Atualizar os produtos no formulário
+  const updatedProducts = [...selectedProducts, productWithGuaranteedValues];
+  form.setValue("products", updatedProducts);
+  
+  // Recalcular preço total garantindo valores numéricos
+  const newTotal = updatedProducts.reduce(
+    (sum, p) => {
+      const price = typeof p.sellPrice === 'number' && !isNaN(p.sellPrice) 
+        ? p.sellPrice 
+        : 0;
+      return sum + price;
+    }, 0
+  );
+  
+  console.log("Novo total calculado:", newTotal);
+  
+  form.setValue("totalPrice", newTotal);
+  updateFinalPrice(newTotal, form.getValues("discount") || 0);
+};
 
   const handleRemoveProduct = (productId: string) => {
     const newProducts = selectedProducts.filter(p => p._id !== productId);

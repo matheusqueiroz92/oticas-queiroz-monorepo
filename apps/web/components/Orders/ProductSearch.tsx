@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import {
   FormField,
@@ -6,7 +6,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Button } from "@/components/ui/button";
 import type { Product } from "../../app/types/product";
 import { formatCurrency } from "../../app/utils/formatters";
 import { useRouter } from "next/navigation";
@@ -20,7 +19,7 @@ interface ProductSearchProps {
 }
 
 // Tradução dos tipos de produto
-const productTypeTranslations = {
+const productTypeTranslations: Record<string, string> = {
   lenses: "Lentes",
   clean_lenses: "Limpa-lentes",
   prescription_frame: "Armação de grau",
@@ -38,6 +37,14 @@ export default function ProductSearch({
   const [showResults, setShowResults] = useState(false);
   const router = useRouter();
 
+  // Normalizar os produtos da API usando useMemo para evitar recálculos desnecessários
+  const normalizedApiProducts = useMemo(() => {
+    return products.map(p => {
+      // Usando cast para Product para evitar erros de tipo
+      return normalizeProduct(p) as Product;
+    });
+  }, [products]); // Dependência apenas em products
+
   useEffect(() => {
     if (!productSearch.trim()) {
       setFilteredProducts([]);
@@ -47,27 +54,28 @@ export default function ProductSearch({
     const searchLower = productSearch.toLowerCase();
     
     // Filtrar produtos pelo nome
-    const filtered = products
+    const filtered = normalizedApiProducts
       .filter((product) => product.name?.toLowerCase().includes(searchLower))
       // Filtrar produtos já selecionados
       .filter((product) => !selectedProducts.some(p => p._id === product._id));
       
     setFilteredProducts(filtered);
     setShowResults(true);
-  }, [productSearch, products, selectedProducts]);
+  }, [productSearch, normalizedApiProducts, selectedProducts]);
 
   const handleAddProduct = (product: Product) => {
-    // Criar uma cópia com preço garantido
-    const productWithPrice = {
-      ...product,
-      // Definir preço como 0 se não existir
-      sellPrice: typeof product.sellPrice === 'number' ? product.sellPrice : 0
-    };
-  
-    console.log("Produto com preço aplicado:", productWithPrice);
+    // Criar uma cópia normalizada para garantir consistência
+    const normalizedProduct = normalizeProduct(product) as Product;
     
-    const normalizedProduct = normalizeProduct(product);
-    onProductAdd(normalizedProduct);
+    // Garantir que preço é um número
+    const productWithPrice = {
+      ...normalizedProduct,
+      sellPrice: typeof normalizedProduct.sellPrice === 'number' && !isNaN(normalizedProduct.sellPrice)
+        ? normalizedProduct.sellPrice
+        : 0
+    };
+    
+    console.log("Produto normalizado para adição:", productWithPrice);
     
     onProductAdd(productWithPrice);
     setProductSearch("");
@@ -86,7 +94,7 @@ export default function ProductSearch({
   // Função para obter o rótulo do tipo de produto em português
   const getProductTypeLabel = (type?: string): string => {
     if (!type) return "Não especificado";
-    return productTypeTranslations[type as keyof typeof productTypeTranslations] || type;
+    return productTypeTranslations[type] || type;
   };
 
   return (
