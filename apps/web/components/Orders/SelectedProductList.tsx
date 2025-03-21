@@ -22,20 +22,23 @@ export default function SelectedProductsList({
       </div>
     );
   }
+  console.log('Produtos originais:', products);
+  console.log('-----------------------------------------------');
 
   const normalizedProducts = normalizeProducts(products);
-
+  console.log('Produtos normalizados:', normalizedProducts);
+  console.log('-----------------------------------------------');
+  
   const total = normalizedProducts.reduce((sum, p) => {
     // Garantir que o preço seja tratado como número
     const price = typeof p.sellPrice === 'number' 
       ? p.sellPrice 
       : (p.sellPrice ? parseFloat(String(p.sellPrice)) : 0);
+    console.log('Preço:', price);
+    console.log('-----------------------------------------------');
     
     return sum + price;
   }, 0);
-
-  console.log('Produtos no cálculo do total:', normalizedProducts);
-  console.log('Total calculado:', total);
 
   return (
     <div className="border rounded-md overflow-hidden">
