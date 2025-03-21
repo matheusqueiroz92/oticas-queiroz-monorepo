@@ -1,4 +1,3 @@
-// apps/backend/src/schemas/productSchema.ts
 import { Schema, model, Model, Document } from "mongoose";
 import { IProduct, ILens, ICleanLens, IPrescriptionFrame, ISunglassesFrame } from "../interfaces/IProduct";
 

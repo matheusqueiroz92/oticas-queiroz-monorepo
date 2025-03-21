@@ -195,9 +195,6 @@ export default function NewOrderPage() {
 
   // Funções para gerenciar produtos
   const handleAddProduct = (product: Product) => {
-    console.log('Produto adicionado:', product);
-    console.log('Tipo de sellPrice:', typeof product.sellPrice);
-    console.log('Valor de sellPrice:', product.sellPrice);
     // Verificar se o produto já está selecionado
     if (selectedProducts.some(p => p._id === product._id)) {
       toast({
@@ -208,26 +205,28 @@ export default function NewOrderPage() {
       return;
     }
     
-    // Garantir que o preço seja numérico
-    const productWithNumericPrice = {
+    // Garantir que o produto tenha sellPrice
+    const productWithPrice = {
       ...product,
-      sellPrice: typeof product.sellPrice === 'string' 
-        ? parseFloat(product.sellPrice) 
-        : (product.sellPrice || 0)
+      sellPrice: typeof product.sellPrice === 'number' ? product.sellPrice : 0
     };
     
-    setSelectedProducts([...selectedProducts, productWithNumericPrice]);
-    form.setValue("products", [...selectedProducts, productWithNumericPrice]);
+    console.log("Produto normalizado:", productWithPrice);
+    
+    setSelectedProducts([...selectedProducts, productWithPrice]);
+    
+    // Atualizar os produtos no formulário
+    const updatedProducts = [...selectedProducts, productWithPrice];
+    form.setValue("products", updatedProducts);
     
     // Recalcular preço total garantindo valores numéricos
-    const newTotal = [...selectedProducts, productWithNumericPrice].reduce(
-      (sum, p) => {
-        const price = typeof p.sellPrice === 'string' 
-          ? parseFloat(p.sellPrice) 
-          : (p.sellPrice || 0);
-        return sum + price;
-      }, 0
+    const newTotal = updatedProducts.reduce(
+      (sum, p) => sum + (typeof p.sellPrice === 'number' ? p.sellPrice : 0),
+      0
     );
+    
+    console.log("Novo total calculado:", newTotal);
+    
     form.setValue("totalPrice", newTotal);
     updateFinalPrice(newTotal, form.getValues("discount") || 0);
   };
@@ -322,7 +321,7 @@ export default function NewOrderPage() {
       const orderData = {
         clientId: data.clientId,
         employeeId: data.employeeId,
-        product: data.products, // Array de produtos
+        products: data.products, // Array de produtos
         paymentMethod: data.paymentMethod,
         paymentEntry: data.paymentEntry,
         installments: data.installments,

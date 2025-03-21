@@ -21,7 +21,7 @@ export class ProductModel {
     return Types.ObjectId.isValid(id);
   }
 
-  async create(productData: any): Promise<IProduct> {
+  async create(productData: Omit<IProduct, "_id">): Promise<IProduct> {
     let savedProduct;
     
     // Criar o produto usando o modelo apropriado

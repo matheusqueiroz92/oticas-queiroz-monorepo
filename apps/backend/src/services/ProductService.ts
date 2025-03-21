@@ -1,4 +1,3 @@
-// apps/backend/src/services/ProductService.ts
 import { ProductModel } from "../models/ProductModel";
 import { IProduct } from "../interfaces/IProduct";
 import { z } from 'zod';
@@ -18,7 +17,7 @@ export class ProductService {
     this.productModel = new ProductModel();
   }
 
-  private validateProduct(productData: any): void {
+  private validateProduct(productData: IProduct): void {
     try {
       // Usar o validador Zod discriminated union
       productSchema.parse(productData);
@@ -31,7 +30,7 @@ export class ProductService {
     }
   }
 
-  async createProduct(productData: any): Promise<IProduct> {
+  async createProduct(productData: IProduct): Promise<IProduct> {
     // Validar os dados com base no tipo
     this.validateProduct(productData);
 

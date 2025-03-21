@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import type { Product } from "../../app/types/product";
 import { formatCurrency } from "../../app/utils/formatters";
 import { useRouter } from "next/navigation";
+import { normalizeProduct } from "@/app/utils/data-normalizers";
 
 interface ProductSearchProps {
   products: Product[];
@@ -56,7 +57,19 @@ export default function ProductSearch({
   }, [productSearch, products, selectedProducts]);
 
   const handleAddProduct = (product: Product) => {
-    onProductAdd(product);
+    // Criar uma cópia com preço garantido
+    const productWithPrice = {
+      ...product,
+      // Definir preço como 0 se não existir
+      sellPrice: typeof product.sellPrice === 'number' ? product.sellPrice : 0
+    };
+  
+    console.log("Produto com preço aplicado:", productWithPrice);
+    
+    const normalizedProduct = normalizeProduct(product);
+    onProductAdd(normalizedProduct);
+    
+    onProductAdd(productWithPrice);
     setProductSearch("");
     setShowResults(false);
   };

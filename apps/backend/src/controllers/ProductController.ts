@@ -35,7 +35,7 @@ export class ProductController {
       if (data.costPrice) data.costPrice = Number(data.costPrice);
       
       // Validar data baseado no tipo de produto
-      let validatedData;
+      let validatedData: any;
       switch (data.productType) {
         case 'lenses':
           validatedData = lensSchema.parse(data);

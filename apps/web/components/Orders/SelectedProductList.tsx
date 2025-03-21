@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Product } from "../../app/types/product";
 import { formatCurrency } from "../../app/utils/formatters";
+import { normalizeProducts } from "@/app/utils/data-normalizers";
 
 interface SelectedProductsListProps {
   products: Product[];
@@ -22,15 +23,18 @@ export default function SelectedProductsList({
     );
   }
 
-  const total = products.reduce((sum, p) => {
-    // Garantir que p.sellPrice seja tratado como número
-    const price = typeof p.sellPrice === 'string' 
-      ? parseFloat(p.sellPrice) 
-      : (p.sellPrice || 0);
+  const normalizedProducts = normalizeProducts(products);
+
+  const total = normalizedProducts.reduce((sum, p) => {
+    // Garantir que o preço seja tratado como número
+    const price = typeof p.sellPrice === 'number' 
+      ? p.sellPrice 
+      : (p.sellPrice ? parseFloat(String(p.sellPrice)) : 0);
+    
     return sum + price;
   }, 0);
 
-  console.log('Produtos no cálculo do total:', products);
+  console.log('Produtos no cálculo do total:', normalizedProducts);
   console.log('Total calculado:', total);
 
   return (
@@ -45,7 +49,7 @@ export default function SelectedProductsList({
           </tr>
         </thead>
         <tbody>
-          {products.map((product) => (
+          {normalizedProducts.map((product) => (
             <tr key={product._id} className="border-t">
               <td className="px-4 py-2">{product.name}</td>
               <td className="px-4 py-2">{getProductTypeLabel(product.productType)}</td>
