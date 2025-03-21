@@ -1,4 +1,3 @@
-// apps/backend/src/models/ProductModel.ts
 import { Types, FilterQuery } from "mongoose";
 import { 
   Product, 
@@ -19,6 +18,63 @@ import {
 export class ProductModel {
   private isValidId(id: string): boolean {
     return Types.ObjectId.isValid(id);
+  }
+
+  private convertToIProduct(doc: any): IProduct {
+    // Obter valores brutos do documento MongoDB
+    const rawDoc = doc.toObject ? doc.toObject() : doc;
+    
+    // Log detalhado para depuração
+    console.log("Convertendo documento do MongoDB para IProduct:", JSON.stringify(rawDoc, null, 2));
+    
+    // Preparar o produto base
+    const baseProduct: IProduct = {
+      _id: rawDoc._id.toString(),
+      productType: rawDoc.productType,
+      name: rawDoc.name,
+      description: rawDoc.description,
+      sellPrice: typeof rawDoc.sellPrice === 'number' ? rawDoc.sellPrice : 0,
+      image: rawDoc.image,
+      brand: rawDoc.brand,
+      costPrice: rawDoc.costPrice,
+      createdAt: rawDoc.createdAt,
+      updatedAt: rawDoc.updatedAt
+    };
+  
+    // Adicionar campos específicos com base no tipo
+    switch (rawDoc.productType) {
+      case 'lenses':
+        return {
+          ...baseProduct,
+          lensType: rawDoc.lensType
+        } as ILens;
+      
+      case 'clean_lenses':
+        return baseProduct as ICleanLens;
+      
+      case 'prescription_frame':
+        return {
+          ...baseProduct,
+          typeFrame: rawDoc.typeFrame,
+          color: rawDoc.color,
+          shape: rawDoc.shape,
+          reference: rawDoc.reference
+        } as IPrescriptionFrame;
+      
+      case 'sunglasses_frame':
+        // Corrigido: usar modelSunglasses em vez de model
+        return {
+          ...baseProduct,
+          modelSunglasses: rawDoc.modelSunglasses || rawDoc.model, // Aceita ambos os campos para compatibilidade
+          typeFrame: rawDoc.typeFrame,
+          color: rawDoc.color,
+          shape: rawDoc.shape,
+          reference: rawDoc.reference
+        } as ISunglassesFrame;
+      
+      default:
+        return baseProduct;
+    }
   }
 
   async create(productData: Omit<IProduct, "_id">): Promise<IProduct> {
@@ -115,58 +171,5 @@ export class ProductModel {
     const product = await Product.findByIdAndDelete(id);
     if (!product) return null;
     return this.convertToIProduct(product);
-  }
-
-  private convertToIProduct(doc: any): IProduct {
-    // Obter valores brutos do documento MongoDB
-    const rawDoc = doc.toObject ? doc.toObject() : doc;
-    
-    // Preparar o produto base
-    const baseProduct: IProduct = {
-      _id: rawDoc._id.toString(),
-      productType: rawDoc.productType,
-      name: rawDoc.name,
-      description: rawDoc.description,
-      sellPrice: rawDoc.sellPrice,
-      image: rawDoc.image,
-      brand: rawDoc.brand,
-      costPrice: rawDoc.costPrice,
-      createdAt: rawDoc.createdAt,
-      updatedAt: rawDoc.updatedAt
-    };
-
-    // Adicionar campos específicos com base no tipo
-    switch (rawDoc.productType) {
-      case 'lenses':
-        return {
-          ...baseProduct,
-          lensType: rawDoc.lensType
-        } as ILens;
-      
-      case 'clean_lenses':
-        return baseProduct as ICleanLens;
-      
-      case 'prescription_frame':
-        return {
-          ...baseProduct,
-          typeFrame: rawDoc.typeFrame,
-          color: rawDoc.color,
-          shape: rawDoc.shape,
-          reference: rawDoc.reference
-        } as IPrescriptionFrame;
-      
-      case 'sunglasses_frame':
-        return {
-          ...baseProduct,
-          modelSunglasses: rawDoc.model,
-          typeFrame: rawDoc.typeFrame,
-          color: rawDoc.color,
-          shape: rawDoc.shape,
-          reference: rawDoc.reference
-        } as ISunglassesFrame;
-      
-      default:
-        return baseProduct;
-    }
   }
 }

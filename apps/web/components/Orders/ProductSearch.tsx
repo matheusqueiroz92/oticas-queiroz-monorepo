@@ -9,7 +9,7 @@ import {
 import type { Product } from "../../app/types/product";
 import { formatCurrency } from "../../app/utils/formatters";
 import { useRouter } from "next/navigation";
-import { normalizeProduct } from "@/app/utils/data-normalizers";
+import { normalizeProduct } from "@/app/utils/product-utils";
 
 interface ProductSearchProps {
   products: Product[];

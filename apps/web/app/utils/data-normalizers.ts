@@ -4,8 +4,10 @@
  */
 
 import type { Order } from "@/app/types/order";
-import type { Product } from "@/app/types/product";
+import type { CleanLens, Lens, PrescriptionFrame, Product, SunglassesFrame } from "@/app/types/product";
 import { diagnosticLog } from "./env-utils";
+import { getProductById } from "../services/productService";
+import { normalizeProducts } from "./product-utils";
 
 /**
  * Extrai o ID de uma entidade que pode vir em diferentes formatos
@@ -154,167 +156,6 @@ export function extractEmail(entity: any): string | null {
 }
 
 /**
- * Normaliza um produto que pode vir em diferentes formatos
- * Versão corrigida para lidar melhor com campos ausentes e garantir valores padrão adequados
- */
-export function normalizeProduct(product: any): Product {
-  if (!product) {
-    return {
-      _id: '',
-      name: 'Produto desconhecido',
-      productType: 'lenses', // Usando um tipo válido como padrão
-      description: '',
-      sellPrice: 0
-    } as Product;
-  }
-
-  // Se for string, tentar parsear como objeto ou extrair informações
-  if (typeof product === 'string') {
-    // Tentativa de extrair informações com regex mais robustos
-    const idPattern = /_id[\s:]?\s*(?:(?:ObjectId\(['"]([^'"]+)['"]\))|['"]([^'"]+)['"]|([^,}\s]+))/i;
-    const idMatch = product.match(idPattern);
-    const id = idMatch ? (idMatch[1] || idMatch[2] || idMatch[3]) : '';
-    
-    // Extrair nome com padrão mais abrangente
-    const namePattern = /name[\s:]?\s*(?:['"]([^'"]+)['"]|([^,}\s]+))/i;
-    const nameMatch = product.match(namePattern);
-    const name = nameMatch ? (nameMatch[1] || nameMatch[2]) : 'Produto desconhecido';
-    
-    // Extrair tipo com validação
-    const typePattern = /productType[\s:]?\s*(?:['"]([^'"]+)['"]|([^,}\s]+))/i;
-    const typeMatch = product.match(typePattern);
-    let type = typeMatch ? (typeMatch[1] || typeMatch[2]) : '';
-    
-    // Garantir que o tipo seja válido
-    const validTypes = ['lenses', 'clean_lenses', 'prescription_frame', 'sunglasses_frame'];
-    if (!validTypes.includes(type)) {
-      type = 'lenses'; // Valor padrão seguro
-    }
-    
-    // Extrair preço com melhor detecção
-    // Primeiro tenta buscar um padrão sellPrice: 123
-    const pricePattern = /sellPrice[\s:]?\s*([\d.]+)/i;
-    const priceMatch = product.match(pricePattern);
-    
-    // Se não encontrar, tenta buscar diretamente o número
-    let price = 0;
-    if (priceMatch && priceMatch[1]) {
-      price = parseFloat(priceMatch[1]);
-    } else {
-      // Busca qualquer número no texto para o caso do formato variar
-      const numberPattern = /(\d+(?:\.\d+)?)/g;
-      const numbers = product.match(numberPattern);
-      if (numbers && numbers.length > 0) {
-        // Assumimos que o primeiro número significativo é o preço
-        // Filtramos apenas números com valor significativo (maiores que 0)
-        const significantNumbers = numbers
-          .map(n => parseFloat(n))
-          .filter(n => !isNaN(n) && n > 0);
-        
-        if (significantNumbers.length > 0) {
-          price = significantNumbers[0];
-        }
-      }
-    }
-    
-    return {
-      _id: id,
-      name: name,
-      productType: type as "lenses" | "clean_lenses" | "prescription_frame" | "sunglasses_frame",
-      description: '',
-      sellPrice: price
-    } as Product;
-  }
-  
-  // Se já for um objeto
-  if (typeof product === 'object' && product !== null) {
-    // Determina o tipo do produto - verifica se o tipo está entre os valores válidos
-    const validTypes = ['lenses', 'clean_lenses', 'prescription_frame', 'sunglasses_frame'];
-    let productType = product.productType || 'lenses'; // Valor padrão seguro
-    
-    // Se o tipo não for válido, tenta inferir com base em outros campos
-    if (!validTypes.includes(productType)) {
-      if (product.lensType) {
-        productType = 'lenses';
-      } else if (product.typeFrame && product.modelSunglasses) {
-        productType = 'sunglasses_frame';
-      } else if (product.typeFrame) {
-        productType = 'prescription_frame';
-      } else {
-        productType = 'lenses'; // Valor padrão seguro
-      }
-    }
-    
-    // Garante que o preço seja um número válido
-    let sellPrice = 0;
-    if (typeof product.sellPrice === 'number' && !isNaN(product.sellPrice)) {
-      sellPrice = product.sellPrice;
-    } else if (typeof product.sellPrice === 'string' && product.sellPrice.trim() !== '') {
-      const parsed = parseFloat(product.sellPrice.replace(/[^\d.-]/g, ''));
-      sellPrice = !isNaN(parsed) ? parsed : 0;
-    }
-    
-    // Para casos onde o API retorna cost_price em vez de costPrice
-    const costPrice = typeof product.costPrice === 'number' 
-      ? product.costPrice 
-      : (typeof product.cost_price === 'number' 
-          ? product.cost_price 
-          : 0);
-    
-    // Cria um novo objeto com os campos básicos
-    const result = {
-      _id: product._id || '',
-      name: product.name || 'Produto sem nome',
-      description: product.description || '',
-      brand: product.brand || '',
-      costPrice: costPrice,
-      // Usar campos normalizados
-      productType: productType as "lenses" | "clean_lenses" | "prescription_frame" | "sunglasses_frame",
-      sellPrice: sellPrice
-    };
-    
-    // Adiciona outros campos extras do objeto original
-    for (const key in product) {
-      if (
-        key !== '_id' && 
-        key !== 'name' && 
-        key !== 'description' && 
-        key !== 'brand' && 
-        key !== 'productType' && 
-        key !== 'sellPrice' && 
-        key !== 'costPrice'
-      ) {
-        // @ts-ignore - Adicionando propriedades dinâmicas
-        result[key] = product[key];
-      }
-    }
-    
-    return result as Product;
-  }
-  
-  return {
-    _id: '',
-    name: 'Produto desconhecido',
-    productType: 'lenses', // Valor padrão seguro
-    description: '',
-    sellPrice: 0
-  } as Product;
-}
-
-/**
- * Normaliza um array de produtos
- */
-export function normalizeProducts(products: any[] | any): Product[] {
-  // Se não for um array, converter para array com um único item
-  if (!Array.isArray(products)) {
-    return [normalizeProduct(products)];
-  }
-
-  // Normalizar cada item do array
-  return products.map(product => normalizeProduct(product));
-}
-
-/**
  * Normaliza um pedido completo
  */
 export function normalizeOrder(order: any): Order {
@@ -335,7 +176,7 @@ export function normalizeOrder(order: any): Order {
         : "Nome não disponível";
     
     // Normalizar produtos (pode ser array ou objeto único)
-    const normalizedProducts = normalizeProducts(order.product);
+    const normalizedProducts = normalizeProducts(order.products);
     
     // Garantir que todos os campos existam e estejam em formato adequado
     return {

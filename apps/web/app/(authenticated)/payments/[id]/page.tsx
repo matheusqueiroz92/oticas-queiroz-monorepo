@@ -48,17 +48,14 @@ import {
   translatePaymentStatus,
   getPaymentStatusClass,
 } from "@/app/utils/formatters";
-import type { IPayment } from "@/app/types/payment";
 import type { User } from "@/app/types/user";
-import type { Order } from "@/app/types/order";
 import type { LegacyClient } from "@/app/types/legacy-client";
 
 export default function PaymentDetailsPage() {
   const { id } = useParams<{ id: string }>();
-  const [customer, setCustomer] = useState<User | null>(null);
-  const [employee, setEmployee] = useState<User | null>(null);
-  const [order, setOrder] = useState<Order | null>(null);
-  const [legacyClient, setLegacyClient] = useState<LegacyClient | null>(null);
+  const [customer] = useState<User | null>(null);
+  const [employee] = useState<User | null>(null);
+  const [legacyClient] = useState<LegacyClient | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   const router = useRouter();

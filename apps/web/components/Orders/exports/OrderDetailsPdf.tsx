@@ -1,4 +1,3 @@
-// components/Orders/exports/OrderDetailsPdf.tsx
 import React from "react";
 import {
   PDFDownloadLink,

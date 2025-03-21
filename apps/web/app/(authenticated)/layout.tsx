@@ -13,9 +13,6 @@ import {
   User,
   HandCoins,
   FlaskConical,
-  UserPlus,
-  Building2,
-  ShoppingCart,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";

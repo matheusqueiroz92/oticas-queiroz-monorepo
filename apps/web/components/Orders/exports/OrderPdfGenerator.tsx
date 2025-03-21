@@ -10,7 +10,6 @@ import {
 import { Button } from "@/components/ui/button";
 import LogoImage from "../../../public/logo-oticas-queiroz.png";
 import type { Customer } from "../../../app/types/customer";
-import type { Product } from "../../../app/types/product";
 import type { OrderFormValues } from "@/app/types/form-types";
 
 // Dados da empresa

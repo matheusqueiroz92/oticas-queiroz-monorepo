@@ -2,7 +2,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { Product } from "../../app/types/product";
 import { formatCurrency } from "../../app/utils/formatters";
-import { normalizeProduct } from "@/app/utils/data-normalizers";
+// Importe diretamente as funções utilitárias
+import { getCorrectPrice, normalizeProduct } from "@/app/utils/product-utils";
 
 interface SelectedProductsListProps {
   products: Product[];
@@ -33,32 +34,16 @@ export default function SelectedProductsList({
   console.log('Produtos originais:', products);
   console.log('-----------------------------------------------');
 
-  // Garantir que todos os produtos estejam normalizados
-  const normalizedProducts = products.map(product => {
-    // Sempre normalizar para garantir consistência
-    const normalized = normalizeProduct(product) as Product;
-    
-    // Garantir explicitamente que o preço é numérico
-    if (typeof normalized.sellPrice !== 'number' || isNaN(normalized.sellPrice)) {
-      normalized.sellPrice = 0;
-    }
-    
-    return normalized;
-  });
-  
+  // Normalizar cada produto para garantir consistência
+  const normalizedProducts = products.map(product => normalizeProduct(product));
   console.log('Produtos normalizados:', normalizedProducts);
   console.log('-----------------------------------------------');
   
-  // Calcular total com validação extra de tipo
+  // Calcular total usando getCorrectPrice para garantir valores corretos
   const total = normalizedProducts.reduce((sum, product) => {
-    // Garantir que o preço seja um número válido
-    const price = typeof product.sellPrice === 'number' && !isNaN(product.sellPrice)
-      ? product.sellPrice
-      : 0;
-      
+    const price = getCorrectPrice(product);
     console.log('Preço:', price);
     console.log('-----------------------------------------------');
-    
     return sum + price;
   }, 0);
 

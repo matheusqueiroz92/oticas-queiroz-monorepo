@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -21,7 +20,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function ReportsPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const router = useRouter();
   const { toast } = useToast();
 
   // Usar o hook de relatórios

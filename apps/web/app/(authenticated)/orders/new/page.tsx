@@ -57,7 +57,8 @@ import PrescriptionForm from "@/components/Orders/PrescriptionForm";
 import OrderPdfGenerator from "@/components/Orders/exports/OrderPdfGenerator";
 import { QUERY_KEYS } from "@/app/constants/query-keys";
 import { useQuery } from "@tanstack/react-query";
-import { normalizeProduct } from "@/app/utils/data-normalizers";
+import { useProducts } from "@/hooks/useProducts";
+import { normalizeProduct, getCorrectPrice } from "@/app/utils/product-utils";
 
 export default function NewOrderPage() {
   const router = useRouter();
@@ -73,6 +74,10 @@ export default function NewOrderPage() {
   const [showInstallments, setShowInstallments] = useState(false);
   const [showPdfDownload, setShowPdfDownload] = useState(false);
   const [submittedOrder, setSubmittedOrder] = useState<any>(null);
+
+  const { 
+    fetchProductWithConsistentDetails
+  } = useProducts();
 
   // Utilizar o hook useOrders
   const { handleCreateOrder, isCreating } = useOrders();
@@ -194,54 +199,50 @@ export default function NewOrderPage() {
     }
   }, [form, toast]);
 
- // Funções para gerenciar produtos
-const handleAddProduct = (product: Product) => {
-  // Verificar se o produto já está selecionado
-  if (selectedProducts.some(p => p._id === product._id)) {
-    toast({
-      variant: "destructive",
-      title: "Produto já adicionado",
-      description: "Este produto já está na lista."
-    });
+  // Funções para gerenciar produtos
+  const handleAddProduct = async (product: Product) => {
+    // Verificar se o produto já está selecionado
+    if (selectedProducts.some(p => p._id === product._id)) {
+      toast({
+        variant: "destructive",
+        title: "Produto já adicionado",
+        description: "Este produto já está na lista."
+      });
     return;
   }
   
-  // Normalizar o produto para garantir consistência
-  const normalizedProduct = normalizeProduct(product) as Product;
-  
-  // Garantir explicitamente que o preço é um número válido
-  const sellPrice = typeof normalizedProduct.sellPrice === 'number' && !isNaN(normalizedProduct.sellPrice)
-    ? normalizedProduct.sellPrice
-    : 0;
-  
-  // Criar cópia com valores garantidos
-  const productWithGuaranteedValues: Product = {
-    ...normalizedProduct,
-    sellPrice
-  };
-  
-  console.log("Produto normalizado:", productWithGuaranteedValues);
-  
-  setSelectedProducts([...selectedProducts, productWithGuaranteedValues]);
-  
-  // Atualizar os produtos no formulário
-  const updatedProducts = [...selectedProducts, productWithGuaranteedValues];
-  form.setValue("products", updatedProducts);
-  
-  // Recalcular preço total garantindo valores numéricos
-  const newTotal = updatedProducts.reduce(
-    (sum, p) => {
-      const price = typeof p.sellPrice === 'number' && !isNaN(p.sellPrice) 
-        ? p.sellPrice 
-        : 0;
-      return sum + price;
-    }, 0
-  );
-  
-  console.log("Novo total calculado:", newTotal);
-  
-  form.setValue("totalPrice", newTotal);
-  updateFinalPrice(newTotal, form.getValues("discount") || 0);
+  try {
+    // Tenta buscar o produto atualizado com dados consistentes
+    const freshProduct = await fetchProductWithConsistentDetails(product._id);
+    
+    // Define o produto a ser adicionado (ou o atualizado da API ou o normalizado original)
+    const productToAdd = freshProduct || normalizeProduct(product);
+    
+    console.log("Produto normalizado:", productToAdd);
+    
+    setSelectedProducts([...selectedProducts, productToAdd]);
+    
+    // Atualizar os produtos no formulário
+    const updatedProducts = [...selectedProducts, productToAdd];
+    form.setValue("products", updatedProducts);
+    
+    // Recalcular preço total garantindo valores numéricos
+    const newTotal = updatedProducts.reduce(
+      (sum, p) => sum + getCorrectPrice(p), 0
+    );
+    
+    console.log("Novo total calculado:", newTotal);
+    
+    form.setValue("totalPrice", newTotal);
+    updateFinalPrice(newTotal, form.getValues("discount") || 0);
+  } catch (error) {
+    console.error("Erro ao adicionar produto:", error);
+    toast({
+      variant: "destructive",
+      title: "Erro ao adicionar produto",
+      description: "Ocorreu um erro ao processar o produto."
+    });
+  }
 };
 
   const handleRemoveProduct = (productId: string) => {

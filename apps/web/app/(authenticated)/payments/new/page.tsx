@@ -9,7 +9,6 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/app/services/authService";
-import { useToast } from "@/hooks/useToast";
 import { usePayments } from "@/hooks/usePayments";
 import { QUERY_KEYS } from "@/app/constants/query-keys";
 
@@ -55,7 +54,6 @@ import {
   Search,
   User,
   Store,
-  FileText,
 } from "lucide-react";
 
 // Importar tipos
@@ -103,7 +101,6 @@ type PaymentFormValues = z.infer<typeof paymentFormSchema>;
 
 export default function NewPaymentPage() {
   const router = useRouter();
-  const { toast } = useToast();
   const [step, setStep] = useState(1); // Controle da etapa atual do formulário
   const [selectedEntityType, setSelectedEntityType] = useState<
     "customer" | "legacyClient" | null

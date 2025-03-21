@@ -60,7 +60,6 @@ export default function PaymentsPage() {
     totalPayments,
     setCurrentPage,
     updateFilters,
-    refetch,
     handleCancelPayment,
     navigateToPaymentDetails,
     navigateToCreatePayment,

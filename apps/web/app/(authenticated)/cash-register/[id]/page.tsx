@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 
 import {
   Card,
@@ -34,14 +32,11 @@ import {
   CalendarClock,
   ChevronDown,
   ChevronUp,
-  Landmark,
   CircleDollarSign,
   ReceiptText,
 } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
 
 import { useCashRegister } from "../../../../hooks/useCashRegister";
-import { usePayments } from "../../../../hooks/usePayments";
 import {
   formatCurrency,
   formatDate,
@@ -57,32 +52,6 @@ import {
   getCashRegisterSummary,
 } from "@/app/services/cashRegisterService";
 import { getPaymentsByCashRegister } from "@/app/services/paymentService";
-
-interface RegisterSummary {
-  register: {
-    _id: string;
-    openingDate: string | Date;
-    status: string;
-    openingBalance: number;
-    currentBalance: number;
-    closingBalance?: number;
-    // Outros campos possíveis
-  };
-  payments: {
-    sales: {
-      total: number;
-      byMethod: Record<string, number>;
-    };
-    debts: {
-      received: number;
-      byMethod: Record<string, number>;
-    };
-    expenses: {
-      total: number;
-      byCategory: Record<string, number>;
-    };
-  };
-}
 
 export default function CashRegisterDetailsPage() {
   const { id } = useParams<{ id: string }>();

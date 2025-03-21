@@ -14,6 +14,12 @@ import {
 } from "../app/services/productService";
 import { QUERY_KEYS } from "../app/constants/query-keys";
 import { Product } from "@/app/types/product";
+// Importar as funções de utilitário
+import { 
+  getCorrectPrice, 
+  getCorrectType, 
+  normalizeProduct 
+} from "../app/utils/product-utils";
 
 interface ProductFilters {
   search?: string;
@@ -182,6 +188,22 @@ export function useProducts() {
     return deleteProductMutation.mutateAsync(id);
   };
 
+  /**
+   * Busca um produto com detalhes consistentes
+   */
+  const fetchProductWithConsistentDetails = async (id: string): Promise<Product | null> => {
+    try {
+      const product = await getProductById(id);
+      if (!product) return null;
+      
+      // Usamos as-any como intermediário para evitar erros de tipo
+      return normalizeProduct(product as any);
+    } catch (error) {
+      console.error("Erro ao buscar produto:", error);
+      return null;
+    }
+  };
+
   return {
     // Dados e estado
     products,
@@ -210,5 +232,11 @@ export function useProducts() {
     navigateToEditProduct,
     formatCurrency,
     refetch,
+    
+    // Funções importadas
+    getCorrectPrice,
+    getCorrectType,
+    normalizeProduct,
+    fetchProductWithConsistentDetails
   };
 }

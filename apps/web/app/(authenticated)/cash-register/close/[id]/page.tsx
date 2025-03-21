@@ -54,7 +54,6 @@ import { getCashRegisterById } from "@/app/services/cashRegisterService";
 import { QUERY_KEYS } from "@/app/constants/query-keys";
 import { formatCurrency, formatDate } from "@/app/utils/formatters";
 import type {
-  ICashRegister,
   CloseCashRegisterDTO,
 } from "@/app/types/cash-register";
 
