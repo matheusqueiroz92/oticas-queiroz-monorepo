@@ -16,7 +16,11 @@ export function useUsers() {
   const [isLoading, setIsLoading] = useState(false);
 
   const fetchUserById = async (id: string) => {
+    console.log("ID do usuario:", id);
+    
     const response = await api.get(`/api/users/${id}`);
+    console.log("Resposta do dados do usuario:", response.data);
+    
     return response.data;
   };
 
@@ -93,6 +97,7 @@ export function useUsers() {
     if (!userId) return "Usuário não disponível";
     
     const user = usersMap[userId];
+    console.log("User:", user);
     return user?.name || "Carregando..."; // Retorna "Carregando..." até o nome ser carregado
   }, [usersMap]);
 

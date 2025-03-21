@@ -381,7 +381,7 @@ export default function OrdersPage() {
                       return (
                         <TableRow key={order._id}>
                           <TableCell>
-                            {getClientName(order.clientId) === "Carregando..." ? "Carregando..." : getClientName(order.clientId)}
+                            {getClientName(order.clientId.toString()) === "Carregando..." ? "Carregando..." : getClientName(order.clientId.toString())}
                           </TableCell>
 
                           <TableCell>{formatDate(order.createdAt)}</TableCell>
@@ -393,7 +393,7 @@ export default function OrdersPage() {
                           </TableCell>
 
                           <TableCell>
-                            {getEmployeeName(order.employeeId) === "Carregando..." ? "Carregando..." : getEmployeeName(order.employeeId)}
+                            {getEmployeeName(order.employeeId.toString()) === "Carregando..." ? "Carregando..." : getEmployeeName(order.employeeId.toString())}
                           </TableCell>
 
                           <TableCell className="text-right">

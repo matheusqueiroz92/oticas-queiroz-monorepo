@@ -50,6 +50,7 @@ export function useOrders() {
 
   // Efeito para buscar usuários quando os pedidos são carregados
   useEffect(() => {
+    console.log("Orders data:", data);
     if ((data?.orders ?? []).length > 0) {
       // Buscar IDs únicos de usuários
       const userIdsToFetch = [
@@ -227,7 +228,10 @@ export function useOrders() {
 
   // Funções específicas para obter nomes
   const getClientName = useCallback((clientId: string) => {
-    return getUserName(clientId);
+    console.log("Getting clientID:", clientId);
+    const getName = getUserName(clientId);
+    console.log("Client name:", getName);
+    return getName
   }, [getUserName]);
 
   const getEmployeeName = useCallback((employeeId: string) => {
