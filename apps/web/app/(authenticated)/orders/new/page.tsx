@@ -195,6 +195,9 @@ export default function NewOrderPage() {
 
   // Funções para gerenciar produtos
   const handleAddProduct = (product: Product) => {
+    console.log('Produto adicionado:', product);
+    console.log('Tipo de sellPrice:', typeof product.sellPrice);
+    console.log('Valor de sellPrice:', product.sellPrice);
     // Verificar se o produto já está selecionado
     if (selectedProducts.some(p => p._id === product._id)) {
       toast({
@@ -205,13 +208,25 @@ export default function NewOrderPage() {
       return;
     }
     
-    setSelectedProducts([...selectedProducts, product]);
-    form.setValue("products", [...selectedProducts, product]);
+    // Garantir que o preço seja numérico
+    const productWithNumericPrice = {
+      ...product,
+      sellPrice: typeof product.sellPrice === 'string' 
+        ? parseFloat(product.sellPrice) 
+        : (product.sellPrice || 0)
+    };
     
-    // Recalcular preço total
-    const newTotal = [...selectedProducts, product].reduce(
-      (sum, p) => sum + (p.sellPrice || 0),
-      0
+    setSelectedProducts([...selectedProducts, productWithNumericPrice]);
+    form.setValue("products", [...selectedProducts, productWithNumericPrice]);
+    
+    // Recalcular preço total garantindo valores numéricos
+    const newTotal = [...selectedProducts, productWithNumericPrice].reduce(
+      (sum, p) => {
+        const price = typeof p.sellPrice === 'string' 
+          ? parseFloat(p.sellPrice) 
+          : (p.sellPrice || 0);
+        return sum + price;
+      }, 0
     );
     form.setValue("totalPrice", newTotal);
     updateFinalPrice(newTotal, form.getValues("discount") || 0);
@@ -232,18 +247,27 @@ export default function NewOrderPage() {
   };
 
   const handleUpdateProductPrice = (productId: string, newPrice: number) => {
+    // Garantir que newPrice seja numérico
+    const numericPrice = typeof newPrice === 'string' 
+      ? parseFloat(newPrice) 
+      : (newPrice || 0);
+    
     const updatedProducts = selectedProducts.map(p => 
-      p._id === productId ? { ...p, sellPrice: newPrice } : p
+      p._id === productId ? { ...p, sellPrice: numericPrice } : p
     );
     setSelectedProducts(updatedProducts);
     console.log(updatedProducts);
     
     form.setValue("products", updatedProducts);
     
-    // Recalcular preço total
+    // Recalcular preço total com valores numéricos garantidos
     const newTotal = updatedProducts.reduce(
-      (sum, p) => sum + (p.sellPrice || 0),
-      0
+      (sum, p) => {
+        const price = typeof p.sellPrice === 'string' 
+          ? parseFloat(p.sellPrice) 
+          : (p.sellPrice || 0);
+        return sum + price;
+      }, 0
     );
     form.setValue("totalPrice", newTotal);
     updateFinalPrice(newTotal, form.getValues("discount") || 0);

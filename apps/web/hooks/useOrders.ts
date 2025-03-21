@@ -50,7 +50,6 @@ export function useOrders() {
 
   // Efeito para buscar usuários quando os pedidos são carregados
   useEffect(() => {
-    console.log("1º -> pega os dados de getAllOrders:", data);
     if ((data?.orders ?? []).length > 0) {
       // Buscar IDs únicos de usuários
       const userIdsToFetch = [
@@ -261,8 +260,6 @@ export function useOrders() {
 
   // Funções específicas para obter nomes
   const getClientName = useCallback((clientId: string) => {
-    console.log("Getting clientID:", clientId);
-    
     // Se for uma string, mas parecer um objeto JSON
     if (typeof clientId === 'string' && clientId.includes('ObjectId')) {
       try {
@@ -277,13 +274,10 @@ export function useOrders() {
     }
     
     const getName = getUserName(clientId);
-    console.log("Client name:", getName);
     return getName;
   }, [getUserName]);
 
   const getEmployeeName = useCallback((employeeId: string) => {
-    console.log("Getting employeeID:", employeeId);
-    
     // Se for uma string, mas parecer um objeto JSON
     if (typeof employeeId === 'string' && employeeId.includes('ObjectId')) {
       try {
@@ -298,7 +292,6 @@ export function useOrders() {
     }
     
     const getName = getUserName(employeeId);
-    console.log("Client name:", getName);
     return getName;
   }, [getUserName]);
 

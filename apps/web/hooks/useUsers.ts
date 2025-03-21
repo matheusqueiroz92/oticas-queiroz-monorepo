@@ -13,14 +13,10 @@ export function useUsers() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [usersMap, setUsersMap] = useState<Record<string, any>>({});
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading] = useState(false);
 
   const fetchUserById = async (id: string) => {
-    console.log("3º -> id do usuario inserido no fetchUserById:", id);
-    
     const response = await api.get(`/api/users/${id}`);
-    console.log("4º -> resposta do dados do usuario na rota /api/users/:id - AQUI!!!" , response.data);
-    
     return response.data;
   };
 
@@ -40,7 +36,6 @@ export function useUsers() {
       
       // Buscar da API
       const response = await api.get(API_ROUTES.USERS.BY_ID(id));
-      console.log("7º -> getUserById:" , response.data);
       
       // Atualizar cache local
       setUsersMap(prev => ({
@@ -63,13 +58,11 @@ export function useUsers() {
     try {
       // Usando Promise.all para carregar todos os usuários simultaneamente
       const users = await Promise.all(userIds.map(id => fetchUserById(id)));
-      console.log("5º -> dados de cada usuário:", users);
       // Atualiza o mapa de usuários
       const updatedUsersMap = users.reduce((acc, user) => {
         acc[user._id] = user;
         return acc;
       }, {} as Record<string, any>);
-      console.log("6º -> updatedUsersMap:", updatedUsersMap);
 
       setUsersMap(prevState => ({
         ...prevState,
@@ -97,9 +90,7 @@ export function useUsers() {
   // Função para obter o nome do usuário
   const getUserName = useCallback((userId: string | null | undefined): string => {
     if (!userId) return "Usuário não disponível";
-    console.log("UserID", userId);
     const user = usersMap[userId];
-    console.log("User:", user);
     return user?.name || "Carregando...";
      // Retorna "Carregando..." até o nome ser carregado
   }, [usersMap]);

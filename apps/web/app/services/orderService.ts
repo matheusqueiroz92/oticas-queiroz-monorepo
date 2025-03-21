@@ -40,12 +40,8 @@ export async function getAllOrders(filters: OrderFilters = {}): Promise<{
       pagination = response.data.pagination;
     }
 
-    console.log("Raw orders:", rawOrders);
-    console.log("----------------------");
     // Normalizar os pedidos antes de retorná-los
     const orders = normalizeOrders(rawOrders);
-    console.log("Orders:", orders);
-    console.log("----------------------");
 
     return { orders, pagination };
   } catch (error) {

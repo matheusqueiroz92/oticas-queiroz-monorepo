@@ -22,7 +22,16 @@ export default function SelectedProductsList({
     );
   }
 
-  const total = products.reduce((sum, p) => sum + (p.sellPrice || 0), 0);
+  const total = products.reduce((sum, p) => {
+    // Garantir que p.sellPrice seja tratado como número
+    const price = typeof p.sellPrice === 'string' 
+      ? parseFloat(p.sellPrice) 
+      : (p.sellPrice || 0);
+    return sum + price;
+  }, 0);
+
+  console.log('Produtos no cálculo do total:', products);
+  console.log('Total calculado:', total);
 
   return (
     <div className="border rounded-md overflow-hidden">
