@@ -12,7 +12,6 @@ import { FileDown } from "lucide-react";
 import type { Order } from "@/app/types/order";
 import type { Product } from "@/app/types/product";
 
-// Estilos para o PDF
 const styles = StyleSheet.create({
   page: {
     padding: 30,
@@ -139,14 +138,12 @@ const styles = StyleSheet.create({
   },
 });
 
-// Interface para o documento PDF
 interface OrderPDFDocumentProps {
   order: Order;
   clientName: string;
   employeeName: string;
 }
 
-// Função para obter o rótulo do tipo de produto
 const getProductTypeLabel = (type?: string): string => {
   const types: Record<string, string> = {
     lenses: "Lentes",
@@ -159,13 +156,11 @@ const getProductTypeLabel = (type?: string): string => {
   return types[type] || type;
 };
 
-// Componente do documento PDF
 const OrderPDFDocument = ({
   order,
   clientName,
   employeeName,
 }: OrderPDFDocumentProps) => {
-  // Função para formatar a data
   const formatDate = (dateInput?: string | Date) => {
     if (!dateInput) return "N/A";
     const date =
@@ -503,7 +498,6 @@ const OrderPDFDocument = ({
   );
 };
 
-// Componente principal que será exportado
 interface OrderDetailsPDFProps {
   order: Order;
   clientName: string;

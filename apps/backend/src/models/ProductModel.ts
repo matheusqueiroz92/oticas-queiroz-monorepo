@@ -24,9 +24,6 @@ export class ProductModel {
     // Obter valores brutos do documento MongoDB
     const rawDoc = doc.toObject ? doc.toObject() : doc;
     
-    // Log detalhado para depuração
-    console.log("Convertendo documento do MongoDB para IProduct:", JSON.stringify(rawDoc, null, 2));
-    
     // Preparar o produto base
     const baseProduct: IProduct = {
       _id: rawDoc._id.toString(),

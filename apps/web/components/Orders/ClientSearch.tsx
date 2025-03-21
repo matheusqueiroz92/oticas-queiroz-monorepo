@@ -13,7 +13,7 @@ import type { OrderFormValues } from "@/app/types/form-types";
 
 interface ClientSearchProps {
   customers: Customer[];
-  form: UseFormReturn<OrderFormValues, any, undefined>; // Corrigido com todos os parâmetros genéricos
+  form: UseFormReturn<OrderFormValues, any, undefined>;
   onClientSelect: (clientId: string, name: string) => void;
 }
 
@@ -39,11 +39,9 @@ export default function ClientSearch({
     );
     setFilteredCustomers(filtered);
 
-    // Mostrar sugestões quando há texto e sugestões
     setShowSuggestions(customerSearch.trim().length > 0);
   }, [customerSearch, customers]);
 
-  // Detectar cliques fora do componente de sugestões
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
@@ -69,11 +67,9 @@ export default function ClientSearch({
   };
 
   const handleNavigateToNewCustomer = () => {
-    // Salvar o estado atual em localStorage para permitir voltar ao pedido
     if (window) {
       window.localStorage.setItem('pendingOrderFormData', JSON.stringify(form.getValues()));
     }
-    // Abrir nova aba para cadastro de cliente
     window.open('/customers/new', '_blank');
   };
 

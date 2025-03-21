@@ -12,7 +12,6 @@ import LogoImage from "../../../public/logo-oticas-queiroz.png";
 import type { Customer } from "../../../app/types/customer";
 import type { OrderFormValues } from "@/app/types/form-types";
 
-// Dados da empresa
 const companyInfo = {
   name: "Óticas Queiroz",
   logo: LogoImage.src,
@@ -216,7 +215,6 @@ const styles = StyleSheet.create({
   },
 });
 
-// Função para obter o rótulo do tipo de produto
 const getProductTypeLabel = (type?: string): string => {
   const types: Record<string, string> = {
     lenses: "Lentes",
@@ -235,7 +233,6 @@ interface OrderPDFProps {
 }
 
 const OrderPDF = ({ data, customer }: OrderPDFProps) => {
-  // Função para formatar datas com verificação de undefined
   const formatDate = (dateString?: string) => {
     if (!dateString) return "N/A";
     try {
@@ -245,7 +242,6 @@ const OrderPDF = ({ data, customer }: OrderPDFProps) => {
     }
   };
 
-  // Calcular valor da parcela com verificação para valores undefined
   const calculateInstallmentValue = () => {
     const totalPrice = data.finalPrice || 0;
     const installments = data.installments || 1;
@@ -255,24 +251,20 @@ const OrderPDF = ({ data, customer }: OrderPDFProps) => {
     return remainingAmount <= 0 ? 0 : remainingAmount / installments;
   };
 
-  // Formatar valores monetários
   const formatCurrency = (value: number) => {
     return `R$ ${value.toFixed(2).replace(".", ",")}`;
   };
 
-  // Formatar números dos graus
   const formatRefractionValue = (value: number) => {
     const prefix = value > 0 ? "+" : "";
     return `${prefix}${value.toFixed(2)}`;
   };
 
-  // Verificar se há produtos selecionados
   const hasProducts = Array.isArray(data.products) && data.products.length > 0;
 
   return (
     <Document>
       <Page style={styles.page}>
-        {/* Cabeçalho com logo e dados da empresa */}
         <View style={styles.header}>
           <View style={styles.logoContainer}>
             <Image style={styles.logo} src={companyInfo.logo} />
@@ -290,14 +282,12 @@ const OrderPDF = ({ data, customer }: OrderPDFProps) => {
           </View>
         </View>
 
-        {/* Número do pedido */}
         {data._id && (
           <Text style={styles.orderNumber}>Pedido #: {data._id}</Text>
         )}
 
         <Text style={styles.title}>PEDIDO</Text>
 
-        {/* Dados do Cliente */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>DADOS DO CLIENTE</Text>
           <View style={styles.row}>
@@ -320,7 +310,6 @@ const OrderPDF = ({ data, customer }: OrderPDFProps) => {
           </View>
         </View>
 
-        {/* Dados do Pedido e Produtos */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>DETALHES DO PEDIDO</Text>
           <View style={styles.row}>
@@ -338,7 +327,6 @@ const OrderPDF = ({ data, customer }: OrderPDFProps) => {
             </View>
           )}
 
-          {/* Tabela de Produtos */}
           {hasProducts && (
             <View style={styles.table}>
               <Text style={{ fontWeight: "bold", marginBottom: 5 }}>
@@ -377,7 +365,6 @@ const OrderPDF = ({ data, customer }: OrderPDFProps) => {
             </View>
           )}
 
-          {/* Informações de Pagamento */}
           <Text style={{ fontWeight: "bold", marginTop: 10, marginBottom: 5 }}>
             FORMA DE PAGAMENTO
           </Text>
@@ -411,7 +398,6 @@ const OrderPDF = ({ data, customer }: OrderPDFProps) => {
           )}
         </View>
 
-        {/* Receita Médica */}
         {data.prescriptionData && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>RECEITA MÉDICA</Text>
@@ -435,7 +421,6 @@ const OrderPDF = ({ data, customer }: OrderPDFProps) => {
               </Text>
             </View>
 
-            {/* Tabela de dados da prescrição */}
             <View style={styles.prescriptionTable}>
               <View style={styles.prescriptionTableHeader}>
                 <Text style={[styles.prescriptionTableCell, { width: 70 }]}>
@@ -511,7 +496,6 @@ const OrderPDF = ({ data, customer }: OrderPDFProps) => {
           </View>
         )}
 
-        {/* Observações */}
         {data.observations && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>OBSERVAÇÕES</Text>
@@ -519,13 +503,11 @@ const OrderPDF = ({ data, customer }: OrderPDFProps) => {
           </View>
         )}
 
-        {/* Assinatura */}
         <View style={styles.signatureSection}>
           <View style={styles.signatureLine} />
           <Text style={styles.signatureLabel}>Assinatura do Cliente</Text>
         </View>
 
-        {/* Rodapé */}
         <Text style={styles.footer}>
           Este documento é um comprovante de pedido. Para mais informações entre
           em contato com {companyInfo.name} pelo telefone {companyInfo.phone}.

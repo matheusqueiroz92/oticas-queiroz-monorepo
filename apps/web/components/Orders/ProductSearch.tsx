@@ -8,7 +8,6 @@ import {
 } from "@/components/ui/form";
 import type { Product } from "../../app/types/product";
 import { formatCurrency } from "../../app/utils/formatters";
-import { useRouter } from "next/navigation";
 import { normalizeProduct } from "@/app/utils/product-utils";
 
 interface ProductSearchProps {
@@ -18,7 +17,6 @@ interface ProductSearchProps {
   selectedProducts: Product[];
 }
 
-// Tradução dos tipos de produto
 const productTypeTranslations: Record<string, string> = {
   lenses: "Lentes",
   clean_lenses: "Limpa-lentes",
@@ -35,15 +33,12 @@ export default function ProductSearch({
   const [productSearch, setProductSearch] = useState("");
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [showResults, setShowResults] = useState(false);
-  const router = useRouter();
 
-  // Normalizar os produtos da API usando useMemo para evitar recálculos desnecessários
   const normalizedApiProducts = useMemo(() => {
     return products.map(p => {
-      // Usando cast para Product para evitar erros de tipo
       return normalizeProduct(p) as Product;
     });
-  }, [products]); // Dependência apenas em products
+  }, [products]);
 
   useEffect(() => {
     if (!productSearch.trim()) {
@@ -52,11 +47,9 @@ export default function ProductSearch({
     }
 
     const searchLower = productSearch.toLowerCase();
-    
-    // Filtrar produtos pelo nome
+
     const filtered = normalizedApiProducts
       .filter((product) => product.name?.toLowerCase().includes(searchLower))
-      // Filtrar produtos já selecionados
       .filter((product) => !selectedProducts.some(p => p._id === product._id));
       
     setFilteredProducts(filtered);
@@ -64,10 +57,8 @@ export default function ProductSearch({
   }, [productSearch, normalizedApiProducts, selectedProducts]);
 
   const handleAddProduct = (product: Product) => {
-    // Criar uma cópia normalizada para garantir consistência
     const normalizedProduct = normalizeProduct(product) as Product;
     
-    // Garantir que preço é um número
     const productWithPrice = {
       ...normalizedProduct,
       sellPrice: typeof normalizedProduct.sellPrice === 'number' && !isNaN(normalizedProduct.sellPrice)
@@ -83,15 +74,12 @@ export default function ProductSearch({
   };
 
   const handleNavigateToNewProduct = () => {
-    // Salvar o estado atual em localStorage para permitir voltar ao pedido
     if (window) {
       window.localStorage.setItem('pendingOrderFormData', JSON.stringify(form.getValues()));
     }
-    // Abrir nova aba para cadastro de produto
     window.open('/products/new', '_blank');
   };
 
-  // Função para obter o rótulo do tipo de produto em português
   const getProductTypeLabel = (type?: string): string => {
     if (!type) return "Não especificado";
     return productTypeTranslations[type] || type;
@@ -111,7 +99,6 @@ export default function ProductSearch({
               onChange={(e) => setProductSearch(e.target.value)}
               onFocus={() => setShowResults(!!productSearch)}
               onBlur={() => {
-                // Delay para permitir o clique nas opções
                 setTimeout(() => setShowResults(false), 200);
               }}
             />

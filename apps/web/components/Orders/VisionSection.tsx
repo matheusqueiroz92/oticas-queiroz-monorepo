@@ -14,7 +14,6 @@ interface VisionSectionProps {
 }
 
 export default function VisionSection({ eye, form }: VisionSectionProps) {
-  // Helper function para lidar com campos numéricos
   const handleNumericInput = (
     e: React.ChangeEvent<HTMLInputElement>,
     onChange: (value: number) => void
@@ -95,7 +94,6 @@ export default function VisionSection({ eye, form }: VisionSectionProps) {
         )}
       />
 
-      {/* Novo campo PD (distância pupilar) */}
       <FormField
         control={form.control}
         name={`prescriptionData.${eye}Eye.pd`}

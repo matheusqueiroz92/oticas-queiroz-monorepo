@@ -126,8 +126,22 @@ export class OrderService {
     }
 
     if (orderData.deliveryDate) {
-      if (new Date(orderData.deliveryDate) < new Date()) {
-        throw new OrderError("Data de entrega deve ser futura");
+      // Obter apenas a data, descartando horas, minutos e segundos
+      const deliveryDate = new Date(orderData.deliveryDate);
+      deliveryDate.setHours(0, 0, 0, 0);
+      
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      // Verificar se há lentes no pedido
+      const hasLenses = orderData.products.some(p => 
+        p.productType === 'lenses' || 
+        (p.name && p.name.toLowerCase().includes('lente'))
+      );
+      
+      // Se tiver lentes, a data de entrega deve ser futura
+      if (hasLenses && deliveryDate < today) {
+        throw new OrderError("Pedidos com lentes exigem data de entrega futura");
       }
     }
 
@@ -146,12 +160,23 @@ export class OrderService {
       if (orderData.laboratoryId?.toString() === "") {
         orderData.laboratoryId = undefined;
       }
-
+  
       // Calcular preço final se não fornecido
       if (orderData.finalPrice === undefined) {
         orderData.finalPrice = orderData.totalPrice - (orderData.discount || 0);
       }
-
+  
+      // Verificar se o pedido contém lentes para definir o status inicial
+      const containsLenses = orderData.products.some(product => 
+        product.productType === 'lenses' || 
+        (product.name && product.name.toLowerCase().includes('lente'))
+      );
+  
+      // Se o status não foi fornecido, defina com base na presença de lentes
+      if (!orderData.status) {
+        orderData.status = containsLenses ? 'pending' : 'ready';
+      }
+  
       const orderDTO: CreateOrderDTO = {
         clientId: new mongoose.Types.ObjectId(orderData.clientId),  // Converte o clientId para ObjectId
         employeeId: new mongoose.Types.ObjectId(orderData.employeeId),  // Converte o employeeId para ObjectId
@@ -161,23 +186,23 @@ export class OrderService {
         installments: orderData.installments,
         orderDate: new Date(),  // Usar a data atual para o pedido
         deliveryDate: orderData.deliveryDate ? new Date(orderData.deliveryDate) : undefined,  // Caso tenha data de entrega
-        status: orderData.status || 'pending',  // Status do pedido
+        status: orderData.status,  // Status do pedido (agora baseado na presença de lentes)
         totalPrice: orderData.totalPrice,
         discount: orderData.discount || 0,
         finalPrice: orderData.finalPrice || (orderData.totalPrice - orderData.discount),
         isDeleted: orderData.isDeleted || false, // Não excluído por padrão
       };
-
+  
       await this.validateOrder(orderData);
       const order = await this.orderModel.create(orderData);
-
+  
       // Invalidar caches relacionados
       // this.invalidateCache([
       //   `client_orders_${orderData.clientId}`,
       //   "daily_orders",
       //   "all_orders",
       // ]);
-
+  
       return order;
     } catch (error) {
       if (error instanceof OrderError) {

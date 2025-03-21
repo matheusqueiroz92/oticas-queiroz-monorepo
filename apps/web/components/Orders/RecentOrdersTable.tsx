@@ -15,6 +15,34 @@ interface RecentOrdersTableProps {
   onViewDetails: (id: string) => void;
 }
 
+function translateStatus(status: string): string {
+  const statusMap: Record<string, string> = {
+    'pending': 'Pendente',
+    'in_production': 'Em Produção',
+    'ready': 'Pronto',
+    'delivered': 'Entregue',
+    'cancelled': 'Cancelado'
+  };
+  return statusMap[status] || status;
+}
+
+function getStatusClass(status: string): string {
+  switch (status) {
+    case "pending":
+      return "text-yellow-600 bg-yellow-100 px-2 py-1 rounded";
+    case "in_production":
+      return "text-blue-600 bg-blue-100 px-2 py-1 rounded";
+    case "ready":
+      return "text-green-600 bg-green-100 px-2 py-1 rounded";
+    case "delivered":
+      return "text-purple-600 bg-purple-100 px-2 py-1 rounded";
+    case "cancelled":
+      return "text-red-600 bg-red-100 px-2 py-1 rounded";
+    default:
+      return "text-gray-600 bg-gray-100 px-2 py-1 rounded";
+  }
+}
+
 export const RecentOrdersTable = ({ orders, onViewDetails }: RecentOrdersTableProps) => {
   if (!orders || orders.length === 0) {
     return (
@@ -24,7 +52,6 @@ export const RecentOrdersTable = ({ orders, onViewDetails }: RecentOrdersTablePr
     );
   }
 
-  // Mostrar apenas os 5 pedidos mais recentes
   const recentOrders = orders.slice(0, 5);
 
   return (
@@ -72,33 +99,3 @@ export const RecentOrdersTable = ({ orders, onViewDetails }: RecentOrdersTablePr
     </div>
   );
 };
-
-// Função auxiliar para traduzir status
-function translateStatus(status: string): string {
-  const statusMap: Record<string, string> = {
-    'pending': 'Pendente',
-    'in_production': 'Em Produção',
-    'ready': 'Pronto',
-    'delivered': 'Entregue',
-    'cancelled': 'Cancelado'
-  };
-  return statusMap[status] || status;
-}
-
-// Função auxiliar para obter classe de estilo do status
-function getStatusClass(status: string): string {
-  switch (status) {
-    case "pending":
-      return "text-yellow-600 bg-yellow-100 px-2 py-1 rounded";
-    case "in_production":
-      return "text-blue-600 bg-blue-100 px-2 py-1 rounded";
-    case "ready":
-      return "text-green-600 bg-green-100 px-2 py-1 rounded";
-    case "delivered":
-      return "text-purple-600 bg-purple-100 px-2 py-1 rounded";
-    case "cancelled":
-      return "text-red-600 bg-red-100 px-2 py-1 rounded";
-    default:
-      return "text-gray-600 bg-gray-100 px-2 py-1 rounded";
-  }
-}

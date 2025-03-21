@@ -19,7 +19,7 @@ interface OrderFilters {
   search?: string;
   page?: number;
   status?: string;
-  startDate?: string;
+  startDate?: string
   endDate?: string;
   sort?: string;
 }
@@ -33,7 +33,6 @@ export function useOrders() {
   const queryClient = useQueryClient();
   const { fetchUsers, getUserName } = useUsers();
 
-  // Query para buscar pedidos paginados
   const {
     data, 
     isLoading, 
@@ -105,13 +104,10 @@ export function useOrders() {
     }
   }, [data, fetchUsers]);
   
-
-  // Dados normalizados
   const orders = data?.orders || [];
   const totalPages = data?.pagination?.totalPages || 1;
   const totalOrders = data?.pagination?.total || 0;
 
-  // Custom query para buscar um pedido específico
   const fetchOrderById = (id: string) => {
     return useQuery({
       queryKey: QUERY_KEYS.ORDERS.DETAIL(id),
@@ -120,7 +116,6 @@ export function useOrders() {
     });
   };
 
-  // Mutation para atualizar status do pedido
   const updateOrderStatusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: string }) =>
       updateOrderStatus(id, status),
@@ -129,8 +124,7 @@ export function useOrders() {
         title: "Status atualizado",
         description: "O status do pedido foi atualizado com sucesso.",
       });
-      
-      // Invalidar todas as queries relacionadas
+
       queryClient.invalidateQueries({ queryKey: ['orders'] });
     },
     onError: (error) => {
@@ -143,7 +137,6 @@ export function useOrders() {
     }
   });
 
-  // Mutation para atualizar laboratório do pedido
   const updateOrderLaboratoryMutation = useMutation({
     mutationFn: ({ id, laboratoryId }: { id: string; laboratoryId: string }) =>
       updateOrderLaboratory(id, laboratoryId),
@@ -153,7 +146,6 @@ export function useOrders() {
         description: "O laboratório do pedido foi atualizado com sucesso.",
       });
 
-      // Invalidar todas as queries relacionadas
       queryClient.invalidateQueries({ queryKey: ['orders'] });
     },
     onError: (error) => {
@@ -166,7 +158,6 @@ export function useOrders() {
     }
   });
 
-  // Mutation para criar pedido
   const createOrderMutation = useMutation({
     mutationFn: createOrder,
     onSuccess: (newOrder) => {
@@ -176,13 +167,7 @@ export function useOrders() {
           description: "O pedido foi criado com sucesso.",
         });
 
-        // Invalidar todas as queries relacionadas
         queryClient.invalidateQueries({ queryKey: ['orders'] });
-        
-        // Navegar para a página de detalhes do novo pedido
-        if (newOrder._id) {
-          router.push(`/orders/${newOrder._id}`);
-        }
       }
     },
     onError: (error) => {
@@ -195,13 +180,11 @@ export function useOrders() {
     }
   });
 
-  // Função para atualizar filtros
   const updateFilters = useCallback((newFilters: OrderFilters) => {
     setFilters(newFilters);
-    setCurrentPage(1); // Voltar para a primeira página ao filtrar
+    setCurrentPage(1);
   }, []);
 
-  // Funções que utilizam as mutations
   const handleUpdateOrderStatus = useCallback((id: string, status: string) => {
     return updateOrderStatusMutation.mutateAsync({ id, status });
   }, [updateOrderStatusMutation]);
@@ -214,7 +197,6 @@ export function useOrders() {
     return createOrderMutation.mutateAsync(orderData);
   }, [createOrderMutation]);
 
-  // Funções de navegação
   const navigateToOrderDetails = useCallback((id: string) => {
     router.push(`/orders/${id}`);
   }, [router]);
@@ -223,13 +205,11 @@ export function useOrders() {
     router.push("/orders/new");
   }, [router]);
 
-  // Função para forçar atualização da lista
   const refreshOrdersList = useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey: ['orders'] });
     await refetch();
   }, [queryClient, refetch]);
 
-  // Funções de utilidade
   const translateOrderStatus = useCallback((status: string): string => {
     const statusMap: Record<string, string> = {
       pending: "Pendente",
@@ -258,12 +238,9 @@ export function useOrders() {
     }
   }, []);
 
-  // Funções específicas para obter nomes
   const getClientName = useCallback((clientId: string) => {
-    // Se for uma string, mas parecer um objeto JSON
     if (typeof clientId === 'string' && clientId.includes('ObjectId')) {
       try {
-        // Extrai apenas o ID do ObjectId
         const matches = clientId.match(/ObjectId\('([^']+)'\)/);
         if (matches && matches[1]) {
           clientId = matches[1];
@@ -278,10 +255,8 @@ export function useOrders() {
   }, [getUserName]);
 
   const getEmployeeName = useCallback((employeeId: string) => {
-    // Se for uma string, mas parecer um objeto JSON
     if (typeof employeeId === 'string' && employeeId.includes('ObjectId')) {
       try {
-        // Extrai apenas o ID do ObjectId
         const matches = employeeId.match(/ObjectId\('([^']+)'\)/);
         if (matches && matches[1]) {
           employeeId = matches[1];
@@ -296,7 +271,6 @@ export function useOrders() {
   }, [getUserName]);
 
   return {
-    // Dados e estado
     orders,
     isLoading,
     error: error ? String(error) : null,
@@ -304,13 +278,10 @@ export function useOrders() {
     totalPages,
     totalOrders,
     filters,
-
-    // Mutações e seus estados
     isCreating: createOrderMutation.isPending,
     isUpdatingStatus: updateOrderStatusMutation.isPending,
     isUpdatingLaboratory: updateOrderLaboratoryMutation.isPending,
 
-    // Ações
     setCurrentPage,
     updateFilters,
     fetchOrderById,

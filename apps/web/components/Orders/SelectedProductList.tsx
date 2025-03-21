@@ -2,22 +2,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { Product } from "../../app/types/product";
 import { formatCurrency } from "../../app/utils/formatters";
-// Importe diretamente as funções utilitárias
-import { getCorrectPrice, normalizeProduct } from "@/app/utils/product-utils";
+import { getCorrectPrice, getProductTypeLabel, normalizeProduct } from "@/app/utils/product-utils";
 
 interface SelectedProductsListProps {
   products: Product[];
   onUpdatePrice: (id: string, price: number) => void;
   onRemoveProduct: (id: string) => void;
 }
-
-// Tradução dos tipos de produto
-const productTypeTranslations: Record<string, string> = {
-  lenses: "Lentes",
-  clean_lenses: "Limpa-lentes",
-  prescription_frame: "Armação de grau",
-  sunglasses_frame: "Armação solar"
-};
 
 export default function SelectedProductsList({
   products,
@@ -31,19 +22,11 @@ export default function SelectedProductsList({
       </div>
     );
   }
-  console.log('Produtos originais:', products);
-  console.log('-----------------------------------------------');
 
-  // Normalizar cada produto para garantir consistência
   const normalizedProducts = products.map(product => normalizeProduct(product));
-  console.log('Produtos normalizados:', normalizedProducts);
-  console.log('-----------------------------------------------');
   
-  // Calcular total usando getCorrectPrice para garantir valores corretos
   const total = normalizedProducts.reduce((sum, product) => {
     const price = getCorrectPrice(product);
-    console.log('Preço:', price);
-    console.log('-----------------------------------------------');
     return sum + price;
   }, 0);
 
@@ -98,10 +81,4 @@ export default function SelectedProductsList({
       </table>
     </div>
   );
-}
-
-// Função para obter o rótulo do tipo de produto em português
-function getProductTypeLabel(type: Product['productType']): string {
-  if (!type) return "Tipo não especificado";
-  return productTypeTranslations[type] || String(type);
 }
