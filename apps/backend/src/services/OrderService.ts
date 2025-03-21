@@ -1,9 +1,10 @@
 import { OrderModel } from "../models/OrderModel";
 import { UserModel } from "../models/UserModel";
 import { ProductModel } from "../models/ProductModel";
-import type { IOrder } from "../interfaces/IOrder";
+import type { CreateOrderDTO, IOrder } from "../interfaces/IOrder";
 // import NodeCache from "node-cache";
 import { ExportUtils, type ExportOptions } from "../utils/exportUtils";
+import mongoose from "mongoose";
 
 export class OrderError extends Error {
   constructor(message: string) {
@@ -69,7 +70,7 @@ export class OrderService {
 
   private async validateOrder(orderData: Omit<IOrder, "_id">): Promise<void> {
     // Validar cliente
-    const client = await this.userModel.findById(orderData.clientId);
+    const client = await this.userModel.findById(orderData.clientId.toString());
     if (!client) {
       throw new OrderError("Cliente não encontrado");
     }
@@ -78,7 +79,7 @@ export class OrderService {
     }
 
     // Validar funcionário
-    const employee = await this.userModel.findById(orderData.employeeId);
+    const employee = await this.userModel.findById(orderData.employeeId.toString());
     if (!employee) {
       throw new OrderError("Funcionário não encontrado");
     }
@@ -87,19 +88,19 @@ export class OrderService {
     }
 
     // Validar produtos
-    if (!orderData.product || orderData.product.length === 0) {
+    if (!orderData.products || orderData.products.length === 0) {
       throw new OrderError("Pelo menos um produto deve ser adicionado ao pedido");
     }
 
     // Verificar cada produto
-    for (const product of orderData.product) {
-      if (!product._id) {
+    for (const products of orderData.products) {
+      if (!products._id) {
         throw new OrderError("Todos os produtos devem ter um ID válido");
       }
       
-      const productExists = await this.productModel.findById(product._id);
+      const productExists = await this.productModel.findById(products._id);
       if (!productExists) {
-        throw new OrderError(`Produto com ID ${product._id} não encontrado`);
+        throw new OrderError(`Produto com ID ${products._id} não encontrado`);
       }
     }
 
@@ -142,7 +143,7 @@ export class OrderService {
   async createOrder(orderData: Omit<IOrder, "_id">): Promise<IOrder> {
     try {
       // Se laboratoryId for string vazia, definir como undefined
-      if (orderData.laboratoryId === "") {
+      if (orderData.laboratoryId?.toString() === "") {
         orderData.laboratoryId = undefined;
       }
 
@@ -150,6 +151,22 @@ export class OrderService {
       if (orderData.finalPrice === undefined) {
         orderData.finalPrice = orderData.totalPrice - (orderData.discount || 0);
       }
+
+      const orderDTO: CreateOrderDTO = {
+        clientId: new mongoose.Types.ObjectId(orderData.clientId),  // Converte o clientId para ObjectId
+        employeeId: new mongoose.Types.ObjectId(orderData.employeeId),  // Converte o employeeId para ObjectId
+        products: orderData.products,  // Produtos já validados
+        paymentMethod: orderData.paymentMethod,
+        paymentEntry: orderData.paymentEntry,
+        installments: orderData.installments,
+        orderDate: new Date(),  // Usar a data atual para o pedido
+        deliveryDate: orderData.deliveryDate ? new Date(orderData.deliveryDate) : undefined,  // Caso tenha data de entrega
+        status: orderData.status || 'pending',  // Status do pedido
+        totalPrice: orderData.totalPrice,
+        discount: orderData.discount || 0,
+        finalPrice: orderData.finalPrice || (orderData.totalPrice - orderData.discount),
+        isDeleted: orderData.isDeleted || false, // Não excluído por padrão
+      };
 
       await this.validateOrder(orderData);
       const order = await this.orderModel.create(orderData);
@@ -259,7 +276,7 @@ export class OrderService {
     }
 
     // Verificar permissões
-    if (userRole === "customer" && userId !== order.clientId) {
+    if (userRole === "customer" && userId !== order.clientId.toString()) {
       throw new OrderError("Sem permissão para atualizar este pedido");
     }
 
@@ -306,12 +323,12 @@ export class OrderService {
     }
 
     // Verificar permissões
-    if (userRole === "customer" && userId !== order.clientId) {
+    if (userRole === "customer" && userId !== order.clientId.toString()) {
       throw new OrderError("Sem permissão para atualizar este pedido");
     }
 
     // Garantir que laboratoryId não é uma string vazia
-    const validLaboratoryId = laboratoryId === "" ? undefined : laboratoryId;
+    const validLaboratoryId = laboratoryId?.toString() === "" ? undefined : laboratoryId;
 
     const updatedOrder = await this.orderModel.updateLaboratory(
       id,
@@ -344,20 +361,20 @@ export class OrderService {
     }
 
     // Verificar permissões
-    if (userRole === "customer" && userId !== order.clientId) {
+    if (userRole === "customer" && userId !== order.clientId.toString()) {
       throw new OrderError("Sem permissão para atualizar este pedido");
     }
 
     // Se estamos atualizando produtos, validar cada um
-    if (orderData.product && orderData.product.length > 0) {
-      for (const product of orderData.product) {
-        if (!product._id) {
+    if (orderData.products && orderData.products.length > 0) {
+      for (const products of orderData.products) {
+        if (!products._id) {
           throw new OrderError("Todos os produtos devem ter um ID válido");
         }
         
-        const productExists = await this.productModel.findById(product._id);
+        const productExists = await this.productModel.findById(products._id);
         if (!productExists) {
-          throw new OrderError(`Produto com ID ${product._id} não encontrado`);
+          throw new OrderError(`Produto com ID ${products._id} não encontrado`);
         }
       }
     }
@@ -455,7 +472,7 @@ export class OrderService {
     if (
       userRole !== "admin" &&
       userRole !== "employee" &&
-      (userRole !== "customer" || userId !== order.clientId)
+      (userRole !== "customer" || userId !== order.clientId.toString())
     ) {
       throw new OrderError("Sem permissão para cancelar este pedido");
     }
@@ -547,7 +564,7 @@ export class OrderService {
     
     // Processar todos os produtos em todos os pedidos
     orders.forEach(order => {
-      order.product.forEach(prod => {
+      order.products.forEach(prod => {
         if (prod.productType) {
           const count = productTypes.get(prod.productType) || 0;
           productTypes.set(prod.productType, count + 1);

@@ -1,17 +1,18 @@
+import { Types } from 'mongoose';
 import { IProduct } from "./IProduct";
 
 export interface IOrder {
   _id?: string;
-  clientId: string;
-  employeeId: string;
-  product: IProduct[];
+  clientId: Types.ObjectId;
+  employeeId: Types.ObjectId;
+  products: IProduct[];
   paymentMethod: string;
   paymentEntry?: number;
   installments?: number;
   orderDate: Date;
   deliveryDate?: Date;
   status: "pending" | "in_production" | "ready" | "delivered" | "cancelled";
-  laboratoryId?: string | null;
+  laboratoryId?: Types.ObjectId | null;
   prescriptionData?: {
     doctorName: string;
     clinicName: string;
@@ -38,7 +39,7 @@ export interface IOrder {
   finalPrice: number;
   isDeleted?: boolean;
   deletedAt?: Date;
-  deletedBy?: string;
+  deletedBy?: Types.ObjectId;
   createdAt?: Date;
   updatedAt?: Date;
 }

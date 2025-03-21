@@ -12,6 +12,7 @@ import {
   orderQuerySchema
 } from "../validators/orderValidators";
 import { IProduct } from "src/interfaces/IProduct";
+import { Types } from "mongoose";
 
 interface AuthRequest extends Request {
   user?: JwtPayload & { role?: string };
@@ -30,33 +31,36 @@ export class OrderController {
         res.status(401).json({ message: "Usuário não autenticado" });
         return;
       }
-  
+
       // Validar os dados com o schema do Zod
       const validatedData = createOrderSchema.parse(req.body);
-  
+
       // Garantir que todos os produtos tenham productType definido
-      const validProducts = validatedData.product.map(p => {
-        if (!p.productType) {
+      const validProducts = validatedData.products.map(product => {
+        if (!product.productType) {
           throw new Error("Todos os produtos devem ter um tipo definido");
         }
         return {
-          ...p,
+          ...product,
           // Garantir que productType nunca é undefined
-          productType: p.productType as "lenses" | "clean_lenses" | "prescription_frame" | "sunglasses_frame"
+          productType: product.productType as "lenses" | "clean_lenses" | "prescription_frame" | "sunglasses_frame"
         };
       });
-  
+
       // Calcular o preço final se não fornecido
       if (validatedData.finalPrice === undefined) {
         validatedData.finalPrice = validatedData.totalPrice - (validatedData.discount || 0);
       }
-  
+
       // Criar o pedido com dados validados
       const orderData: CreateOrderDTO = {
         ...validatedData,
-        product: validProducts as IProduct[]
+        clientId: new Types.ObjectId(validatedData.clientId),  // Converte para ObjectId
+        employeeId: new Types.ObjectId(validatedData.employeeId),  // Converte para ObjectId
+        laboratoryId: validatedData.laboratoryId ? new Types.ObjectId(validatedData.laboratoryId) : null,  // Converte para ObjectId ou null
+        products: validProducts as IProduct[]  // Produtos já validados
       };
-  
+
       const order = await this.orderService.createOrder(orderData);
       res.status(201).json(order);
     } catch (error) {
@@ -165,15 +169,14 @@ export class OrderController {
       // Garantir que os produtos, se fornecidos, tenham productType definido
       let validProducts: IProduct[] | undefined;
       
-      if (validatedData.product) {
-        validProducts = validatedData.product.map(p => {
-          if (!p.productType) {
+      if (validatedData.products) {
+        validProducts = validatedData.products.map(product => {
+          if (!product.productType) {
             throw new Error("Todos os produtos devem ter um tipo definido");
           }
           return {
-            ...p,
-            // Garantir que productType nunca é undefined
-            productType: p.productType as "lenses" | "clean_lenses" | "prescription_frame" | "sunglasses_frame"
+            ...product,
+            productType: product.productType as "lenses" | "clean_lenses" | "prescription_frame" | "sunglasses_frame"
           };
         }) as IProduct[];
       }
@@ -181,16 +184,13 @@ export class OrderController {
       // Criar a atualização com dados validados
       const updateData: Partial<IOrder> = {
         ...validatedData,
-        product: validProducts
+        clientId: validatedData.clientId ? new Types.ObjectId(validatedData.clientId) : undefined,  // Converte para ObjectId
+        employeeId: validatedData.employeeId ? new Types.ObjectId(validatedData.employeeId) : undefined,  // Converte para ObjectId
+        laboratoryId: validatedData.laboratoryId ? new Types.ObjectId(validatedData.laboratoryId) : null,  // Converte para ObjectId ou null
+        products: validProducts
       };
       
-      const order = await this.orderService.updateOrder(
-        req.params.id,
-        updateData,
-        req.user.id,
-        req.user.role
-      );
-      
+      const order = await this.orderService.updateOrder(req.params.id, updateData, req.user.id, req.user.role);
       res.status(200).json(order);
     } catch (error) {
       // Tratamento de erros
@@ -251,11 +251,15 @@ export class OrderController {
         res.status(401).json({ message: "Usuário não autenticado" });
         return;
       }
-
+  
       const validatedData = updateOrderLaboratorySchema.parse(req.body);
+  
+      // Converter laboratoryId para ObjectId ou null
+      const laboratoryId = validatedData.laboratoryId ? new Types.ObjectId(validatedData.laboratoryId) : null;
+  
       const order = await this.orderService.updateOrderLaboratory(
         req.params.id,
-        validatedData.laboratoryId,
+        laboratoryId,
         req.user.id,
         req.user.role
       );

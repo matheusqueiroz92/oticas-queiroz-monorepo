@@ -7,41 +7,50 @@ export class OrderModel {
     return Types.ObjectId.isValid(id);
   }
 
-  // Função para converter os dados do pedido
   private convertToIOrder(doc: any): IOrder {
     const order = doc.toObject ? doc.toObject() : doc;
-
+    
     return {
       _id: order._id.toString(),
-      clientId: order.clientId ? order.clientId.toString() : null, // Garantir que seja uma string
-      employeeId: order.employeeId ? order.employeeId.toString() : null, // Garantir que seja uma string
-      laboratoryId: order.laboratoryId ? order.laboratoryId.toString() : undefined, // Caso tenha laboratório
-      product: Array.isArray(order.product)
-        ? order.product.map((p: any) => ({
-            _id: p._id.toString(),
-            name: p.name,
-            productType: p.productType,
-            description: p.description,
-            image: p.image,
-            sellPrice: p.sellPrice,
-            brand: p.brand,
-            costPrice: p.costPrice,
-            // Campos específicos do tipo de produto
-            ...(p.productType === "lenses" && { lensType: p.lensType }),
-            ...(p.productType === "prescription_frame" && {
-              typeFrame: p.typeFrame,
-              color: p.color,
-              shape: p.shape,
-              reference: p.reference,
-            }),
-            ...(p.productType === "sunglasses_frame" && {
-              model: p.model,
-              typeFrame: p.typeFrame,
-              color: p.color,
-              shape: p.shape,
-              reference: p.reference,
-            }),
-          }))
+      clientId: typeof order.clientId === 'object' && order.clientId?._id
+        ? order.clientId._id.toString()
+        : order.clientId.toString(),
+      employeeId: typeof order.employeeId === 'object' && order.employeeId?._id
+        ? order.employeeId._id.toString()
+        : order.employeeId.toString(),
+      // Convert the product array
+      products: Array.isArray(order.product)
+        ? order.products.map((product: any) => {
+            if (typeof product === 'object' && product._id) {
+              return {
+                _id: product._id.toString(),
+                name: product.name,
+                productType: product.productType,
+                description: product.description,
+                image: product.image,
+                sellPrice: product.sellPrice,
+                brand: product.brand,
+                costPrice: product.costPrice,
+                // Include type-specific fields
+                ...(product.productType === 'lenses' && { lensType: product.lensType }),
+                ...(product.productType === 'prescription_frame' && { 
+                  typeFrame: product.typeFrame,
+                  color: product.color,
+                  shape: product.shape,
+                  reference: product.reference
+                }),
+                ...(product.productType === 'sunglasses_frame' && { 
+                  model: product.model,
+                  typeFrame: product.typeFrame,
+                  color: product.color,
+                  shape: product.shape,
+                  reference: product.reference
+                })
+              };
+            } else {
+              return { _id: product.toString() };
+            }
+          })
         : [],
       paymentMethod: order.paymentMethod,
       paymentEntry: order.paymentEntry,
@@ -49,13 +58,23 @@ export class OrderModel {
       orderDate: order.orderDate,
       deliveryDate: order.deliveryDate,
       status: order.status,
+      laboratoryId: order.laboratoryId 
+        ? (typeof order.laboratoryId === 'object' && order.laboratoryId._id 
+            ? order.laboratoryId._id.toString()
+            : order.laboratoryId.toString())
+        : undefined,
+      prescriptionData: order.prescriptionData,
       observations: order.observations,
       totalPrice: order.totalPrice,
       discount: order.discount || 0,
       finalPrice: order.finalPrice,
       isDeleted: order.isDeleted,
       deletedAt: order.deletedAt,
-      deletedBy: order.deletedBy ? order.deletedBy.toString() : undefined,
+      deletedBy: order.deletedBy 
+        ? (typeof order.deletedBy === 'object' && order.deletedBy._id
+            ? order.deletedBy._id.toString()
+            : order.deletedBy.toString())
+        : undefined,
       createdAt: order.createdAt,
       updatedAt: order.updatedAt,
     };
@@ -73,32 +92,26 @@ export class OrderModel {
     includeDeleted = false
   ): Promise<IOrder | null> {
     if (!this.isValidId(id)) return null;
-
+  
     let query = Order.findById(id);
-
-    // Se não devemos incluir pedidos excluídos, adicionar a condição
+  
     if (!includeDeleted) {
       query = query.where({ isDeleted: { $ne: true } });
     }
-
+  
     if (populate) {
       query = query
         .populate("clientId", "name email role")
         .populate("employeeId", "name email")
-        .populate("laboratoryId", "name")
-        .populate("product", "name productType description price");
-
+        .populate("laboratoryId")
+        .populate("products");
+  
       if (includeDeleted) {
         query = query.populate("deletedBy", "name email");
       }
     }
-
+  
     const order = await query.exec();
-    
-    // Verifique os dados populados de 'clientId' e 'employeeId'
-    console.log(order?.clientId); // Verifica o que está sendo retornado após o populate
-    console.log(order?.employeeId); // Verifica o que está sendo retornado após o populate
-    
     return order ? this.convertToIOrder(order) : null;
   }
 
@@ -124,8 +137,8 @@ export class OrderModel {
       orderQuery = orderQuery
         .populate("clientId", "name email role")
         .populate("employeeId", "name email")
-        .populate("laboratoryId", "name")
-        .populate("product", "name productType description price");
+        .populate("laboratoryId")
+        .populate("products"); // Também popula os produtos
 
       if (includeDeleted) {
         orderQuery = orderQuery.populate("deletedBy", "name email");
@@ -150,6 +163,16 @@ export class OrderModel {
   ): Promise<IOrder | null> {
     if (!this.isValidId(id)) return null;
 
+    // Se estamos atualizando o totalPrice ou discount, recalcular finalPrice
+    if (orderData.totalPrice !== undefined || orderData.discount !== undefined) {
+      const currentOrder = await Order.findById(id);
+      if (currentOrder) {
+        const newTotalPrice = orderData.totalPrice ?? currentOrder.totalPrice;
+        const newDiscount = orderData.discount ?? currentOrder.discount;
+        orderData.finalPrice = newTotalPrice - newDiscount;
+      }
+    }
+
     let query = Order.findByIdAndUpdate(
       id,
       { $set: orderData },
@@ -160,8 +183,8 @@ export class OrderModel {
       query = query
         .populate("clientId", "name email role")
         .populate("employeeId", "name email")
-        .populate("laboratoryId", "name")
-        .populate("product", "name productType description price");
+        .populate("laboratoryId")
+        .populate("products"); // Também popula os produtos
     }
 
     const order = await query.exec();
@@ -175,7 +198,107 @@ export class OrderModel {
     return order ? this.convertToIOrder(order) : null;
   }
 
-  // Método para buscar pedidos por período de data
+  async softDelete(id: string, userId: string): Promise<IOrder | null> {
+    if (!this.isValidId(id)) return null;
+
+    const order = await Order.findByIdAndUpdate(
+      id,
+      {
+        $set: {
+          isDeleted: true,
+          deletedAt: new Date(),
+          deletedBy: userId,
+        },
+      },
+      { new: true, runValidators: true }
+    )
+      .populate("clientId", "name email role")
+      .populate("employeeId", "name email")
+      .populate("laboratoryId")
+      .populate("products")
+      .populate("deletedBy", "name email")
+      .exec();
+
+    return order ? this.convertToIOrder(order) : null;
+  }
+
+  async findDeletedOrders(
+    page = 1,
+    limit = 10,
+    filters: Record<string, any> = {}
+  ): Promise<{ orders: IOrder[]; total: number }> {
+    const skip = (page - 1) * limit;
+
+    const query = this.buildFilterQuery(filters);
+    query.isDeleted = true;
+
+    const [orders, total] = await Promise.all([
+      Order.find(query)
+        .skip(skip)
+        .limit(limit)
+        .populate("clientId", "name email role")
+        .populate("employeeId", "name email")
+        .populate("laboratoryId")
+        .populate("products")
+        .populate("deletedBy", "name email")
+        .exec(),
+      Order.countDocuments(query),
+    ]);
+
+    return {
+      orders: orders.map((order) => this.convertToIOrder(order)),
+      total,
+    };
+  }
+
+  async findByClientId(
+    clientId: string,
+    populate = false,
+    includeDeleted = false
+  ): Promise<IOrder[]> {
+    if (!this.isValidId(clientId)) return [];
+
+    const query: FilterQuery<any> = { clientId };
+
+    // Se não devemos incluir pedidos excluídos, adicionar a condição
+    if (!includeDeleted) {
+      query.isDeleted = { $ne: true };
+    }
+
+    let orderQuery = Order.find(query);
+
+    if (populate) {
+      orderQuery = orderQuery
+        .populate("clientId", "name email role")
+        .populate("employeeId", "name email")
+        .populate("laboratoryId")
+        .populate("products");
+
+      if (includeDeleted) {
+        orderQuery = orderQuery.populate("deletedBy", "name email");
+      }
+    }
+
+    const orders = await orderQuery.exec();
+    return orders.map((order) => this.convertToIOrder(order));
+  }
+
+  async updateStatus(
+    id: string,
+    status: IOrder["status"],
+    populate = false
+  ): Promise<IOrder | null> {
+    return this.update(id, { status }, populate);
+  }
+
+  async updateLaboratory(
+    id: string,
+    laboratoryId: IOrder["laboratoryId"],
+    populate = false
+  ): Promise<IOrder | null> {
+    return this.update(id, { laboratoryId }, populate);
+  }
+
   async findByDateRange(
     startDate: Date,
     endDate: Date,
@@ -200,8 +323,8 @@ export class OrderModel {
       orderQuery = orderQuery
         .populate("clientId", "name email role")
         .populate("employeeId", "name email")
-        .populate("laboratoryId", "name")
-        .populate("product", "name productType description price");
+        .populate("laboratoryId")
+        .populate("products");
 
       if (includeDeleted) {
         orderQuery = orderQuery.populate("deletedBy", "name email");

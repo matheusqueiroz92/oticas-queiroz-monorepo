@@ -37,7 +37,7 @@ const orderProductSchema = z.object({
 const baseOrderSchema = z.object({
   clientId: z.string().min(1, "ID do cliente é obrigatório"),
   employeeId: z.string().min(1, "ID do funcionário é obrigatório"),
-  product: z.array(orderProductSchema).min(1, "Pelo menos um produto é obrigatório"),
+  products: z.array(orderProductSchema).min(1, "Pelo menos um produto é obrigatório"),
   paymentMethod: z.string().min(1, "Método de pagamento é obrigatório"),
   paymentEntry: z.number().min(0).optional(),
   installments: z.number().min(1).optional(),

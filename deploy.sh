@@ -28,7 +28,7 @@ fi
 
 # Puxar as mudanças mais recentes do repositório
 log "Obtendo as alterações mais recentes do repositório"
-git pull || {
+git pull origin main || {
   log "ERRO: Falha ao obter as alterações mais recentes"
   exit 1
 }

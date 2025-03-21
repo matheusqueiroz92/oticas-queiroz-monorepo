@@ -435,7 +435,7 @@ export class ExportUtils {
         _id: order._id,
         client: order.clientId || "",
         employee: order.employeeId || "",
-        productCount: `${order.product?.length || 0} item(s)`,
+        productCount: `${order.products?.length || 0} item(s)`,
         paymentMethod: order.paymentMethod,
         totalPrice: order.totalPrice,
         discount: order.discount || 0,
@@ -583,7 +583,7 @@ export class ExportUtils {
     ]);
   
     for (const order of summary.orders) {
-      const productCount = order.product?.length || 0;
+      const productCount = order.products?.length || 0;
       worksheet.addRow([
         order._id,
         order.clientId || "",
@@ -672,8 +672,8 @@ export class ExportUtils {
   
     let rowIndex = 11;
     
-    for (let i = 0; i < order.product.length; i++) {
-      const product = order.product[i];
+    for (let i = 0; i < order.products.length; i++) {
+      const product = order.products[i];
       
       worksheet.addRow([`Produto ${i+1}`, ""]);
       rowIndex++;
@@ -995,14 +995,14 @@ export class ExportUtils {
         let y = tableTop + 25;
   
         for (const order of ordersToShow) {
-          const productCount = order.product?.length || 0;
+          const productCount = order.products?.length || 0;
           
           doc.text(`${(order._id ?? "").substring(0, 8)}...`, 50, y, {
             width: columnWidth,
             align: "left",
           });
           doc.text(
-            order.clientId ? `${order.clientId.substring(0, 8)}...` : "-",
+            order.clientId ? `${order.clientId.toString().substring(0, 8)}...` : "-",
             50 + columnWidth,
             y,
             {
@@ -1138,7 +1138,7 @@ export class ExportUtils {
   
     // Adicionar dados dos pedidos
     for (const order of summary.orders) {
-      const productCount = order.product?.length || 0;
+      const productCount = order.products?.length || 0;
       
       csv += `"${order._id}",`;
       csv += `"${order.clientId || ""}",`;
@@ -1216,8 +1216,8 @@ export class ExportUtils {
         doc.moveDown();
   
         // Listar cada produto no pedido
-        for (let i = 0; i < order.product.length; i++) {
-          const product = order.product[i];
+        for (let i = 0; i < order.products.length; i++) {
+          const product = order.products[i];
           
           doc.fontSize(14).text(`Produto ${i+1}: ${product.name || "Sem nome"}`);
           doc.fontSize(12);
@@ -1351,8 +1351,8 @@ export class ExportUtils {
     // Informações dos produtos
     csv += `"Informações dos Produtos"\n`;
     
-    for (let i = 0; i < order.product.length; i++) {
-      const product = order.product[i];
+    for (let i = 0; i < order.products.length; i++) {
+      const product = order.products[i];
       
       csv += `"Produto ${i+1}","${product.name || "Sem nome"}"\n`;
       csv += `"Tipo","${this.translateProductType(product.productType)}"\n`;
@@ -1504,14 +1504,14 @@ export class ExportUtils {
   
         for (const order of orders) {
           const formattedValue = `R$ ${order.finalPrice.toFixed(2)}`;
-          const productCount = `${order.product?.length || 0} item(s)`;
+          const productCount = `${order.products?.length || 0} item(s)`;
           const status = this.translateOrderStatus(order.status);
   
           doc.text(`${(order._id ?? "").substring(0, 10)}...`, 50, y, {
             width: columnWidth,
             align: "left",
           });
-          doc.text(order.clientId || "", 50 + columnWidth, y, {
+          doc.text(order.clientId.toString() || "", 50 + columnWidth, y, {
             width: columnWidth,
             align: "left",
           });
@@ -1565,7 +1565,7 @@ export class ExportUtils {
       { label: "Funcionário", value: "employeeId" },
       {
         label: "Quantidade de Produtos",
-        value: (row: IOrder) => row.product?.length || 0,
+        value: (row: IOrder) => row.products?.length || 0,
       },
       { label: "Valor Total", value: "totalPrice" },
       { label: "Desconto", value: (row: IOrder) => row.discount || 0 },
