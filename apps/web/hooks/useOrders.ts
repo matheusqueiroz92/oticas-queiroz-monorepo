@@ -55,22 +55,23 @@ export function useOrders() {
       const userIdsToFetch = [
         ...(data?.orders ? data.orders.map(order => 
           // Verifica se 'clientId' ou 'employeeId' é um objeto com '_id'
-          order.clientId ? (typeof order.clientId === 'string' ? order.clientId : (order.clientId as { _id: string })._id) : null
+          order.clientId ? (typeof order.clientId === 'string' ? order.clientId : (order.clientId as { _id: string })._id) : null  // Agora, extraímos apenas o ID (_id)
         ) : []),
         ...(data?.orders ? data.orders.map(order => 
-          order.employeeId ? (typeof order.employeeId === 'string' ? order.employeeId : (order.employeeId as { _id: string })._id) : null
-        ) : [])
+          order.employeeId ? (typeof order.employeeId === 'string' ? order.employeeId : (order.employeeId as { _id: string })._id) : null  // Extraímos apenas o ID (_id)
+        ) : []),
       ]
-        .filter((value): value is string => value !== null); // Remove valores null e garante que a lista seja apenas de strings
+      .filter((value): value is string => value !== null); // Remove valores null e garante que a lista seja apenas de strings
       
       console.log("User IDs to fetch:", userIdsToFetch);
       
       // Verifica se há usuários para buscar
       if (userIdsToFetch.length > 0) {
-        fetchUsers(userIdsToFetch);
+        fetchUsers(userIdsToFetch);  // Passamos apenas os IDs para a função fetchUsers
       }
     }
   }, [data, fetchUsers]);
+  
 
   // Dados normalizados
   const orders = data?.orders || [];
