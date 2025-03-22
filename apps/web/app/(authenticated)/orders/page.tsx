@@ -418,7 +418,6 @@ export default function OrdersPage() {
                 </Table>
               </div>
 
-              {/* Paginação */}
               {totalPages > 1 && (
                 <div className="mt-4">
                   <Pagination>

@@ -259,6 +259,22 @@ export class PaymentService {
     return cashRegisterId;
   }
 
+    /**
+   * Normaliza o método de pagamento para compatibilidade com o frontend
+   * @param paymentMethod Método de pagamento do backend
+   * @returns Método de pagamento normalizado
+   */
+  private normalizePaymentMethod(paymentMethod: string): string {
+    // Mapear os métodos de pagamento do backend para os do frontend
+    switch (paymentMethod) {
+      case "boleto":
+      case "promissory_note":
+        return "installment"; // No frontend, boleto e promissória são mapeados como "installment"
+      default:
+        return paymentMethod; // Outros métodos mantêm o mesmo nome
+    }
+  }
+
   /**
    * Atualiza a dívida de um cliente após um pagamento
    * @param customerId ID do cliente
@@ -451,7 +467,7 @@ export class PaymentService {
     return payment;
   }
 
-  /**
+    /**
    * Obtém todos os pagamentos com filtros e paginação
    * @param page Número da página
    * @param limit Limite de itens por página
@@ -463,11 +479,23 @@ export class PaymentService {
     limit?: number,
     filters: Partial<IPayment> = {}
   ): Promise<{ payments: IPayment[]; total: number }> {
-    const result = await this.paymentModel.findAll(page, limit, filters, true);
-    return {
-      payments: result.payments || [],
-      total: result.total || 0,
-    };
+    try {
+      const result = await this.paymentModel.findAll(page, limit, filters, true);
+      
+      // Normalizar os métodos de pagamento para compatibilidade com o frontend
+      const normalizedPayments = result.payments.map(payment => ({
+        ...payment,
+        paymentMethod: this.normalizePaymentMethod(payment.paymentMethod) as any
+      }));
+      
+      return {
+        payments: normalizedPayments || [],
+        total: result.total || 0,
+      };
+    } catch (error) {
+      console.error("Erro ao buscar pagamentos:", error);
+      return { payments: [], total: 0 };
+    }
   }
 
   /**

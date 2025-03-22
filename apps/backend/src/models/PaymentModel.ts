@@ -6,7 +6,7 @@ import type mongoose from "mongoose";
 interface PaymentDocument extends Document {
   _id: Types.ObjectId;
   createdBy: Types.ObjectId;
-  costumerId?: Types.ObjectId;
+  customerId?: Types.ObjectId;
   orderId?: Types.ObjectId;
   legacyClientId?: Types.ObjectId;
   cashRegisterId: Types.ObjectId;
@@ -66,23 +66,38 @@ export class PaymentModel {
   }
 
   private convertToIPayment(doc: PaymentDocument): IPayment {
+    if (!doc) {
+      console.error("Recebido documento nulo em convertToIPayment");
+      return {
+        _id: "",
+        createdBy: "",
+        cashRegisterId: "",
+        amount: 0,
+        date: new Date(),
+        type: "sale",
+        paymentMethod: "cash",
+        status: "pending"
+      } as IPayment;
+    }
+  
     const payment = doc.toObject();
+    
     return {
       ...payment,
-      _id: doc._id.toString(),
+      _id: doc._id ? doc._id.toString() : "",
       orderId: doc.orderId ? doc.orderId.toString() : undefined,
-      costumerId: doc.costumerId ? doc.costumerId.toString() : undefined,
-      legacyClientId: doc.legacyClientId
-        ? doc.legacyClientId.toString()
-        : undefined,
-      cashRegisterId:
-        doc.cashRegisterId instanceof Types.ObjectId
-          ? doc.cashRegisterId.toString()
-          : (doc.cashRegisterId as PopulatedCashRegister)._id.toString(),
-      createdBy:
-        doc.createdBy instanceof Types.ObjectId
-          ? doc.createdBy.toString()
-          : (doc.createdBy as PopulatedUser)._id.toString(),
+      customerId: doc.customerId ? doc.customerId.toString() : undefined,
+      legacyClientId: doc.legacyClientId ? doc.legacyClientId.toString() : undefined,
+      cashRegisterId: doc.cashRegisterId instanceof Types.ObjectId 
+        ? doc.cashRegisterId.toString() 
+        : (doc.cashRegisterId && (doc.cashRegisterId as PopulatedCashRegister)._id) 
+          ? (doc.cashRegisterId as PopulatedCashRegister)._id.toString() 
+          : "",
+      createdBy: doc.createdBy instanceof Types.ObjectId 
+        ? doc.createdBy.toString() 
+        : (doc.createdBy && (doc.createdBy as PopulatedUser)._id) 
+          ? (doc.createdBy as PopulatedUser)._id.toString() 
+          : "",
     };
   }
 
@@ -97,43 +112,51 @@ export class PaymentModel {
     limit = 10,
     filters: Partial<IPayment> = {},
     populate = false,
-    includeDeleted = false // Novo parâmetro
+    includeDeleted = false
   ): Promise<{ payments: IPayment[]; total: number }> {
     const skip = (page - 1) * limit;
-
+  
     const query = Object.entries(filters).reduce((acc, [key, value]) => {
       if (value !== undefined && value !== null) {
         acc[key] = value;
       }
       return acc;
     }, {} as FilterQuery<PaymentDocument>);
-
+  
     // Se não devemos incluir documentos excluídos, adicionar a condição isDeleted: false (ou isDeleted inexistente)
     if (!includeDeleted) {
       query.isDeleted = { $ne: true };
     }
-
-    let paymentQuery = Payment.find(query).skip(skip).limit(limit);
-
-    if (populate) {
-      paymentQuery = paymentQuery
-        .populate("orderId")
-        .populate("customerId", "name email")
-        .populate("legacyClientId")
-        .populate("cashRegisterId")
-        .populate("createdBy", "name email")
-        .populate("deletedBy", "name email"); // Adicionar populate para deletedBy
+  
+    try {
+      let paymentQuery = Payment.find(query).skip(skip).limit(limit);
+  
+      if (populate) {
+        paymentQuery = paymentQuery
+          .populate("orderId")
+          .populate("customerId", "name email")
+          .populate("legacyClientId")
+          .populate("cashRegisterId")
+          .populate("createdBy", "name email")
+          .populate("deletedBy", "name email");
+      }
+  
+      const [payments, total] = await Promise.all([
+        paymentQuery.exec() as Promise<PaymentDocument[]>,
+        Payment.countDocuments(query),
+      ]);
+  
+      // Filtrando documentos nulos ou inválidos antes de convertê-los
+      const validPayments = payments.filter(payment => payment && payment._id);
+      
+      return {
+        payments: validPayments.map((payment) => this.convertToIPayment(payment)),
+        total,
+      };
+    } catch (error) {
+      console.error("Erro ao buscar pagamentos:", error);
+      return { payments: [], total: 0 };
     }
-
-    const [payments, total] = await Promise.all([
-      paymentQuery.exec() as Promise<PaymentDocument[]>,
-      Payment.countDocuments(query),
-    ]);
-
-    return {
-      payments: payments.map((payment) => this.convertToIPayment(payment)),
-      total,
-    };
   }
 
   async findById(

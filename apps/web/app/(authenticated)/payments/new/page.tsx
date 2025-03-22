@@ -10,7 +10,9 @@ import { ptBR } from "date-fns/locale";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/app/services/authService";
 import { usePayments } from "@/hooks/usePayments";
-import { QUERY_KEYS } from "@/app/constants/query-keys";
+import { useCustomers } from "@/hooks/useCustomers";
+import ClientSearch from "@/components/Orders/ClientSearch";
+import { formatCurrency } from "@/app/utils/formatters";
 
 import {
   Form,
@@ -56,87 +58,38 @@ import {
   Store,
 } from "lucide-react";
 
-// Importar tipos
 import type { Order } from "@/app/types/order";
 import type { User as UserType } from "@/app/types/user";
 import type { LegacyClient } from "@/app/types/legacy-client";
 import type { CreatePaymentDTO } from "@/app/types/payment";
-
-// Esquema de validação para o formulário
-const paymentFormSchema = z.object({
-  amount: z.preprocess(
-    (value) =>
-      value === ""
-        ? 0 // Retorna 0 se o valor for uma string vazia
-        : Number.parseFloat(String(value).replace(",", ".")),
-    z.number().positive("O valor deve ser positivo")
-  ),
-  type: z.enum(["sale", "debt_payment", "expense"] as const, {
-    required_error: "Selecione o tipo de pagamento",
-  }),
-  paymentMethod: z.enum(["credit", "debit", "cash", "pix", "check"] as const, {
-    required_error: "Selecione o método de pagamento",
-  }),
-  paymentDate: z.date({
-    required_error: "Selecione a data do pagamento",
-  }),
-  description: z.string().optional(),
-  category: z.string().optional(),
-  cashRegisterId: z.string({
-    required_error: "Selecione o caixa",
-  }),
-  customerId: z.string().optional(),
-  legacyClientId: z.string().optional(),
-  orderId: z.string().optional(),
-  installments: z.preprocess(
-    (value) => (value === "" ? undefined : Number.parseInt(String(value), 10)),
-    z.number().min(1, "Número mínimo de parcelas é 1").optional()
-  ),
-  status: z.enum(["pending", "completed"] as const, {
-    required_error: "Selecione o status",
-  }),
-});
+import { paymentFormSchema } from "@/schemas/payment-schema";
+import { useOrders } from "@/hooks/useOrders";
 
 type PaymentFormValues = z.infer<typeof paymentFormSchema>;
 
 export default function NewPaymentPage() {
   const router = useRouter();
-  const [step, setStep] = useState(1); // Controle da etapa atual do formulário
+  const [step, setStep] = useState(1);
   const [selectedEntityType, setSelectedEntityType] = useState<
     "customer" | "legacyClient" | null
   >(null);
-  const [customerSearch, setCustomerSearch] = useState("");
+  const [_customerSearch, setCustomerSearch] = useState("");
   const [orderSearch, setOrderSearch] = useState("");
   const [legacyClientSearch, setLegacyClientSearch] = useState("");
   const [showInstallments, setShowInstallments] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [enableAutoSubmit, setEnableAutoSubmit] = useState(false);
 
-  // Usar o hook usePayments
   const {
     handleCreatePayment,
     isCreating,
-    checkForOpenCashRegisterBeforePayment,
+    cashRegisterData,
+    isLoadingCashRegister
   } = usePayments();
 
-  // Query para verificar se há um caixa aberto
-  const { data: cashRegisterData, isLoading: isLoadingCashRegister } = useQuery(
-    {
-      queryKey: QUERY_KEYS.CASH_REGISTERS.CURRENT,
-      queryFn: checkForOpenCashRegisterBeforePayment,
-    }
-  );
+  const { customers, isLoading: isLoadingCustomers } = useCustomers();
 
-  // Queries para buscar clientes, pedidos e clientes legados
-  const { data: customers = [], isLoading: isLoadingCustomers } = useQuery({
-    queryKey: ["customers", customerSearch],
-    queryFn: async () => {
-      if (!customerSearch || customerSearch.length < 3) return [];
-      const response = await api.get(
-        `/api/users?role=customer&search=${customerSearch}`
-      );
-      return response.data || [];
-    },
-    enabled: customerSearch.length >= 3,
-  });
+  const { orders, isLoading: isLoadingOrders } = useOrders();
 
   const { data: legacyClients = [], isLoading: isLoadingLegacyClients } =
     useQuery({
@@ -151,17 +104,6 @@ export default function NewPaymentPage() {
       enabled: legacyClientSearch.length >= 3,
     });
 
-  const { data: orders = [], isLoading: isLoadingOrders } = useQuery({
-    queryKey: ["orders", orderSearch],
-    queryFn: async () => {
-      if (!orderSearch || orderSearch.length < 3) return [];
-      const response = await api.get(`/api/orders?search=${orderSearch}`);
-      return response.data || [];
-    },
-    enabled: orderSearch.length >= 3,
-  });
-
-  // Inicializar o formulário
   const form = useForm<PaymentFormValues>({
     resolver: zodResolver(paymentFormSchema),
     defaultValues: {
@@ -179,6 +121,38 @@ export default function NewPaymentPage() {
   const { watch, setValue } = form;
   const paymentMethod = watch("paymentMethod");
   const paymentType = watch("type");
+
+  // Adicionar useEffect para prevenir submissão automática
+  useEffect(() => {
+    // Esta função será executada quando o formulário carregar
+    const handleBeforeUnload = (e: { preventDefault: () => void; }) => {
+      if (step === 3 && !isSubmitting) {
+        // Apenas prevenindo comportamentos inesperados no passo 3
+        console.log("Prevenindo comportamento de unload inesperado");
+        e.preventDefault();
+      }
+    };
+
+    // Adiciona listener para eventos de submissão de formulário
+    const handleFormSubmit = (e: { preventDefault: () => void; stopPropagation: () => void; }) => {
+      // Se não estamos explicitamente permitindo submit automático
+      if (step === 3 && !enableAutoSubmit) {
+        console.log("Interceptando possível submit indesejado");
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+
+    // Adiciona os listeners
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('submit', handleFormSubmit, true); // 'true' para captura na fase de captura
+
+    // Limpa os listeners quando o componente for desmontado
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('submit', handleFormSubmit, true);
+    };
+  }, [step, isSubmitting, enableAutoSubmit]);
 
   // Efeito para definir o número de parcelas
   useEffect(() => {
@@ -205,62 +179,80 @@ export default function NewPaymentPage() {
     }
   }, [cashRegisterData, setValue]);
 
-  // Função para lidar com envio do formulário
   const onSubmit = (data: PaymentFormValues) => {
-    // Verificar se estamos no passo 3 antes de enviar o formulário
-    if (step === 3) {
-      console.log("Enviando formulário no passo 3...");
-
-      // Criar objeto para enviar ao backend
-      const paymentData: CreatePaymentDTO = {
-        amount: data.amount,
-        type: data.type,
-        paymentMethod: data.paymentMethod,
-        date: data.paymentDate,
-        description: data.description,
-        category: data.category,
-        cashRegisterId: data.cashRegisterId,
-        customerId: data.customerId,
-        legacyClientId: data.legacyClientId,
-        orderId: data.orderId,
-        status: data.status,
-      };
-
-      // Se for crédito parcelado, adicionar informações de parcelamento
-      if (
-        data.paymentMethod === "credit" &&
-        data.installments &&
-        data.installments > 1
-      ) {
-        paymentData.installments = {
-          current: 1,
-          total: data.installments,
-          value: data.amount / data.installments,
-        };
-      }
-
-      // Enviar dados usando a mutation do hook
-      handleCreatePayment(paymentData)
-        .then((response) => {
-          // Redirecionar para a página de detalhes do pagamento criado
-          if (response && response._id) {
-            router.push(`/payments/${response._id}`);
-          } else {
-            router.push("/payments");
-          }
-        })
-        .catch((error) => {
-          console.error("Erro ao criar pagamento:", error);
-        });
-    } else {
-      console.log("Formulário não enviado: não estamos no passo 3.");
+    console.log("onSubmit chamado com step:", step);
+    
+    // Verificação adicional: só prosseguir se for explicitamente chamado no passo 3
+    if (step !== 3 || isSubmitting) {
+      console.log("Abortando onSubmit - não está no passo 3 ou já está em andamento");
+      return;
     }
+  
+    // Marcar que estamos processando para evitar múltiplas chamadas
+    setIsSubmitting(true);
+    console.log("Iniciando submissão, isSubmitting definido como true");
+  
+    // Converter amount para número se for string
+    let amountValue: number;
+    
+    if (typeof data.amount === 'string') {
+      // Usar cast explícito para string antes de chamar replace
+      amountValue = parseFloat((data.amount as string).replace(',', '.'));
+    } else {
+      amountValue = data.amount as number;
+    }
+    
+    // Se não for um número válido, use 0
+    if (isNaN(amountValue)) {
+      amountValue = 0;
+    }
+  
+    const paymentData: CreatePaymentDTO = {
+      amount: amountValue, // Garantir que seja número
+      type: data.type,
+      paymentMethod: data.paymentMethod,
+      date: data.paymentDate,
+      description: data.description,
+      category: data.category,
+      cashRegisterId: data.cashRegisterId,
+      customerId: data.customerId,
+      legacyClientId: data.legacyClientId,
+      orderId: data.orderId,
+      status: data.status,
+    };
+  
+    // Adicionar a lógica de parcelas apenas se necessário
+    if (
+      data.paymentMethod === "credit" &&
+      data.installments &&
+      data.installments > 1
+    ) {
+      paymentData.installments = {
+        current: 1,
+        total: data.installments,
+        value: amountValue / data.installments, // Usar o valor convertido
+      };
+    }
+  
+    console.log("Enviando dados do pagamento:", paymentData);
+  
+    handleCreatePayment(paymentData)
+      .then((response) => {
+        console.log("Pagamento criado com sucesso:", response);
+        if (response && response._id) {
+          router.push(`/payments/${response._id}`);
+        } else {
+          router.push("/payments");
+        }
+      })
+      .catch((error) => {
+        console.error("Erro ao criar pagamento:", error);
+        setIsSubmitting(false); // Re-habilitar o botão em caso de erro
+      });
   };
 
-  // Avançar para o próximo passo
   const nextStep = () => {
     if (step === 1) {
-      // Validar campos do passo 1
       const step1Fields = [
         "amount",
         "type",
@@ -281,40 +273,42 @@ export default function NewPaymentPage() {
     setStep(step + 1);
   };
 
-  // Voltar para o passo anterior
   const prevStep = () => {
     setStep(step - 1);
   };
 
-  // Renderizar etapa 1 - Informações básicas do pagamento
   const renderStep1 = () => (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <FormField
-          control={form.control}
-          name="amount"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Valor (R$) *</FormLabel>
-              <FormControl>
-                <div className="relative">
-                  <DollarSign className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                  <Input
-                    placeholder="0,00"
-                    className="pl-10"
-                    {...field}
-                    value={field.value ?? ""}
-                    onChange={(e) => {
-                      const value = e.target.value.replace(/[^0-9,.]/g, "");
-                      field.onChange(value === "" ? 0 : value); // Define 0 se o valor for uma string vazia
-                    }}
-                  />
-                </div>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+      <FormField
+        control={form.control}
+        name="amount"
+        render={({ field }) => (
+          <FormItem className="flex flex-col">
+            <FormLabel>Valor (R$) *</FormLabel>
+            <FormControl>
+              <div className="relative">
+                <DollarSign className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0,00"
+                  className="pl-10"
+                  {...field}
+                  value={field.value === 0 ? "" : field.value}
+                  onChange={(e) => {
+                    // Converte para número ou 0 se vazio
+                    const value = e.target.value === "" ? 0 : parseFloat(e.target.value);
+                    field.onChange(value);
+                  }}
+                />
+              </div>
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
 
         <FormField
           control={form.control}
@@ -327,7 +321,7 @@ export default function NewPaymentPage() {
                   <FormControl>
                     <Button
                       variant={"outline"}
-                      className={`pl-3 text-left font-normal ${
+                      className={`w-full pl-3 text-left font-normal ${
                         !field.value ? "text-muted-foreground" : ""
                       }`}
                     >
@@ -504,7 +498,6 @@ export default function NewPaymentPage() {
     </div>
   );
 
-  // Renderizar etapa 2 - Informações relacionadas (cliente, pedido, etc.)
   const renderStep2 = () => {
     if (paymentType === "expense") {
       return (
@@ -599,65 +592,14 @@ export default function NewPaymentPage() {
 
           {selectedEntityType === "customer" && (
             <div className="space-y-4">
-              <div className="flex items-center space-x-2">
-                <Input
-                  placeholder="Buscar cliente por nome, email ou CPF..."
-                  value={customerSearch}
-                  onChange={(e) => setCustomerSearch(e.target.value)}
-                  className="flex-1"
-                />
-                <Button type="button" variant="ghost" size="icon">
-                  <Search className="h-4 w-4" />
-                </Button>
-              </div>
-
-              {isLoadingCustomers && (
-                <div className="flex items-center justify-center py-4">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                </div>
-              )}
-
-              {customerSearch &&
-                customerSearch.length >= 3 &&
-                customers.length > 0 && (
-                  <div className="border rounded-md p-4 max-h-60 overflow-y-auto">
-                    <ul className="space-y-2">
-                      {customers.map((customer: UserType) => (
-                        <li
-                          key={customer._id}
-                          className="flex items-center justify-between"
-                        >
-                          <div>
-                            <p className="font-medium">{customer.name}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {customer.email} - CPF: {customer.cpf}
-                            </p>
-                          </div>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setValue("customerId", customer._id);
-                              setCustomerSearch(customer.name);
-                            }}
-                          >
-                            Selecionar
-                          </Button>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-              {customerSearch &&
-                customerSearch.length >= 3 &&
-                customers.length === 0 &&
-                !isLoadingCustomers && (
-                  <div className="text-center py-4 text-muted-foreground">
-                    Nenhum cliente encontrado
-                  </div>
-                )}
+              <ClientSearch 
+                customers={customers || []}
+                form={form as any}
+                onClientSelect={(clientId, name) => {
+                  setValue("customerId", clientId);
+                  setCustomerSearch(name);
+                }}
+              />
 
               {watch("customerId") && (
                 <div className="bg-green-50 border border-green-200 rounded-md p-4">
@@ -881,7 +823,9 @@ export default function NewPaymentPage() {
           <div className="grid grid-cols-2 gap-2 text-sm">
             <div className="text-blue-700 font-medium">Valor:</div>
             <div className="text-blue-900">
-              R$ {Number(watch("amount"))?.toFixed(2) || "0.00"}
+              {typeof watch("amount") === "number" 
+                ? formatCurrency(watch("amount")) 
+                : "R$ 0,00"}
             </div>
 
             <div className="text-blue-700 font-medium">Tipo:</div>
@@ -924,10 +868,9 @@ export default function NewPaymentPage() {
                 <>
                   <div className="text-blue-700 font-medium">Parcelas:</div>
                   <div className="text-blue-900">
-                    {watch("installments")}x de R${" "}
-                    {(
+                    {watch("installments")}x de {formatCurrency(
                       Number(watch("amount")) / (watch("installments") || 1)
-                    ).toFixed(2)}
+                    )}
                   </div>
                 </>
               )}
@@ -977,7 +920,6 @@ export default function NewPaymentPage() {
     );
   };
 
-  // Determinar qual etapa renderizar
   const renderStepContent = () => {
     console.log(`Renderizando passo ${step}...`);
     switch (step) {
@@ -992,7 +934,6 @@ export default function NewPaymentPage() {
     }
   };
 
-  // Verificar se o caixa está aberto
   const isCashRegisterOpen = !!cashRegisterData;
 
   return (
@@ -1045,7 +986,17 @@ export default function NewPaymentPage() {
               </div>
             ) : (
               <Form {...form}>
-                <form id="paymentForm" onSubmit={form.handleSubmit(onSubmit)}>
+                <form 
+                  id="paymentForm" 
+                  onSubmit={(e) => {
+                    e.preventDefault(); // Sempre previna o comportamento padrão
+                    
+                    if (step === 3) {
+                      // Execute o submit apenas se for explicitamente clicado no botão
+                      form.handleSubmit(onSubmit)(e);
+                    }
+                  }}
+                >
                   {renderStepContent()}
                 </form>
               </Form>
@@ -1075,13 +1026,39 @@ export default function NewPaymentPage() {
               </Button>
             ) : (
               <Button
-                type="submit"
-                form="paymentForm"
+                type="button" // Mudando para type="button" para controle manual
+                onClick={(e) => {
+                  // Evita comportamento padrão
+                  e.preventDefault();
+                  // Se estiver desabilitado, não faz nada
+                  if (isCreating || isLoadingCashRegister || !isCashRegisterOpen || isSubmitting) {
+                    return;
+                  }
+                  
+                  // Validar e enviar manualmente
+                  form.trigger().then((isValid) => {
+                    if (isValid) {
+                      console.log("Formulário válido, obtendo valores...");
+                      const values = form.getValues();
+                      
+                      // Corrigindo o erro TypeScript
+                      const amount = values.amount;
+                      if (typeof amount === 'string') {
+                        // Fazemos um cast explícito para string antes de chamar replace
+                        values.amount = parseFloat((amount as string).replace(',', '.'));
+                      }
+                      
+                      onSubmit(values as PaymentFormValues);
+                    } else {
+                      console.log("Formulário inválido, não enviando");
+                    }
+                  });
+                }}
                 disabled={
-                  isCreating || isLoadingCashRegister || !isCashRegisterOpen
+                  isCreating || isLoadingCashRegister || !isCashRegisterOpen || isSubmitting
                 }
               >
-                {isCreating ? (
+                {isCreating || isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Processando...
@@ -1095,7 +1072,6 @@ export default function NewPaymentPage() {
         </Card>
       )}
 
-      {/* Progresso do formulário */}
       {(isCashRegisterOpen || isLoadingCashRegister) && (
         <div className="flex justify-between items-center py-2">
           <div className="flex space-x-2">

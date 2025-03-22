@@ -174,6 +174,14 @@ export function usePayments() {
     }
   };
 
+  // Query para verificar se há um caixa aberto
+  const { data: cashRegisterData, isLoading: isLoadingCashRegister } = useQuery(
+    {
+      queryKey: QUERY_KEYS.CASH_REGISTERS.CURRENT,
+      queryFn: checkForOpenCashRegisterBeforePayment,
+    }
+  );
+
   // Função para atualizar filtros
   const updateFilters = (newFilters: PaymentFilters) => {
     setFilters((prevFilters) => ({ ...prevFilters, ...newFilters }));
@@ -202,6 +210,8 @@ export function usePayments() {
     // Dados e estado
     payments,
     isLoading,
+    cashRegisterData,
+    isLoadingCashRegister,
     error: error ? String(error) : null,
     currentPage,
     totalPages,

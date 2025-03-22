@@ -12,6 +12,8 @@ import {
   Microscope,
   User,
   Receipt,
+  Menu,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,6 +28,7 @@ import {
   redirectAfterLogout,
 } from "@/app/services/authService";
 import Cookies from "js-cookie";
+import { cn } from "@/lib/utils"; // Certifique-se de que esta importação existe
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -35,9 +38,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname();
   const [userName, setUserName] = useState("");
   const [userRole, setUserRole] = useState("");
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    // Buscar dados básicos do usuário dos cookies
     const name = Cookies.get("name") || "";
     const role = Cookies.get("role") || "";
 
@@ -45,12 +48,15 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     setUserRole(role);
   }, []);
 
-  // Determinar o papel do usuário
+  // Fechar o menu mobile quando mudar de rota
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [pathname]);
+
   const isAdmin = userRole === "admin";
   const isEmployee = userRole === "employee";
   const isCustomer = userRole === "customer";
 
-  // Lista de rotas onde não queremos mostrar o sidebar
   const publicRoutes = [
     "/auth/login",
     "/auth/register",
@@ -60,15 +66,16 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     pathname?.startsWith(route)
   );
 
-  // Função para lidar com o logout
   const handleSignOut = () => {
     clearAuthCookies();
     redirectAfterLogout();
   };
 
-  // Define os itens de menu com base no papel do usuário
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
   const getMenuItems = () => {
-    // Itens básicos comuns a todos os usuários
     const items = [
       {
         title: "Dashboard",
@@ -84,7 +91,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       },
     ];
 
-    // Itens para admin e funcionários
     if (isAdmin || isEmployee) {
       items.push(
         {
@@ -120,7 +126,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       );
     }
 
-    // Itens somente para admin
     if (isAdmin) {
       items.push(
         {
@@ -138,7 +143,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       );
     }
 
-    // Itens somente para clientes
     if (isCustomer) {
       items.push(
         {
@@ -159,7 +163,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     return items.filter((item) => item.visible);
   };
 
-  // Se for uma rota pública, renderiza apenas o conteúdo
   if (isPublicRoute) {
     return <>{children}</>;
   }
@@ -167,50 +170,124 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const menuItems = getMenuItems();
 
   return (
-    <div className="min-h-screen flex">
-      <aside className="w-64 bg-primary text-white p-6 flex flex-col">
-        <div className="mb-8">
+    <div className="min-h-screen flex flex-col md:flex-row">
+      {/* Botão de menu móvel na parte superior (visível apenas em telas pequenas) */}
+      <div className="md:hidden bg-primary text-white p-4 flex justify-between items-center">
+        <h1 className="text-xl font-bold">Óticas Queiroz</h1>
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={toggleMobileMenu}
+          className="text-white hover:bg-primary-foreground/20"
+        >
+          {isMobileMenuOpen ? (
+            <X className="h-6 w-6" />
+          ) : (
+            <Menu className="h-6 w-6" />
+          )}
+        </Button>
+      </div>
+
+      {/* Sidebar - responsiva */}
+      <aside 
+        className={cn(
+          "bg-primary text-white transition-all duration-300 ease-in-out",
+          // Em dispositivos móveis
+          isMobileMenuOpen 
+            ? "fixed inset-0 z-50 w-full h-full pt-16" // Menu aberto cobre toda a tela
+            : "fixed -left-full md:left-0 z-50 w-full h-full pt-16", // Menu fechado fica fora da tela
+          // Em tablets e acima
+          "md:relative md:pt-6 md:w-20 md:min-h-screen md:flex md:flex-col md:items-center",
+          // Em desktops
+          "lg:w-64 lg:items-stretch"
+        )}
+      >
+        <div className="mb-8 px-6 hidden lg:block">
           <h1 className="text-xl font-bold">Óticas Queiroz</h1>
           {userName && (
             <p className="text-sm text-white/70 mt-2">Olá, {userName}</p>
           )}
         </div>
 
-        <NavigationMenu orientation="vertical" className="space-y-2 flex-grow">
-          <NavigationMenuList className="flex flex-col space-y-2">
+        {/* Versão mobile do nome do usuário */}
+        {userName && (
+          <div className="px-6 py-4 border-b border-primary-foreground/20 mb-4 md:hidden">
+            <p className="text-sm text-white/70">Olá, {userName}</p>
+          </div>
+        )}
+
+        <NavigationMenu orientation="vertical" className="space-y-2 flex-grow w-full">
+          <NavigationMenuList className="flex flex-col space-y-2 px-4">
             {menuItems.map((item) => (
               <NavigationMenuItem key={item.href}>
                 <NavigationMenuLink
                   href={item.href}
-                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
+                  className={cn(
+                    "flex items-center transition-colors rounded-lg",
+                    // Base para todos os tamanhos
+                    "px-4 py-3",
+                    // Estilização baseada no pathname
                     pathname === item.href
                       ? "bg-primary-foreground/20 font-medium"
-                      : "hover:bg-primary-foreground/10"
-                  }`}
+                      : "hover:bg-primary-foreground/10",
+                    // Em tablets - apenas ícones
+                    "md:justify-center md:px-0 md:py-3",
+                    // Em desktops - ícones e texto
+                    "lg:justify-start lg:px-4 lg:py-2"
+                  )}
                 >
-                  <item.icon className="h-5 w-5" />
-                  <span>{item.title}</span>
+                  <item.icon className="h-5 w-5 flex-shrink-0" />
+                  <span className={cn(
+                    "ml-2",
+                    // Ocultar texto em tablets
+                    "md:hidden",
+                    // Mostrar texto em desktops
+                    "lg:inline-block"
+                  )}>
+                    {item.title}
+                  </span>
                 </NavigationMenuLink>
               </NavigationMenuItem>
             ))}
           </NavigationMenuList>
         </NavigationMenu>
 
-        <div className="mt-auto pt-6">
+        <div className={cn(
+          "mt-auto pt-6 px-4",
+          "md:w-full md:flex md:justify-center",
+          "lg:justify-start"
+        )}>
           <Button
             variant="ghost"
-            className="w-full justify-start text-white hover:text-white hover:bg-primary-foreground/10"
+            className={cn(
+              "w-full justify-start text-white hover:text-white hover:bg-primary-foreground/10",
+              "md:w-10 md:h-10 md:p-0 md:justify-center",
+              "lg:w-full lg:justify-start lg:px-4 lg:py-2"
+            )}
             onClick={handleSignOut}
           >
-            <LogOut className="h-5 w-4 mr-2" />
-            Sair
+            <LogOut className="h-5 w-5 md:m-0 lg:mr-2" />
+            <span className="md:hidden lg:inline-block">Sair</span>
           </Button>
         </div>
       </aside>
 
-      <main className="flex-1 bg-background">
-        <div className="p-8">{children}</div>
+      {/* Conteúdo principal */}
+      <main className={cn(
+        "flex-1 bg-background",
+        "md:ml-20", // Margem para compensar a largura da barra lateral em tablets
+        "lg:ml-64" // Margem para compensar a largura da barra lateral em desktop
+      )}>
+        <div className="p-4 md:p-8">{children}</div>
       </main>
+      
+      {/* Overlay para fechar o menu quando clicado fora em mobile */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 md:hidden" 
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
     </div>
   );
 }
