@@ -12,12 +12,9 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import Cookies from "js-cookie";
 import {
-  BarChart3,
   DollarSign,
   FileText,
   UserPlus,
-  Package,
-  TrendingUp,
   AlertCircle,
   ShoppingBag,
   CalendarCheck,

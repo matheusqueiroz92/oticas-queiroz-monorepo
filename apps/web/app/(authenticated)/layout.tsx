@@ -14,6 +14,8 @@ import {
   HandCoins,
   FlaskConical,
   type LucideIcon,
+  Menu,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -59,28 +61,12 @@ const menuItems: MenuItem[] = [
     icon: CircleUser,
     href: "/employees",
     roles: ["admin"],
-    // subItems: [
-    //   {
-    //     title: "Novo Funcionário",
-    //     icon: UserPlus,
-    //     href: "/employees/new",
-    //     roles: ["admin"],
-    //   },
-    // ],
   },
   {
     title: "Clientes",
     icon: Users,
     href: "/customers",
     roles: ["admin", "employee"],
-    // subItems: [
-    //   {
-    //     title: "Novo Cliente",
-    //     icon: UserPlus,
-    //     href: "/customers/new",
-    //     roles: ["admin", "employee"],
-    //   },
-    // ],
   },
   {
     title: "Pedidos",
@@ -117,28 +103,12 @@ const menuItems: MenuItem[] = [
     icon: Package,
     href: "/products",
     roles: ["admin", "employee"],
-    // subItems: [
-    //   {
-    //     title: "Novo Produto",
-    //     icon: ShoppingCart,
-    //     href: "/products/new",
-    //     roles: ["admin", "employee"],
-    //   },
-    // ],
   },
   {
     title: "Laboratórios",
     icon: FlaskConical,
     href: "/laboratories",
     roles: ["admin", "employee"],
-    // subItems: [
-    //   {
-    //     title: "Novo Laboratório",
-    //     icon: Building2,
-    //     href: "/laboratories/new",
-    //     roles: ["admin"],
-    //   },
-    // ],
   },
   {
     title: "Relatórios",
@@ -155,6 +125,7 @@ export default function AuthenticatedLayout({
 }) {
   const { isAdmin, isEmployee } = usePermissions();
   const pathname = usePathname();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const [userName, setUserName] = useState("");
   const [userRole, setUserRole] = useState("");
@@ -167,6 +138,11 @@ export default function AuthenticatedLayout({
     setUserName(name);
     setUserRole(role);
   }, []);
+
+  // Fechar menu ao navegar
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [pathname]);
 
   // Determinar o papel do usuário diretamente dos cookies se usePermissions falhar
   const isAdminByRole = userRole === "admin";
@@ -204,17 +180,49 @@ export default function AuthenticatedLayout({
     return false;
   };
 
+  // Toggle do menu mobile
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
   return (
-    <div className="min-h-screen flex">
-      <aside className="w-64 bg-[var(--primary-blue)] text-white p-6 flex flex-col">
-        <div className="mb-8">
+    <div className="min-h-screen flex flex-col md:flex-row">
+      {/* Botão hambúrguer mobile - visível apenas em dispositivos móveis */}
+      <div className="md:hidden bg-[var(--primary-blue)] p-4 flex justify-between items-center text-white">
+        <h1 className="text-lg font-bold">Óticas Queiroz</h1>
+        <button 
+          onClick={toggleMobileMenu}
+          className="p-1 rounded hover:bg-primary-foreground/20"
+        >
+          {isMobileMenuOpen ? (
+            <X className="h-6 w-6" />
+          ) : (
+            <Menu className="h-6 w-6" />
+          )}
+        </button>
+      </div>
+
+      {/* Sidebar com implementação responsiva */}
+      <aside 
+        className={cn(
+          "bg-[var(--primary-blue)] text-white transition-all z-20",
+          // Versão mobile
+          "fixed inset-y-0 left-0 w-16 mt-14 md:mt-0",
+          // Quando fechado em mobile
+          !isMobileMenuOpen && "max-md:-translate-x-full",
+          // Layout desktop
+          "md:sticky md:top-0 md:w-64 md:flex md:flex-col md:translate-x-0"
+        )}
+      >
+        {/* Cabeçalho - visível apenas em desktop */}
+        <div className="hidden md:block mb-8 p-6">
           <h1 className="text-xl font-bold">Óticas Queiroz</h1>
           {userName && (
             <p className="text-sm text-white/70 mt-2">Olá, {userName}</p>
           )}
         </div>
 
-        <nav className="space-y-2 flex-1">
+        <nav className="space-y-2 flex-1 p-2 md:p-6">
           {menuItems.map((item) => {
             // Verificar se o item deve ser exibido para o papel atual do usuário
             if (!shouldShowMenuItem(item.roles)) return null;
@@ -224,12 +232,17 @@ export default function AuthenticatedLayout({
                 <Link
                   href={item.href}
                   className={cn(
-                    "flex items-center space-x-2 px-4 py-2 rounded-lg hover:bg-primary-foreground/10 text-white group w-full",
-                    isActiveGroup(item) && "bg-primary-foreground/20"
+                    "flex items-center rounded-lg hover:bg-primary-foreground/10 text-white group w-full",
+                    // Estilo quando ativo
+                    isActiveGroup(item) && "bg-primary-foreground/20",
+                    // Tamanho e padding responsivo
+                    "max-md:justify-center max-md:p-2",
+                    "md:space-x-2 md:px-4 md:py-2"
                   )}
+                  title={item.title} // Adiciona tooltip para móveis
                 >
                   <item.icon className="h-5 w-5" />
-                  <span>{item.title}</span>
+                  <span className="max-md:hidden">{item.title}</span>
                 </Link>
 
                 {item.subItems?.map((subItem) => {
@@ -241,12 +254,17 @@ export default function AuthenticatedLayout({
                       key={subItem.href}
                       href={subItem.href}
                       className={cn(
-                        "flex items-center space-x-2 px-4 py-2 pl-10 rounded-lg hover:bg-primary-foreground/10 text-white/80 text-sm group w-full",
-                        isActiveLink(subItem.href) && "bg-primary-foreground/20"
+                        "flex items-center rounded-lg hover:bg-primary-foreground/10 text-white/80 text-sm group w-full",
+                        isActiveLink(subItem.href) && "bg-primary-foreground/20",
+                        // Estilo mobile
+                        "max-md:justify-center max-md:p-2",
+                        // Estilo desktop
+                        "md:space-x-2 md:px-4 md:py-2 md:pl-10"
                       )}
+                      title={subItem.title}
                     >
                       <subItem.icon className="h-4 w-4" />
-                      <span>{subItem.title}</span>
+                      <span className="max-md:hidden">{subItem.title}</span>
                     </Link>
                   );
                 })}
@@ -255,20 +273,36 @@ export default function AuthenticatedLayout({
           })}
         </nav>
 
-        <div className="pt-6 border-t border-white/10">
+        <div className="pt-6 border-t border-white/10 px-2 md:px-6 pb-4">
           <Button
             variant="ghost"
-            className="w-full justify-start text-white hover:text-white hover:bg-primary-foreground/10"
+            className={cn(
+              "w-full text-white hover:text-white hover:bg-primary-foreground/10",
+              "max-md:justify-center max-md:p-2",
+              "md:justify-start md:px-4 md:py-2"
+            )}
             onClick={handleSignOut}
           >
-            <LogOut className="h-5 w-5 mr-2" />
-            Sair
+            <LogOut className="h-5 w-5 md:mr-2" />
+            <span className="max-md:hidden">Sair</span>
           </Button>
         </div>
       </aside>
 
-      <main className="flex-1 bg-background">
-        <div className="p-8">{children}</div>
+      {/* Overlay para fechar o menu em dispositivos móveis */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-10 md:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Conteúdo principal */}
+      <main className={cn(
+        "flex-1 bg-background",
+        "md:ml-0"
+      )}>
+        <div className="p-4 md:p-8">{children}</div>
       </main>
     </div>
   );
