@@ -25,8 +25,6 @@ import { useRef, useState, useEffect } from "react";
 import { useProducts } from "@/hooks/useProducts";
 import { Product } from "@/app/types/product";
 
-// Reutilize os schemas de validação da página new
-
 export default function EditProductPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -35,7 +33,6 @@ export default function EditProductPage() {
   const { currentProduct, fetchProductById, handleUpdateProduct, loading } = useProducts();
   const [selectedProductType, setSelectedProductType] = useState<Product['productType'] | null>(null);
 
-  // Formulário com dados iniciais vazios
   const form = useForm<any>({
     defaultValues: {
       name: "",
@@ -46,14 +43,12 @@ export default function EditProductPage() {
     },
   });
 
-  // Buscar produto quando o componente for montado
   useEffect(() => {
     if (id) {
       fetchProductById(id as string);
     }
   }, [id, fetchProductById]);
 
-  // Preencher o formulário quando os dados do produto forem carregados
   useEffect(() => {
     if (currentProduct) {
       setSelectedProductType(currentProduct.productType);

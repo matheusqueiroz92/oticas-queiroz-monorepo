@@ -102,7 +102,7 @@ export default function NewProductPage() {
       sellPrice: 0,
       costPrice: 0,
       image: undefined,
-    } as any, // O tipo any é necessário devido à discriminated union
+    } as any,
   });
 
   // Update form fields when product type changes
