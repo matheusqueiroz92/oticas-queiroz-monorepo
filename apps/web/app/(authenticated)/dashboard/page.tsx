@@ -127,49 +127,12 @@ export default function DashboardPage() {
     );
   };
 
-  // // Função para formatar data
-  // const formatLocalDate = (dateString: string | Date | undefined): string => {
-  //   if (!dateString) return "Data não disponível";
-  //   const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
-  //   if (isNaN(date.getTime())) return "Data inválida";
-    
-  //   return date.toLocaleDateString("pt-BR");
-  // };
-
-  // // Função para traduzir status de pedido com tipagem segura
-  // const translateOrderStatus = (status: OrderStatus): string => {
-  //   const statusMap: Record<OrderStatus, string> = {
-  //     "pending": "Pendente",
-  //     "in_production": "Em Produção",
-  //     "ready": "Pronto para Retirada",
-  //     "delivered": "Entregue",
-  //     "cancelled": "Cancelado"
-  //   };
-    
-  //   return statusMap[status] || "Desconhecido";
-  // };
-
-  // // Função para obter a classe CSS do status de pedido com tipagem segura
-  // const getOrderStatusClass = (status: OrderStatus): string => {
-  //   const statusClassMap: Record<OrderStatus, string> = {
-  //     "pending": "bg-yellow-100 text-yellow-800",
-  //     "in_production": "bg-blue-100 text-blue-800",
-  //     "ready": "bg-purple-100 text-purple-800",
-  //     "delivered": "bg-green-100 text-green-800",
-  //     "cancelled": "bg-red-100 text-red-800"
-  //   };
-    
-  //   return statusClassMap[status] || "bg-gray-100 text-gray-800";
-  // };
-
-  // Função para atualizar dados do dashboard
   const refreshDashboard = () => {
     refetchOrders();
     refetchPayments();
     refetchCashRegister();
   };
 
-  // Filtrar pedidos de hoje
   const getTodayOrders = (orders: Order[] = []): Order[] => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -181,7 +144,6 @@ export default function DashboardPage() {
     });
   };
 
-  // Filtrar pagamentos de hoje
   const getTodayPayments = (payments: IPayment[] = []): IPayment[] => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -193,17 +155,14 @@ export default function DashboardPage() {
     });
   };
 
-  // Calcular pagamentos de vendas (type='sale')
   const getSalesTotal = (payments: IPayment[] = []): number => {
     return payments.filter(p => p.type === 'sale').reduce((sum, p) => sum + p.amount, 0);
   };
 
-  // Calcular contagem de pedidos por status
   const getOrdersCountByStatus = (orders: Order[] = [], statuses: OrderStatus[]): number => {
     return orders.filter(o => statuses.includes(o.status as OrderStatus)).length;
   };
 
-  // Dados filtrados
   const todayOrders = allOrders ? getTodayOrders(allOrders as Order[]) : [];
   const todayPayments = allPayments ? getTodayPayments(allPayments as IPayment[]) : [];
   const recentOrders = [...(allOrders || [])].sort((a, b) => 
@@ -240,7 +199,6 @@ export default function DashboardPage() {
         </CardContent>
       </Card>
 
-      {/* Conteúdo específico para Admin */}
       {isAdmin && (
         <>
           <div className="flex justify-between items-center">
