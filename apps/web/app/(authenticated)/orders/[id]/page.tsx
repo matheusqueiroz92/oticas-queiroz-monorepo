@@ -199,12 +199,12 @@ export default function OrderDetailsPage() {
     order.prescriptionData.rightEye;
 
   // Determinar se o pedido tem produtos múltiplos
-  const hasMultipleProducts = Array.isArray(order.product) && order.product.length > 0;
+  const hasMultipleProducts = Array.isArray(order.products) && order.products.length > 0;
   
   // Normalizar produtos para garantir que sempre seja um array
   const products = hasMultipleProducts 
-    ? order.product 
-    : (order.product ? [order.product] : []);
+    ? order.products 
+    : (order.products ? [order.products] : []);
 
   // Componente para exibir badge de status
   const StatusBadge = ({ status }: { status: string }) => {
