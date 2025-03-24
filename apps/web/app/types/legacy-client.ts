@@ -8,6 +8,12 @@ export interface LegacyClient {
   lastPaymentDate?: Date | string;
   status: "active" | "inactive";
   observations?: string;
-  createdAt?: Date;
-  updatedAt?: Date;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
+  
+  paymentHistory?: Array<{
+    date: Date | string;
+    amount: number;
+    paymentId: string;
+  }>;
 }

@@ -121,7 +121,7 @@ export class AuthController {
     const userData = {
       ...validatedData,
       image: req.file
-        ? `http://localhost:3333/images/users/${req.file.filename}`
+        ? `/images/users/${req.file.filename}`
         : undefined,
     };
 
