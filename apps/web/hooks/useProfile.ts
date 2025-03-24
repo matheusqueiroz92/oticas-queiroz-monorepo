@@ -6,6 +6,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/app/services/authService";
 import { QUERY_KEYS } from "@/app/constants/query-keys";
 import { API_ROUTES } from "@/app/constants/api-routes";
+import { Employee } from "@/app/types/employee";
+import { Customer } from "@/app/types/customer";
 import type { User } from "@/app/types/user";
 
 interface ChangePasswordData {
@@ -28,6 +30,7 @@ export function useProfile() {
     queryKey: QUERY_KEYS.AUTH.USER_PROFILE,
     queryFn: async () => {
       const response = await api.get(API_ROUTES.AUTH.PROFILE);
+      
       return response.data as User;
     },
   });
@@ -70,7 +73,7 @@ export function useProfile() {
           "Content-Type": "multipart/form-data",
         },
       });
-      return response.data as User;
+      return response.data as Employee | Customer;
     },
     onSuccess: (data) => {
       toast({
@@ -129,16 +132,13 @@ export function useProfile() {
   };
 
   return {
-    // Dados e estados
     profile,
     isLoadingProfile,
     profileError,
 
-    // Mutations e seus estados
     isChangingPassword: changePasswordMutation.isPending,
     isUpdatingProfile: updateProfileMutation.isPending,
 
-    // Ações
     handleChangePassword,
     handleUpdateProfile,
     refetchProfile,

@@ -205,7 +205,7 @@ const OrderPDFDocument = ({
   };
 
   // Verificar se o pedido tem produtos múltiplos
-  const hasMultipleProducts = Array.isArray(order.product) && order.product.length > 0;
+  const hasMultipleProducts = Array.isArray(order.products) && order.products.length > 0;
 
   return (
     <Document>
@@ -260,7 +260,7 @@ const OrderPDFDocument = ({
                 <Text style={styles.tableCellRight}>Preço</Text>
               </View>
               
-              {(order.product as Product[]).map((product, index) => (
+              {(order.products as Product[]).map((product, index) => (
                 <View style={styles.tableRow} key={`product-${index}`}>
                   <Text style={styles.tableCellSmall}>{product.name}</Text>
                   <Text style={styles.tableCellSmall}>
@@ -302,9 +302,9 @@ const OrderPDFDocument = ({
               <View style={styles.row}>
                 <Text style={styles.label}>Produto:</Text>
                 <Text style={styles.value}>
-                  {typeof order.product === 'string'
-                    ? order.product
-                    : (order.product as any)?.name || 'N/A'}
+                  {typeof order.products === 'string'
+                    ? order.products
+                    : (order.products as any)?.name || 'N/A'}
                 </Text>
               </View>
               <View style={styles.row}>

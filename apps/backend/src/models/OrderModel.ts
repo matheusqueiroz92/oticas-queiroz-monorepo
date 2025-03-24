@@ -1,5 +1,6 @@
 import { Order } from "../schemas/OrderSchema";
-import type { IOrder } from "../interfaces/IOrder";
+import type { IOrder, OrderProduct } from "../interfaces/IOrder";
+import type { IProduct, ILens, ICleanLens, IPrescriptionFrame, ISunglassesFrame } from "../interfaces/IProduct";
 import { Types, type FilterQuery } from "mongoose";
 
 export class OrderModel {
@@ -7,8 +8,86 @@ export class OrderModel {
     return Types.ObjectId.isValid(id);
   }
 
+  private isObjectWithId(product: any): boolean {
+    return typeof product === 'object' && product !== null && '_id' in product;
+  }
+
   private convertToIOrder(doc: any): IOrder {
     const order = doc.toObject ? doc.toObject() : doc;
+    
+    // Converte os produtos de forma segura
+    let convertedProducts: Array<string | IProduct> = [];
+    
+    if (Array.isArray(order.products)) {
+      convertedProducts = order.products.map((product: any) => {
+        if (!this.isObjectWithId(product)) {
+          return product.toString();
+        }
+        
+        // Para objetos populados, criamos um novo objeto com as propriedades corretas
+        // Começa com um produto base com propriedades comuns
+        const baseProduct = {
+          _id: product._id.toString(),
+          name: product.name || "",
+          productType: product.productType as IProduct["productType"],
+          description: product.description || "",
+          image: product.image,
+          sellPrice: product.sellPrice || 0,
+          brand: product.brand,
+          costPrice: product.costPrice
+        };
+        
+        // Adiciona propriedades específicas com base no tipo
+        if (product.productType === 'lenses') {
+          // Cria um objeto ILens separadamente para agradar o TypeScript
+          const lensProduct: ILens = {
+            ...baseProduct,
+            productType: 'lenses',
+            lensType: product.lensType || ""
+          };
+          return lensProduct;
+        }
+        
+        if (product.productType === 'clean_lenses') {
+          // Cria um objeto ICleanLens separadamente
+          const cleanLensProduct: ICleanLens = {
+            ...baseProduct,
+            productType: 'clean_lenses'
+          };
+          return cleanLensProduct;
+        }
+        
+        if (product.productType === 'prescription_frame') {
+          // Cria um objeto IPrescriptionFrame separadamente
+          const prescriptionFrameProduct: IPrescriptionFrame = {
+            ...baseProduct,
+            productType: 'prescription_frame',
+            typeFrame: product.typeFrame || "",
+            color: product.color || "",
+            shape: product.shape || "",
+            reference: product.reference || ""
+          };
+          return prescriptionFrameProduct;
+        }
+        
+        if (product.productType === 'sunglasses_frame') {
+          // Cria um objeto ISunglassesFrame separadamente
+          const sunglassesFrameProduct: ISunglassesFrame = {
+            ...baseProduct,
+            productType: 'sunglasses_frame',
+            modelSunglasses: product.modelSunglasses || "",
+            typeFrame: product.typeFrame || "",
+            color: product.color || "",
+            shape: product.shape || "",
+            reference: product.reference || ""
+          };
+          return sunglassesFrameProduct;
+        }
+        
+        // Se não corresponder a um tipo específico, retorna o produto base
+        return baseProduct;
+      });
+    }
     
     return {
       _id: order._id.toString(),
@@ -18,40 +97,8 @@ export class OrderModel {
       employeeId: typeof order.employeeId === 'object' && order.employeeId?._id
         ? order.employeeId._id.toString()
         : order.employeeId.toString(),
-      // Convert the product array
-      products: Array.isArray(order.product)
-        ? order.products.map((product: any) => {
-            if (typeof product === 'object' && product._id) {
-              return {
-                _id: product._id.toString(),
-                name: product.name,
-                productType: product.productType,
-                description: product.description,
-                image: product.image,
-                sellPrice: product.sellPrice,
-                brand: product.brand,
-                costPrice: product.costPrice,
-                // Include type-specific fields
-                ...(product.productType === 'lenses' && { lensType: product.lensType }),
-                ...(product.productType === 'prescription_frame' && { 
-                  typeFrame: product.typeFrame,
-                  color: product.color,
-                  shape: product.shape,
-                  reference: product.reference
-                }),
-                ...(product.productType === 'sunglasses_frame' && { 
-                  model: product.model,
-                  typeFrame: product.typeFrame,
-                  color: product.color,
-                  shape: product.shape,
-                  reference: product.reference
-                })
-              };
-            } else {
-              return { _id: product.toString() };
-            }
-          })
-        : [],
+      // Atribui os produtos convertidos
+      products: convertedProducts,
       paymentMethod: order.paymentMethod,
       paymentEntry: order.paymentEntry,
       installments: order.installments,
@@ -80,6 +127,8 @@ export class OrderModel {
     };
   }
 
+  // Resto dos métodos permanecem iguais
+  
   async create(orderData: Omit<IOrder, "_id">): Promise<IOrder> {
     const order = new Order(orderData);
     const savedOrder = await order.save();
@@ -138,7 +187,7 @@ export class OrderModel {
         .populate("clientId", "name email role")
         .populate("employeeId", "name email")
         .populate("laboratoryId")
-        .populate("products"); // Também popula os produtos
+        .populate("products");
 
       if (includeDeleted) {
         orderQuery = orderQuery.populate("deletedBy", "name email");
@@ -184,7 +233,7 @@ export class OrderModel {
         .populate("clientId", "name email role")
         .populate("employeeId", "name email")
         .populate("laboratoryId")
-        .populate("products"); // Também popula os produtos
+        .populate("products");
     }
 
     const order = await query.exec();

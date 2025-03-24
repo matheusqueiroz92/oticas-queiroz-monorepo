@@ -1,18 +1,24 @@
 import { Types } from 'mongoose';
-import { IProduct } from "./IProduct";
+import { IProduct, ILens, ICleanLens, IPrescriptionFrame, ISunglassesFrame, ProductType } from "./IProduct";
+
+// Tipos auxiliares para facilitar a tipagem de produtos
+export type ProductReference = string | Types.ObjectId;
+
+// OrderProduct pode ser uma referência ou um produto tipado
+export type OrderProduct = ProductReference | IProduct | ILens | ICleanLens | IPrescriptionFrame | ISunglassesFrame;
 
 export interface IOrder {
   _id?: string;
-  clientId: Types.ObjectId;
-  employeeId: Types.ObjectId;
-  products: IProduct[];
+  clientId: string | Types.ObjectId;
+  employeeId: string | Types.ObjectId;
+  products: OrderProduct[];
   paymentMethod: string;
   paymentEntry?: number;
   installments?: number;
   orderDate: Date;
   deliveryDate?: Date;
   status: "pending" | "in_production" | "ready" | "delivered" | "cancelled";
-  laboratoryId?: Types.ObjectId | null;
+  laboratoryId?: Types.ObjectId | string | null;
   prescriptionData?: {
     doctorName: string;
     clinicName: string;
@@ -39,7 +45,7 @@ export interface IOrder {
   finalPrice: number;
   isDeleted?: boolean;
   deletedAt?: Date;
-  deletedBy?: Types.ObjectId;
+  deletedBy?: Types.ObjectId | string;
   createdAt?: Date;
   updatedAt?: Date;
 }

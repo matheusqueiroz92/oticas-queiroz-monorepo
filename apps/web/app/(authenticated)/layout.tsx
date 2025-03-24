@@ -114,7 +114,7 @@ const menuItems: MenuItem[] = [
     title: "Relatórios",
     icon: BarChart,
     href: "/reports",
-    roles: ["admin"],
+    roles: ["admin", "employee"],
   },
 ];
 

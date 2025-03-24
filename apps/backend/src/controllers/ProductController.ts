@@ -2,11 +2,6 @@ import type { Request, Response } from "express";
 import { ProductService, ProductError } from "../services/ProductService";
 import { z } from "zod";
 import { 
-  ProductType,
-  CreateProductDTO
-} from "../interfaces/IProduct";
-import { 
-  productSchema, 
   lensSchema, 
   cleanLensSchema,
   prescriptionFrameSchema, 
@@ -22,19 +17,15 @@ export class ProductController {
 
   async createProduct(req: Request, res: Response): Promise<void> {
     try {
-      // Extrair dados do body
       const data = req.body;
       
-      // Adicionar imagem se foi enviada
       if (req.file) {
         data.image = `/images/products/${req.file.filename}`;
       }
 
-      // Converter valores numéricos
       if (data.sellPrice) data.sellPrice = Number(data.sellPrice);
       if (data.costPrice) data.costPrice = Number(data.costPrice);
       
-      // Validar data baseado no tipo de produto
       let validatedData: any;
       switch (data.productType) {
         case 'lenses':
@@ -78,7 +69,6 @@ export class ProductController {
       const limit = Number(req.query.limit) || 10;
       const filters: any = {};
 
-      // Filtros opcionais
       if (req.query.productType) filters.productType = String(req.query.productType);
       if (req.query.brand) filters.brand = String(req.query.brand);
       if (req.query.minSellPrice) filters.sellPrice = { $gte: Number(req.query.minSellPrice) };
@@ -90,7 +80,6 @@ export class ProductController {
         }
       }
       
-      // Filtros específicos para cada tipo de produto
       if (req.query.lensType) filters.lensType = String(req.query.lensType);
       if (req.query.typeFrame) filters.typeFrame = String(req.query.typeFrame);
       if (req.query.color) filters.color = String(req.query.color);
@@ -98,7 +87,6 @@ export class ProductController {
       if (req.query.reference) filters.reference = String(req.query.reference);
       if (req.query.model) filters.model = String(req.query.model);
 
-      // Busca por nome ou descrição
       if (req.query.search) {
         const searchRegex = new RegExp(String(req.query.search), 'i');
         filters.$or = [
@@ -148,19 +136,15 @@ export class ProductController {
 
   async updateProduct(req: Request, res: Response): Promise<void> {
     try {
-      // Pega apenas os campos enviados
       const updateData: any = {};
       const data = req.body;
 
-      // Mapeia campos básicos
       if (data.name !== undefined) updateData.name = data.name;
       if (data.description !== undefined) updateData.description = data.description;
       if (data.brand !== undefined) updateData.brand = data.brand;
       if (data.sellPrice !== undefined) updateData.sellPrice = Number(data.sellPrice);
       if (data.costPrice !== undefined) updateData.costPrice = Number(data.costPrice);
       
-      // Mapeia campos específicos com base no tipo do produto
-      // O tipo de produto não pode ser alterado, então precisamos buscar o produto original
       const originalProduct = await this.productService.getProductById(req.params.id);
       
       switch (originalProduct.productType) {
@@ -174,9 +158,8 @@ export class ProductController {
           if (data.shape !== undefined) updateData.shape = data.shape;
           if (data.reference !== undefined) updateData.reference = data.reference;
           
-          // Campo específico para sunglasses_frame
-          if (originalProduct.productType === 'sunglasses_frame' && data.model !== undefined) {
-            updateData.model = data.model;
+          if (originalProduct.productType === 'sunglasses_frame' && data.modelSunglasses !== undefined) {
+            updateData.modelSunglasses = data.modelSunglasses;
           }
           break;
       }

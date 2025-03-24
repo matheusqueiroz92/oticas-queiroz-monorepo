@@ -148,8 +148,21 @@ export async function getAllCashRegisters(
 }
 
 /**
+ * Busca o registro de caixa atual
+ */
+export async function getCurrentCashRegister(): Promise<ICashRegister | null> {
+  try {
+    console.log(`Buscando caixa atual`);
+    const response = await api.get(API_ROUTES.CASH_REGISTERS.CURRENT);
+    return response.data;
+  } catch (error) {
+    console.error(`Erro ao buscar caixa atual:`, error);
+    return null;
+  }
+}
+
+/**
  * Busca um registro de caixa específico por ID
- * Corrigido para usar o padrão do backend com 's' (cash-registers)
  */
 export async function getCashRegisterById(
   id: string

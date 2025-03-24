@@ -10,10 +10,12 @@ import {
   updateOrderStatus,
   updateOrderLaboratory,
   createOrder,
+  getOrdersByClient,
 } from "@/app/services/orderService";
 import { QUERY_KEYS } from "../app/constants/query-keys";
 import type { Order } from "@/app/types/order";
 import { useUsers } from "@/hooks/useUsers";
+import { api } from "@/app/services/authService";
 
 interface OrderFilters {
   search?: string;
@@ -24,7 +26,12 @@ interface OrderFilters {
   sort?: string;
 }
 
-export function useOrders() {
+interface UseOrdersOptions {
+  enableQueries?: boolean;
+}
+
+export function useOrders(options: UseOrdersOptions = {}) {
+  const { enableQueries = true } = options;
   const [filters, setFilters] = useState<OrderFilters>({});
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -45,11 +52,12 @@ export function useOrders() {
       page: currentPage,
       sort: "-createdAt",
     }),
+    enabled: enableQueries,
   });
 
   // Efeito para buscar usuários quando os pedidos são carregados
   useEffect(() => {
-    if ((data?.orders ?? []).length > 0) {
+    if (enableQueries && (data?.orders ?? []).length > 0) {
       // Buscar IDs únicos de usuários
       const userIdsToFetch = [
         ...(data?.orders ? data.orders.map(order => {
@@ -102,17 +110,25 @@ export function useOrders() {
         fetchUsers(userIdsToFetch);  // Passamos apenas os IDs para a função fetchUsers
       }
     }
-  }, [data, fetchUsers]);
+  }, [data, fetchUsers, enableQueries]);
   
   const orders = data?.orders || [];
   const totalPages = data?.pagination?.totalPages || 1;
   const totalOrders = data?.pagination?.total || 0;
 
+  const useClientOrders = (clientId?: string) => {
+    return useQuery({
+      queryKey: QUERY_KEYS.ORDERS.CLIENT(clientId || ""),
+      queryFn: () => getOrdersByClient(clientId || ""),
+      enabled: enableQueries && !!clientId,
+    });
+  };
+
   const fetchOrderById = (id: string) => {
     return useQuery({
       queryKey: QUERY_KEYS.ORDERS.DETAIL(id),
       queryFn: () => getOrderById(id),
-      enabled: !!id,
+      enabled: enableQueries && !!id,
     });
   };
 
@@ -285,6 +301,7 @@ export function useOrders() {
     setCurrentPage,
     updateFilters,
     fetchOrderById,
+    useClientOrders,
     handleUpdateOrderStatus,
     handleUpdateOrderLaboratory,
     handleCreateOrder,

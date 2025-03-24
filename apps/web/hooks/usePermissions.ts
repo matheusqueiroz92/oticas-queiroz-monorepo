@@ -17,8 +17,8 @@ export function usePermissions() {
 
   // Verifica permissões específicas para certas funcionalidades
   const canViewEmployees = isAdmin;
-  const canViewReports = isAdmin;
-  const canManageLaboratories = isAdmin; // Apenas admin pode gerenciar (adicionar/editar/excluir)
+  const canViewReports = isAdmin || isEmployee;
+  const canManageLaboratories = isAdmin || isEmployee; // Apenas admin pode gerenciar (adicionar/editar/excluir)
   const canViewLaboratories = isAdmin || isEmployee; // Admin e employee podem visualizar
 
   // Permissões de cliente

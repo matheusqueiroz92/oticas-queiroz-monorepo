@@ -64,6 +64,20 @@ export async function getOrderById(id: string): Promise<Order | null> {
 }
 
 /**
+ * Busca os pedidos de um cliente
+ */
+export async function getOrdersByClient(clientId: string): Promise<Order[] | null> {
+  try {
+    if (!clientId) return [];
+    const response = await api.get(`/api/orders/client/${clientId}`);
+    return Array.isArray(response.data) ? response.data : [];
+  } catch (error) {
+    console.error("Erro ao buscar pedidos do cliente:", error);
+    return [];
+  }
+}
+
+/**
  * Atualiza o status de um pedido
  */
 export async function updateOrderStatus(
@@ -107,9 +121,9 @@ export async function createOrder(
     // Garantir que product é um array
     const data = {
       ...orderData,
-      product: Array.isArray(orderData.product) 
-        ? orderData.product 
-        : [orderData.product],
+      product: Array.isArray(orderData.products) 
+        ? orderData.products 
+        : [orderData.products],
       // Garantir que os campos de preço estão definidos
       totalPrice: orderData.totalPrice || 0,
       discount: orderData.discount || 0,

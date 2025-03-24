@@ -1,5 +1,3 @@
-import type { IPayment } from "./payment";
-
 export interface ICashRegister {
   _id: string;
   openingDate: Date;

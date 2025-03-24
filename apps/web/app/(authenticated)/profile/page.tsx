@@ -26,11 +26,9 @@ import {
 } from "@/components/ui/form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";
-import { useToast } from "@/hooks/useToast";
 import { useProfile } from "@/hooks/useProfile";
 import Cookies from "js-cookie";
 
-// Schema para validação do formulário de atualização de perfil
 const profileFormSchema = z.object({
   name: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
   email: z.string().email("Email inválido"),
@@ -47,10 +45,8 @@ type ProfileFormData = z.infer<typeof profileFormSchema>;
 export default function ProfilePage() {
   const [editMode, setEditMode] = useState(false);
   const router = useRouter();
-  const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Usar o hook de perfil
   const {
     profile: user,
     isLoadingProfile: loading,
@@ -60,7 +56,6 @@ export default function ProfilePage() {
     getUserImageUrl,
   } = useProfile();
 
-  // Inicializar o formulário
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
@@ -86,36 +81,29 @@ export default function ProfilePage() {
     try {
       const formData = new FormData();
 
-      // Adicionar campos de texto
       for (const [key, value] of Object.entries(data)) {
         if (key !== "image" && value !== undefined) {
           formData.append(key, String(value));
         }
       }
 
-      // Adicionar imagem se existir
       const file = fileInputRef.current?.files?.[0];
       if (file) {
         formData.append("userImage", file);
       }
 
-      // Enviar dados para atualização
       const updatedUser = await handleUpdateProfile(formData);
 
-      // Atualizar o nome no cookie se foi alterado
       if (updatedUser && updatedUser.name !== Cookies.get("name")) {
         Cookies.set("name", updatedUser.name, { expires: 1 });
       }
 
       setEditMode(false);
-      // Recarregar os dados do perfil
       refetchProfile();
     } catch (error) {
       console.error("Erro ao atualizar perfil:", error);
     }
   };
-
-  // Função para obter a URL completa da imagem foi movida para o hook useProfile
 
   if (loading) {
     return (

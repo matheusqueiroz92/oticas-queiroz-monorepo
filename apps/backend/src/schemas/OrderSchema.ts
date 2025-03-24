@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema, Model, Types } from 'mongoose';
+import mongoose, { Document, Schema, Model } from 'mongoose';
 import { IOrder } from '../interfaces/IOrder';
 
 const orderSchema = new Schema<IOrder>({
@@ -95,7 +95,7 @@ orderSchema.pre("validate", function(next) {
 
   // Verificar se há pelo menos um produto no pedido
   if (!this.products || this.products.length === 0) {
-    this.invalidate("product", "Pelo menos um produto deve ser adicionado ao pedido");
+    this.invalidate("products", "Pelo menos um produto deve ser adicionado ao pedido");
   }
 
   // Validar que finalPrice é positivo

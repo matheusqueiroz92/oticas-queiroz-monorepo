@@ -50,6 +50,7 @@ const baseOrderSchema = z.object({
   totalPrice: z.number().positive("Preço total deve ser positivo"),
   discount: z.number().min(0, "Desconto não pode ser negativo").default(0),
   finalPrice: z.number().positive("Preço final deve ser positivo").default(0),
+  isDeleted: z.boolean().optional(),
 });
 
 // Schema para validar parâmetros de consulta

@@ -19,7 +19,6 @@ export class ProductService {
 
   private validateProduct(productData: IProduct): void {
     try {
-      // Usar o validador Zod discriminated union
       productSchema.parse(productData);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -31,7 +30,6 @@ export class ProductService {
   }
 
   async createProduct(productData: IProduct): Promise<IProduct> {
-    // Validar os dados com base no tipo
     this.validateProduct(productData);
 
     const existingProduct = await this.productModel.findByName(productData.name);
@@ -70,7 +68,6 @@ export class ProductService {
     id: string,
     productData: Partial<IProduct>
   ): Promise<IProduct> {
-    // Verificações para os produtos
     if (productData.sellPrice !== undefined && productData.sellPrice < 0) {
       throw new ProductError("Preço de venda não pode ser negativo");
     }
@@ -78,7 +75,6 @@ export class ProductService {
       throw new ProductError("Preço de custo não pode ser negativo");
     }
 
-    // Verificar se está tentando alterar o nome para um já existente
     if (productData.name) {
       const existingProduct = await this.productModel.findByName(productData.name);
       if (existingProduct && existingProduct._id !== id) {

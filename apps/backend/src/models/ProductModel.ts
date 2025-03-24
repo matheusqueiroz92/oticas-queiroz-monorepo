@@ -4,7 +4,7 @@ import {
   Lens, 
   CleanLens, 
   PrescriptionFrame, 
-  SunglassesFrame 
+  SunglassesFrame
 } from "../schemas/ProductSchema";
 import { 
   IProduct, 
@@ -12,7 +12,6 @@ import {
   ICleanLens, 
   IPrescriptionFrame, 
   ISunglassesFrame,
-  ProductType
 } from "../interfaces/IProduct";
 
 export class ProductModel {
@@ -21,10 +20,8 @@ export class ProductModel {
   }
 
   private convertToIProduct(doc: any): IProduct {
-    // Obter valores brutos do documento MongoDB
     const rawDoc = doc.toObject ? doc.toObject() : doc;
     
-    // Preparar o produto base
     const baseProduct: IProduct = {
       _id: rawDoc._id.toString(),
       productType: rawDoc.productType,
@@ -38,7 +35,6 @@ export class ProductModel {
       updatedAt: rawDoc.updatedAt
     };
   
-    // Adicionar campos específicos com base no tipo
     switch (rawDoc.productType) {
       case 'lenses':
         return {
@@ -59,10 +55,9 @@ export class ProductModel {
         } as IPrescriptionFrame;
       
       case 'sunglasses_frame':
-        // Corrigido: usar modelSunglasses em vez de model
         return {
           ...baseProduct,
-          modelSunglasses: rawDoc.modelSunglasses || rawDoc.model, // Aceita ambos os campos para compatibilidade
+          modelSunglasses: rawDoc.modelSunglasses || rawDoc.model,
           typeFrame: rawDoc.typeFrame,
           color: rawDoc.color,
           shape: rawDoc.shape,
@@ -77,7 +72,6 @@ export class ProductModel {
   async create(productData: Omit<IProduct, "_id">): Promise<IProduct> {
     let savedProduct;
     
-    // Criar o produto usando o modelo apropriado
     switch (productData.productType) {
       case 'lenses':
         savedProduct = await new Lens(productData).save();
@@ -125,7 +119,6 @@ export class ProductModel {
       return acc;
     }, {} as FilterQuery<any>);
 
-    // Usando Promise.all
     const [productsResult, total] = await Promise.all([
       Product.find(query).skip(skip).limit(limit),
       Product.countDocuments(query),
@@ -143,7 +136,6 @@ export class ProductModel {
   ): Promise<IProduct | null> {
     if (!this.isValidId(id)) return null;
     
-    // Não permitimos alterar o tipo de produto
     const updateData = { ...productData };
     if (updateData.productType) {
       delete updateData.productType;

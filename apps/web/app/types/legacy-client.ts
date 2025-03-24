@@ -5,7 +5,7 @@ export interface LegacyClient {
   phone?: string;
   address?: string;
   totalDebt: number;
-  lastPaymentDate?: Date;
+  lastPaymentDate?: Date | string;
   status: "active" | "inactive";
   observations?: string;
   createdAt?: Date;

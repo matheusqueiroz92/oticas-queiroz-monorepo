@@ -11,6 +11,7 @@ import {
   closeCashRegister,
   getCashRegisterById,
   getCashRegisterSummary,
+  getCurrentCashRegister,
 } from "@/app/services/cashRegisterService";
 import { QUERY_KEYS } from "../app/constants/query-keys";
 import type {
@@ -41,15 +42,25 @@ export function useCashRegister() {
     placeholderData: (prevData) => prevData, // Substitui keepPreviousData
   });
 
-  // Query para verificar o caixa atual
+  // Query para verificar a abertura do caixa atual
   const {
-    data: currentRegisterData,
-    isLoading: isLoadingCurrentRegister,
-    refetch: refetchCurrentRegister,
+    data: openCurrentCashRegister,
+    isLoading: isLoadingOpenCurrentRegister,
+    refetch: refetchOpenCurrentCashRegister,
+  } = useQuery({
+    queryKey: QUERY_KEYS.CASH_REGISTERS.OPEN,
+    queryFn: checkOpenCashRegister,
+    refetchOnWindowFocus: true,
+  });
+
+  // Query para buscar o caixa atual
+  const {
+    data: currentCashRegister,
+    isLoading: isLoadingCurrentCashRegister,
+    refetch: refetchCurrentCashRegister
   } = useQuery({
     queryKey: QUERY_KEYS.CASH_REGISTERS.CURRENT,
-    queryFn: checkOpenCashRegister,
-    refetchOnWindowFocus: true, // Recarregar sempre que a janela ganhar foco
+    queryFn: getCurrentCashRegister,
   });
 
   // Dados normalizados das queries
@@ -57,8 +68,8 @@ export function useCashRegister() {
   const totalPages = data?.pagination?.totalPages || 1;
   const totalRegisters = data?.pagination?.total || 0;
   const activeRegister =
-    currentRegisterData?.isOpen && currentRegisterData?.data
-      ? currentRegisterData.data
+    openCurrentCashRegister?.isOpen && openCurrentCashRegister?.data
+      ? openCurrentCashRegister.data
       : null;
 
   // Mutation para abrir caixa
@@ -133,6 +144,14 @@ export function useCashRegister() {
     });
   };
 
+  // Custom query para buscar um caixa específico
+  const fetchCurrentCashRegister = () => {
+    return useQuery({
+      queryKey: QUERY_KEYS.CASH_REGISTERS.CURRENT,
+      queryFn: () => getCurrentCashRegister(),
+    });
+  };
+
   // Custom query para buscar o resumo de um caixa
   const fetchCashRegisterSummary = (id: string) => {
     return useQuery({
@@ -150,7 +169,7 @@ export function useCashRegister() {
 
   // Função para verificar se há um caixa aberto
   const checkForOpenRegister = async (): Promise<boolean> => {
-    await refetchCurrentRegister();
+    await refetchOpenCurrentCashRegister();
     return !!activeRegister;
   };
 
@@ -179,8 +198,9 @@ export function useCashRegister() {
   return {
     // Dados e estado
     cashRegisters,
+    currentCashRegister,
     activeRegister,
-    isLoading: isLoading || isLoadingCurrentRegister,
+    isLoading: isLoading || isLoadingOpenCurrentRegister || isLoadingCurrentCashRegister,
     error: error ? String(error) : null,
     currentPage,
     totalPages,
@@ -195,6 +215,7 @@ export function useCashRegister() {
     setCurrentPage,
     updateFilters,
     fetchCashRegisterById,
+    fetchCurrentCashRegister,
     fetchCashRegisterSummary,
     handleOpenCashRegister,
     handleCloseCashRegister,
@@ -203,5 +224,7 @@ export function useCashRegister() {
     navigateToCloseRegister,
     checkForOpenRegister,
     refetch,
+    refetchOpenCurrentCashRegister,
+    refetchCurrentCashRegister
   };
 }

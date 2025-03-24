@@ -1,8 +1,8 @@
 import { OrderModel } from "../models/OrderModel";
 import { UserModel } from "../models/UserModel";
 import { ProductModel } from "../models/ProductModel";
-import type { CreateOrderDTO, IOrder } from "../interfaces/IOrder";
-// import NodeCache from "node-cache";
+import type { CreateOrderDTO, IOrder, OrderProduct } from "../interfaces/IOrder";
+import type { IProduct, ILens, ICleanLens } from "../interfaces/IProduct";
 import { ExportUtils, type ExportOptions } from "../utils/exportUtils";
 import mongoose from "mongoose";
 
@@ -17,56 +17,64 @@ export class OrderService {
   private orderModel: OrderModel;
   private userModel: UserModel;
   private productModel: ProductModel;
-  // private cache: NodeCache;
   private exportUtils: ExportUtils;
 
   constructor() {
     this.orderModel = new OrderModel();
     this.userModel = new UserModel();
     this.productModel = new ProductModel();
-    // this.cache = new NodeCache({ stdTTL: 30 }); // Cache com expiração de 5 minutos
     this.exportUtils = new ExportUtils();
   }
 
-  // Método para invalidar cache quando houver alterações
-  // private invalidateCache(keys: string | string[]): void {
-  //   console.log('Invalidando cache para chaves:', keys);
+  // Type Guards para verificar o tipo de produto
+  private isProductReference(product: OrderProduct): product is string | mongoose.Types.ObjectId {
+    return typeof product === 'string' || product instanceof mongoose.Types.ObjectId;
+  }
+
+  private isProductComplete(product: OrderProduct): product is IProduct {
+    return typeof product === 'object' && product !== null && '_id' in product;
+  }
+
+  private isLensType(product: IProduct): product is ILens {
+    return product.productType === 'lenses';
+  }
+  
+  private isCleanLensType(product: IProduct): product is ICleanLens {
+    return product.productType === 'clean_lenses';
+  }
+
+  // Verifica se um produto é uma lente (com busca se necessário)
+  private async isLensProduct(product: OrderProduct): Promise<boolean> {
+    if (this.isProductReference(product)) {
+      // Se for uma referência, buscar o produto completo
+      const id = product.toString();
+      const completeProduct = await this.productModel.findById(id);
+      if (!completeProduct) return false;
+      
+      // Verificações explícitas para garantir tipagem correta
+      if (completeProduct.productType === 'lenses' || completeProduct.productType === 'clean_lenses') {
+        return true;
+      }
+      
+      // Verificação do nome
+      return typeof completeProduct.name === 'string' && 
+             completeProduct.name.toLowerCase().includes('lente');
+    } 
     
-  //   if (Array.isArray(keys)) {
-  //     for (const key of keys) {
-  //       // Para invalidar consultas paginadas, remove todas as chaves que começam com certos padrões
-  //       if (key === 'all_orders') {
-  //         const cacheKeys = this.cache.keys();
-  //         const orderKeys = cacheKeys.filter(k => 
-  //           k.startsWith('all_orders_page') || 
-  //           k === 'all_orders'
-  //         );
-  //         console.log('Invalidando todas as chaves de pedidos:', orderKeys);
-  //         for (let i = 0; i < orderKeys.length; i++) {
-  //           const orderKey = orderKeys[i];
-  //           this.cache.del(orderKey);
-  //         }
-  //       } else {
-  //         this.cache.del(key);
-  //       }
-  //     }
-  //   } else {
-  //     if (keys === 'all_orders') {
-  //       const cacheKeys = this.cache.keys();
-  //       const orderKeys = cacheKeys.filter(k => 
-  //         k.startsWith('all_orders_page') || 
-  //         k === 'all_orders'
-  //       );
-  //       console.log('Invalidando todas as chaves de pedidos:', orderKeys);
-  //       for (let i = 0; i < orderKeys.length; i++) {
-  //         const orderKey = orderKeys[i];
-  //         this.cache.del(orderKey);
-  //       }
-  //     } else {
-  //       this.cache.del(keys);
-  //     }
-  //   }
-  // }
+    if (this.isProductComplete(product)) {
+      // Se já for um objeto completo
+      // Verificações explícitas para garantir tipagem correta
+      if (product.productType === 'lenses' || product.productType === 'clean_lenses') {
+        return true;
+      }
+      
+      // Verificação do nome
+      return typeof product.name === 'string' && 
+             product.name.toLowerCase().includes('lente');
+    }
+    
+    return false;
+  }
 
   private async validateOrder(orderData: Omit<IOrder, "_id">): Promise<void> {
     // Validar cliente
@@ -93,14 +101,29 @@ export class OrderService {
     }
 
     // Verificar cada produto
-    for (const products of orderData.products) {
-      if (!products._id) {
-        throw new OrderError("Todos os produtos devem ter um ID válido");
+    for (const product of orderData.products) {
+      // Se for uma referência (string ou ObjectId)
+      if (this.isProductReference(product)) {
+        const productId = product.toString();
+        const productExists = await this.productModel.findById(productId);
+        if (!productExists) {
+          throw new OrderError(`Produto com ID ${productId} não encontrado`);
+        }
+      } 
+      // Se for um objeto de produto completo
+      else if (this.isProductComplete(product)) {
+        if (!product._id) {
+          throw new OrderError("Todos os produtos devem ter um ID válido");
+        }
+        
+        const productExists = await this.productModel.findById(product._id);
+        if (!productExists) {
+          throw new OrderError(`Produto com ID ${product._id} não encontrado`);
+        }
       }
-      
-      const productExists = await this.productModel.findById(products._id);
-      if (!productExists) {
-        throw new OrderError(`Produto com ID ${products._id} não encontrado`);
+      // Se não for nenhum dos tipos esperados
+      else {
+        throw new OrderError("Formato de produto inválido");
       }
     }
 
@@ -133,11 +156,11 @@ export class OrderService {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
-      // Verificar se há lentes no pedido
-      const hasLenses = orderData.products.some(p => 
-        p.productType === 'lenses' || 
-        (p.name && p.name.toLowerCase().includes('lente'))
+      // Verificar se há lentes no pedido - com Promise.all para processar em paralelo
+      const productLensChecks = await Promise.all(
+        orderData.products.map(product => this.isLensProduct(product))
       );
+      const hasLenses = productLensChecks.some(Boolean);
       
       // Se tiver lentes, a data de entrega deve ser futura
       if (hasLenses && deliveryDate < today) {
@@ -167,41 +190,40 @@ export class OrderService {
       }
   
       // Verificar se o pedido contém lentes para definir o status inicial
-      const containsLenses = orderData.products.some(product => 
-        product.productType === 'lenses' || 
-        (product.name && product.name.toLowerCase().includes('lente'))
+      const productLensChecks = await Promise.all(
+        orderData.products.map(product => this.isLensProduct(product))
       );
+      const containsLenses = productLensChecks.some(Boolean);
   
       // Se o status não foi fornecido, defina com base na presença de lentes
       if (!orderData.status) {
         orderData.status = containsLenses ? 'pending' : 'ready';
       }
   
+      // Converte isDeleted para booleano explicitamente se for string
+      // Corrigindo o erro: O tipo 'string | boolean' não pode ser atribuído ao tipo 'boolean'
+      const isDeleted = typeof orderData.isDeleted === 'string' 
+        ? orderData.isDeleted === 'true' 
+        : Boolean(orderData.isDeleted);
+  
       const orderDTO: CreateOrderDTO = {
-        clientId: new mongoose.Types.ObjectId(orderData.clientId),  // Converte o clientId para ObjectId
-        employeeId: new mongoose.Types.ObjectId(orderData.employeeId),  // Converte o employeeId para ObjectId
+        clientId: new mongoose.Types.ObjectId(orderData.clientId.toString()),
+        employeeId: new mongoose.Types.ObjectId(orderData.employeeId.toString()),
         products: orderData.products,  // Produtos já validados
         paymentMethod: orderData.paymentMethod,
         paymentEntry: orderData.paymentEntry,
         installments: orderData.installments,
         orderDate: new Date(),  // Usar a data atual para o pedido
-        deliveryDate: orderData.deliveryDate ? new Date(orderData.deliveryDate) : undefined,  // Caso tenha data de entrega
+        deliveryDate: orderData.deliveryDate ? new Date(orderData.deliveryDate) : undefined,
         status: orderData.status,  // Status do pedido (agora baseado na presença de lentes)
         totalPrice: orderData.totalPrice,
         discount: orderData.discount || 0,
         finalPrice: orderData.finalPrice || (orderData.totalPrice - orderData.discount),
-        isDeleted: orderData.isDeleted || false, // Não excluído por padrão
+        isDeleted: isDeleted,
       };
   
       await this.validateOrder(orderData);
       const order = await this.orderModel.create(orderData);
-  
-      // Invalidar caches relacionados
-      // this.invalidateCache([
-      //   `client_orders_${orderData.clientId}`,
-      //   "daily_orders",
-      //   "all_orders",
-      // ]);
   
       return order;
     } catch (error) {
@@ -222,69 +244,32 @@ export class OrderService {
     limit?: number,
     filters?: Record<string, any>
   ): Promise<{ orders: IOrder[]; total: number }> {
-    const cacheKey = `all_orders_page${page}_limit${limit}_${JSON.stringify(filters)}`;
-
-    // Verificar cache
-    // const cachedResult = this.cache.get<{ orders: IOrder[]; total: number }>(
-    //   cacheKey
-    // );
-    // if (cachedResult) {
-    //   console.log(`Cache hit for ${cacheKey}`);
-    //   return cachedResult;
-    // }
-
-    // console.log(`Cache miss for ${cacheKey}, fetching from database`);
-    
+    // Sempre usar populate = true para garantir que os produtos são carregados
     const result = await this.orderModel.findAll(page, limit, filters, true);
 
     if (!result.orders.length) {
       throw new OrderError("Nenhum pedido encontrado");
     }
 
-    // Armazenar em cache
-    // this.cache.set(cacheKey, result);
-
     return result;
   }
 
   async getOrderById(id: string): Promise<IOrder> {
-    const cacheKey = `order_${id}`;
-
-    // Verificar cache
-    // const cachedOrder = this.cache.get<IOrder>(cacheKey);
-    // if (cachedOrder) {
-    //   console.log(`Cache hit for ${cacheKey}`);
-    //   return cachedOrder;
-    // }
-
+    // Sempre usar populate = true
     const order = await this.orderModel.findById(id, true);
     if (!order) {
       throw new OrderError("Pedido não encontrado");
     }
 
-    // Armazenar em cache
-    // this.cache.set(cacheKey, order);
-
     return order;
   }
 
   async getOrdersByClientId(clientId: string): Promise<IOrder[]> {
-    const cacheKey = `client_orders_${clientId}`;
-
-    // Verificar cache
-    // const cachedOrders = this.cache.get<IOrder[]>(cacheKey);
-    // if (cachedOrders) {
-    //   console.log(`Cache hit for ${cacheKey}`);
-    //   return cachedOrders;
-    // }
-
+    // Sempre usar populate = true
     const orders = await this.orderModel.findByClientId(clientId, true);
     if (!orders.length) {
       throw new OrderError("Nenhum pedido encontrado para este cliente");
     }
-
-    // Armazenar em cache
-    // this.cache.set(cacheKey, orders);
 
     return orders;
   }
@@ -320,18 +305,11 @@ export class OrderService {
       );
     }
 
+    // Sempre usar populate = true
     const updatedOrder = await this.orderModel.updateStatus(id, status, true);
     if (!updatedOrder) {
       throw new OrderError("Erro ao atualizar status do pedido");
     }
-
-    // Invalidar caches relacionados
-    // this.invalidateCache([
-    //   `order_${id}`,
-    //   `client_orders_${order.clientId}`,
-    //   "daily_orders",
-    //   "all_orders",
-    // ]);
 
     return updatedOrder;
   }
@@ -355,6 +333,7 @@ export class OrderService {
     // Garantir que laboratoryId não é uma string vazia
     const validLaboratoryId = laboratoryId?.toString() === "" ? undefined : laboratoryId;
 
+    // Sempre usar populate = true
     const updatedOrder = await this.orderModel.updateLaboratory(
       id,
       validLaboratoryId,
@@ -363,13 +342,6 @@ export class OrderService {
     if (!updatedOrder) {
       throw new OrderError("Erro ao atualizar o laboratório do pedido");
     }
-
-    // Invalidar caches relacionados
-    // this.invalidateCache([
-    //   `order_${id}`,
-    //   `client_orders_${order.clientId}`,
-    //   "all_orders",
-    // ]);
 
     return updatedOrder;
   }
@@ -392,14 +364,22 @@ export class OrderService {
 
     // Se estamos atualizando produtos, validar cada um
     if (orderData.products && orderData.products.length > 0) {
-      for (const products of orderData.products) {
-        if (!products._id) {
-          throw new OrderError("Todos os produtos devem ter um ID válido");
-        }
-        
-        const productExists = await this.productModel.findById(products._id);
-        if (!productExists) {
-          throw new OrderError(`Produto com ID ${products._id} não encontrado`);
+      for (const product of orderData.products) {
+        if (this.isProductReference(product)) {
+          const productId = product.toString();
+          const productExists = await this.productModel.findById(productId);
+          if (!productExists) {
+            throw new OrderError(`Produto com ID ${productId} não encontrado`);
+          }
+        } else if (this.isProductComplete(product)) {
+          if (!product._id) {
+            throw new OrderError("Todos os produtos devem ter um ID válido");
+          }
+          
+          const productExists = await this.productModel.findById(product._id);
+          if (!productExists) {
+            throw new OrderError(`Produto com ID ${product._id} não encontrado`);
+          }
         }
       }
     }
@@ -421,19 +401,18 @@ export class OrderService {
       orderData.finalPrice = newTotalPrice - newDiscount;
     }
 
-    // Realizar atualização
+    // Converter isDeleted para booleano se presente
+    if (orderData.isDeleted !== undefined) {
+      orderData.isDeleted = typeof orderData.isDeleted === 'string'
+        ? orderData.isDeleted === 'true'
+        : Boolean(orderData.isDeleted);
+    }
+
+    // Realizar atualização - sempre com populate = true
     const updatedOrder = await this.orderModel.update(id, orderData, true);
     if (!updatedOrder) {
       throw new OrderError("Erro ao atualizar pedido");
     }
-
-    // Invalidar caches relacionados
-    // this.invalidateCache([
-    //   `order_${id}`,
-    //   `client_orders_${order.clientId}`,
-    //   "daily_orders",
-    //   "all_orders",
-    // ]);
 
     return updatedOrder;
   }
@@ -459,14 +438,6 @@ export class OrderService {
       if (!deletedOrder) {
         throw new OrderError("Erro ao excluir pedido");
       }
-
-      // Invalidar caches relacionados
-      // this.invalidateCache([
-      //   `order_${id}`,
-      //   `client_orders_${order.clientId}`,
-      //   "daily_orders",
-      //   "all_orders",
-      // ]);
 
       return deletedOrder;
     }
@@ -521,28 +492,10 @@ export class OrderService {
       throw new OrderError("Erro ao cancelar pedido");
     }
 
-    // Invalidar caches relacionados
-    // this.invalidateCache([
-    //   `order_${id}`,
-    //   `client_orders_${order.clientId}`,
-    //   "daily_orders",
-    //   "all_orders",
-    // ]);
-
     return updatedOrder;
   }
 
   async getDailyOrders(date: Date = new Date()): Promise<IOrder[]> {
-    const dateString = date.toISOString().split("T")[0];
-    const cacheKey = `daily_orders_${dateString}`;
-
-    // Verificar cache
-    // const cachedOrders = this.cache.get<IOrder[]>(cacheKey);
-    // if (cachedOrders) {
-    //   console.log(`Cache hit for ${cacheKey}`);
-    //   return cachedOrders;
-    // }
-
     const startOfDay = new Date(date);
     startOfDay.setHours(0, 0, 0, 0);
 
@@ -554,9 +507,6 @@ export class OrderService {
       endOfDay,
       true
     );
-
-    // Armazenar em cache
-    // this.cache.set(cacheKey, orders);
 
     return orders;
   }
@@ -590,7 +540,7 @@ export class OrderService {
     // Processar todos os produtos em todos os pedidos
     orders.forEach(order => {
       order.products.forEach(prod => {
-        if (prod.productType) {
+        if (this.isProductComplete(prod)) {
           const count = productTypes.get(prod.productType) || 0;
           productTypes.set(prod.productType, count + 1);
         }

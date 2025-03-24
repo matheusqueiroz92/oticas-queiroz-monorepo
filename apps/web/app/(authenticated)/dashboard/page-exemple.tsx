@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
-import Cookies from "js-cookie";
 import {
   DollarSign,
   FileText,
@@ -24,66 +23,95 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatCurrency, getOrderStatusClass, translateOrderStatus } from "@/app/utils/formatters";
+import { formatCurrency } from "@/app/utils/formatters";
 
-import type { Order } from "@/app/types/order";
-import type { IPayment } from "@/app/types/payment";
+// Importação dos hooks personalizados
+import { useAuth } from "@/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
 import { useOrders } from "@/hooks/useOrders";
 import { usePayments } from "@/hooks/usePayments";
 import { useCashRegister } from "@/hooks/useCashRegister";
 import { useEmployees } from "@/hooks/useEmployees";
-import { useLegacyClient } from "@/hooks/useLegacyClient";
-import { Employee } from "@/app/types/employee";
-import { formatDate } from "../../../app/utils/formatters"
+import { useCustomers } from "@/hooks/useCustomers";
 
+// Define tipos seguros para status
 type OrderStatus = "pending" | "in_production" | "ready" | "delivered" | "cancelled";
 
 export default function DashboardPage() {
-  const [userName, setUserName] = useState("");
-  const [userRole, setUserRole] = useState("");
-  const [userId, setUserId] = useState("");
-
-  useEffect(() => {
-    const name = Cookies.get("name") || "";
-    const role = Cookies.get("role") || "";
-    const id = Cookies.get("userId") || "";
-
-    setUserName(name);
-    setUserRole(role);
-    setUserId(id);
-  }, []);
-
-  const isAdmin = userRole === "admin";
-  const isEmployee = userRole === "employee";
-  const isCustomer = userRole === "customer";
-
-  const { 
-    isLoading: isLoadingOrders,
-    orders: allOrders,
-    refetch: refetchOrders,
-    getEmployeeName,
-    getClientName,
-    useClientOrders,
-  } = useOrders();
-
-  const { 
-    data: customerOrders, 
-    isLoading: isLoadingCustomerOrders 
-  } = useClientOrders(isCustomer ? userId : undefined);
-
-  const { isLoading: isLoadingPayments, payments: allPayments, refetch: refetchPayments } = usePayments();
-
-  const { isLoading: isLoadingCashRegister, currentCashRegister, refetch: refetchCashRegister } = useCashRegister();
-
-  const { isLoading: isLoadingEmployees, employees } = useEmployees();
-
-  const { useSearchLegacyClient } = useLegacyClient();
+  const { user } = useAuth();
+  const { isAdmin, isEmployee, isCustomer } = usePermissions();
   
-  const {
-    data: legacyClient,
-    isLoading: isLoadingLegacyClient
-  } = useSearchLegacyClient(isCustomer ? userId : undefined);
+  // Hooks personalizados
+  const { orders, isLoading: isLoadingOrders, refetch: refetchOrders, translateOrderStatus, getOrderStatusClass } = useOrders();
+  const { payments, isLoading: isLoadingPayments, refetch: refetchPayments } = usePayments();
+  const { activeRegister, isLoading: isLoadingCashRegister, refetch: refetchCashRegister } = useCashRegister();
+  const { employees, isLoading: isLoadingEmployees } = useEmployees();
+  const { customers, isLoading: isLoadingCustomers } = useCustomers();
 
+  // Função para atualizar dados do dashboard
+  const refreshDashboard = () => {
+    refetchOrders();
+    refetchPayments();
+    refetchCashRegister();
+  };
+
+  // Função para formatar data local
+  const formatLocalDate = (dateString: string | Date | undefined): string => {
+    if (!dateString) return "Data não disponível";
+    const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
+    if (isNaN(date.getTime())) return "Data inválida";
+    
+    return date.toLocaleDateString("pt-BR");
+  };
+
+  // Filtrar pedidos de hoje
+  const getTodayOrders = () => {
+    if (!orders) return [];
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    return orders.filter(order => {
+      const orderDate = new Date(order.orderDate);
+      orderDate.setHours(0, 0, 0, 0);
+      return orderDate.getTime() === today.getTime();
+    });
+  };
+
+  // Filtrar pagamentos de hoje
+  const getTodayPayments = () => {
+    if (!payments) return [];
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    return payments.filter(payment => {
+      const paymentDate = new Date(payment.date);
+      paymentDate.setHours(0, 0, 0, 0);
+      return paymentDate.getTime() === today.getTime();
+    });
+  };
+
+  // Calcular pagamentos de vendas (type='sale')
+  const getSalesTotal = () => {
+    const todayPayments = getTodayPayments();
+    return todayPayments.filter(p => p.type === 'sale').reduce((sum, p) => sum + p.amount, 0);
+  };
+
+  // Calcular contagem de pedidos por status
+  const getOrdersCountByStatus = (statuses: OrderStatus[]): number => {
+    if (!orders) return 0;
+    return orders.filter(o => statuses.includes(o.status as OrderStatus)).length;
+  };
+
+  // Dados processados
+  const todayPayments = getTodayPayments();
+  const todayOrders = getTodayOrders();
+  const recentOrders = orders ? [...orders].sort((a, b) => 
+    new Date(b.createdAt || b.orderDate).getTime() - new Date(a.createdAt || a.orderDate).getTime()
+  ).slice(0, 3) : [];
+
+  // Função para renderizar skeleton de carregamento para os cards
   const renderSkeleton = (count = 3) => {
     return Array(count).fill(0).map((_, index) => (
       <Card key={index}>
@@ -101,6 +129,7 @@ export default function DashboardPage() {
     ));
   };
 
+  // Função para renderizar uma lista com skeleton
   const renderListSkeleton = (rows = 3) => {
     return (
       <Card>
@@ -127,89 +156,6 @@ export default function DashboardPage() {
     );
   };
 
-  // // Função para formatar data
-  // const formatLocalDate = (dateString: string | Date | undefined): string => {
-  //   if (!dateString) return "Data não disponível";
-  //   const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
-  //   if (isNaN(date.getTime())) return "Data inválida";
-    
-  //   return date.toLocaleDateString("pt-BR");
-  // };
-
-  // // Função para traduzir status de pedido com tipagem segura
-  // const translateOrderStatus = (status: OrderStatus): string => {
-  //   const statusMap: Record<OrderStatus, string> = {
-  //     "pending": "Pendente",
-  //     "in_production": "Em Produção",
-  //     "ready": "Pronto para Retirada",
-  //     "delivered": "Entregue",
-  //     "cancelled": "Cancelado"
-  //   };
-    
-  //   return statusMap[status] || "Desconhecido";
-  // };
-
-  // // Função para obter a classe CSS do status de pedido com tipagem segura
-  // const getOrderStatusClass = (status: OrderStatus): string => {
-  //   const statusClassMap: Record<OrderStatus, string> = {
-  //     "pending": "bg-yellow-100 text-yellow-800",
-  //     "in_production": "bg-blue-100 text-blue-800",
-  //     "ready": "bg-purple-100 text-purple-800",
-  //     "delivered": "bg-green-100 text-green-800",
-  //     "cancelled": "bg-red-100 text-red-800"
-  //   };
-    
-  //   return statusClassMap[status] || "bg-gray-100 text-gray-800";
-  // };
-
-  // Função para atualizar dados do dashboard
-  const refreshDashboard = () => {
-    refetchOrders();
-    refetchPayments();
-    refetchCashRegister();
-  };
-
-  // Filtrar pedidos de hoje
-  const getTodayOrders = (orders: Order[] = []): Order[] => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    return orders.filter(order => {
-      const orderDate = new Date(order.orderDate);
-      orderDate.setHours(0, 0, 0, 0);
-      return orderDate.getTime() === today.getTime();
-    });
-  };
-
-  // Filtrar pagamentos de hoje
-  const getTodayPayments = (payments: IPayment[] = []): IPayment[] => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    return payments.filter(payment => {
-      const paymentDate = new Date(payment.date);
-      paymentDate.setHours(0, 0, 0, 0);
-      return paymentDate.getTime() === today.getTime();
-    });
-  };
-
-  // Calcular pagamentos de vendas (type='sale')
-  const getSalesTotal = (payments: IPayment[] = []): number => {
-    return payments.filter(p => p.type === 'sale').reduce((sum, p) => sum + p.amount, 0);
-  };
-
-  // Calcular contagem de pedidos por status
-  const getOrdersCountByStatus = (orders: Order[] = [], statuses: OrderStatus[]): number => {
-    return orders.filter(o => statuses.includes(o.status as OrderStatus)).length;
-  };
-
-  // Dados filtrados
-  const todayOrders = allOrders ? getTodayOrders(allOrders as Order[]) : [];
-  const todayPayments = allPayments ? getTodayPayments(allPayments as IPayment[]) : [];
-  const recentOrders = [...(allOrders || [])].sort((a, b) => 
-    new Date(b.createdAt || b.orderDate).getTime() - new Date(a.createdAt || a.orderDate).getTime()
-  ).slice(0, 3);
-
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -228,7 +174,7 @@ export default function DashboardPage() {
         <CardHeader>
           <CardTitle>Bem-vindo ao Sistema</CardTitle>
           <CardDescription>
-            {userName ? `Olá, ${userName}! ` : ""}
+            {user?.name ? `Olá, ${user.name}! ` : ""}
             Acesse as funções do sistema através do menu lateral.
           </CardDescription>
         </CardHeader>
@@ -270,7 +216,7 @@ export default function DashboardPage() {
                     <div className="flex items-center">
                       <DollarSign className="h-5 w-5 text-primary mr-2" />
                       <div className="text-2xl font-bold">
-                        {formatCurrency(getSalesTotal(todayPayments))}
+                        {formatCurrency(getSalesTotal())}
                       </div>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
@@ -289,11 +235,11 @@ export default function DashboardPage() {
                     <div className="flex items-center">
                       <FileText className="h-5 w-5 text-primary mr-2" />
                       <div className="text-2xl font-bold">
-                        {getOrdersCountByStatus(allOrders as Order[], ['pending', 'in_production'])}
+                        {getOrdersCountByStatus(['pending', 'in_production'])}
                       </div>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {getOrdersCountByStatus(allOrders as Order[], ['ready'])} pedidos prontos para entrega
+                      {getOrdersCountByStatus(['ready'])} pedidos prontos para entrega
                     </p>
                   </CardContent>
                 </Card>
@@ -308,14 +254,14 @@ export default function DashboardPage() {
                     <div className="flex items-center">
                       <DollarSign className="h-5 w-5 text-primary mr-2" />
                       <div className="text-2xl font-bold">
-                        {currentCashRegister?.status === 'open' 
-                          ? formatCurrency(currentCashRegister.currentBalance) 
+                        {activeRegister?.status === 'open' 
+                          ? formatCurrency(activeRegister.currentBalance) 
                           : "Caixa fechado"}
                       </div>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {currentCashRegister?.status === 'open'
-                        ? `Aberto às ${new Date(currentCashRegister.openingDate).toLocaleTimeString("pt-BR")}`
+                      {activeRegister?.status === 'open'
+                        ? `Aberto às ${new Date(activeRegister.openingDate).toLocaleTimeString("pt-BR")}`
                         : "Nenhum caixa aberto"}
                     </p>
                   </CardContent>
@@ -351,7 +297,7 @@ export default function DashboardPage() {
                   <CardContent className="p-0">
                     <div className="divide-y">
                       {employees && employees.length > 0 ? (
-                        employees.slice(0, 5).map((employee: Employee, index: number) => (
+                        employees.slice(0, 5).map((employee, index) => (
                           <div
                             key={employee._id}
                             className="flex items-center justify-between p-4"
@@ -412,23 +358,23 @@ export default function DashboardPage() {
                   <CardContent className="p-0">
                     <div className="divide-y">
                       {recentOrders && recentOrders.length > 0 ? (
-                        recentOrders.map((order: Order) => (
+                        recentOrders.map((order) => (
                           <div
                             key={order._id}
                             className="flex items-center justify-between p-4"
                           >
                             <div>
                               <div className="font-medium">
-                                {getClientName(order.clientId)}
+                                {order._normalized?.clientName || "Cliente"}
                               </div>
                               <div className="text-sm text-muted-foreground">
-                                {formatDate(order.orderDate)}
+                                {formatLocalDate(order.orderDate)}
                               </div>
                             </div>
                             <div className="text-right">
                               <div className="font-medium">{formatCurrency(order.finalPrice)}</div>
-                              <div className={`px-2 py-1 rounded-full text-xs font-medium ${getOrderStatusClass(order.status as OrderStatus)}`}>
-                                {translateOrderStatus(order.status as OrderStatus)}
+                              <div className={`px-2 py-1 rounded-full text-xs font-medium ${getOrderStatusClass(order.status)}`}>
+                                {translateOrderStatus(order.status)}
                               </div>
                             </div>
                           </div>
@@ -495,23 +441,23 @@ export default function DashboardPage() {
                   <CardContent className="p-0">
                     <div className="divide-y">
                       {recentOrders && recentOrders.length > 0 ? (
-                        recentOrders.map((order: Order) => (
+                        recentOrders.map((order) => (
                           <div
                             key={order._id}
                             className="flex items-center justify-between p-4"
                           >
                             <div>
                               <div className="font-medium">
-                                {getClientName(order.clientId)}
+                                {order._normalized?.clientName || "Cliente"}
                               </div>
                               <div className="text-sm text-muted-foreground">
-                                {formatDate(order.orderDate)}
+                                {formatLocalDate(order.orderDate)}
                               </div>
                             </div>
                             <div className="text-right">
                               <div className="font-medium">{formatCurrency(order.finalPrice)}</div>
-                              <div className={`px-2 py-1 rounded-full text-xs font-medium ${getOrderStatusClass(order.status as OrderStatus)}`}>
-                                {translateOrderStatus(order.status as OrderStatus)}
+                              <div className={`px-2 py-1 rounded-full text-xs font-medium ${getOrderStatusClass(order.status)}`}>
+                                {translateOrderStatus(order.status)}
                               </div>
                             </div>
                           </div>
@@ -557,29 +503,29 @@ export default function DashboardPage() {
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-lg">
-                      {currentCashRegister?.status === 'open' 
+                      {activeRegister?.status === 'open' 
                         ? 'Caixa Aberto' 
                         : 'Caixa Fechado'}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {currentCashRegister?.status === 'open' ? (
+                    {activeRegister?.status === 'open' ? (
                       <div className="space-y-3">
                         <div className="flex justify-between">
                           <span>Saldo Atual:</span>
-                          <span className="font-semibold">{formatCurrency(currentCashRegister.currentBalance)}</span>
+                          <span className="font-semibold">{formatCurrency(activeRegister.currentBalance)}</span>
                         </div>
                         <div className="flex justify-between">
                           <span>Vendas (Dinheiro):</span>
-                          <span>{formatCurrency(currentCashRegister.sales.cash)}</span>
+                          <span>{formatCurrency(activeRegister.sales.cash)}</span>
                         </div>
                         <div className="flex justify-between">
                           <span>Vendas (Cartão):</span>
-                          <span>{formatCurrency(currentCashRegister.sales.credit + currentCashRegister.sales.debit)}</span>
+                          <span>{formatCurrency(activeRegister.sales.credit + activeRegister.sales.debit)}</span>
                         </div>
                         <div className="flex justify-between">
                           <span>Vendas (PIX):</span>
-                          <span>{formatCurrency(currentCashRegister.sales.pix)}</span>
+                          <span>{formatCurrency(activeRegister.sales.pix)}</span>
                         </div>
                       </div>
                     ) : (
@@ -593,7 +539,7 @@ export default function DashboardPage() {
                       </div>
                     )}
                   </CardContent>
-                  {currentCashRegister?.status === 'open' && (
+                  {activeRegister?.status === 'open' && (
                     <CardFooter className="border-t">
                       <Button variant="ghost" size="sm" asChild className="w-full">
                         <Link href="/cash-register">Ver Detalhes do Caixa</Link>
@@ -613,14 +559,14 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
             <div>
               <h2 className="text-xl font-semibold mb-4">Seus Pedidos</h2>
-              {isLoadingCustomerOrders ? (
+              {isLoadingOrders ? (
                 renderListSkeleton(3)
               ) : (
                 <Card>
                   <CardContent className="p-0">
                     <div className="divide-y">
-                      {customerOrders && customerOrders.length > 0 ? (
-                        customerOrders.slice(0, 5).map((order: Order) => (
+                      {orders && orders.length > 0 ? (
+                        orders.slice(0, 5).map((order) => (
                           <div
                             key={order._id}
                             className="flex items-center justify-between p-4"
@@ -628,20 +574,18 @@ export default function DashboardPage() {
                             <div>
                               <div className="font-medium">
                                 {order.products && order.products.length > 0
-                                  ? (typeof order.products[0] === 'object' && 'name' in order.products[0]
-                                    ? order.products[0].name
-                                    : "Pedido")
+                                  ? order.products[0].name
                                   : "Pedido"}
                               </div>
                               <div className="text-sm text-muted-foreground">
                                 {order.deliveryDate
-                                  ? `Entrega prevista: ${formatDate(order.deliveryDate)}`
-                                  : `Pedido em: ${formatDate(order.orderDate)}`}
+                                  ? `Entrega prevista: ${formatLocalDate(order.deliveryDate)}`
+                                  : `Pedido em: ${formatLocalDate(order.orderDate)}`}
                               </div>
                             </div>
                             <div className="flex items-center">
-                              <div className={`px-2 py-1 rounded-full text-xs font-medium ${getOrderStatusClass(order.status as OrderStatus)}`}>
-                                {translateOrderStatus(order.status as OrderStatus)}
+                              <div className={`px-2 py-1 rounded-full text-xs font-medium ${getOrderStatusClass(order.status)}`}>
+                                {translateOrderStatus(order.status)}
                               </div>
                             </div>
                           </div>
@@ -664,7 +608,7 @@ export default function DashboardPage() {
 
             <div>
               <h2 className="text-xl font-semibold mb-4">Situação Financeira</h2>
-              {isLoadingLegacyClient ? (
+              {isLoadingCustomers ? (
                 <Card>
                   <CardHeader className="pb-2">
                     <Skeleton className="h-5 w-32 mb-2" />
@@ -703,31 +647,29 @@ export default function DashboardPage() {
                           <span>Débito Atual</span>
                         </div>
                         <span className="font-bold text-red-500">
-                          {legacyClient ? formatCurrency(legacyClient.totalDebt) : "R$ 0,00"}
+                          {user && 'debts' in user && user.debts 
+                            ? formatCurrency(user.debts) 
+                            : "R$ 0,00"}
                         </span>
                       </div>
                       <div className="flex justify-between items-center">
                         <div className="flex items-center">
                           <CalendarCheck className="h-5 w-5 text-yellow-500 mr-2" />
-                          <span>Último Pagamento</span>
+                          <span>Últimas Compras</span>
                         </div>
                         <span className="font-medium">
-                          {legacyClient?.lastPaymentDate 
-                            ? formatDate(legacyClient.lastPaymentDate) 
-                            : "Sem pagamentos"}
+                          {orders && orders.length > 0 
+                            ? formatLocalDate(orders[0].orderDate) 
+                            : "Sem compras recentes"}
                         </span>
                       </div>
                       <div className="flex justify-between items-center">
                         <div className="flex items-center">
                           <ShoppingBag className="h-5 w-5 text-green-500 mr-2" />
-                          <span>Status da Conta</span>
+                          <span>Total de Pedidos</span>
                         </div>
-                        <span className={`font-medium ${
-                          legacyClient?.status === 'active' 
-                            ? 'text-green-600' 
-                            : 'text-red-600'
-                        }`}>
-                          {legacyClient?.status === 'active' ? 'Ativa' : 'Inativa'}
+                        <span className="font-medium">
+                          {orders ? orders.length : 0} pedidos
                         </span>
                       </div>
                     </div>
@@ -769,6 +711,7 @@ export default function DashboardPage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center">
+                    <Store className="h-5 w-5 mr-2 text-purple-500" />
                     <Store className="h-5 w-5 mr-2 text-purple-500" />
                     Promoções do Mês
                   </CardTitle>

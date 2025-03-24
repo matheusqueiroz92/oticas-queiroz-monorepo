@@ -9,9 +9,9 @@ export interface User {
   image?: string;
   address?: string;
   phone?: string;
-  purchases?: string[]; // IDs das compras (apenas para clientes)
-  debts?: number; // Débitos (apenas para clientes)
-  sales?: string[]; // IDs das vendas (apenas para funcionários)
+  sales?: string[];
+  debts?: number;
+  purchases?: string[];
 }
 
 export interface Column {

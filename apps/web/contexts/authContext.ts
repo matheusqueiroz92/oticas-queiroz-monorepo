@@ -2,7 +2,7 @@
 
 import { createContext } from "react";
 
-export interface User {
+export interface UserLogged {
   _id: string;
   name: string;
   cpf: string;
@@ -11,7 +11,7 @@ export interface User {
 }
 
 export interface AuthContextData {
-  user: User | null;
+  user: UserLogged | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   signIn: (login: string, password: string) => Promise<void>;

@@ -32,39 +32,44 @@ export class OrderController {
         return;
       }
 
-      // Validar os dados com o schema do Zod
       const validatedData = createOrderSchema.parse(req.body);
 
-      // Garantir que todos os produtos tenham productType definido
       const validProducts = validatedData.products.map(product => {
+        if (typeof product === 'string' || product instanceof Types.ObjectId) {
+          return product;
+        }
+
         if (!product.productType) {
           throw new Error("Todos os produtos devem ter um tipo definido");
         }
+        
         return {
           ...product,
-          // Garantir que productType nunca é undefined
           productType: product.productType as "lenses" | "clean_lenses" | "prescription_frame" | "sunglasses_frame"
         };
       });
 
-      // Calcular o preço final se não fornecido
       if (validatedData.finalPrice === undefined) {
         validatedData.finalPrice = validatedData.totalPrice - (validatedData.discount || 0);
       }
 
-      // Criar o pedido com dados validados
+      if (validatedData.isDeleted !== undefined) {
+        validatedData.isDeleted = typeof validatedData.isDeleted === 'string'
+          ? validatedData.isDeleted === 'true'
+          : Boolean(validatedData.isDeleted);
+      }      
+
       const orderData: CreateOrderDTO = {
         ...validatedData,
-        clientId: new Types.ObjectId(validatedData.clientId),  // Converte para ObjectId
-        employeeId: new Types.ObjectId(validatedData.employeeId),  // Converte para ObjectId
-        laboratoryId: validatedData.laboratoryId ? new Types.ObjectId(validatedData.laboratoryId) : null,  // Converte para ObjectId ou null
-        products: validProducts as IProduct[]  // Produtos já validados
+        clientId: new Types.ObjectId(validatedData.clientId),
+        employeeId: new Types.ObjectId(validatedData.employeeId),
+        laboratoryId: validatedData.laboratoryId ? new Types.ObjectId(validatedData.laboratoryId) : null,
+        products: validProducts as IProduct[]
       };
 
       const order = await this.orderService.createOrder(orderData);
       res.status(201).json(order);
     } catch (error) {
-      // Tratamento de erros
       if (error instanceof z.ZodError) {
         res.status(400).json({
           message: "Dados inválidos",
@@ -166,34 +171,60 @@ export class OrderController {
   
       const validatedData = updateOrderSchema.parse(req.body);
       
-      // Garantir que os produtos, se fornecidos, tenham productType definido
-      let validProducts: IProduct[] | undefined;
+      let validProducts: any[] | undefined;
       
       if (validatedData.products) {
         validProducts = validatedData.products.map(product => {
-          if (!product.productType) {
-            throw new Error("Todos os produtos devem ter um tipo definido");
+          if (typeof product === 'string' || product instanceof Types.ObjectId) {
+            return product;
           }
-          return {
-            ...product,
-            productType: product.productType as "lenses" | "clean_lenses" | "prescription_frame" | "sunglasses_frame"
-          };
-        }) as IProduct[];
+          
+          if (typeof product === 'object' && product !== null) {
+            if (!product.productType) {
+              throw new Error("Todos os produtos devem ter um tipo definido");
+            }
+            
+            return {
+              ...product,
+              _id: product._id,
+              name: product.name || "",
+              description: product.description || "",
+              sellPrice: product.sellPrice || 0,
+              productType: product.productType as "lenses" | "clean_lenses" | "prescription_frame" | "sunglasses_frame"
+            };
+          }
+          
+          throw new Error("Formato de produto inválido");
+        });
       }
       
-      // Criar a atualização com dados validados
+      if (validatedData.isDeleted !== undefined) {
+        validatedData.isDeleted = typeof validatedData.isDeleted === 'string'
+          ? validatedData.isDeleted === 'true'
+          : Boolean(validatedData.isDeleted);
+      }
+      
       const updateData: Partial<IOrder> = {
         ...validatedData,
-        clientId: validatedData.clientId ? new Types.ObjectId(validatedData.clientId) : undefined,  // Converte para ObjectId
-        employeeId: validatedData.employeeId ? new Types.ObjectId(validatedData.employeeId) : undefined,  // Converte para ObjectId
-        laboratoryId: validatedData.laboratoryId ? new Types.ObjectId(validatedData.laboratoryId) : null,  // Converte para ObjectId ou null
+        clientId: validatedData.clientId ? new Types.ObjectId(validatedData.clientId) : undefined,
+        employeeId: validatedData.employeeId ? new Types.ObjectId(validatedData.employeeId) : undefined,
+        laboratoryId: validatedData.laboratoryId 
+          ? new Types.ObjectId(validatedData.laboratoryId) 
+          : validatedData.laboratoryId === null 
+            ? null 
+            : undefined,
         products: validProducts
       };
       
-      const order = await this.orderService.updateOrder(req.params.id, updateData, req.user.id, req.user.role);
+      const order = await this.orderService.updateOrder(
+        req.params.id, 
+        updateData, 
+        req.user.id, 
+        req.user.role
+      );
+      
       res.status(200).json(order);
     } catch (error) {
-      // Tratamento de erros
       if (error instanceof z.ZodError) {
         res.status(400).json({
           message: "Dados inválidos",

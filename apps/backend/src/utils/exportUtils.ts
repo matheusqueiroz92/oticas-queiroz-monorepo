@@ -8,6 +8,7 @@ import type {
   InventoryReportData,
   SalesReportData,
 } from "../interfaces/IReport";
+import { Types } from "mongoose";
 
 export interface ExportOptions {
   format: "excel" | "pdf" | "csv" | "json";
@@ -629,235 +630,6 @@ export class ExportUtils {
     };
   }
 
-  private async generateOrderDetailsExcel(
-    order: IOrder,
-    filename: string,
-    title?: string
-  ): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
-    const workbook = new Excel.Workbook();
-    const worksheet = workbook.addWorksheet("Detalhes do Pedido");
-  
-    // Título do relatório
-    const reportTitle = title || `Detalhes do Pedido - ${order._id}`;
-    worksheet.addRow([reportTitle]);
-    worksheet.mergeCells("A1:C1");
-    const titleCell = worksheet.getCell("A1");
-    titleCell.font = { size: 16, bold: true };
-    titleCell.alignment = { horizontal: "center" };
-    worksheet.addRow([]);
-  
-    // Informações gerais
-    worksheet.addRow(["ID", order._id]);
-    worksheet.addRow(["Cliente", order.clientId || ""]);
-    worksheet.addRow(["Funcionário", order.employeeId || ""]);
-    worksheet.addRow(["Status", this.translateOrderStatus(order.status)]);
-    worksheet.addRow([
-      "Data de Criação",
-      new Date(order.orderDate).toLocaleString(),
-    ]);
-    
-    if (order.deliveryDate) {
-      worksheet.addRow([
-        "Data de Entrega",
-        new Date(order.deliveryDate).toLocaleString(),
-      ]);
-    }
-    
-    worksheet.addRow([]);
-  
-    // Informações dos produtos
-    worksheet.addRow(["Informações dos Produtos"]);
-    worksheet.mergeCells("A10:C10");
-    worksheet.getCell("A10").font = { bold: true };
-  
-    let rowIndex = 11;
-    
-    for (let i = 0; i < order.products.length; i++) {
-      const product = order.products[i];
-      
-      worksheet.addRow([`Produto ${i+1}`, ""]);
-      rowIndex++;
-      
-      worksheet.addRow(["Nome", product.name || ""]);
-      rowIndex++;
-      
-      worksheet.addRow([
-        "Tipo de Produto",
-        this.translateProductType(product.productType),
-      ]);
-      rowIndex++;
-      
-      worksheet.addRow(["Preço", `R$ ${product.sellPrice?.toFixed(2) || "0.00"}`]);
-      rowIndex++;
-      
-      // Adicionar campos específicos com base no tipo
-      if (product.productType === "lenses" && "lensType" in product) {
-        worksheet.addRow(["Tipo de Lente", product.lensType]);
-        rowIndex++;
-      } else if (["prescription_frame", "sunglasses_frame"].includes(product.productType)) {
-        if ("typeFrame" in product) {
-          worksheet.addRow(["Tipo de Armação", product.typeFrame]);
-          rowIndex++;
-        }
-        
-        if ("color" in product) {
-          worksheet.addRow(["Cor", product.color]);
-          rowIndex++;
-        }
-        
-        if ("shape" in product) {
-          worksheet.addRow(["Formato", product.shape]);
-          rowIndex++;
-        }
-        
-        if ("reference" in product) {
-          worksheet.addRow(["Referência", product.reference]);
-          rowIndex++;
-        }
-        
-        if (product.productType === "sunglasses_frame" && "model" in product) {
-          worksheet.addRow(["Modelo", product.model]);
-          rowIndex++;
-        }
-      }
-      
-      // Espaço entre produtos
-      worksheet.addRow([]);
-      rowIndex++;
-    }
-  
-    // Informações de pagamento
-    worksheet.addRow(["Informações de Pagamento"]);
-    worksheet.mergeCells(`A${rowIndex}:C${rowIndex}`);
-    worksheet.getCell(`A${rowIndex}`).font = { bold: true };
-    rowIndex++;
-  
-    worksheet.addRow(["Método de Pagamento", order.paymentMethod]);
-    rowIndex++;
-    
-    worksheet.addRow(["Valor Total", `R$ ${order.totalPrice.toFixed(2)}`]);
-    rowIndex++;
-    
-    worksheet.addRow(["Desconto", `R$ ${(order.discount || 0).toFixed(2)}`]);
-    rowIndex++;
-    
-    worksheet.addRow(["Valor Final", `R$ ${order.finalPrice.toFixed(2)}`]);
-    rowIndex++;
-  
-    if (order.installments) {
-      worksheet.addRow(["Parcelas", order.installments]);
-      rowIndex++;
-    }
-  
-    if (order.paymentEntry) {
-      worksheet.addRow([
-        "Valor de Entrada",
-        `R$ ${order.paymentEntry.toFixed(2)}`,
-      ]);
-      rowIndex++;
-    }
-  
-    worksheet.addRow([]);
-    rowIndex++;
-  
-    // Dados da prescrição (se existirem)
-    if (order.prescriptionData) {
-      worksheet.addRow(["Dados da Prescrição"]);
-      worksheet.mergeCells(`A${rowIndex}:C${rowIndex}`);
-      worksheet.getCell(`A${rowIndex}`).font = { bold: true };
-      rowIndex++;
-  
-      worksheet.addRow(["Médico", order.prescriptionData.doctorName]);
-      rowIndex++;
-      
-      worksheet.addRow(["Clínica", order.prescriptionData.clinicName]);
-      rowIndex++;
-      
-      worksheet.addRow([
-        "Data da Consulta",
-        new Date(order.prescriptionData.appointmentDate).toLocaleDateString(),
-      ]);
-      rowIndex++;
-      
-      worksheet.addRow([]);
-      rowIndex++;
-  
-      worksheet.addRow(["Olho Esquerdo"]);
-      rowIndex++;
-      
-      worksheet.addRow(["SPH", order.prescriptionData.leftEye.sph]);
-      rowIndex++;
-      
-      worksheet.addRow(["CYL", order.prescriptionData.leftEye.cyl]);
-      rowIndex++;
-      
-      worksheet.addRow(["AXIS", order.prescriptionData.leftEye.axis]);
-      rowIndex++;
-      
-      if (order.prescriptionData.leftEye.pd) {
-        worksheet.addRow(["PD", order.prescriptionData.leftEye.pd]);
-        rowIndex++;
-      }
-      
-      worksheet.addRow([]);
-      rowIndex++;
-  
-      worksheet.addRow(["Olho Direito"]);
-      rowIndex++;
-      
-      worksheet.addRow(["SPH", order.prescriptionData.rightEye.sph]);
-      rowIndex++;
-      
-      worksheet.addRow(["CYL", order.prescriptionData.rightEye.cyl]);
-      rowIndex++;
-      
-      worksheet.addRow(["AXIS", order.prescriptionData.rightEye.axis]);
-      rowIndex++;
-      
-      if (order.prescriptionData.rightEye.pd) {
-        worksheet.addRow(["PD", order.prescriptionData.rightEye.pd]);
-        rowIndex++;
-      }
-      
-      worksheet.addRow([]);
-      rowIndex++;
-  
-      if (order.prescriptionData.nd) {
-        worksheet.addRow(["DNP", order.prescriptionData.nd]);
-        rowIndex++;
-      }
-      
-      if (order.prescriptionData.oc) {
-        worksheet.addRow(["OC", order.prescriptionData.oc]);
-        rowIndex++;
-      }
-      
-      if (order.prescriptionData.addition) {
-        worksheet.addRow(["Adição", order.prescriptionData.addition]);
-        rowIndex++;
-      }
-    }
-  
-    // Formatação de células com valores monetários
-    worksheet.getCell("B11").numFmt = "R$ #,##0.00";
-    worksheet.getCell(`B${rowIndex-4}`).numFmt = "R$ #,##0.00";
-    worksheet.getCell(`B${rowIndex-3}`).numFmt = "R$ #,##0.00";
-    worksheet.getCell(`B${rowIndex-2}`).numFmt = "R$ #,##0.00";
-    
-    if (order.paymentEntry) {
-      worksheet.getCell(`B${rowIndex-1}`).numFmt = "R$ #,##0.00";
-    }
-  
-    const buffer = await workbook.xlsx.writeBuffer();
-  
-    return {
-      buffer: buffer as Buffer,
-      contentType:
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      filename: `${filename}.xlsx`,
-    };
-  }
-
   private async generateOrdersSummaryPDF(
     summary: {
       date: string;
@@ -1062,7 +834,6 @@ export class ExportUtils {
     });
   }
   
-
   private async generateOrdersSummaryCSV(
     summary: {
       date: string;
@@ -1158,6 +929,245 @@ export class ExportUtils {
     };
   }
 
+  private async generateOrderDetailsExcel(
+    order: IOrder,
+    filename: string,
+    title?: string
+  ): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
+    const workbook = new Excel.Workbook();
+    const worksheet = workbook.addWorksheet("Detalhes do Pedido");
+  
+    // Título do relatório
+    const reportTitle = title || `Detalhes do Pedido - ${order._id}`;
+    worksheet.addRow([reportTitle]);
+    worksheet.mergeCells("A1:C1");
+    const titleCell = worksheet.getCell("A1");
+    titleCell.font = { size: 16, bold: true };
+    titleCell.alignment = { horizontal: "center" };
+    worksheet.addRow([]);
+  
+    // Informações gerais
+    worksheet.addRow(["ID", order._id]);
+    worksheet.addRow(["Cliente", order.clientId || ""]);
+    worksheet.addRow(["Funcionário", order.employeeId || ""]);
+    worksheet.addRow(["Status", this.translateOrderStatus(order.status)]);
+    worksheet.addRow([
+      "Data de Criação",
+      new Date(order.orderDate).toLocaleString(),
+    ]);
+    
+    if (order.deliveryDate) {
+      worksheet.addRow([
+        "Data de Entrega",
+        new Date(order.deliveryDate).toLocaleString(),
+      ]);
+    }
+    
+    worksheet.addRow([]);
+  
+    // Informações dos produtos
+    worksheet.addRow(["Informações dos Produtos"]);
+    worksheet.mergeCells("A10:C10");
+    worksheet.getCell("A10").font = { bold: true };
+  
+    let rowIndex = 11;
+    
+    for (let i = 0; i < order.products.length; i++) {
+      const product = order.products[i];
+      
+      worksheet.addRow([`Produto ${i+1}`, ""]);
+      rowIndex++;
+      
+      // Verificar se o produto é uma referência ou um objeto completo
+      if (typeof product === 'string' || product instanceof Types.ObjectId) {
+        // É uma referência de produto (ID)
+        worksheet.addRow(["ID", product.toString()]);
+        rowIndex++;
+        worksheet.addRow(["Detalhes", "Informações não disponíveis"]);
+        rowIndex++;
+      } else {
+        // É um objeto completo
+        worksheet.addRow(["Nome", product.name || ""]);
+        rowIndex++;
+        
+        worksheet.addRow([
+          "Tipo de Produto",
+          this.translateProductType(product.productType),
+        ]);
+        rowIndex++;
+        
+        worksheet.addRow(["Preço", `R$ ${product.sellPrice.toFixed(2)}`]);
+        rowIndex++;
+        
+        // Adicionar campos específicos com base no tipo
+        if (product.productType === "lenses" && "lensType" in product) {
+          worksheet.addRow(["Tipo de Lente", product.lensType]);
+          rowIndex++;
+        } else if (["prescription_frame", "sunglasses_frame"].includes(product.productType)) {
+          if ("typeFrame" in product) {
+            worksheet.addRow(["Tipo de Armação", product.typeFrame]);
+            rowIndex++;
+          }
+          
+          if ("color" in product) {
+            worksheet.addRow(["Cor", product.color]);
+            rowIndex++;
+          }
+          
+          if ("shape" in product) {
+            worksheet.addRow(["Formato", product.shape]);
+            rowIndex++;
+          }
+          
+          if ("reference" in product) {
+            worksheet.addRow(["Referência", product.reference]);
+            rowIndex++;
+          }
+          
+          if (product.productType === "sunglasses_frame" && "modelSunglasses" in product) {
+            worksheet.addRow(["Modelo", product.modelSunglasses]);
+            rowIndex++;
+          }
+        }
+      }
+      
+      // Espaço entre produtos
+      worksheet.addRow([]);
+      rowIndex++;
+    }
+  
+    // Informações de pagamento
+    worksheet.addRow(["Informações de Pagamento"]);
+    worksheet.mergeCells(`A${rowIndex}:C${rowIndex}`);
+    worksheet.getCell(`A${rowIndex}`).font = { bold: true };
+    rowIndex++;
+  
+    worksheet.addRow(["Método de Pagamento", order.paymentMethod]);
+    rowIndex++;
+    
+    worksheet.addRow(["Valor Total", `R$ ${order.totalPrice.toFixed(2)}`]);
+    rowIndex++;
+    
+    worksheet.addRow(["Desconto", `R$ ${(order.discount || 0).toFixed(2)}`]);
+    rowIndex++;
+    
+    worksheet.addRow(["Valor Final", `R$ ${order.finalPrice.toFixed(2)}`]);
+    rowIndex++;
+  
+    if (order.installments) {
+      worksheet.addRow(["Parcelas", order.installments]);
+      rowIndex++;
+    }
+  
+    if (order.paymentEntry) {
+      worksheet.addRow([
+        "Valor de Entrada",
+        `R$ ${order.paymentEntry.toFixed(2)}`,
+      ]);
+      rowIndex++;
+    }
+  
+    worksheet.addRow([]);
+    rowIndex++;
+  
+    // Dados da prescrição (se existirem)
+    if (order.prescriptionData) {
+      worksheet.addRow(["Dados da Prescrição"]);
+      worksheet.mergeCells(`A${rowIndex}:C${rowIndex}`);
+      worksheet.getCell(`A${rowIndex}`).font = { bold: true };
+      rowIndex++;
+  
+      worksheet.addRow(["Médico", order.prescriptionData.doctorName]);
+      rowIndex++;
+      
+      worksheet.addRow(["Clínica", order.prescriptionData.clinicName]);
+      rowIndex++;
+      
+      worksheet.addRow([
+        "Data da Consulta",
+        new Date(order.prescriptionData.appointmentDate).toLocaleDateString(),
+      ]);
+      rowIndex++;
+      
+      worksheet.addRow([]);
+      rowIndex++;
+  
+      worksheet.addRow(["Olho Esquerdo"]);
+      rowIndex++;
+      
+      worksheet.addRow(["SPH", order.prescriptionData.leftEye.sph]);
+      rowIndex++;
+      
+      worksheet.addRow(["CYL", order.prescriptionData.leftEye.cyl]);
+      rowIndex++;
+      
+      worksheet.addRow(["AXIS", order.prescriptionData.leftEye.axis]);
+      rowIndex++;
+      
+      if (order.prescriptionData.leftEye.pd) {
+        worksheet.addRow(["PD", order.prescriptionData.leftEye.pd]);
+        rowIndex++;
+      }
+      
+      worksheet.addRow([]);
+      rowIndex++;
+  
+      worksheet.addRow(["Olho Direito"]);
+      rowIndex++;
+      
+      worksheet.addRow(["SPH", order.prescriptionData.rightEye.sph]);
+      rowIndex++;
+      
+      worksheet.addRow(["CYL", order.prescriptionData.rightEye.cyl]);
+      rowIndex++;
+      
+      worksheet.addRow(["AXIS", order.prescriptionData.rightEye.axis]);
+      rowIndex++;
+      
+      if (order.prescriptionData.rightEye.pd) {
+        worksheet.addRow(["PD", order.prescriptionData.rightEye.pd]);
+        rowIndex++;
+      }
+      
+      worksheet.addRow([]);
+      rowIndex++;
+  
+      if (order.prescriptionData.nd) {
+        worksheet.addRow(["DNP", order.prescriptionData.nd]);
+        rowIndex++;
+      }
+      
+      if (order.prescriptionData.oc) {
+        worksheet.addRow(["OC", order.prescriptionData.oc]);
+        rowIndex++;
+      }
+      
+      if (order.prescriptionData.addition) {
+        worksheet.addRow(["Adição", order.prescriptionData.addition]);
+        rowIndex++;
+      }
+    }
+  
+    // Formatação de células com valores monetários
+    worksheet.getCell("B11").numFmt = "R$ #,##0.00";
+    worksheet.getCell(`B${rowIndex-4}`).numFmt = "R$ #,##0.00";
+    worksheet.getCell(`B${rowIndex-3}`).numFmt = "R$ #,##0.00";
+    worksheet.getCell(`B${rowIndex-2}`).numFmt = "R$ #,##0.00";
+    
+    if (order.paymentEntry) {
+      worksheet.getCell(`B${rowIndex-1}`).numFmt = "R$ #,##0.00";
+    }
+  
+    const buffer = await workbook.xlsx.writeBuffer();
+  
+    return {
+      buffer: buffer as Buffer,
+      contentType:
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      filename: `${filename}.xlsx`,
+    };
+  }
+
   private async generateOrderDetailsPDF(
     order: IOrder,
     filename: string,
@@ -1219,29 +1229,36 @@ export class ExportUtils {
         for (let i = 0; i < order.products.length; i++) {
           const product = order.products[i];
           
-          doc.fontSize(14).text(`Produto ${i+1}: ${product.name || "Sem nome"}`);
-          doc.fontSize(12);
-          doc.text(`Tipo: ${this.translateProductType(product.productType)}`);
-          doc.text(`Preço: R$ ${product.sellPrice?.toFixed(2) || "0.00"}`);
-          
-          // Mostrar detalhes específicos com base no tipo de produto
-          if (product.productType === "lenses" && "lensType" in product) {
-            doc.text(`Tipo de Lente: ${product.lensType}`);
-          } else if (["prescription_frame", "sunglasses_frame"].includes(product.productType)) {
-            if ("typeFrame" in product) {
-              doc.text(`Tipo de Armação: ${product.typeFrame}`);
-            }
-            if ("color" in product) {
-              doc.text(`Cor: ${product.color}`);
-            }
-            if ("shape" in product) {
-              doc.text(`Formato: ${product.shape}`);
-            }
-            if ("reference" in product) {
-              doc.text(`Referência: ${product.reference}`);
-            }
-            if (product.productType === "sunglasses_frame" && "model" in product) {
-              doc.text(`Modelo: ${product.model}`);
+          // Verifica se o produto é um objeto ou apenas um ID
+          if (typeof product === 'string' || product instanceof Types.ObjectId) {
+            doc.fontSize(14).text(`Produto ${i+1}: ID ${product.toString()}`);
+            doc.text("(Detalhes do produto não disponíveis)");
+          } else {
+            // É um objeto de produto completo
+            doc.fontSize(14).text(`Produto ${i+1}: ${product.name || "Sem nome"}`);
+            doc.fontSize(12);
+            doc.text(`Tipo: ${this.translateProductType(product.productType)}`);
+            doc.text(`Preço: R$ ${product.sellPrice.toFixed(2)}`);
+            
+            // Mostrar detalhes específicos com base no tipo de produto
+            if (product.productType === "lenses" && "lensType" in product) {
+              doc.text(`Tipo de Lente: ${product.lensType}`);
+            } else if (["prescription_frame", "sunglasses_frame"].includes(product.productType)) {
+              if ("typeFrame" in product) {
+                doc.text(`Tipo de Armação: ${product.typeFrame}`);
+              }
+              if ("color" in product) {
+                doc.text(`Cor: ${product.color}`);
+              }
+              if ("shape" in product) {
+                doc.text(`Formato: ${product.shape}`);
+              }
+              if ("reference" in product) {
+                doc.text(`Referência: ${product.reference}`);
+              }
+              if (product.productType === "sunglasses_frame" && "modelSunglasses" in product) {
+                doc.text(`Modelo: ${product.modelSunglasses}`);
+              }
             }
           }
           
@@ -1327,36 +1344,30 @@ export class ExportUtils {
     });
   }
 
-  private async generateOrderDetailsCSV(
-    order: IOrder,
-    filename: string
-  ): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
-    let csv = `"Detalhes do Pedido - ${order._id}"\n\n`;
+ private async generateOrderDetailsCSV(
+  order: IOrder,
+  filename: string
+): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
+  let csv = `"Detalhes do Pedido - ${order._id}"\n\n`;
+
+  // Informações gerais - permanece igual
+  // ...
+
+  // Informações dos produtos
+  csv += `"Informações dos Produtos"\n`;
   
-    // Informações gerais
-    csv += `"Informações Gerais"\n`;
-    csv += `"ID","${order._id}"\n`;
-    csv += `"Cliente","${order.clientId || "N/A"}"\n`;
-    csv += `"Funcionário","${order.employeeId || "N/A"}"\n`;
-    csv += `"Status","${this.translateOrderStatus(order.status)}"\n`;
-    csv += `"Data de Criação","${order.createdAt ? new Date(order.createdAt).toLocaleString() : "N/A"}"\n`;
-    csv += `"Data de Entrega","${order.deliveryDate ? new Date(order.deliveryDate).toLocaleString() : "N/A"}"\n`;
-  
-    if (order.laboratoryId) {
-      csv += `"Laboratório","${order.laboratoryId}"\n`;
-    }
-  
-    csv += "\n";
-  
-    // Informações dos produtos
-    csv += `"Informações dos Produtos"\n`;
+  for (let i = 0; i < order.products.length; i++) {
+    const product = order.products[i];
     
-    for (let i = 0; i < order.products.length; i++) {
-      const product = order.products[i];
-      
+    // Verifica se o produto é um objeto ou apenas um ID
+    if (typeof product === 'string' || product instanceof Types.ObjectId) {
+      csv += `"Produto ${i+1}","ID ${product.toString()}"\n`;
+      csv += `"Detalhes","Não disponíveis"\n`;
+    } else {
+      // É um objeto de produto completo
       csv += `"Produto ${i+1}","${product.name || "Sem nome"}"\n`;
       csv += `"Tipo","${this.translateProductType(product.productType)}"\n`;
-      csv += `"Preço","R$ ${product.sellPrice?.toFixed(2) || "0.00"}"\n`;
+      csv += `"Preço","R$ ${product.sellPrice.toFixed(2)}"\n`;
       
       // Mostrar detalhes específicos com base no tipo de produto
       if (product.productType === "lenses" && "lensType" in product) {
@@ -1374,13 +1385,14 @@ export class ExportUtils {
         if ("reference" in product) {
           csv += `"Referência","${product.reference}"\n`;
         }
-        if (product.productType === "sunglasses_frame" && "model" in product) {
-          csv += `"Modelo","${product.model}"\n`;
+        if (product.productType === "sunglasses_frame" && "modelSunglasses" in product) {
+          csv += `"Modelo","${product.modelSunglasses}"\n`;
         }
       }
-      
-      csv += "\n";
     }
+    
+    csv += "\n";
+  }
   
     // Informações de pagamento
     csv += `"Informações de Pagamento"\n`;

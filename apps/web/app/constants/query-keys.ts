@@ -78,8 +78,18 @@ export const QUERY_KEYS = {
     ],
     DETAIL: (id: string) => ["cashRegisters", "detail", id],
     CURRENT: ["cashRegisters", "current"],
+    OPEN: ["cashRegisters", "current", "open"],
     SUMMARY: (id: string) => ["cashRegisters", "summary", id],
     DAILY_SUMMARY: ["cashRegisters", "dailySummary"],
+  },
+
+  // Clientes legados
+  LEGACY_CLIENT: {
+    ALL: ["legacyClients"],
+    DETAIL: (id: string) => ["legacyClients", "detail", id],
+    SEARCH: (identifier: string) => ["legacyClients", "search", identifier],
+    DEBTORS: ["legacyClients", "debtors"],
+    PAYMENT_HISTORY: (id: string) => ["legacyClients", "paymentHistory", id],
   },
 
   // Relatórios

@@ -4,7 +4,7 @@ export interface Order {
   _id: string;
   clientId: string;
   employeeId: string;
-  product: Product[];
+  products: Product[];
   paymentMethod: string;
   paymentEntry?: number;
   installments?: number;
