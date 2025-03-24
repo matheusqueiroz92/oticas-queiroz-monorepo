@@ -31,12 +31,22 @@ export class ProductService {
 
   async createProduct(productData: IProduct): Promise<IProduct> {
     this.validateProduct(productData);
-
+  
     const existingProduct = await this.productModel.findByName(productData.name);
     if (existingProduct) {
       throw new ProductError("Produto já cadastrado com este nome");
     }
-
+  
+    if (productData.productType === 'sunglasses_frame' && 'modelSunglasses' in productData) {
+      const dataWithBothFields = {
+        ...productData,
+        // @ts-ignore - Ignorar erro de tipo para compatibilidade
+        modelGlasses: (productData as any).modelSunglasses
+      };
+      
+      return this.productModel.create(dataWithBothFields);
+    }
+  
     return this.productModel.create(productData);
   }
 

@@ -70,25 +70,32 @@ export class ProductModel {
   }
 
   async create(productData: Omit<IProduct, "_id">): Promise<IProduct> {
+    let dataToSave = { ...productData };
+    
+    if (productData.productType === 'sunglasses_frame' && 'modelSunglasses' in productData) {
+      // @ts-ignore - ignorar erro de tipo
+      dataToSave.modelGlasses = productData.modelSunglasses;
+    }
+    
     let savedProduct;
     
     switch (productData.productType) {
       case 'lenses':
-        savedProduct = await new Lens(productData).save();
+        savedProduct = await new Lens(dataToSave).save();
         break;
       case 'clean_lenses':
-        savedProduct = await new CleanLens(productData).save();
+        savedProduct = await new CleanLens(dataToSave).save();
         break;
       case 'prescription_frame':
-        savedProduct = await new PrescriptionFrame(productData).save();
+        savedProduct = await new PrescriptionFrame(dataToSave).save();
         break;
       case 'sunglasses_frame':
-        savedProduct = await new SunglassesFrame(productData).save();
+        savedProduct = await new SunglassesFrame(dataToSave).save();
         break;
       default:
         throw new Error(`Tipo de produto inválido: ${productData.productType}`);
     }
-
+  
     return this.convertToIProduct(savedProduct);
   }
 
