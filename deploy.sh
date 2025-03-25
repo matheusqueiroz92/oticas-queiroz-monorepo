@@ -62,13 +62,13 @@ if [ ! -f "$NGINX_CONF" ]; then
       exit 1
     }
   fi
-fi
   
   # Testar a configuração do Nginx
   nginx -t || {
     log "ERRO: Configuração do Nginx inválida"
     exit 1
   }
+fi
 
 # Parar aplicações existentes no PM2
 log "Parando aplicações existentes (se houver)"
