@@ -70,18 +70,6 @@ if [ ! -f "$NGINX_CONF" ]; then
     log "ERRO: Configuração do Nginx inválida"
     exit 1
   }
-  
-
-# Executar migrations
-log "Executando migrações de schema do banco de dados"
-node scripts/migrations/update-schemas.js || {
-  log "AVISO: Falha na migração do esquema. Verificando manualmente..."
-}  # Recarregar o Nginx
-  systemctl reload nginx || {
-    log "ERRO: Falha ao recarregar Nginx"
-    exit 1
-  }
-fi
 
 # Parar aplicações existentes no PM2
 log "Parando aplicações existentes (se houver)"

@@ -16,7 +16,6 @@ import { Separator } from "@/components/ui/separator";
 import { useProducts } from "@/hooks/useProducts";
 import { usePermissions } from "@/hooks/usePermissions";
 import { getProductTypeName } from "@/app/services/productService";
-import { ProductImage } from "@/components/ui/ImageDisplay";
 
 export default function ProductDetailsPage() {
   const { id } = useParams<{ id: string }>();
@@ -136,10 +135,10 @@ export default function ProductDetailsPage() {
         <Card className="overflow-hidden">
           <div className="h-[300px] bg-gray-100 flex items-center justify-center">
             {currentProduct.image ? (
-              <ProductImage 
-                src={currentProduct.image} 
-                alt={currentProduct.name} 
-                className="rounded-md w-full h-48 object-cover" 
+              <img
+                src={`http://localhost:3333${currentProduct.image}`}
+                alt={currentProduct.name}
+                className="w-full h-full object-contain"
               />
             ) : (
               <div className="text-gray-400">Sem imagem disponível</div>

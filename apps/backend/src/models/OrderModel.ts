@@ -91,12 +91,18 @@ export class OrderModel {
     
     return {
       _id: order._id.toString(),
-      clientId: typeof order.clientId === 'object' && order.clientId?._id
-        ? order.clientId._id.toString()
-        : order.clientId.toString(),
-      employeeId: typeof order.employeeId === 'object' && order.employeeId?._id
-        ? order.employeeId._id.toString()
-        : order.employeeId.toString(),
+      // Verifica se clientId existe e não é nulo antes de chamar toString()
+      clientId: order.clientId
+          ? (typeof order.clientId === 'object' && order.clientId?._id
+              ? order.clientId._id.toString()
+              : order.clientId.toString())
+          : "",
+      // Verifica se employeeId existe e não é nulo antes de chamar toString()
+      employeeId: order.employeeId
+          ? (typeof order.employeeId === 'object' && order.employeeId?._id
+              ? order.employeeId._id.toString()
+              : order.employeeId.toString())
+          : "",
       // Atribui os produtos convertidos
       products: convertedProducts,
       paymentMethod: order.paymentMethod,
@@ -105,11 +111,12 @@ export class OrderModel {
       orderDate: order.orderDate,
       deliveryDate: order.deliveryDate,
       status: order.status,
+      // Verifica laboratoryId com segurança
       laboratoryId: order.laboratoryId 
-        ? (typeof order.laboratoryId === 'object' && order.laboratoryId._id 
-            ? order.laboratoryId._id.toString()
-            : order.laboratoryId.toString())
-        : undefined,
+          ? (typeof order.laboratoryId === 'object' && order.laboratoryId._id 
+              ? order.laboratoryId._id.toString()
+              : order.laboratoryId.toString())
+          : undefined,
       prescriptionData: order.prescriptionData,
       observations: order.observations,
       totalPrice: order.totalPrice,
@@ -117,11 +124,12 @@ export class OrderModel {
       finalPrice: order.finalPrice,
       isDeleted: order.isDeleted,
       deletedAt: order.deletedAt,
+      // Verifica deletedBy com segurança
       deletedBy: order.deletedBy 
-        ? (typeof order.deletedBy === 'object' && order.deletedBy._id
-            ? order.deletedBy._id.toString()
-            : order.deletedBy.toString())
-        : undefined,
+          ? (typeof order.deletedBy === 'object' && order.deletedBy._id
+              ? order.deletedBy._id.toString()
+              : order.deletedBy.toString())
+          : undefined,
       createdAt: order.createdAt,
       updatedAt: order.updatedAt,
     };

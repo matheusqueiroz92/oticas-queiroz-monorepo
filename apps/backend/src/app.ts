@@ -49,7 +49,7 @@ class App {
     this.app.use(express.json());
 
     // Servir arquivos estáticos da pasta 'public/images'
-    const imagesPath = path.join(__dirname, "../../../public/images");
+    const imagesPath = path.join(__dirname, "../../public/images");
     this.app.use("/images", express.static(imagesPath));
   }
 
