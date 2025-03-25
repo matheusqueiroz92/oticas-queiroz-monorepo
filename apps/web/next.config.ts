@@ -1,25 +1,28 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Configurações existentes...
-
-  // Adicione esta linha para desabilitar o overlay de erro em produção E desenvolvimento
-  onDemandEntries: {
-    // Período (em ms) onde o servidor aguardará por páginas que não estão sendo usadas
-    maxInactiveAge: 60 * 1000,
-    // Número de páginas que devem ficar em buffer
-    pagesBufferLength: 2,
+  // Preservando outras configurações que você já tenha
+  reactStrictMode: true,
+  swcMinify: true,
+  images: {
+    domains: ['app.oticasqueiroz.com.br'],
   },
-
-  // Tente também isto
-  // @ts-ignore
-  webpack: (config, { dev, isServer }) => {
-    // Apenas em desenvolvimento e do lado do cliente
-    if (dev && !isServer) {
-      // Desabilitando o ErrorOverlay do Next.js
-      config.devtool = false;
-    }
-    return config;
+  
+  // Adicionando a configuração de rewrites
+  async rewrites() {
+    return [
+      // Não processar solicitações /images/*
+      {
+        source: '/images/:path*',
+        destination: '/api/bypass-images?imagePath=:path*',
+      },
+    ];
   },
-};
+  
+  // Outras configurações existentes...
+  output: 'standalone',
+  // compress: true,
+  // poweredByHeader: false,
+  // optimizeFonts: true,
+}
 
 module.exports = nextConfig;

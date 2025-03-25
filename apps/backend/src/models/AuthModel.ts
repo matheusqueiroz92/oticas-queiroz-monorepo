@@ -5,7 +5,7 @@ import type { IUser } from "../interfaces/IUser";
 interface UserDocument extends Omit<Document, "_id"> {
   _id: Types.ObjectId;
   name: string;
-  email: string;
+  email?: string;
   password: string;
   role: "admin" | "employee" | "customer";
   cpf: string;

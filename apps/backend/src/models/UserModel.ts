@@ -7,7 +7,7 @@ import bcrypt from "bcrypt";
 interface UserDocument extends Document {
   _id: Types.ObjectId;
   name: string;
-  email: string;
+  email?: string;
   password: string;
   role: "admin" | "employee" | "customer";
   image?: string;
@@ -36,7 +36,7 @@ export class UserModel {
       _id: doc._id.toString(),
       purchases: user.purchases?.map((id: Types.ObjectId) => id.toString()),
       comparePassword: doc.comparePassword.bind(doc),
-      image: doc.image, // Garantir que a imagem seja incluída
+      image: doc.image,
     };
   }
 

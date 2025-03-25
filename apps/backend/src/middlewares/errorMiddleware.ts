@@ -5,7 +5,6 @@ import { ZodError } from "zod";
 import type { MongoServerError } from "mongodb";
 import { MulterError } from "multer";
 
-// Interface para a resposta de erro
 interface ErrorResponse {
   status: string;
   code: ErrorCode;
@@ -21,7 +20,6 @@ export const errorMiddleware = (
 ): void => {
   console.error(`[Error] ${error.name}: ${error.message}`);
 
-  // Erro já formatado pela aplicação
   if (error instanceof AppError) {
     const responseObj: ErrorResponse = {
       status: "error",
@@ -29,7 +27,6 @@ export const errorMiddleware = (
       message: error.message,
     };
 
-    // Adicionar detalhes apenas se existirem
     if (error.details) {
       responseObj.details = error.details;
     }
@@ -38,7 +35,6 @@ export const errorMiddleware = (
     return;
   }
 
-  // Erros do Zod (validação)
   if (error instanceof ZodError) {
     const responseObj: ErrorResponse = {
       status: "error",
@@ -50,7 +46,6 @@ export const errorMiddleware = (
     return;
   }
 
-  // Erros do Multer (upload de arquivos)
   if (error instanceof MulterError) {
     const responseObj: ErrorResponse = {
       status: "error",
@@ -67,7 +62,6 @@ export const errorMiddleware = (
     return;
   }
 
-  // Erros de tipo de arquivo
   if (error.message?.includes("Tipo de arquivo não suportado")) {
     const responseObj: ErrorResponse = {
       status: "error",
@@ -78,12 +72,10 @@ export const errorMiddleware = (
     return;
   }
 
-  // Erros do MongoDB
   if (
     error.name === "MongoServerError" &&
     (error as MongoServerError).code === 11000
   ) {
-    // Tentar detectar qual campo está duplicado
     const keyPattern = (error as MongoServerError).keyPattern;
     let code = ErrorCode.VALIDATION_ERROR;
     let message = "Dados duplicados encontrados";
@@ -105,7 +97,6 @@ export const errorMiddleware = (
     return;
   }
 
-  // Erros do JWT
   if (
     error.name === "JsonWebTokenError" ||
     error.name === "TokenExpiredError"
@@ -119,7 +110,6 @@ export const errorMiddleware = (
     return;
   }
 
-  // Erro padrão
   const responseObj: ErrorResponse = {
     status: "error",
     code: ErrorCode.INTERNAL_ERROR,

@@ -24,11 +24,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-// Schema para validação
 const userFormSchema = z
   .object({
     name: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
-    email: z.string().email("Email inválido"),
+    email: z.string().optional(),
     password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
     confirmPassword: z.string(),
     phone: z.string().regex(/^\d{10,11}$/, "Telefone inválido"),
@@ -71,23 +70,19 @@ export default function NewCustomerPage() {
   function onSubmit(data: UserFormData) {
     const formData = new FormData();
 
-    // Adicionar todos os campos de texto
     for (const [key, value] of Object.entries(data)) {
       if (key !== "image" && key !== "confirmPassword") {
         formData.append(key, String(value));
       }
     }
 
-    // Adicionar role
     formData.append("role", "customer");
 
-    // Adicionar imagem se existir
     const file = fileInputRef.current?.files?.[0];
     if (file) {
       formData.append("userImage", file);
     }
 
-    // Enviar o FormData
     createUserMutation.mutate(formData);
   }
 

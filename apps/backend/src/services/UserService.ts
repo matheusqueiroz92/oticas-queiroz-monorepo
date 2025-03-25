@@ -1,4 +1,3 @@
-// src/services/UserService.ts
 import { UserModel } from "../models/UserModel";
 import type { ICreateUserDTO, IUser } from "../interfaces/IUser";
 import {
@@ -19,12 +18,15 @@ export class UserService {
   }
 
   private validateUserData(userData: CreateUserInput | UpdateUserInput): void {
-    if (
-      "email" in userData &&
-      (!userData.email?.trim() || !userData.email.includes("@"))
-    ) {
-      throw new ValidationError("Email inválido", ErrorCode.INVALID_EMAIL);
+    if (userData.email) {
+      if (
+        "email" in userData &&
+        (!userData.email?.trim() || !userData.email.includes("@"))
+      ) {
+        throw new ValidationError("Email inválido", ErrorCode.INVALID_EMAIL);
+      }
     }
+    
     if (
       "password" in userData &&
       (!userData.password?.trim() || userData.password.length < 6)
@@ -89,15 +91,17 @@ export class UserService {
       throw new ValidationError("CPF já cadastrado", ErrorCode.DUPLICATE_CPF);
     }
 
-    const existingUserByEmail = await this.userModel.findByEmail(
-      userData.email
-    );
-    if (existingUserByEmail?.email) {
-      throw new ValidationError(
-        "Email já cadastrado",
-        ErrorCode.DUPLICATE_EMAIL
+    if (userData.email) {
+      const existingUserByEmail = await this.userModel.findByEmail(
+        userData.email
       );
-    }
+      if (existingUserByEmail?.email) {
+        throw new ValidationError(
+          "Email já cadastrado",
+          ErrorCode.DUPLICATE_EMAIL
+        );
+      }
+    }    
 
     return this.userModel.create(userData);
   }

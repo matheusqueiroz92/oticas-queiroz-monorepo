@@ -6,7 +6,7 @@ import { isValidCPF } from "../utils/validators";
 const userSchema = new Schema<IUser>(
   {
     name: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
+    email: { type: String, unique: true },
     password: { type: String, required: true },
     image: { type: String },
     role: {
@@ -67,19 +67,3 @@ userSchema.methods.comparePassword = async function (
 };
 
 export const User = model<IUser>("User", userSchema);
-
-// Hook pre-save para hashear a senha antes de salvar
-// userSchema.pre("save", async function (next) {
-//   if (!this.isModified("password")) return next();
-
-//   try {
-//     this.password = await bcrypt.hash(this.password, 10);
-//     next();
-//   } catch (err: unknown) {
-//     if (err instanceof Error) {
-//       next(err);
-//     } else {
-//       next(new Error("Erro desconhecido ao hashear senha"));
-//     }
-//   }
-// });
