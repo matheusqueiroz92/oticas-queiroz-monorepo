@@ -25,7 +25,6 @@ interface ProductFilters {
   search?: string;
   page?: number;
   limit?: number;
-  category?: string;
   productType?: "lenses" | "clean_lenses" | "prescription_frame" | "sunglasses_frame";
   minSellPrice?: number;
   maxSellPrice?: number;
