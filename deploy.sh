@@ -62,6 +62,7 @@ if [ ! -f "$NGINX_CONF" ]; then
       exit 1
     }
   fi
+fi
   
   # Testar a configuração do Nginx
   nginx -t || {
