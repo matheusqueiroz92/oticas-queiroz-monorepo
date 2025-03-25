@@ -47,8 +47,6 @@ npx turbo run build || {
   exit 1
 }
 
-
-
 # Copiar a configuração do Nginx se ela não existir
 if [ ! -f "$NGINX_CONF" ]; then
   log "Copiando configuração do Nginx"
