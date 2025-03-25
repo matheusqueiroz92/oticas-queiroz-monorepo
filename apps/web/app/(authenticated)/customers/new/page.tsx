@@ -170,7 +170,7 @@ export default function NewCustomerPage() {
                   <FormItem>
                     <FormLabel>CPF</FormLabel>
                     <FormControl>
-                      <Input placeholder="000.000.000-00" {...field} />
+                      <Input placeholder="Apenas números: 12345678910" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -184,7 +184,7 @@ export default function NewCustomerPage() {
                   <FormItem>
                     <FormLabel>RG</FormLabel>
                     <FormControl>
-                      <Input placeholder="00.000.000-0" {...field} />
+                      <Input placeholder="Apenas números: 123456789" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

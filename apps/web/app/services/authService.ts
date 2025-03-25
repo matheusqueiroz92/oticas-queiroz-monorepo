@@ -1,6 +1,7 @@
 import axios from "axios";
 import Cookies from "js-cookie";
 import { API_ROUTES } from "../constants/api-routes";
+import { getImageUrl } from '@/app/utils/image-utils';
 
 export interface User {
   _id: string;
@@ -14,6 +15,54 @@ export interface LoginResponse {
   token: string;
   user: User;
 }
+
+// Função recursiva para percorrer e corrigir URLs em objetos aninhados
+const processImageUrls = (data: any): any => {
+  if (!data) return data;
+  
+  // Caso seja um array, processa cada item
+  if (Array.isArray(data)) {
+    return data.map(item => processImageUrls(item));
+  }
+  
+  // Caso seja um objeto
+  if (typeof data === 'object') {
+    // Cria uma cópia do objeto
+    const processed = { ...data };
+    
+    // Verifica e corrige campos de imagem conhecidos
+    if (processed.image) {
+      processed.image = getImageUrl(processed.image, 'product');
+    }
+    
+    // Processa campos que podem conter imagens de usuários
+    if (processed.userImage || processed.avatar) {
+      processed.userImage = getImageUrl(processed.userImage, 'user');
+      processed.avatar = getImageUrl(processed.avatar, 'user');
+    }
+    
+    // Procura propriedades específicas que podem conter arrays de objetos com imagens
+    if (processed.products) {
+      processed.products = processImageUrls(processed.products);
+    }
+    
+    if (processed.users) {
+      processed.users = processImageUrls(processed.users);
+    }
+    
+    // Processa propriedades aninhadas
+    Object.keys(processed).forEach(key => {
+      if (typeof processed[key] === 'object' && processed[key] !== null) {
+        processed[key] = processImageUrls(processed[key]);
+      }
+    });
+    
+    return processed;
+  }
+  
+  // Retorna o dado original para tipos primitivos
+  return data;
+};
 
 // Definir a URL base da API e registrar no console para diagnóstico
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333";
@@ -52,9 +101,15 @@ api.interceptors.request.use(
 
 // Interceptor para tratamento de erros
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Processa URLs de imagens nos dados de resposta
+    if (response.data) {
+      response.data = processImageUrls(response.data);
+    }
+    return response;
+  },
   (error) => {
-    // Log detalhado do erro para diagnóstico
+    // Seu código de tratamento de erro existente
     if (axios.isAxiosError(error)) {
       const errorDetails = {
         status: error.response?.status,

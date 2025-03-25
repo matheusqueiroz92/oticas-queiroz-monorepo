@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import type { User } from "../../app/types/user"; // Certifique-se de que a interface User está definida
+import { ProductImage, UserImage } from "../ui/ImageDisplay";
 
 interface UserDetailsCardProps {
   user: User;
@@ -24,8 +25,13 @@ export const UserDetailsCard: React.FC<UserDetailsCardProps> = ({
       <Card className="w-full max-w-md">
         <CardHeader className="flex flex-col items-center space-y-2 p-4">
           <Avatar className="h-20 w-20">
-            {/* Use o caminho completo da imagem */}
-            <AvatarImage src={user.image} alt={user.name} />
+            <AvatarImage>
+              <UserImage 
+                src={user.image} 
+                alt={user.name} 
+                className="rounded-full w-10 h-10" 
+              />
+            </AvatarImage>
             <AvatarFallback className="text-xl">
               {user.name
                 .split(" ")

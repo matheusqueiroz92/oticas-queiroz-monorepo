@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Search, Loader2 } from "lucide-react";
 import { Product } from "@/app/types/product";
 import { getProductTypeName } from "@/app/services/productService";
+import { ProductImage } from "@/components/ui/ImageDisplay";
 
 export default function ProductsPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -102,10 +103,10 @@ export default function ProductsPage() {
                 <Card key={product._id} className="overflow-hidden">
                   <div className="aspect-square relative bg-muted">
                     {product.image ? (
-                      <img
-                        src={`http://localhost:3333${product.image}`}
-                        alt={product.name}
-                        className="w-full h-full object-cover"
+                      <ProductImage 
+                        src={product.image} 
+                        alt={product.name} 
+                        className="rounded-md w-full h-48 object-cover" 
                       />
                     ) : (
                       <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
