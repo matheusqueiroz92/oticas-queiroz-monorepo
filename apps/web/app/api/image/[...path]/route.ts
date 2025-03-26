@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 
+// Corrigindo a tipagem de acordo com a API do Next.js
 export async function GET(
   request: NextRequest,
   { params }: { params: { path: string[] } }
