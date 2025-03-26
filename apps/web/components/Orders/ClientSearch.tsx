@@ -78,7 +78,7 @@ export default function ClientSearch({
       control={form.control}
       name="clientId"
       render={({ field }) => (
-        <FormItem className="flex flex-col">
+        <FormItem>
           <FormLabel>Cliente</FormLabel>
           <div className="relative">
             <Input

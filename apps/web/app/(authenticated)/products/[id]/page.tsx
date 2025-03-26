@@ -136,9 +136,9 @@ export default function ProductDetailsPage() {
           <div className="h-[300px] bg-gray-100 flex items-center justify-center">
             {currentProduct.image ? (
               <img
-                src={`http://localhost:3333${currentProduct.image}`}
+              src={process.env.NEXT_PUBLIC_API_URL+currentProduct.image}
                 alt={currentProduct.name}
-                className="w-full h-full object-contain"
+                className="w-full h-full object-cover"
               />
             ) : (
               <div className="text-gray-400">Sem imagem disponível</div>

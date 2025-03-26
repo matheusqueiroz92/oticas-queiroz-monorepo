@@ -29,6 +29,7 @@ export default function ProductsPage() {
     setCurrentPage,
     navigateToProductDetails,
     navigateToCreateProduct,
+    navigateToEditProduct,
     formatCurrency,
   } = useProducts();
 
@@ -102,7 +103,7 @@ export default function ProductsPage() {
                   <div className="aspect-square relative bg-muted">
                     {product.image ? (
                       <img
-                      src={`${process.env.NEXT_PUBLIC_API_URL}${product.image}`}
+                        src={process.env.NEXT_PUBLIC_API_URL+product.image}
                         alt={product.name}
                         className="w-full h-full object-cover"
                       />
@@ -122,12 +123,20 @@ export default function ProductsPage() {
                         {formatCurrency(product.sellPrice)}
                       </span>
                     </div>
-                    <Button
-                      className="w-full mt-4"
-                      onClick={() => navigateToProductDetails(product._id)}
-                    >
-                      Ver Detalhes
-                    </Button>
+                    <div className="flex gap-4">
+                      <Button
+                        className="w-full mt-4"
+                        onClick={() => navigateToProductDetails(product._id)}
+                      >
+                        Ver Detalhes
+                      </Button>
+                      <Button
+                        className="w-full mt-4"
+                        onClick={() => navigateToEditProduct(product._id)}
+                      >
+                        Editar
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               ))}

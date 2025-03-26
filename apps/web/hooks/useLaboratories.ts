@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/useToast";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import {
   getAllLaboratories,
   getLaboratoryById,
@@ -209,6 +209,25 @@ export function useLaboratories() {
     return `${address.street}, ${address.number}${address.complement ? `, ${address.complement}` : ""} - ${address.neighborhood}, ${address.city}/${address.state}`;
   };
 
+  // Função para obter o nome de um laboratório pelo ID
+  const getLaboratoryName = useCallback((id: string): string => {
+    // Lidar com IDs no formato ObjectId
+    if (typeof id === 'string' && id.includes('ObjectId')) {
+      try {
+        const matches = id.match(/ObjectId\('([^']+)'\)/);
+        if (matches && matches[1]) {
+          id = matches[1];
+        }
+      } catch (err) {
+        console.error("Erro ao extrair ID do laboratório:", err);
+      }
+    }
+    
+    const lab = laboratories.find(lab => lab._id === id);
+    return lab ? lab.name : "Laboratório não encontrado";
+  }, [laboratories]);
+
+
   return {
     // Dados e estado
     laboratories,
@@ -229,6 +248,7 @@ export function useLaboratories() {
     setCurrentPage,
     updateFilters,
     fetchLaboratoryById,
+    getLaboratoryName,
     handleCreateLaboratory,
     handleUpdateLaboratory,
     handleToggleLaboratoryStatus,

@@ -91,6 +91,7 @@ export default function NewOrderPage() {
       employeeId: "",
       clientId: "",
       products: [],
+      serviceOrder: 0,
       paymentMethod: "",
       paymentEntry: 0,
       installments: undefined,
@@ -310,6 +311,7 @@ export default function NewOrderPage() {
         clientId: data.clientId,
         employeeId: data.employeeId,
         products: data.products,
+        serviceOrder: data.serviceOrder,
         paymentMethod: data.paymentMethod,
         paymentEntry: data.paymentEntry,
         installments: data.installments,
@@ -413,14 +415,42 @@ return (
                 onSubmit={form.handleSubmit(onSubmit)}
                 className="space-y-6"
               >
+
                 <div className="p-4 border rounded-md space-y-4">
                   <h3 className="text-lg font-medium">Informações do Cliente</h3>
                   
-                  <ClientSearch
-                    customers={customersData || []}
-                    form={form}
-                    onClientSelect={handleClientSelect}
-                  />
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="md:col-span-3">
+                      <ClientSearch
+                        customers={customersData || []}
+                        form={form}
+                        onClientSelect={handleClientSelect}
+                      />
+                    </div>
+
+                    <div className="md:col-span-1">
+                      <FormField
+                        control={form.control}
+                        name="serviceOrder"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Nº da Ordem de Serviço</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                onChange={(e) => {
+                                  const value = Number.parseFloat(e.target.value);
+                                  field.onChange(Number.isNaN(value) ? 0 : value);
+                                }}
+                                value={typeof field.value === "number" ? field.value : 0}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 <div className="p-4 border rounded-md space-y-4">

@@ -5,6 +5,7 @@ export interface Order {
   clientId: string;
   employeeId: string;
   products: Product[];
+  serviceOrder?: string | null;
   paymentMethod: string;
   paymentEntry?: number;
   installments?: number;

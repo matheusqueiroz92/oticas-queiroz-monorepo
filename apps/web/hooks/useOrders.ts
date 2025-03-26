@@ -15,13 +15,16 @@ import {
 import { QUERY_KEYS } from "../app/constants/query-keys";
 import type { Order } from "@/app/types/order";
 import { useUsers } from "@/hooks/useUsers";
-import { api } from "@/app/services/authService";
+import { useLaboratories } from "@/hooks/useLaboratories";
 
 interface OrderFilters {
   search?: string;
   page?: number;
-  status?: string;
-  startDate?: string
+  statuses?: string[];
+  employeeIds?: string[];
+  paymentMethods?: string[];
+  laboratoryIds?: string[];
+  startDate?: string;
   endDate?: string;
   sort?: string;
 }
@@ -39,6 +42,9 @@ export function useOrders(options: UseOrdersOptions = {}) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { fetchUsers, getUserName } = useUsers();
+  const { getLaboratoryName } = useLaboratories();
+
+  const filterKey = JSON.stringify(filters);
 
   const {
     data, 
@@ -46,16 +52,18 @@ export function useOrders(options: UseOrdersOptions = {}) {
     error, 
     refetch 
   } = useQuery({
-    queryKey: QUERY_KEYS.ORDERS.PAGINATED(currentPage, filters),
+    queryKey: QUERY_KEYS.ORDERS.PAGINATED(currentPage, filterKey),
     queryFn: () => getAllOrders({
       ...filters,
       page: currentPage,
       sort: "-createdAt",
     }),
     enabled: enableQueries,
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
   });
 
-  // Efeito para buscar usuários quando os pedidos são carregados
   useEffect(() => {
     if (enableQueries && (data?.orders ?? []).length > 0) {
       // Buscar IDs únicos de usuários
@@ -169,149 +177,156 @@ export function useOrders(options: UseOrdersOptions = {}) {
       toast({
         variant: "destructive",
         title: "Erro",
-        description: "Não foi possível atualizar o laboratório do pedido.",
-      });
-    }
-  });
-
-  const createOrderMutation = useMutation({
-    mutationFn: createOrder,
-    onSuccess: (newOrder) => {
-      if (newOrder) {
+        description: "Não foi possível atualizar o laboratório do pedido.",});
+      }
+    });
+   
+    const createOrderMutation = useMutation({
+      mutationFn: createOrder,
+      onSuccess: (newOrder) => {
+        if (newOrder) {
+          toast({
+            title: "Pedido criado",
+            description: "O pedido foi criado com sucesso.",
+          });
+   
+          queryClient.invalidateQueries({ queryKey: ['orders'] });
+        }
+      },
+      onError: (error) => {
+        console.error("Erro ao criar pedido:", error);
         toast({
-          title: "Pedido criado",
-          description: "O pedido foi criado com sucesso.",
+          variant: "destructive",
+          title: "Erro",
+          description: "Não foi possível criar o pedido.",
         });
-
-        queryClient.invalidateQueries({ queryKey: ['orders'] });
       }
-    },
-    onError: (error) => {
-      console.error("Erro ao criar pedido:", error);
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Não foi possível criar o pedido.",
+    });
+   
+    const updateFilters = useCallback((newFilters: OrderFilters) => {
+      console.log('useOrders - updateFilters recebeu:', newFilters);
+      
+      setFilters(newFilters);
+      
+      setCurrentPage(1);
+      
+      queryClient.invalidateQueries({ 
+        queryKey: QUERY_KEYS.ORDERS.PAGINATED() 
       });
-    }
-  });
-
-  const updateFilters = useCallback((newFilters: OrderFilters) => {
-    setFilters(newFilters);
-    setCurrentPage(1);
-  }, []);
-
-  const handleUpdateOrderStatus = useCallback((id: string, status: string) => {
-    return updateOrderStatusMutation.mutateAsync({ id, status });
-  }, [updateOrderStatusMutation]);
-
-  const handleUpdateOrderLaboratory = useCallback((id: string, laboratoryId: string) => {
-    return updateOrderLaboratoryMutation.mutateAsync({ id, laboratoryId });
-  }, [updateOrderLaboratoryMutation]);
-
-  const handleCreateOrder = useCallback((orderData: Omit<Order, "_id">) => {
-    return createOrderMutation.mutateAsync(orderData);
-  }, [createOrderMutation]);
-
-  const navigateToOrderDetails = useCallback((id: string) => {
-    router.push(`/orders/${id}`);
-  }, [router]);
-
-  const navigateToCreateOrder = useCallback(() => {
-    router.push("/orders/new");
-  }, [router]);
-
-  const refreshOrdersList = useCallback(async () => {
-    await queryClient.invalidateQueries({ queryKey: ['orders'] });
-    await refetch();
-  }, [queryClient, refetch]);
-
-  const translateOrderStatus = useCallback((status: string): string => {
-    const statusMap: Record<string, string> = {
-      pending: "Pendente",
-      in_production: "Em Produção",
-      ready: "Pronto",
-      delivered: "Entregue",
-      cancelled: "Cancelado",
+    }, [queryClient]);
+   
+    const handleUpdateOrderStatus = useCallback((id: string, status: string) => {
+      return updateOrderStatusMutation.mutateAsync({ id, status });
+    }, [updateOrderStatusMutation]);
+   
+    const handleUpdateOrderLaboratory = useCallback((id: string, laboratoryId: string) => {
+      return updateOrderLaboratoryMutation.mutateAsync({ id, laboratoryId });
+    }, [updateOrderLaboratoryMutation]);
+   
+    const handleCreateOrder = useCallback((orderData: Omit<Order, "_id">) => {
+      return createOrderMutation.mutateAsync(orderData);
+    }, [createOrderMutation]);
+   
+    const navigateToOrderDetails = useCallback((id: string) => {
+      router.push(`/orders/${id}`);
+    }, [router]);
+   
+    const navigateToCreateOrder = useCallback(() => {
+      router.push("/orders/new");
+    }, [router]);
+   
+    const refreshOrdersList = useCallback(async () => {
+      await queryClient.invalidateQueries({ queryKey: ['orders'] });
+      await refetch();
+    }, [queryClient, refetch]);
+   
+    const translateOrderStatus = useCallback((status: string): string => {
+      const statusMap: Record<string, string> = {
+        pending: "Pendente",
+        in_production: "Em Produção",
+        ready: "Pronto",
+        delivered: "Entregue",
+        cancelled: "Cancelado",
+      };
+      return statusMap[status] || status;
+    }, []);
+   
+    const getOrderStatusClass = useCallback((status: string): string => {
+      switch (status) {
+        case "pending":
+          return "text-yellow-600 bg-yellow-100 px-2 py-1 rounded";
+        case "in_production":
+          return "text-blue-600 bg-blue-100 px-2 py-1 rounded";
+        case "ready":
+          return "text-green-600 bg-green-100 px-2 py-1 rounded";
+        case "delivered":
+          return "text-purple-600 bg-purple-100 px-2 py-1 rounded";
+        case "cancelled":
+          return "text-red-600 bg-red-100 px-2 py-1 rounded";
+        default:
+          return "text-gray-600 bg-gray-100 px-2 py-1 rounded";
+      }
+    }, []);
+   
+    const getClientName = useCallback((clientId: string) => {
+      if (typeof clientId === 'string' && clientId.includes('ObjectId')) {
+        try {
+          const matches = clientId.match(/ObjectId\('([^']+)'\)/);
+          if (matches && matches[1]) {
+            clientId = matches[1];
+          }
+        } catch (err) {
+          console.error("Erro ao extrair ID do cliente:", err);
+        }
+      }
+      
+      const getName = getUserName(clientId);
+      return getName;
+    }, [getUserName]);
+   
+    const getEmployeeName = useCallback((employeeId: string) => {
+      if (typeof employeeId === 'string' && employeeId.includes('ObjectId')) {
+        try {
+          const matches = employeeId.match(/ObjectId\('([^']+)'\)/);
+          if (matches && matches[1]) {
+            employeeId = matches[1];
+          }
+        } catch (err) {
+          console.error("Erro ao extrair ID do funcionário:", err);
+        }
+      }
+      
+      const getName = getUserName(employeeId);
+      return getName;
+    }, [getUserName]);
+   
+    return {
+      orders,
+      isLoading,
+      error: error ? String(error) : null,
+      currentPage,
+      totalPages,
+      totalOrders,
+      filters,
+      isCreating: createOrderMutation.isPending,
+      isUpdatingStatus: updateOrderStatusMutation.isPending,
+      isUpdatingLaboratory: updateOrderLaboratoryMutation.isPending,
+   
+      setCurrentPage,
+      updateFilters,
+      fetchOrderById,
+      useClientOrders,
+      handleUpdateOrderStatus,
+      handleUpdateOrderLaboratory,
+      handleCreateOrder,
+      navigateToOrderDetails,
+      navigateToCreateOrder,
+      translateOrderStatus,
+      getOrderStatusClass,
+      getClientName,
+      getEmployeeName,
+      getLaboratoryName,
+      refetch,
+      refreshOrdersList,
     };
-    return statusMap[status] || status;
-  }, []);
-
-  const getOrderStatusClass = useCallback((status: string): string => {
-    switch (status) {
-      case "pending":
-        return "text-yellow-600 bg-yellow-100 px-2 py-1 rounded";
-      case "in_production":
-        return "text-blue-600 bg-blue-100 px-2 py-1 rounded";
-      case "ready":
-        return "text-green-600 bg-green-100 px-2 py-1 rounded";
-      case "delivered":
-        return "text-purple-600 bg-purple-100 px-2 py-1 rounded";
-      case "cancelled":
-        return "text-red-600 bg-red-100 px-2 py-1 rounded";
-      default:
-        return "text-gray-600 bg-gray-100 px-2 py-1 rounded";
-    }
-  }, []);
-
-  const getClientName = useCallback((clientId: string) => {
-    if (typeof clientId === 'string' && clientId.includes('ObjectId')) {
-      try {
-        const matches = clientId.match(/ObjectId\('([^']+)'\)/);
-        if (matches && matches[1]) {
-          clientId = matches[1];
-        }
-      } catch (err) {
-        console.error("Erro ao extrair ID do cliente:", err);
-      }
-    }
-    
-    const getName = getUserName(clientId);
-    return getName;
-  }, [getUserName]);
-
-  const getEmployeeName = useCallback((employeeId: string) => {
-    if (typeof employeeId === 'string' && employeeId.includes('ObjectId')) {
-      try {
-        const matches = employeeId.match(/ObjectId\('([^']+)'\)/);
-        if (matches && matches[1]) {
-          employeeId = matches[1];
-        }
-      } catch (err) {
-        console.error("Erro ao extrair ID do funcionário:", err);
-      }
-    }
-    
-    const getName = getUserName(employeeId);
-    return getName;
-  }, [getUserName]);
-
-  return {
-    orders,
-    isLoading,
-    error: error ? String(error) : null,
-    currentPage,
-    totalPages,
-    totalOrders,
-    filters,
-    isCreating: createOrderMutation.isPending,
-    isUpdatingStatus: updateOrderStatusMutation.isPending,
-    isUpdatingLaboratory: updateOrderLaboratoryMutation.isPending,
-
-    setCurrentPage,
-    updateFilters,
-    fetchOrderById,
-    useClientOrders,
-    handleUpdateOrderStatus,
-    handleUpdateOrderLaboratory,
-    handleCreateOrder,
-    navigateToOrderDetails,
-    navigateToCreateOrder,
-    translateOrderStatus,
-    getOrderStatusClass,
-    getClientName,
-    getEmployeeName,
-    refetch,
-    refreshOrdersList,
-  };
-}
+   }
