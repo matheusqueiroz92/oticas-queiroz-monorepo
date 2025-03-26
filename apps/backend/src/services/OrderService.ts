@@ -26,7 +26,6 @@ export class OrderService {
     this.exportUtils = new ExportUtils();
   }
 
-  // Type Guards para verificar o tipo de produto
   private isProductReference(product: OrderProduct): product is string | mongoose.Types.ObjectId {
     return typeof product === 'string' || product instanceof mongoose.Types.ObjectId;
   }
@@ -43,32 +42,25 @@ export class OrderService {
     return product.productType === 'clean_lenses';
   }
 
-  // Verifica se um produto é uma lente (com busca se necessário)
   private async isLensProduct(product: OrderProduct): Promise<boolean> {
     if (this.isProductReference(product)) {
-      // Se for uma referência, buscar o produto completo
       const id = product.toString();
       const completeProduct = await this.productModel.findById(id);
       if (!completeProduct) return false;
       
-      // Verificações explícitas para garantir tipagem correta
       if (completeProduct.productType === 'lenses' || completeProduct.productType === 'clean_lenses') {
         return true;
       }
       
-      // Verificação do nome
       return typeof completeProduct.name === 'string' && 
              completeProduct.name.toLowerCase().includes('lente');
     } 
     
     if (this.isProductComplete(product)) {
-      // Se já for um objeto completo
-      // Verificações explícitas para garantir tipagem correta
       if (product.productType === 'lenses' || product.productType === 'clean_lenses') {
         return true;
       }
       
-      // Verificação do nome
       return typeof product.name === 'string' && 
              product.name.toLowerCase().includes('lente');
     }
@@ -77,7 +69,6 @@ export class OrderService {
   }
 
   private async validateOrder(orderData: Omit<IOrder, "_id">): Promise<void> {
-    // Validar cliente
     const client = await this.userModel.findById(orderData.clientId.toString());
     if (!client) {
       throw new OrderError("Cliente não encontrado");
@@ -86,7 +77,6 @@ export class OrderService {
       throw new OrderError("ID fornecido não pertence a um cliente");
     }
 
-    // Validar funcionário
     const employee = await this.userModel.findById(orderData.employeeId.toString());
     if (!employee) {
       throw new OrderError("Funcionário não encontrado");
@@ -95,14 +85,11 @@ export class OrderService {
       throw new OrderError("ID fornecido não pertence a um funcionário");
     }
 
-    // Validar produtos
     if (!orderData.products || orderData.products.length === 0) {
       throw new OrderError("Pelo menos um produto deve ser adicionado ao pedido");
     }
 
-    // Verificar cada produto
     for (const product of orderData.products) {
-      // Se for uma referência (string ou ObjectId)
       if (this.isProductReference(product)) {
         const productId = product.toString();
         const productExists = await this.productModel.findById(productId);
@@ -110,7 +97,6 @@ export class OrderService {
           throw new OrderError(`Produto com ID ${productId} não encontrado`);
         }
       } 
-      // Se for um objeto de produto completo
       else if (this.isProductComplete(product)) {
         if (!product._id) {
           throw new OrderError("Todos os produtos devem ter um ID válido");
@@ -121,13 +107,11 @@ export class OrderService {
           throw new OrderError(`Produto com ID ${product._id} não encontrado`);
         }
       }
-      // Se não for nenhum dos tipos esperados
       else {
         throw new OrderError("Formato de produto inválido");
       }
     }
 
-    // Validar valores
     if (orderData.totalPrice <= 0) {
       throw new OrderError("Preço total deve ser maior que zero");
     }
@@ -149,26 +133,22 @@ export class OrderService {
     }
 
     if (orderData.deliveryDate) {
-      // Obter apenas a data, descartando horas, minutos e segundos
       const deliveryDate = new Date(orderData.deliveryDate);
       deliveryDate.setHours(0, 0, 0, 0);
       
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
-      // Verificar se há lentes no pedido - com Promise.all para processar em paralelo
       const productLensChecks = await Promise.all(
         orderData.products.map(product => this.isLensProduct(product))
       );
       const hasLenses = productLensChecks.some(Boolean);
       
-      // Se tiver lentes, a data de entrega deve ser futura
       if (hasLenses && deliveryDate < today) {
         throw new OrderError("Pedidos com lentes exigem data de entrega futura");
       }
     }
 
-    // Validar dados da prescrição
     const { prescriptionData } = orderData;
     if (prescriptionData) {
       if (new Date(prescriptionData.appointmentDate) > new Date()) {
@@ -179,29 +159,23 @@ export class OrderService {
 
   async createOrder(orderData: Omit<IOrder, "_id">): Promise<IOrder> {
     try {
-      // Se laboratoryId for string vazia, definir como undefined
       if (orderData.laboratoryId?.toString() === "") {
         orderData.laboratoryId = undefined;
       }
   
-      // Calcular preço final se não fornecido
       if (orderData.finalPrice === undefined) {
         orderData.finalPrice = orderData.totalPrice - (orderData.discount || 0);
       }
   
-      // Verificar se o pedido contém lentes para definir o status inicial
       const productLensChecks = await Promise.all(
         orderData.products.map(product => this.isLensProduct(product))
       );
       const containsLenses = productLensChecks.some(Boolean);
   
-      // Se o status não foi fornecido, defina com base na presença de lentes
       if (!orderData.status) {
         orderData.status = containsLenses ? 'pending' : 'ready';
       }
   
-      // Converte isDeleted para booleano explicitamente se for string
-      // Corrigindo o erro: O tipo 'string | boolean' não pode ser atribuído ao tipo 'boolean'
       const isDeleted = typeof orderData.isDeleted === 'string' 
         ? orderData.isDeleted === 'true' 
         : Boolean(orderData.isDeleted);
@@ -209,13 +183,14 @@ export class OrderService {
       const orderDTO: CreateOrderDTO = {
         clientId: new mongoose.Types.ObjectId(orderData.clientId.toString()),
         employeeId: new mongoose.Types.ObjectId(orderData.employeeId.toString()),
-        products: orderData.products,  // Produtos já validados
+        products: orderData.products,
+        serviceOrder: orderData.serviceOrder,
         paymentMethod: orderData.paymentMethod,
         paymentEntry: orderData.paymentEntry,
         installments: orderData.installments,
-        orderDate: new Date(),  // Usar a data atual para o pedido
+        orderDate: new Date(),
         deliveryDate: orderData.deliveryDate ? new Date(orderData.deliveryDate) : undefined,
-        status: orderData.status,  // Status do pedido (agora baseado na presença de lentes)
+        status: orderData.status,
         totalPrice: orderData.totalPrice,
         discount: orderData.discount || 0,
         finalPrice: orderData.finalPrice || (orderData.totalPrice - orderData.discount),
@@ -244,7 +219,6 @@ export class OrderService {
     limit?: number,
     filters?: Record<string, any>
   ): Promise<{ orders: IOrder[]; total: number }> {
-    // Sempre usar populate = true para garantir que os produtos são carregados
     const result = await this.orderModel.findAll(page, limit, filters, true);
 
     if (!result.orders.length) {
@@ -255,7 +229,6 @@ export class OrderService {
   }
 
   async getOrderById(id: string): Promise<IOrder> {
-    // Sempre usar populate = true
     const order = await this.orderModel.findById(id, true);
     if (!order) {
       throw new OrderError("Pedido não encontrado");
@@ -265,7 +238,6 @@ export class OrderService {
   }
 
   async getOrdersByClientId(clientId: string): Promise<IOrder[]> {
-    // Sempre usar populate = true
     const orders = await this.orderModel.findByClientId(clientId, true);
     if (!orders.length) {
       throw new OrderError("Nenhum pedido encontrado para este cliente");
@@ -357,12 +329,10 @@ export class OrderService {
       throw new OrderError("Pedido não encontrado");
     }
 
-    // Verificar permissões
     if (userRole === "customer" && userId !== order.clientId.toString()) {
       throw new OrderError("Sem permissão para atualizar este pedido");
     }
 
-    // Se estamos atualizando produtos, validar cada um
     if (orderData.products && orderData.products.length > 0) {
       for (const product of orderData.products) {
         if (this.isProductReference(product)) {
@@ -427,12 +397,10 @@ export class OrderService {
       throw new OrderError("Pedido não encontrado");
     }
 
-    // Verificar permissões - apenas admin ou funcionário pode excluir
     if (userRole !== "admin" && userRole !== "employee") {
       throw new OrderError("Sem permissão para excluir este pedido");
     }
 
-    // Verificar se o pedido está no status "delivered" ou "cancelled"
     if (order.status === "delivered" || order.status === "cancelled") {
       const deletedOrder = await this.orderModel.softDelete(id, userId);
       if (!deletedOrder) {
@@ -464,7 +432,6 @@ export class OrderService {
       throw new OrderError("Pedido não encontrado");
     }
 
-    // Apenas admin, funcionário ou o próprio cliente podem cancelar
     if (
       userRole !== "admin" &&
       userRole !== "employee" &&
@@ -473,12 +440,10 @@ export class OrderService {
       throw new OrderError("Sem permissão para cancelar este pedido");
     }
 
-    // Não pode cancelar pedido já entregue
     if (order.status === "delivered") {
       throw new OrderError("Não é possível cancelar um pedido já entregue");
     }
 
-    // Não pode cancelar pedido já cancelado
     if (order.status === "cancelled") {
       throw new OrderError("O pedido já está cancelado");
     }
@@ -511,33 +476,23 @@ export class OrderService {
     return orders;
   }
 
-  /**
-   * Exporta pedidos para diferentes formatos
-   */
   async exportOrders(
     options: ExportOptions,
     filters: Record<string, any> = {}
   ): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
-    // Buscar todos os pedidos que correspondem aos filtros (sem paginação)
     const result = await this.orderModel.findAll(1, 1000, filters, true);
 
-    // Usar ExportUtils para exportar no formato solicitado
     return this.exportUtils.exportOrders(result.orders, options);
   }
 
-  /**
-   * Exporta resumo diário de pedidos
-   */
   async exportDailySummary(
     date: Date,
     options: ExportOptions
   ): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
     const orders = await this.getDailyOrders(date);
   
-    // Contar os diferentes tipos de produtos nos pedidos
     const productTypes = new Map<string, number>();
     
-    // Processar todos os produtos em todos os pedidos
     orders.forEach(order => {
       order.products.forEach(prod => {
         if (this.isProductComplete(prod)) {
@@ -547,7 +502,6 @@ export class OrderService {
       });
     });
   
-    // Calcular dados do resumo
     const summary = {
       date: date.toISOString().split("T")[0],
       totalOrders: orders.length,
@@ -561,7 +515,6 @@ export class OrderService {
       totalValue: orders.reduce((sum, order) => sum + order.totalPrice, 0),
       totalDiscount: orders.reduce((sum, order) => sum + (order.discount || 0), 0),
       finalValue: orders.reduce((sum, order) => sum + order.finalPrice, 0),
-      // Formatando ordersByType para compatibilidade com exportUtils
       ordersByType: {
         lenses: productTypes.get("lenses") || 0,
         clean_lenses: productTypes.get("clean_lenses") || 0,
@@ -571,20 +524,15 @@ export class OrderService {
       orders: orders,
     };
   
-    // Usar ExportUtils para exportar no formato solicitado
     return this.exportUtils.exportOrdersSummary(summary, options);
   }
 
-  /**
-   * Exporta detalhes de um pedido específico
-   */
   async exportOrderDetails(
     id: string,
     options: ExportOptions
   ): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
     const order = await this.getOrderById(id);
 
-    // Usar ExportUtils para exportar no formato solicitado
     return this.exportUtils.exportOrderDetails(order, options);
   }
 }

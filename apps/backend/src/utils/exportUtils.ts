@@ -343,7 +343,7 @@ export class ExportUtils {
       debit: "Cartão de Débito",
       cash: "Dinheiro",
       pix: "PIX",
-      boleto: "Boleto",
+      bank_slip: "Boleto",
       promissory_note: "Promissória",
     };
     return methods[method] || method;

@@ -1,10 +1,8 @@
 import { Types } from 'mongoose';
 import { IProduct, ILens, ICleanLens, IPrescriptionFrame, ISunglassesFrame, ProductType } from "./IProduct";
 
-// Tipos auxiliares para facilitar a tipagem de produtos
 export type ProductReference = string | Types.ObjectId;
 
-// OrderProduct pode ser uma referência ou um produto tipado
 export type OrderProduct = ProductReference | IProduct | ILens | ICleanLens | IPrescriptionFrame | ISunglassesFrame;
 
 export interface IOrder {
@@ -12,6 +10,7 @@ export interface IOrder {
   clientId: string | Types.ObjectId;
   employeeId: string | Types.ObjectId;
   products: OrderProduct[];
+  serviceOrder?: number | null;
   paymentMethod: string;
   paymentEntry?: number;
   installments?: number;

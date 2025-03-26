@@ -13,7 +13,7 @@ export interface IPayment {
     | "debit"
     | "cash"
     | "pix"
-    | "boleto"
+    | "bank_slip"
     | "promissory_note";
   status: "pending" | "completed" | "cancelled";
 
@@ -25,7 +25,7 @@ export interface IPayment {
   };
 
   // Campos para boleto
-  boleto?: {
+  bank_slip?: {
     code: string;
     bank: string;
   };

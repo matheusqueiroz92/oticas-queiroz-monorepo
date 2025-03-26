@@ -21,7 +21,7 @@ const paymentSchema = new Schema(
     // Método de pagamento
     paymentMethod: {
       type: String,
-      enum: ["credit", "debit", "cash", "pix", "boleto", "promissory_note"],
+      enum: ["credit", "debit", "cash", "pix", "bank_slip", "promissory_note"],
       required: true,
     },
     status: {
@@ -48,7 +48,7 @@ const paymentSchema = new Schema(
       dueDates: [{ type: Date }],
     },
     // Campos específicos para boleto
-    boleto: {
+    bank_slip: {
       code: { type: String },
       bank: { type: String },
     },
@@ -68,8 +68,8 @@ const paymentSchema = new Schema(
 // Validação pré-salvamento
 paymentSchema.pre("validate", function (next) {
   // Se o método for boleto, os dados do boleto devem estar presentes
-  if (this.paymentMethod === "boleto") {
-    if (!this.boleto || !this.boleto.code) {
+  if (this.paymentMethod === "bank_slip") {
+    if (!this.bank_slip || !this.bank_slip.code) {
       this.invalidate(
         "boleto",
         "Dados do boleto são obrigatórios para pagamento via boleto"

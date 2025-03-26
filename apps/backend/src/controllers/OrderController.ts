@@ -92,12 +92,16 @@ export class OrderController {
   async getAllOrders(req: Request, res: Response): Promise<void> {
     try {
       const queryParams = orderQuerySchema.parse(req.query);
+      console.log("Query params após validação:", queryParams);
+
       const {
         page,
         limit,
         status,
+        employeeId,
         clientId,
         laboratoryId,
+        paymentMethod,
         startDate,
         endDate,
         productId,
@@ -107,19 +111,38 @@ export class OrderController {
 
       const filters: Record<string, any> = {};
 
-      if (status) filters.status = status;
-      if (clientId) filters.clientId = clientId;
-      if (laboratoryId) filters.laboratoryId = laboratoryId;
+      if (status) {
+        filters.status = status;
+        console.log(`Filtro status: ${status}`);
+      }
+      
+      if (employeeId) {
+        filters.employeeId = employeeId;
+        console.log(`Filtro employeeId: ${employeeId}`);
+      }
+      
+      if (clientId) {
+        filters.clientId = clientId;
+      }
+      
+      if (laboratoryId) {
+        filters.laboratoryId = laboratoryId;
+      }
+      
+      if (paymentMethod) {
+        filters.paymentMethod = paymentMethod;
+        console.log(`Filtro paymentMethod: ${paymentMethod}`);
+      }
       if (productId) filters.productId = productId;
       if (minPrice !== undefined) filters.minPrice = minPrice;
       if (maxPrice !== undefined) filters.maxPrice = maxPrice;
 
-      // Adicionar filtro de data se fornecido
       if (startDate && endDate) {
         filters.startDate = startDate;
         filters.endDate = endDate;
       }
-
+      
+      console.log("Filtros compilados:", filters);
       const result = await this.orderService.getAllOrders(page, limit, filters);
 
       res.status(200).json({

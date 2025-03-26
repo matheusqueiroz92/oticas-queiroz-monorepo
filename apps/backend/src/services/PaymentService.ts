@@ -231,9 +231,9 @@ export class PaymentService {
         }
         break;
 
-      case "boleto":
+      case "bank_slip":
         // Validar dados de boleto
-        if (!paymentData.boleto || !paymentData.boleto.code) {
+        if (!paymentData.bank_slip || !paymentData.bank_slip.code) {
           throw new PaymentError("Código do boleto é obrigatório");
         }
 
@@ -267,7 +267,7 @@ export class PaymentService {
   private normalizePaymentMethod(paymentMethod: string): string {
     // Mapear os métodos de pagamento do backend para os do frontend
     switch (paymentMethod) {
-      case "boleto":
+      case "bank_slip":
       case "promissory_note":
         return "installment"; // No frontend, boleto e promissória são mapeados como "installment"
       default:
@@ -330,7 +330,7 @@ export class PaymentService {
       case "pix":
         registerMethod = "pix";
         break;
-      case "boleto":
+      case "bank_slip":
       case "promissory_note":
         // Para boleto e promissória, registramos como "cash" no caixa
         // Ou escolha outro tipo que faça mais sentido para o negócio
@@ -372,7 +372,7 @@ export class PaymentService {
       case "pix":
         registerMethod = "pix";
         break;
-      case "boleto":
+      case "bank_slip":
       case "promissory_note":
         // Para boleto e promissória, registramos como "cash" no caixa
         registerMethod = "cash";
@@ -409,7 +409,7 @@ export class PaymentService {
 
     // Se for boleto ou promissória com geração de débito, atualizar débito do cliente
     if (
-      (payment.paymentMethod === "boleto" ||
+      (payment.paymentMethod === "bank_slip" ||
         payment.paymentMethod === "promissory_note") &&
       payment.clientDebt?.generateDebt
     ) {
@@ -594,7 +594,7 @@ export class PaymentService {
 
     // Se for boleto ou promissória com geração de débito, reverter débito do cliente
     if (
-      (payment.paymentMethod === "boleto" ||
+      (payment.paymentMethod === "bank_slip" ||
         payment.paymentMethod === "promissory_note") &&
       payment.clientDebt?.generateDebt
     ) {

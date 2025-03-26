@@ -15,7 +15,6 @@ export class OrderModel {
   private convertToIOrder(doc: any): IOrder {
     const order = doc.toObject ? doc.toObject() : doc;
     
-    // Converte os produtos de forma segura
     let convertedProducts: Array<string | IProduct> = [];
     
     if (Array.isArray(order.products)) {
@@ -24,8 +23,6 @@ export class OrderModel {
           return product.toString();
         }
         
-        // Para objetos populados, criamos um novo objeto com as propriedades corretas
-        // Começa com um produto base com propriedades comuns
         const baseProduct = {
           _id: product._id.toString(),
           name: product.name || "",
@@ -37,9 +34,7 @@ export class OrderModel {
           costPrice: product.costPrice
         };
         
-        // Adiciona propriedades específicas com base no tipo
         if (product.productType === 'lenses') {
-          // Cria um objeto ILens separadamente para agradar o TypeScript
           const lensProduct: ILens = {
             ...baseProduct,
             productType: 'lenses',
@@ -49,7 +44,6 @@ export class OrderModel {
         }
         
         if (product.productType === 'clean_lenses') {
-          // Cria um objeto ICleanLens separadamente
           const cleanLensProduct: ICleanLens = {
             ...baseProduct,
             productType: 'clean_lenses'
@@ -58,7 +52,6 @@ export class OrderModel {
         }
         
         if (product.productType === 'prescription_frame') {
-          // Cria um objeto IPrescriptionFrame separadamente
           const prescriptionFrameProduct: IPrescriptionFrame = {
             ...baseProduct,
             productType: 'prescription_frame',
@@ -71,7 +64,6 @@ export class OrderModel {
         }
         
         if (product.productType === 'sunglasses_frame') {
-          // Cria um objeto ISunglassesFrame separadamente
           const sunglassesFrameProduct: ISunglassesFrame = {
             ...baseProduct,
             productType: 'sunglasses_frame',
@@ -84,34 +76,30 @@ export class OrderModel {
           return sunglassesFrameProduct;
         }
         
-        // Se não corresponder a um tipo específico, retorna o produto base
         return baseProduct;
       });
     }
     
     return {
       _id: order._id.toString(),
-      // Verifica se clientId existe e não é nulo antes de chamar toString()
       clientId: order.clientId
           ? (typeof order.clientId === 'object' && order.clientId?._id
               ? order.clientId._id.toString()
               : order.clientId.toString())
           : "",
-      // Verifica se employeeId existe e não é nulo antes de chamar toString()
       employeeId: order.employeeId
           ? (typeof order.employeeId === 'object' && order.employeeId?._id
               ? order.employeeId._id.toString()
               : order.employeeId.toString())
           : "",
-      // Atribui os produtos convertidos
       products: convertedProducts,
+      serviceOrder: order.serviceOrder,
       paymentMethod: order.paymentMethod,
       paymentEntry: order.paymentEntry,
       installments: order.installments,
       orderDate: order.orderDate,
       deliveryDate: order.deliveryDate,
       status: order.status,
-      // Verifica laboratoryId com segurança
       laboratoryId: order.laboratoryId 
           ? (typeof order.laboratoryId === 'object' && order.laboratoryId._id 
               ? order.laboratoryId._id.toString()
@@ -124,7 +112,6 @@ export class OrderModel {
       finalPrice: order.finalPrice,
       isDeleted: order.isDeleted,
       deletedAt: order.deletedAt,
-      // Verifica deletedBy com segurança
       deletedBy: order.deletedBy 
           ? (typeof order.deletedBy === 'object' && order.deletedBy._id
               ? order.deletedBy._id.toString()
@@ -135,12 +122,118 @@ export class OrderModel {
     };
   }
 
-  // Resto dos métodos permanecem iguais
+  private buildFilterQuery(filters: Record<string, any>): FilterQuery<any> {
+    const query: Record<string, any> = {};
+
+    console.log("Construindo query com filtros:", filters);
+
+    if (filters.clientId) {
+      query.clientId = new Types.ObjectId(filters.clientId);
+    }
+
+    if (filters.employeeId) {
+      try {
+        query.employeeId = new Types.ObjectId(filters.employeeId);
+        console.log(`Filtro de employeeId aplicado: ${filters.employeeId}`);
+      } catch (error) {
+        console.error(`Erro ao converter employeeId: ${filters.employeeId}`, error);
+        query.employeeId = filters.employeeId;
+      }
+    }
+
+    if (filters.status) {
+      query.status = filters.status;
+    }
+
+    if (filters.laboratoryId) {
+      query.laboratoryId = new Types.ObjectId(filters.laboratoryId);
+    }
+
+    if (filters.paymentMethod) {
+      query.paymentMethod = filters.paymentMethod;
+      console.log(`Filtro de paymentMethod aplicado: ${filters.paymentMethod}`);
+    }
+
+    if (filters.productId) {
+      query.product = { $in: [new Types.ObjectId(filters.productId)] };
+    }
+
+    if (filters.startDate || filters.endDate) {
+      query.orderDate = {};
+
+      if (filters.startDate) {
+        const startDate = new Date(filters.startDate);
+        startDate.setHours(0, 0, 0, 0);
+        query.orderDate.$gte = startDate;
+      }
+
+      if (filters.endDate) {
+        const endDate = new Date(filters.endDate);
+        endDate.setHours(23, 59, 59, 999);
+        query.orderDate.$lte = endDate;
+      }
+    }
+
+    if (filters.minPrice || filters.maxPrice) {
+      query.finalPrice = {};
+
+      if (filters.minPrice) {
+        query.finalPrice.$gte = Number(filters.minPrice);
+      }
+
+      if (filters.maxPrice) {
+        query.finalPrice.$lte = Number(filters.maxPrice);
+      }
+    }
+
+    console.log("Query final construída:", query);
+    return query;
+  }
   
   async create(orderData: Omit<IOrder, "_id">): Promise<IOrder> {
     const order = new Order(orderData);
     const savedOrder = await order.save();
     return this.convertToIOrder(savedOrder);
+  }
+
+  async findAll(
+    page = 1,
+    limit = 10,
+    filters: Record<string, any> = {},
+    populate = false,
+    includeDeleted = false
+  ): Promise<{ orders: IOrder[]; total: number }> {
+    const skip = (page - 1) * limit;
+
+    const query = this.buildFilterQuery(filters);
+
+    if (!includeDeleted) {
+      query.isDeleted = { $ne: true };
+    }
+
+    let orderQuery = Order.find(query).skip(skip).limit(limit);
+
+    if (populate) {
+      orderQuery = orderQuery
+        .populate("clientId", "name email role")
+        .populate("employeeId", "name email")
+        .populate("laboratoryId")
+        .populate("products");
+
+      if (includeDeleted) {
+        orderQuery = orderQuery.populate("deletedBy", "name email");
+      }
+    }
+
+    const [orders, total] = await Promise.all([
+      orderQuery.exec(),
+      Order.countDocuments(query),
+    ]);
+
+    return {
+      orders: orders.map((order) => this.convertToIOrder(order)),
+      total,
+    };
   }
 
   async findById(
@@ -172,47 +265,6 @@ export class OrderModel {
     return order ? this.convertToIOrder(order) : null;
   }
 
-  async findAll(
-    page = 1,
-    limit = 10,
-    filters: Record<string, any> = {},
-    populate = false,
-    includeDeleted = false
-  ): Promise<{ orders: IOrder[]; total: number }> {
-    const skip = (page - 1) * limit;
-
-    const query = this.buildFilterQuery(filters);
-
-    // Se não devemos incluir pedidos excluídos, adicionar a condição
-    if (!includeDeleted) {
-      query.isDeleted = { $ne: true };
-    }
-
-    let orderQuery = Order.find(query).skip(skip).limit(limit);
-
-    if (populate) {
-      orderQuery = orderQuery
-        .populate("clientId", "name email role")
-        .populate("employeeId", "name email")
-        .populate("laboratoryId")
-        .populate("products");
-
-      if (includeDeleted) {
-        orderQuery = orderQuery.populate("deletedBy", "name email");
-      }
-    }
-
-    const [orders, total] = await Promise.all([
-      orderQuery.exec(),
-      Order.countDocuments(query),
-    ]);
-
-    return {
-      orders: orders.map((order) => this.convertToIOrder(order)),
-      total,
-    };
-  }
-
   async update(
     id: string,
     orderData: Partial<IOrder>,
@@ -220,7 +272,6 @@ export class OrderModel {
   ): Promise<IOrder | null> {
     if (!this.isValidId(id)) return null;
 
-    // Se estamos atualizando o totalPrice ou discount, recalcular finalPrice
     if (orderData.totalPrice !== undefined || orderData.discount !== undefined) {
       const currentOrder = await Order.findById(id);
       if (currentOrder) {
@@ -317,7 +368,6 @@ export class OrderModel {
 
     const query: FilterQuery<any> = { clientId };
 
-    // Se não devemos incluir pedidos excluídos, adicionar a condição
     if (!includeDeleted) {
       query.isDeleted = { $ne: true };
     }
@@ -369,7 +419,6 @@ export class OrderModel {
       },
     };
 
-    // Se não devemos incluir pedidos excluídos, adicionar a condição
     if (!includeDeleted) {
       query.isDeleted = { $ne: true };
     }
@@ -390,66 +439,5 @@ export class OrderModel {
 
     const orders = await orderQuery.exec();
     return orders.map((order) => this.convertToIOrder(order));
-  }
-
-  private buildFilterQuery(filters: Record<string, any>): FilterQuery<any> {
-    const query: Record<string, any> = {};
-
-    // Cliente
-    if (filters.clientId) {
-      query.clientId = new Types.ObjectId(filters.clientId);
-    }
-
-    // Funcionário
-    if (filters.employeeId) {
-      query.employeeId = new Types.ObjectId(filters.employeeId);
-    }
-
-    // Status
-    if (filters.status) {
-      query.status = filters.status;
-    }
-
-    // Laboratório
-    if (filters.laboratoryId) {
-      query.laboratoryId = new Types.ObjectId(filters.laboratoryId);
-    }
-
-    // Produtos específicos
-    if (filters.productId) {
-      query.product = { $in: [new Types.ObjectId(filters.productId)] };
-    }
-
-    // Range de datas
-    if (filters.startDate || filters.endDate) {
-      query.orderDate = {};
-
-      if (filters.startDate) {
-        const startDate = new Date(filters.startDate);
-        startDate.setHours(0, 0, 0, 0);
-        query.orderDate.$gte = startDate;
-      }
-
-      if (filters.endDate) {
-        const endDate = new Date(filters.endDate);
-        endDate.setHours(23, 59, 59, 999);
-        query.orderDate.$lte = endDate;
-      }
-    }
-
-    // Range de preço
-    if (filters.minPrice || filters.maxPrice) {
-      query.finalPrice = {};
-
-      if (filters.minPrice) {
-        query.finalPrice.$gte = Number(filters.minPrice);
-      }
-
-      if (filters.maxPrice) {
-        query.finalPrice.$lte = Number(filters.maxPrice);
-      }
-    }
-
-    return query;
   }
 }

@@ -17,9 +17,13 @@ const orderSchema = new Schema<IOrder>({
     ref: 'Product',
     required: true
   }],
+  serviceOrder: {
+    type: Number,
+  },
   paymentMethod: { 
     type: String, 
-    required: true 
+    required: true,
+    enum: ["credit", "debit", "cash", "pix", "installment"],
   },
   paymentEntry: Number,
   installments: Number,
@@ -62,7 +66,9 @@ const orderSchema = new Schema<IOrder>({
     oc: Number,
     addition: Number,
   },
-  observations: String,
+  observations: {
+    type: String,
+  },
   totalPrice: { 
     type: Number, 
     required: true 
@@ -93,17 +99,14 @@ orderSchema.pre("validate", function(next) {
     this.finalPrice = this.totalPrice - this.discount;
   }
 
-  // Verificar se há pelo menos um produto no pedido
   if (!this.products || this.products.length === 0) {
     this.invalidate("products", "Pelo menos um produto deve ser adicionado ao pedido");
   }
 
-  // Validar que finalPrice é positivo
   if (this.finalPrice < 0) {
     this.invalidate("finalPrice", "O preço final não pode ser negativo");
   }
 
-  // Validar que discount não é maior que totalPrice
   if (this.discount > this.totalPrice) {
     this.invalidate("discount", "O desconto não pode ser maior que o preço total");
   }

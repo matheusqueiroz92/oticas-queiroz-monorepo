@@ -19,8 +19,8 @@ const creditCardSchema = z.object({
     .optional(),
 });
 
-const boletoSchema = z.object({
-  boleto: z.object({
+const bankSlipSchema = z.object({
+  bank_slip: z.object({
     code: z.string().min(1, "Código do boleto é obrigatório"),
     bank: z.string().min(1, "Banco é obrigatório"),
   }),
@@ -63,7 +63,7 @@ const basePaymentSchema = z.object({
     errorMap: () => ({ message: "Tipo de pagamento inválido" }),
   }),
   paymentMethod: z.enum(
-    ["credit", "debit", "cash", "pix", "boleto", "promissory_note"] as const,
+    ["credit", "debit", "cash", "pix", "bank_slip", "promissory_note"] as const,
     {
       errorMap: () => ({ message: "Método de pagamento inválido" }),
     }
@@ -101,9 +101,9 @@ const paymentSchema = z.discriminatedUnion("paymentMethod", [
   // Boleto
   basePaymentSchema
     .extend({
-      paymentMethod: z.literal("boleto"),
+      paymentMethod: z.literal("bank_slip"),
     })
-    .merge(boletoSchema),
+    .merge(bankSlipSchema),
 
   // Promissória
   basePaymentSchema
@@ -525,7 +525,7 @@ export class PaymentController {
 
       // Adicionar totais para boleto e promissória
       const totalByBoleto = payments
-        .filter((p) => p.paymentMethod === "boleto" && p.status === "completed")
+        .filter((p) => p.paymentMethod === "bank_slip" && p.status === "completed")
         .reduce((sum, p) => sum + p.amount, 0);
 
       const totalByPromissoryNote = payments
