@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Search, Loader2 } from "lucide-react";
-import { Product } from "@/app/types/product";
 import { getProductTypeName } from "@/app/services/productService";
 import { ProductImage } from "@/components/ui/ProductImage";
 
