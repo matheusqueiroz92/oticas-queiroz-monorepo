@@ -385,9 +385,9 @@ export default function OrdersPage() {
               </Button>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-4 gap-4 mb-4">
               {/* Filtro de busca */}
-              <div>
+              <div className="md:col-span-2">
                 <Label htmlFor="search">Buscar cliente</Label>
                 <Input
                   id="search"
@@ -399,7 +399,7 @@ export default function OrdersPage() {
               </div>
               
               {/* Filtro de data inicial */}
-              <div>
+              <div className="md:col-span-1">
                 <Label htmlFor="startDate">Data Inicial</Label>
                 <Input
                   id="startDate"
@@ -411,7 +411,7 @@ export default function OrdersPage() {
               </div>
               
               {/* Filtro de data final */}
-              <div>
+              <div className="md:col-span-1">
                 <Label htmlFor="endDate">Data Final</Label>
                 <Input
                   id="endDate"

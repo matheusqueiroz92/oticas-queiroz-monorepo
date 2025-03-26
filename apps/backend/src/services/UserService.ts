@@ -69,42 +69,36 @@ export class UserService {
     }
   }
 
-  async createUser(
-    userData: ICreateUserDTO,
-    creatorRole?: string
-  ): Promise<IUser> {
+  async createUser(userData: ICreateUserDTO, creatorRole?: string): Promise<IUser> {
     this.validateUserData(userData);
 
-    if (
-      creatorRole === "employee" &&
-      userData.role &&
-      userData.role !== "customer"
-    ) {
-      throw new PermissionError(
-        "Funcionários só podem cadastrar clientes",
-        ErrorCode.INSUFFICIENT_PERMISSIONS
-      );
+    if (creatorRole === "employee" && userData.role && userData.role !== "customer") {
+        throw new PermissionError(
+            "Funcionários só podem cadastrar clientes",
+            ErrorCode.INSUFFICIENT_PERMISSIONS
+        );
     }
-
+    
     const existingUserByCpf = await this.userModel.findByCpf(userData.cpf);
     if (existingUserByCpf) {
-      throw new ValidationError("CPF já cadastrado", ErrorCode.DUPLICATE_CPF);
+        throw new ValidationError("CPF já cadastrado", ErrorCode.DUPLICATE_CPF);
     }
 
-    if (userData.email) {
-      const existingUserByEmail = await this.userModel.findByEmail(
-        userData.email
-      );
-      if (existingUserByEmail?.email) {
-        throw new ValidationError(
-          "Email já cadastrado",
-          ErrorCode.DUPLICATE_EMAIL
-        );
-      }
+    if (userData.email && userData.email.trim() !== "") {
+        const existingUserByEmail = await this.userModel.findByEmail(userData.email);
+        if (existingUserByEmail) {
+            throw new ValidationError(
+                "Email já cadastrado",
+                ErrorCode.DUPLICATE_EMAIL
+            );
+        }
+    } else {
+        delete userData.email;
     }    
 
     return this.userModel.create(userData);
   }
+
 
   async getAllUsers(): Promise<IUser[]> {
     const users = await this.userModel.findAll();

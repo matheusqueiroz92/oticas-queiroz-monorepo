@@ -6,7 +6,18 @@ import { isValidCPF } from "../utils/validators";
 const userSchema = new Schema<IUser>(
   {
     name: { type: String, required: true },
-    email: { type: String, unique: true },
+    email: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      default: null, // Em vez de string vazia
+      validate: {
+          validator: function(v: string) {
+              return v === null || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+          },
+          message: 'Por favor, insira um email válido'
+      }
+    },
     password: { type: String, required: true },
     image: { type: String },
     role: {

@@ -82,8 +82,12 @@ export class UserModel {
   }
 
   async findByEmail(email: string): Promise<IUser | null> {
+    if (!email || email.trim() === "") {
+        return null;
+    }
+    
     const user = (await User.findOne({
-      email: { $regex: new RegExp(`^${email}$`, "i") },
+        email: { $regex: new RegExp(`^${email}$`, "i") },
     }).exec()) as UserDocument | null;
 
     return user ? this.convertToIUser(user) : null;
@@ -110,7 +114,6 @@ export class UserModel {
   }
 
   async search(searchTerm: string): Promise<IUser[]> {
-    // Criar uma expressão regular para busca case-insensitive
     const searchRegex = new RegExp(searchTerm, "i");
 
     // Buscar por vários campos
