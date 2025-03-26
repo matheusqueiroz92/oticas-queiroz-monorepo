@@ -2,15 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 
-// Corrigindo a tipagem de acordo com a API do Next.js
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { path: string[] } }
-) {
+export async function GET(request: NextRequest) {
   try {
-    // Construir o caminho para a imagem
-    const imagePath = params.path.join('/');
-    const fullPath = path.join('/var/www/app.oticasqueiroz.com.br/oticas-queiroz-monorepo/apps/public/images', imagePath);
+    // Extrair o caminho da URL
+    const url = new URL(request.url);
+    const pathParts = url.pathname.split('/');
+    // Remover os primeiros segmentos (/api/image)
+    const relevantPath = pathParts.slice(3).join('/');
+    
+    // Construir o caminho completo
+    const fullPath = path.join('/var/www/app.oticasqueiroz.com.br/oticas-queiroz-monorepo/apps/public/images', relevantPath);
     
     // Verificar se o arquivo existe
     if (!fs.existsSync(fullPath)) {
