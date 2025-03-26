@@ -1,28 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Preservando outras configurações que você já tenha
   reactStrictMode: true,
-  swcMinify: true,
+  output: 'standalone', // Melhora a compatibilidade em produção
   images: {
-    domains: ['app.oticasqueiroz.com.br'],
+    domains: ['app.oticasqueiroz.com.br'], // Se você estiver usando o componente Next Image
+    unoptimized: true, // Pode ajudar com problemas de otimização
   },
-  
-  // Adicionando a configuração de rewrites
-  async rewrites() {
-    return [
-      // Não processar solicitações /images/*
-      {
-        source: '/images/:path*',
-        destination: '/api/bypass-images?imagePath=:path*',
-      },
-    ];
-  },
-  
-  // Outras configurações existentes...
-  output: 'standalone',
-  // compress: true,
-  // poweredByHeader: false,
-  // optimizeFonts: true,
+  // Configuração que explicita o caminho base para os arquivos públicos
+  assetPrefix: '',
+  basePath: '',
 }
 
-module.exports = nextConfig;
+module.exports = nextConfig
