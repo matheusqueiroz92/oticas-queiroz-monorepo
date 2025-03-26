@@ -102,7 +102,7 @@ export default function ProductsPage() {
                   <div className="aspect-square relative bg-muted">
                     {product.image ? (
                       <img
-                        src={`http://localhost:3333${product.image}`}
+                      src={`${process.env.NEXT_PUBLIC_API_URL}${product.image}`}
                         alt={product.name}
                         className="w-full h-full object-cover"
                       />
