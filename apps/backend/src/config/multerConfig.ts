@@ -4,7 +4,7 @@ import fs from "node:fs";
 import { v4 as uuidv4 } from "uuid";
 import type { Request, RequestHandler } from "express";
 
-const MAX_SIZE = 50 * 1024 * 1024; // 5MB
+const MAX_SIZE = 50 * 1024 * 1024; // 50MB
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
 
 type AllowedMimeTypes = (typeof ALLOWED_TYPES)[number];
