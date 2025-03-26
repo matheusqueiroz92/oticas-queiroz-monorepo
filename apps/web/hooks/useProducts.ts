@@ -14,10 +14,8 @@ import {
 } from "../app/services/productService";
 import { QUERY_KEYS } from "../app/constants/query-keys";
 import { Product } from "@/app/types/product";
-// Importar as funções de utilitário
 import { 
   getCorrectPrice, 
-  getCorrectType, 
   normalizeProduct 
 } from "../app/utils/product-utils";
 
@@ -234,7 +232,6 @@ export function useProducts() {
     
     // Funções importadas
     getCorrectPrice,
-    getCorrectType,
     normalizeProduct,
     fetchProductWithConsistentDetails
   };

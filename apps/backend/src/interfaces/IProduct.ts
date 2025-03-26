@@ -3,7 +3,7 @@ export interface IProduct {
   productType: "lenses" | "clean_lenses" | "prescription_frame" | "sunglasses_frame";
   image?: string;
   sellPrice: number;
-  description: string;
+  description?: string;
   brand?: string;
   name: string;
   costPrice?: number;

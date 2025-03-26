@@ -34,20 +34,18 @@ import { useRef, useState } from "react";
 import { useProducts } from "@/hooks/useProducts";
 import { Product } from "@/app/types/product";
 
-// Schema base para todos os produtos
 const baseProductSchema = z.object({
   name: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
   productType: z.enum(["lenses", "clean_lenses", "prescription_frame", "sunglasses_frame"], {
     required_error: "Selecione um tipo de produto",
   }),
-  description: z.string().min(10, "Descrição muito curta"),
+  description: z.string().optional(),
   image: z.instanceof(File).optional(),
   brand: z.string().optional(),
   sellPrice: z.number().min(0, "Preço de venda inválido"),
   costPrice: z.number().min(0, "Preço de custo inválido").optional(),
 });
 
-// Schemas específicos para cada tipo
 const lensSchema = baseProductSchema.extend({
   productType: z.literal("lenses"),
   lensType: z.string().min(2, "Tipo de lente é obrigatório"),
@@ -96,7 +94,7 @@ export default function NewProductPage() {
     resolver: zodResolver(productFormSchema),
     defaultValues: {
       name: "",
-      productType: "clean_lenses",
+      productType: "lenses",
       description: "",
       brand: "",
       sellPrice: 0,
@@ -105,12 +103,10 @@ export default function NewProductPage() {
     } as any,
   });
 
-  // Update form fields when product type changes
   const onProductTypeChange = (value: Product['productType']) => {
     setSelectedProductType(value);
     form.setValue("productType", value);
     
-    // Reset type-specific fields when type changes
     if (value === "lenses") {
       form.setValue("lensType", "");
     } else if (value === "prescription_frame" || value === "sunglasses_frame") {
@@ -130,16 +126,14 @@ export default function NewProductPage() {
     try {
       const formData = new FormData();
 
-      // Adicionar todos os campos comuns
       formData.append("name", data.name);
       formData.append("productType", data.productType);
-      formData.append("description", data.description);
       formData.append("sellPrice", String(data.sellPrice));
       
+      if (data.description) formData.append("description", data.description);
       if (data.brand) formData.append("brand", data.brand);
       if (data.costPrice !== undefined) formData.append("costPrice", String(data.costPrice));
 
-      // Adicionar campos específicos com base no tipo de produto
       if (data.productType === "lenses") {
         formData.append("lensType", (data as any).lensType);
       } else if (data.productType === "prescription_frame" || data.productType === "sunglasses_frame") {
@@ -153,10 +147,8 @@ export default function NewProductPage() {
         }
       }
 
-      // Adicionar imagem se existir
       const file = fileInputRef.current?.files?.[0];
       if (file) {
-        // O nome do campo DEVE corresponder ao configurado na rota no backend
         formData.append("productImage", file);
       }
 
@@ -169,7 +161,6 @@ export default function NewProductPage() {
     }
   }
 
-  // Renderiza campos específicos com base no tipo de produto selecionado
   const renderProductTypeFields = () => {
     switch (selectedProductType) {
       case "lenses":

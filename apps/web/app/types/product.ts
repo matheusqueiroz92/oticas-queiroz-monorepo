@@ -2,7 +2,7 @@ export interface BaseProduct {
   _id: string;
   name: string;
   productType: "lenses" | "clean_lenses" | "prescription_frame" | "sunglasses_frame";
-  description: string;
+  description?: string;
   image?: string;
   brand?: string;
   sellPrice: number;

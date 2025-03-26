@@ -32,12 +32,11 @@ import {
 } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/useToast";
-import { api } from "@/app/services/authService";
 import { Loader2, AlertTriangle } from "lucide-react";
 import type { Customer } from "@/app/types/customer";
 import type { Product } from "@/app/types/product";
 import Cookies from "js-cookie";
-import { formatCurrency } from "@/app/utils/formatters";
+import { formatCurrency, getTomorrowDate } from "@/app/utils/formatters";
 
 import { useOrders } from "@/hooks/useOrders";
 
@@ -52,10 +51,9 @@ import ProductSearch from "@/components/Orders/ProductSearch";
 import SelectedProductsList from "@/components/Orders/SelectedProductList";
 import PrescriptionForm from "@/components/Orders/PrescriptionForm";
 import OrderPdfGenerator from "@/components/Orders/exports/OrderPdfGenerator";
-import { QUERY_KEYS } from "@/app/constants/query-keys";
-import { useQuery } from "@tanstack/react-query";
 import { useProducts } from "@/hooks/useProducts";
-import { normalizeProduct, getCorrectPrice } from "@/app/utils/product-utils";
+import { normalizeProduct, getCorrectPrice, checkForLenses } from "@/app/utils/product-utils";
+import { useCustomers } from "@/hooks/useCustomers";
 
 export default function NewOrderPage() {
   const router = useRouter();
@@ -73,24 +71,19 @@ export default function NewOrderPage() {
   const [submittedOrder, setSubmittedOrder] = useState<any>(null);
   const [hasLenses, setHasLenses] = useState(false);
 
-  const { 
+  const { handleCreateOrder, isCreating } = useOrders();
+  const {
+    products: productsData,
+    loading: isLoadingProducts,
     fetchProductWithConsistentDetails
   } = useProducts();
 
-  const { handleCreateOrder, isCreating } = useOrders();
+  const { 
+    customers: customersData,
+    isLoading: isLoadingCustomers
+  } = useCustomers();
 
-  const checkForLenses = (products: Product[]) => {
-    return products.some(product => 
-      product.productType === 'lenses' || 
-      (product.name && product.name.toLowerCase().includes('lente'))
-    );
-  };
 
-  const getTomorrowDate = () => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    return tomorrow.toISOString().split("T")[0];
-  };
 
   const form = useForm<OrderFormValues>({
     resolver: zodResolver(orderFormSchema) as any,
@@ -102,7 +95,7 @@ export default function NewOrderPage() {
       paymentEntry: 0,
       installments: undefined,
       orderDate: new Date().toISOString().split("T")[0],
-      deliveryDate: new Date().toISOString().split("T")[0], // Usar a data atual como padrão
+      deliveryDate: new Date().toISOString().split("T")[0],
       status: "pending",
       laboratoryId: "",
       observations: "",
@@ -122,33 +115,6 @@ export default function NewOrderPage() {
     },
   });
 
-  const { data: productsData, isLoading: isLoadingProducts } = useQuery({
-    queryKey: QUERY_KEYS.PRODUCTS.ALL,
-    queryFn: async () => {
-      const response = await api.get("/api/products");
-      return Array.isArray(response.data) ? response.data : response.data.products || [];
-    },
-  });
-
-  const { data: customersData, isLoading: isLoadingCustomers } = useQuery({
-    queryKey: [QUERY_KEYS.USERS.CUSTOMERS()],
-    queryFn: async () => {
-      const response = await api.get("/api/users", { params: { role: "customer" } });
-      return Array.isArray(response.data) ? response.data : response.data.users || [];
-    },
-  });
-
-  useEffect(() => {
-    const subscription = form.watch((value, { name }) => {
-      if (name === "paymentMethod") {
-        const method = value.paymentMethod;
-        setShowInstallments(method === "credit" || method === "installment");
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [form.watch]);
-
   useEffect(() => {
     const userId = Cookies.get("userId");
     const name = Cookies.get("name");
@@ -167,6 +133,17 @@ export default function NewOrderPage() {
       form.setValue("employeeId", userData.id);
     }
   }, [form]);
+
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name === "paymentMethod") {
+        const method = value.paymentMethod;
+        setShowInstallments(method === "credit" || method === "installment");
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [form.watch]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -310,10 +287,8 @@ export default function NewOrderPage() {
     const remainingAmount = totalPrice - paymentEntry;
     return remainingAmount <= 0 ? 0 : remainingAmount / installments;
   };
-
   
   const onSubmit = async (data: OrderFormValues) => {
-    // Validações adicionais antes de enviar
     if (selectedProducts.length === 0) {
       toast({
         variant: "destructive",

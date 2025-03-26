@@ -3,9 +3,9 @@ import { z } from 'zod';
 // Schema base para todos os produtos
 const baseProductSchema = z.object({
   name: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
-  description: z.string().min(10, "Descrição deve ter pelo menos 10 caracteres"),
+  description: z.string().optional(),
   sellPrice: z.number().positive("Preço de venda deve ser positivo"),
-  costPrice: z.number().positive("Preço de custo deve ser positivo").optional(),
+  costPrice: z.number().min(0).optional(),
   brand: z.string().optional(),
   image: z.string().optional(),
 });

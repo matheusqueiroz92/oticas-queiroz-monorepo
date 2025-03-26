@@ -190,3 +190,13 @@ export function getPaymentTypeClass(type: PaymentType | string): string {
 export function cn(...inputs: (string | undefined | null | false)[]): string {
   return inputs.filter(Boolean).join(" ");
 }
+
+
+/**
+ * Função utilitária para buscar o dia de amanhã
+ */
+export const getTomorrowDate = () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split("T")[0];
+  };

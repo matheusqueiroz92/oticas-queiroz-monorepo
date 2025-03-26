@@ -78,40 +78,6 @@ export function getCorrectPrice(product: any): number {
   return 0;
 }
 
-/**
- * Determina o tipo correto para um produto
- */
-export function getCorrectType(product: any): Product['productType'] {
-  if (!product || !product.name) {
-    return product?.productType || 'lenses';
-  }
-  
-  const productName = product.name.toLowerCase();
-  
-  // Verificar por correspondências específicas
-  for (const [key, type] of Object.entries(PRODUCT_TYPES)) {
-    if (productName.includes(key.toLowerCase())) {
-      return type;
-    }
-  }
-  
-  // Se não encontrar por nome, verificar palavras-chave
-  if (productName.includes('lente') || productName.includes('vision')) {
-    return 'lenses';
-  }
-  if (productName.includes('sol') || productName.includes('ray-ban') || productName.includes('rayban')) {
-    return 'sunglasses_frame';
-  }
-  if (productName.includes('armação') || productName.includes('frame')) {
-    return 'prescription_frame';
-  }
-  if (productName.includes('limpa') || productName.includes('clean')) {
-    return 'clean_lenses';
-  }
-  
-  // Manter o tipo original se disponível
-  return product.productType || 'lenses';
-}
 
 /**
  * Normaliza um produto para garantir que tenha preço e tipo corretos
@@ -119,19 +85,15 @@ export function getCorrectType(product: any): Product['productType'] {
 export function normalizeProduct(product: any): Product {
   if (!product) return {} as Product;
   
-  // Primeiro determinamos o tipo correto
-  const correctType = getCorrectType(product);
   const correctPrice = getCorrectPrice(product);
   
-  // Base comum para qualquer tipo de produto
   const baseProduct = {
     ...product,
     sellPrice: correctPrice,
-    productType: correctType
   };
   
   // Agora, dependendo do tipo correto, retornamos o objeto apropriado
-  switch (correctType) {
+  switch (product.productType) {
     case 'lenses':
       return {
         ...baseProduct,
@@ -272,6 +234,10 @@ export function getProductTypeLabel(type?: string): string {
     
     return grouped;
   }
+
+  export const checkForLenses = (products: Product[]) => {
+    return products.some(product => product.productType === 'lenses');
+  };
 
   /**
  * Busca um produto com detalhes consistentes
