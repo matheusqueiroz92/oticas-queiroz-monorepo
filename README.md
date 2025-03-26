@@ -1,6 +1,6 @@
 # Óticas Queiroz Monorepo
 
-Este repositório contém um sistema de gerenciamento para ótica que integra controle de clientes, funcionários, produtos, pedidos, pagamentos, laboratórios e fornecedores. Esta aplicação inclui backend, frontend, mobile e desktop, e é gerenciada com Turborepo.
+Este repositório contém um sistema de gerenciamento para óticas que integra controle de clientes, funcionários, produtos, pedidos, pagamentos, registros de caixa e laboratórios. Esta aplicação inclui backend, frontend, mobile e desktop, e é gerenciada com Turborepo.
 
 ## 🚀 Tecnologias
 
@@ -20,6 +20,11 @@ Este repositório contém um sistema de gerenciamento para ótica que integra co
 - Zod
 - Cors
 - Dotenv
+- Multer
+- Node Mailer
+- PDF Kit
+- Excel JS
+- Json 2 CSV
 
 ### Frontend
 
@@ -31,9 +36,13 @@ Este repositório contém um sistema de gerenciamento para ótica que integra co
 - React Query
 - React Hook Form
 - Axios
-- Cookies-js
+- Js Cookie
 - Lucide React
-- React-PDF
+- Js PDF
+- Recharts
+- Lodash
+- Date fns
+
 
 ### Mobile
 
@@ -55,7 +64,7 @@ Este repositório contém um sistema de gerenciamento para ótica que integra co
 ```bash
 oticas-queiroz-monorepo/
 ├── apps/
-│   ├── backend/  # API Node.js
+│   ├── backend/      # API Node.js
 │     ├── src/
 │       ├── config/       # Configurações de conexão ao banco de dados e documentação da API
 │       ├── controllers/  # Camada de controle HTTP
@@ -66,30 +75,33 @@ oticas-queiroz-monorepo/
 │       ├── schemas/      # Schemas do Mongoose
 │       ├── __tests__/    # Testes da aplicação
 │       ├── types/        # Tipagens Express
-│       └── utils/        # Arquivos auxiliares
-│   ├── web/      # Next.js
-│     ├── app/        # Rotas e páginas da aplicação
+│       └── utils/        # Arquivo utilitários
+│   ├── web/        # Next.js
+│     ├── app/          # Rotas e páginas da aplicação
 │       ├── (authenticated)/ # Rotas com páginas protegidas
-│       ├── auth/            # Páginas de autenticação
-│       ├── services/        # Serviços e integrações
-│       └── types/           # Definições de tipos e interfaces
-│     ├── components/  # Componentes reutilizáveis
-│       ├── ui/              # Componentes de UI básicos (Shadcn)
-│       ├── forms/           # Componentes de formulários
-│       ├── tables/          # Componentes de tabelas
-│       └── exports/         # Componentes de exportação (PDF, etc)
-│     ├── hooks/       # Hooks personalizados
-│     ├── lib/         # Utilitários e funções auxiliares
-│     ├── contexts/    # Contexts
-│     ├── providers/   # Providers
-│     ├── public/      # Arquivos públicos do frontend web
-│     └── schemas/
-│   ├── mobile/       # React Native
-│   ├── desktop/      # Electron
-│   └── public/       # Arquivo públicos da aplicação
+│       ├── auth/            # Páginas para autenticação
+│       ├── constants/       # Arquivos de constantes da aplicação
+│       ├── debugger/        # Arquivos de diagnósticos
+│       ├── services/        # Arquivos de Serviços e integrações
+│       ├── types/           # Definições de tipos e interfaces
+│       └── utils/           # Arquivo utilitários
+│     ├── components/   # Componentes reutilizáveis
+│       ├── ui/             # Componentes de UI básicos (Shadcn)
+│       ├── forms/          # Componentes de formulários
+│       ├── tables/         # Componentes de tabelas
+│       └── exports/        # Componentes de exportação (PDF, etc)
+│     ├── contexts/     # Contexts
+│     ├── hooks/        # Hooks personalizados
+│     ├── lib/          # Utilitários e funções auxiliares
+│     ├── providers/    # Providers
+│     ├── public/       # Arquivos públicos do frontend web
+│     └── schemas/      # Arquivos de schemas
+│   ├── mobile/     # React Native
+│   ├── desktop/    # Electron
+│   └── public/     # Arquivo públicos da aplicação
 │     ├── images/       # Arquivos de imagem
-│       ├── users/       # Imagens de usuários
-│       └── products/    # Imagens de produtos
+│       ├── users/          # Imagens de usuários
+│       └── products/       # Imagens de produtos
 ├── packages/
 │   ├── config/       # Configurações (ESLint, TS, Tailwind)
 │   ├── ui/           # Componentes UI (Shadcn UI)

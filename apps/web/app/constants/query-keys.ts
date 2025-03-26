@@ -1,10 +1,4 @@
-/**
- * Constantes para as query keys do React Query.
- * Organizadas por entidade e com funções para criar keys parametrizadas.
- */
-
 export const QUERY_KEYS = {
-  // Autenticação
   AUTH: {
     USER_PROFILE: ["auth", "profile"],
     USER_DATA: ["auth", "user-data"],
@@ -19,7 +13,6 @@ export const QUERY_KEYS = {
     VENDORS: (search?: string) => ["users", "vendors", search],
   },
 
-  // Laboratórios
   LABORATORIES: {
     ALL: ["laboratories"],
     PAGINATED: (page = 1, filters = {}) => [
@@ -32,7 +25,6 @@ export const QUERY_KEYS = {
     ACTIVE: ["laboratories", "active"],
   },
 
-  // Pedidos
   ORDERS: {
     ALL: 'orders',
     PAGINATED: (page = 1, filters = {}) => ['orders', 'list', page, JSON.stringify(filters)],
@@ -41,7 +33,6 @@ export const QUERY_KEYS = {
     DAILY: ["orders", "daily"],
   },
 
-  // Produtos
   PRODUCTS: {
     ALL: ['products'],
     PAGINATED: (page?: number, filters?: Record<string, any>) => 
@@ -49,7 +40,6 @@ export const QUERY_KEYS = {
     DETAIL: (id: string) => ['products', 'detail', id],
   },
 
-  // Pagamentos
   PAYMENTS: {
     ALL: ["payments"],
     PAGINATED: (page = 1, filters = {}) => [
@@ -67,7 +57,6 @@ export const QUERY_KEYS = {
     ],
   },
 
-  // Caixas
   CASH_REGISTERS: {
     ALL: ["cashRegisters"],
     PAGINATED: (page = 1, filters = {}) => [
@@ -83,7 +72,6 @@ export const QUERY_KEYS = {
     DAILY_SUMMARY: ["cashRegisters", "dailySummary"],
   },
 
-  // Clientes legados
   LEGACY_CLIENT: {
     ALL: ["legacyClients"],
     DETAIL: (id: string) => ["legacyClients", "detail", id],
@@ -92,7 +80,6 @@ export const QUERY_KEYS = {
     PAYMENT_HISTORY: (id: string) => ["legacyClients", "paymentHistory", id],
   },
 
-  // Relatórios
   REPORTS: {
     ALL: ["reports"],
     PAGINATED: (page = 1, filters = {}) => [

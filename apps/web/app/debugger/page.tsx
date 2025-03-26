@@ -14,8 +14,6 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Loader2, CheckCircle, XCircle } from "lucide-react";
 
-// Adicione este componente temporariamente à sua aplicação para diagnosticar problemas com rotas API
-
 export default function ApiTester() {
   // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   const [results, setResults] = useState<Record<string, any>>({});
