@@ -1,7 +1,7 @@
 import { Order } from "../schemas/OrderSchema";
-import type { IOrder, OrderProduct } from "../interfaces/IOrder";
+import type { IOrder } from "../interfaces/IOrder";
 import type { IProduct, ILens, ICleanLens, IPrescriptionFrame, ISunglassesFrame } from "../interfaces/IProduct";
-import { Types, type FilterQuery } from "mongoose";
+import mongoose, { Types, type FilterQuery } from "mongoose";
 
 export class OrderModel {
   private isValidId(id: string): boolean {
@@ -189,6 +189,29 @@ export class OrderModel {
     console.log("Query final construída:", query);
     return query;
   }
+
+  private async findClientIdsBySearchTerm(searchTerm: string): Promise<string[]> {
+    try {
+      // Obter o modelo de usuário usando mongoose.model
+      const UserModel = mongoose.model('User');
+      
+      // Executar a busca por texto nos campos relevantes
+      const matchingClients = await UserModel.find({
+        $or: [
+          { name: { $regex: searchTerm, $options: 'i' } },
+          { cpf: { $regex: searchTerm, $options: 'i' } },
+          { email: { $regex: searchTerm, $options: 'i' } }
+        ],
+        role: 'customer' // Garantir que estamos apenas buscando clientes
+      }).select('_id');
+      
+      // Extrair os IDs
+      return matchingClients.map(client => client._id.toString());
+    } catch (error) {
+      console.error('Erro ao buscar clientes por termo:', error);
+      return [];
+    }
+  }
   
   async create(orderData: Omit<IOrder, "_id">): Promise<IOrder> {
     const order = new Order(orderData);
@@ -204,32 +227,65 @@ export class OrderModel {
     includeDeleted = false
   ): Promise<{ orders: IOrder[]; total: number }> {
     const skip = (page - 1) * limit;
-
+    
+    // Verificar se há um parâmetro de busca
+    const searchTerm = filters.search;
+    let clientIds: string[] = [];
+    
+    // Se houver um termo de busca, encontrar os clientes correspondentes
+    if (searchTerm) {
+      console.log(`Processando busca por termo: "${searchTerm}"`);
+      
+      // Buscar IDs de clientes que correspondem ao termo
+      clientIds = await this.findClientIdsBySearchTerm(searchTerm);
+      
+      console.log(`Encontrados ${clientIds.length} clientes correspondentes à busca`);
+      
+      // Se não encontrarmos clientes, podemos retornar um resultado vazio imediatamente
+      if (clientIds.length === 0) {
+        return {
+          orders: [],
+          total: 0
+        };
+      }
+      
+      // Remover o parâmetro search para não interferir na construção da query
+      delete filters.search;
+    }
+    
+    // Construir a query com os outros filtros
     const query = this.buildFilterQuery(filters);
-
+  
     if (!includeDeleted) {
       query.isDeleted = { $ne: true };
     }
-
+    
+    // Se tivermos clientes correspondentes à busca, adicionar à query
+    if (clientIds.length > 0) {
+      query.clientId = { $in: clientIds.map(id => new Types.ObjectId(id)) };
+    }
+  
+    console.log("Query final após processamento de busca:", query);
+    
     let orderQuery = Order.find(query).skip(skip).limit(limit);
-
+  
     if (populate) {
       orderQuery = orderQuery
         .populate("clientId", "name email role")
         .populate("employeeId", "name email")
         .populate("laboratoryId")
         .populate("products");
-
+  
       if (includeDeleted) {
         orderQuery = orderQuery.populate("deletedBy", "name email");
       }
     }
-
+  
     const [orders, total] = await Promise.all([
       orderQuery.exec(),
       Order.countDocuments(query),
     ]);
-
+  
     return {
       orders: orders.map((order) => this.convertToIOrder(order)),
       total,

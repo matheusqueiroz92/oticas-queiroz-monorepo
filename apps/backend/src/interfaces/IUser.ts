@@ -8,7 +8,7 @@ export interface IUser {
   address?: string;
   phone?: string;
   cpf: string;
-  rg: string;
+  rg?: string;
   birthDate?: Date;
   purchases?: string[];
   debts?: number;

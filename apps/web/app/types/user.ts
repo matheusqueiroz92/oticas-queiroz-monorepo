@@ -5,6 +5,7 @@ export interface User {
   name: string;
   email?: string;
   cpf: string;
+  rg?: string;
   role: UserRole;
   image?: string;
   address?: string;
@@ -15,7 +16,7 @@ export interface User {
 }
 
 export interface Column {
-  key: keyof User | string; // Chave da coluna (pode ser uma chave de User ou uma chave personalizada)
-  header: string; // Cabeçalho da coluna
-  render?: (data: User) => React.ReactNode; // Função opcional para renderização personalizada
+  key: keyof User | string;
+  header: string;
+  render?: (data: User) => React.ReactNode;
 }

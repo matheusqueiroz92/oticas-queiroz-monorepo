@@ -10,9 +10,9 @@ import {
 } from "@/components/ui/table";
 
 interface UserTableProps {
-  data: User[]; // Dados a serem exibidos na tabela (agora tipados como User[])
-  columns: Column[]; // Colunas da tabela (tipadas como Column[])
-  onDetailsClick: (id: string) => void; // Função para lidar com o clique em "Detalhes"
+  data: User[];
+  columns: Column[];
+  onDetailsClick: (id: string) => void;
 }
 
 export const UserTable: React.FC<UserTableProps> = ({

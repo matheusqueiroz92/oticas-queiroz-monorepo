@@ -12,13 +12,26 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api } from "../../../services/authService";
 import OrderDetailsPDF from "@/components/Orders/exports/OrderDetailsPdf";
 import OrderLaboratoryUpdate from "@/components/Orders/OrderLaboratoryUpdate";
 import OrderStatusUpdate from "@/components/Orders/OrderStatusUpdate";
-import { Beaker, FileText, User, CreditCard, Truck, ShoppingBag, ChevronLeft } from "lucide-react";
+import { 
+  Beaker, 
+  FileText, 
+  User, 
+  CreditCard, 
+  Truck, 
+  ShoppingBag, 
+  ChevronLeft, 
+  Building, 
+  Phone, 
+  Mail, 
+  CalendarDays,
+  CheckCircle,
+  RefreshCw
+} from "lucide-react";
 import { formatCurrency, formatDate } from "@/app/utils/formatters";
 import { getProductTypeLabel } from "@/app/utils/product-utils";
 import { useOrders } from "@/hooks/useOrders";
@@ -47,7 +60,7 @@ export default function OrderDetailsPage() {
   const { toast } = useToast();
   
   // Usar hook useOrders para aproveitar suas funcionalidades
-  const { translateOrderStatus, fetchOrderById } = useOrders();
+  const { translateOrderStatus, fetchOrderById, navigateToOrderDetails } = useOrders();
 
   // Estado para armazenar dados complementares
   const [client, setClient] = useState<User | null>(null);
@@ -122,7 +135,11 @@ export default function OrderDetailsPage() {
   const handleRefreshData = useCallback(() => {
     // Refetch do pedido atual
     refetch();
-  }, [refetch]);
+    toast({
+      title: "Atualizado",
+      description: "Informações do pedido atualizadas com sucesso."
+    });
+  }, [refetch, toast]);
 
   // Função para voltar à página de listagem
   const handleGoBack = () => {
@@ -179,7 +196,7 @@ export default function OrderDetailsPage() {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-700" />
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary" />
       </div>
     );
   }
@@ -187,8 +204,10 @@ export default function OrderDetailsPage() {
   // Error state
   if (error || !order) {
     return (
-      <div className="p-4 bg-red-50 text-red-600 rounded-md">
-        {error instanceof Error ? error.message : error || "Pedido não encontrado ou ocorreu um erro ao carregar os dados."}
+      <div className="max-w-4xl mx-auto p-3">
+        <div className="p-4 bg-red-50 text-red-600 rounded-md text-sm border border-red-200">
+          {error instanceof Error ? error.message : error || "Pedido não encontrado ou ocorreu um erro ao carregar os dados."}
+        </div>
       </div>
     );
   }
@@ -217,239 +236,284 @@ export default function OrderDetailsPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto p-4">
+    <div className="space-y-4 max-w-4xl mx-auto p-3">
       <div className="flex justify-between items-center">
-        <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="icon" onClick={handleGoBack}>
-            <ChevronLeft className="h-5 w-5" />
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={handleGoBack} className="h-8 w-8 p-0">
+            <ChevronLeft className="h-4 w-4" />
           </Button>
-          <h1 className="text-2xl font-bold">Detalhes do Pedido</h1>
+          <h1 className="text-lg font-bold text-primary">Detalhes do Pedido</h1>
         </div>
-        <Badge variant="outline" className="text-sm px-3 py-1">
+        <Badge variant="outline" className="text-xs px-2 py-0.5">
           {formatDate(order.createdAt)}
         </Badge>
       </div>
 
-      <Card>
-        <CardHeader className="pb-2">
+      <Card className="shadow-sm overflow-hidden">
+        <CardHeader className="bg-gray-50 border-b p-3">
           <div className="flex justify-between items-center">
-            <CardTitle>Pedido #{order._id.substring(0, 8)}</CardTitle>
+            <div>
+              <CardTitle className="text-base flex items-center gap-2">
+                <ShoppingBag className="h-4 w-4 text-primary" />
+                Pedido #{order._id.substring(0, 8)}
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Criado em {formatDate(order.createdAt)} • OS: {order.serviceOrder || 'N/A'}
+              </CardDescription>
+            </div>
             <StatusBadge status={order.status} />
           </div>
-          <CardDescription>
-            Criado em {formatDate(order.createdAt)}
-          </CardDescription>
         </CardHeader>
         
-        <CardContent>
+        <CardContent className="p-0">
           <Tabs defaultValue="details" className="w-full">
-            <TabsList className="mb-4">
-              <TabsTrigger value="details">
-                <ShoppingBag className="h-4 w-4 mr-2" />
+            <TabsList className="w-full bg-gray-50 border-b p-0 rounded-none h-10">
+              <TabsTrigger value="details" className="text-xs flex items-center gap-1 rounded-none h-10 border-b-2 border-transparent data-[state=active]:border-primary">
+                <ShoppingBag className="h-3.5 w-3.5" />
                 Detalhes
               </TabsTrigger>
               {hasPrescriptionData && (
-                <TabsTrigger value="prescription">
-                  <FileText className="h-4 w-4 mr-2" />
+                <TabsTrigger value="prescription" className="text-xs flex items-center gap-1 rounded-none h-10 border-b-2 border-transparent data-[state=active]:border-primary">
+                  <FileText className="h-3.5 w-3.5" />
                   Receita
                 </TabsTrigger>
               )}
-              <TabsTrigger value="laboratory">
-                <Beaker className="h-4 w-4 mr-2" />
+              <TabsTrigger value="laboratory" className="text-xs flex items-center gap-1 rounded-none h-10 border-b-2 border-transparent data-[state=active]:border-primary">
+                <Beaker className="h-3.5 w-3.5" />
                 Laboratório
               </TabsTrigger>
             </TabsList>
             
             {/* Conteúdo da aba de detalhes */}
-            <TabsContent value="details" className="space-y-6">
-              {/* Informações principais */}
-              <div className="grid md:grid-cols-2 gap-6">
-                {/* Coluna Cliente */}
-                <div className="space-y-4">
-                  <h3 className="font-medium text-lg flex items-center">
-                    <User className="h-5 w-5 mr-2" />
-                    Informações do Cliente
-                  </h3>
-                  <div className="space-y-2 bg-gray-50 p-3 rounded-md">
-                    <p className="text-sm">
-                      <span className="font-semibold">Nome:</span>{" "}
-                      {client ? client.name : "Cliente não encontrado"}
-                    </p>
-                    {client && (
-                      <>
-                        <p className="text-sm">
-                          <span className="font-semibold">Email:</span> {client.email}
-                        </p>
-                        {client.phone && (
-                          <p className="text-sm">
-                            <span className="font-semibold">Telefone:</span> {client.phone}
+            <TabsContent value="details" className="p-3">
+              <div className="grid md:grid-cols-3 gap-4">
+                <div className="md:col-span-2 space-y-4">
+                  {/* Informações Cliente e Vendedor */}
+                  <div className="grid grid-cols-2 gap-3">
+                    {/* Cliente */}
+                    <Card className="shadow-none border">
+                      <CardHeader className="p-3 pb-0">
+                        <CardTitle className="text-sm flex items-center gap-1">
+                          <User className="h-3.5 w-3.5 text-primary" />
+                          Cliente
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-3 pt-1">
+                        <div className="space-y-0.5 text-xs">
+                          <p className="font-medium">
+                            {client ? client.name : "Cliente não encontrado"}
                           </p>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </div>
+                          {client && (
+                            <>
+                              <p className="text-gray-600 flex items-center gap-1">
+                                <Mail className="h-3 w-3 text-gray-400" /> 
+                                {client.email}
+                              </p>
+                              {client.phone && (
+                                <p className="text-gray-600 flex items-center gap-1">
+                                  <Phone className="h-3 w-3 text-gray-400" /> 
+                                  {client.phone}
+                                </p>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
 
-                {/* Coluna Vendedor */}
-                <div className="space-y-4">
-                  <h3 className="font-medium text-lg flex items-center">
-                    <User className="h-5 w-5 mr-2" />
-                    Informações do Vendedor
-                  </h3>
-                  <div className="space-y-2 bg-gray-50 p-3 rounded-md">
-                    <p className="text-sm">
-                      <span className="font-semibold">Nome:</span>{" "}
-                      {employee ? employee.name : "Vendedor não encontrado"}
-                    </p>
-                    {employee && (
-                      <p className="text-sm">
-                        <span className="font-semibold">Email:</span>{" "}
-                        {employee.email}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Detalhes dos Produtos */}
-              <div className="space-y-4">
-                <h3 className="font-medium text-lg flex items-center">
-                  <ShoppingBag className="h-5 w-5 mr-2" />
-                  Detalhes dos Produtos
-                </h3>
-                <div className="bg-gray-50 p-4 rounded-md">
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="text-left text-sm font-semibold border-b">
-                          <th className="pb-2">Produto</th>
-                          <th className="pb-2">Tipo</th>
-                          <th className="pb-2 text-right">Preço</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {products.map((product: any, index: number) => (
-                          <tr key={product._id || index} className="border-b">
-                            <td className="py-2">{product.name}</td>
-                            <td className="py-2">{getProductTypeLabel(product.productType)}</td>
-                            <td className="py-2 text-right">{formatCurrency(product.sellPrice || 0)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                      <tfoot>
-                        <tr className="font-semibold">
-                          <td colSpan={2} className="pt-3 text-right">Total:</td>
-                          <td className="pt-3 text-right">{formatCurrency(order.totalPrice)}</td>
-                        </tr>
-                        <tr>
-                          <td colSpan={2} className="pt-1 text-right">Desconto:</td>
-                          <td className="pt-1 text-right text-red-600">-{formatCurrency(order.discount || 0)}</td>
-                        </tr>
-                        <tr className="font-bold text-lg">
-                          <td colSpan={2} className="pt-2 text-right">Preço Final:</td>
-                          <td className="pt-2 text-right text-green-700">{formatCurrency(order.finalPrice || order.totalPrice)}</td>
-                        </tr>
-                      </tfoot>
-                    </table>
-                  </div>
-
-                  {order.observations && (
-                    <div className="mt-4 pt-3 border-t">
-                      <p className="text-sm font-semibold">Observações:</p>
-                      <p className="text-sm bg-white p-2 rounded mt-1">
-                        {order.observations}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Status do Pedido */}
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <h3 className="font-medium text-lg flex items-center">
-                    <Truck className="h-5 w-5 mr-2" />
-                    Status do Pedido
-                  </h3>
-                  {/* Componente para atualizar o status */}
-                  <OrderStatusUpdate
-                    order={order}
-                    onUpdateSuccess={handleRefreshData}
-                  />
-                </div>
-                <div className="bg-gray-50 p-4 rounded-md">
-                  <div className="flex items-center">
-                    <Badge className={getStatusBadge(order.status).className}>
-                      {translateOrderStatus(order.status)}
-                    </Badge>
-                    <div className="ml-4 text-sm text-muted-foreground">
-                      {order.status === "pending" &&
-                        "O pedido está aguardando processamento"}
-                      {order.status === "in_production" &&
-                        "O pedido está sendo produzido"}
-                      {order.status === "ready" &&
-                        "O pedido está pronto para retirada"}
-                      {order.status === "delivered" &&
-                        "O pedido foi entregue ao cliente"}
-                      {order.status === "cancelled" &&
-                        "O pedido foi cancelado"}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Informações de Pagamento */}
-              <div className="space-y-4">
-                <h3 className="font-medium text-lg flex items-center">
-                  <CreditCard className="h-5 w-5 mr-2" />
-                  Informações de Pagamento
-                </h3>
-                <div className="bg-gray-50 p-4 rounded-md">
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm">
-                        <span className="font-semibold">Método de Pagamento:</span>{" "}
-                        {getPaymentMethodText(order.paymentMethod)}
-                      </p>
-                      {(order.paymentEntry || 0) > 0 && (
-                        <p className="text-sm">
-                          <span className="font-semibold">Entrada:</span>{" "}
-                          {formatCurrency(order.paymentEntry || 0)}
-                        </p>
-                      )}
-                      {(order.installments || 0) > 0 && (
-                        <p className="text-sm">
-                          <span className="font-semibold">Parcelas:</span>{" "}
-                          {order.installments}x
-                        </p>
-                      )}
-                    </div>
-                    <div className="md:text-right">
-                      <div className="space-y-1">
-                        <p className="text-sm font-semibold">Total:</p>
-                        <p className="text-xl font-bold">
-                          {formatCurrency(order.totalPrice || 0)}
-                        </p>
-                        {(order.discount || 0) > 0 && (
-                          <>
-                            <p className="text-sm font-semibold">Desconto:</p>
-                            <p className="text-sm text-red-600">
-                              -{formatCurrency(order.discount || 0)}
+                    {/* Vendedor */}
+                    <Card className="shadow-none border">
+                      <CardHeader className="p-3 pb-0">
+                        <CardTitle className="text-sm flex items-center gap-1">
+                          <User className="h-3.5 w-3.5 text-primary" />
+                          Vendedor
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-3 pt-1">
+                        <div className="space-y-0.5 text-xs">
+                          <p className="font-medium">
+                            {employee ? employee.name : "Vendedor não encontrado"}
+                          </p>
+                          {employee && (
+                            <p className="text-gray-600 flex items-center gap-1">
+                              <Mail className="h-3 w-3 text-gray-400" /> 
+                              {employee.email}
                             </p>
-                          </>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Produtos */}
+                  <Card className="shadow-none border">
+                    <CardHeader className="p-3 pb-2 flex flex-row justify-between items-center">
+                      <CardTitle className="text-sm flex items-center gap-1">
+                        <ShoppingBag className="h-3.5 w-3.5 text-primary" />
+                        Produtos
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                      <div className="overflow-hidden border-t">
+                        <table className="w-full">
+                          <thead className="bg-gray-50 text-xs">
+                            <tr className="border-b">
+                              <th className="text-left font-medium p-2">Produto</th>
+                              <th className="text-left font-medium p-2">Tipo</th>
+                              <th className="text-right font-medium p-2">Preço</th>
+                            </tr>
+                          </thead>
+                          <tbody className="text-xs">
+                            {products.map((product: any, index: number) => (
+                              <tr key={product._id || index} className="border-b">
+                                <td className="p-2 font-medium">{product.name}</td>
+                                <td className="p-2 text-gray-600">{getProductTypeLabel(product.productType)}</td>
+                                <td className="p-2 text-right">{formatCurrency(product.sellPrice || 0)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+
+                        <div className="p-3 bg-gray-50">
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-gray-600">Subtotal:</span>
+                            <span>{formatCurrency(order.totalPrice)}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-xs mt-1">
+                            <span className="text-gray-600">Desconto:</span>
+                            <span className="text-red-600">-{formatCurrency(order.discount || 0)}</span>
+                          </div>
+                          <div className="flex justify-between items-center font-medium text-sm mt-2 pt-2 border-t">
+                            <span>Total:</span>
+                            <span className="text-green-700">{formatCurrency(order.finalPrice || order.totalPrice)}</span>
+                          </div>
+                        </div>
+
+                        {order.observations && (
+                          <div className="p-3 border-t">
+                            <p className="text-xs font-medium mb-1">Observações:</p>
+                            <p className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
+                              {order.observations}
+                            </p>
+                          </div>
                         )}
-                        <p className="text-sm font-semibold mt-2">Preço Final:</p>
-                        <p className="text-2xl font-bold text-green-700">
-                          {formatCurrency(order.finalPrice || order.totalPrice || 0)}
-                        </p>
                       </div>
-                    </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Status */}
+                  <Card className="shadow-none border">
+                    <CardHeader className="p-3 pb-2 flex flex-row justify-between items-center">
+                      <CardTitle className="text-sm flex items-center gap-1">
+                        <Truck className="h-3.5 w-3.5 text-primary" />
+                        Status do Pedido
+                      </CardTitle>
+                      <OrderStatusUpdate
+                        order={order}
+                        onUpdateSuccess={handleRefreshData}
+                      />
+                    </CardHeader>
+                    <CardContent className="p-3">
+                      <div className="text-xs space-y-2">
+                        <div className="flex items-center gap-2">
+                          <StatusBadge status={order.status} />
+                          <span className="text-gray-600">
+                            {order.status === "pending" && "O pedido está aguardando processamento"}
+                            {order.status === "in_production" && "O pedido está sendo produzido"}
+                            {order.status === "ready" && "O pedido está pronto para retirada"}
+                            {order.status === "delivered" && "O pedido foi entregue ao cliente"}
+                            {order.status === "cancelled" && "O pedido foi cancelado"}
+                          </span>
+                        </div>
+                        
+                        <div className="flex items-center gap-2 mt-2">
+                          <div className="flex items-center gap-1 text-gray-600">
+                            <CalendarDays className="h-3.5 w-3.5 text-gray-400" />
+                            <span>Data do pedido:</span>
+                          </div>
+                          <span className="font-medium">{formatDate(order.orderDate)}</span>
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1 text-gray-600">
+                            <CalendarDays className="h-3.5 w-3.5 text-gray-400" />
+                            <span>Data de entrega:</span>
+                          </div>
+                          <span className="font-medium">{formatDate(order.deliveryDate)}</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Coluna da direita - Resumo do pagamento */}
+                <div className="space-y-4">
+                  <Card className="shadow-none border">
+                    <CardHeader className="p-3 pb-2">
+                      <CardTitle className="text-sm flex items-center gap-1">
+                        <CreditCard className="h-3.5 w-3.5 text-primary" />
+                        Pagamento
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-3 pt-0">
+                      <div className="space-y-2 text-xs">
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-600">Método:</span>
+                          <span className="font-medium">{getPaymentMethodText(order.paymentMethod)}</span>
+                        </div>
+                        
+                        {(order.paymentEntry || 0) > 0 && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-600">Entrada:</span>
+                            <span>{formatCurrency(order.paymentEntry || 0)}</span>
+                          </div>
+                        )}
+                        
+                        {(order.installments || 0) > 0 && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-600">Parcelas:</span>
+                            <span>{order.installments}x</span>
+                          </div>
+                        )}
+                        
+                        <div className="pt-2 mt-2 border-t">
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-600">Subtotal:</span>
+                            <span>{formatCurrency(order.totalPrice || 0)}</span>
+                          </div>
+                          
+                          {(order.discount || 0) > 0 && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-gray-600">Desconto:</span>
+                              <span className="text-red-600">-{formatCurrency(order.discount || 0)}</span>
+                            </div>
+                          )}
+                          
+                          <div className="flex justify-between items-center font-medium text-sm mt-2 pt-2 border-t">
+                            <span>Total:</span>
+                            <span className="text-green-700">{formatCurrency(order.finalPrice || order.totalPrice || 0)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <div className="flex gap-2">
+                    <OrderDetailsPDF
+                      order={order}
+                      clientName={client ? client.name : "Cliente não encontrado"}
+                      employeeName={employee ? employee.name : "Vendedor não encontrado"}
+                    />
+                    
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex-1 text-xs h-8"
+                      onClick={handleRefreshData}
+                    >
+                      <RefreshCw className="h-3.5 w-3.5 mr-1" />
+                      Atualizar
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -457,214 +521,248 @@ export default function OrderDetailsPage() {
 
             {/* Aba de Receita Médica */}
             {hasPrescriptionData && (
-              <TabsContent value="prescription" className="space-y-6">
-                <div className="space-y-4">
-                  <h3 className="font-medium text-lg flex items-center">
-                    <FileText className="h-5 w-5 mr-2" /> Receita Médica
-                  </h3>
-                  <div className="bg-gray-50 p-4 rounded-md">
-                    <div className="grid md:grid-cols-2 gap-6">
-                      <div>
-                        <h4 className="font-semibold mb-2">Informações da Receita</h4>
+              <TabsContent value="prescription" className="p-3">
+                <div className="grid md:grid-cols-2 gap-4">
+                  <Card className="shadow-none border">
+                    <CardHeader className="p-3 pb-0">
+                      <CardTitle className="text-sm flex items-center gap-1">
+                        <FileText className="h-3.5 w-3.5 text-primary" />
+                        Informações da Receita
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-3">
+                      <div className="grid grid-cols-2 gap-3 text-xs">
                         <div className="space-y-2">
-                          <p className="text-sm">
-                            <span className="font-semibold">Médico:</span>{" "}
-                            {order.prescriptionData?.doctorName || "Não informado"}
-                          </p>
-                          <p className="text-sm">
-                            <span className="font-semibold">Clínica:</span>{" "}
-                            {order.prescriptionData?.clinicName || "Não informada"}
-                          </p>
-                          <p className="text-sm">
-                            <span className="font-semibold">Data da Consulta:</span>{" "}
-                            {formatDate(order.prescriptionData?.appointmentDate) || "Não informada"}
-                          </p>
+                          <div>
+                            <p className="text-gray-600">Médico:</p>
+                            <p className="font-medium">{order.prescriptionData?.doctorName || "Não informado"}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-600">Clínica:</p>
+                            <p className="font-medium">{order.prescriptionData?.clinicName || "Não informada"}</p>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <div>
+                            <p className="text-gray-600">Data da Consulta:</p>
+                            <p className="font-medium">{formatDate(order.prescriptionData?.appointmentDate) || "Não informada"}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-600">Adição:</p>
+                            <p className="font-medium">{(order.prescriptionData?.addition || 0).toFixed(2)}</p>
+                          </div>
                         </div>
                       </div>
                       
-                      <div>
-                        <h4 className="font-semibold mb-2">Valores Adicionais</h4>
-                        <div className="space-y-2">
-                          <p className="text-sm">
-                            <span className="font-semibold">Adição:</span>{" "}
-                            {(order.prescriptionData?.addition || 0).toFixed(2)}
-                          </p>
-                          <p className="text-sm">
-                            <span className="font-semibold">ND:</span>{" "}
-                            {(order.prescriptionData?.nd || 0).toFixed(2)}
-                          </p>
-                          <p className="text-sm">
-                            <span className="font-semibold">OC:</span>{" "}
-                            {(order.prescriptionData?.oc || 0).toFixed(2)}
-                          </p>
+                      <div className="grid grid-cols-2 gap-3 mt-3 text-xs">
+                        <div>
+                          <p className="text-gray-600">ND:</p>
+                          <p className="font-medium">{(order.prescriptionData?.nd || 0).toFixed(2)}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-600">OC:</p>
+                          <p className="font-medium">{(order.prescriptionData?.oc || 0).toFixed(2)}</p>
                         </div>
                       </div>
-                    </div>
-                    
-                    <div className="mt-6 grid md:grid-cols-2 gap-6">
-                      <div>
-                        <h4 className="font-semibold mb-2">Olho Esquerdo (OE)</h4>
-                        <table className="w-full text-sm">
-                          <thead>
-                            <tr className="border-b">
-                              <th className="text-left py-1">Medida</th>
-                              <th className="text-right py-1">Valor</th>
-                            </tr>
-                          </thead>
+                    </CardContent>
+                  </Card>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Olho Esquerdo */}
+                    <Card className="shadow-none border">
+                      <CardHeader className="p-3 pb-0">
+                        <CardTitle className="text-sm">Olho Esquerdo (OE)</CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-3">
+                        <table className="w-full text-xs">
                           <tbody>
                             <tr className="border-b">
-                              <td className="py-1">Esférico (sph)</td>
-                              <td className="text-right py-1">
+                              <td className="py-1.5 text-gray-600">Esférico (sph)</td>
+                              <td className="py-1.5 text-right font-medium">
                                 {(order.prescriptionData?.leftEye.sph || 0).toFixed(2)}
                               </td>
                             </tr>
                             <tr className="border-b">
-                              <td className="py-1">Cilíndrico (cyl)</td>
-                              <td className="text-right py-1">
+                              <td className="py-1.5 text-gray-600">Cilíndrico (cyl)</td>
+                              <td className="py-1.5 text-right font-medium">
                                 {(order.prescriptionData?.leftEye.cyl || 0).toFixed(2)}
                               </td>
                             </tr>
                             <tr className="border-b">
-                              <td className="py-1">Eixo (axis)</td>
-                              <td className="text-right py-1">
+                              <td className="py-1.5 text-gray-600">Eixo (axis)</td>
+                              <td className="py-1.5 text-right font-medium">
                                 {order.prescriptionData?.leftEye.axis || 0}°
                               </td>
                             </tr>
                             <tr>
-                              <td className="py-1">Distância Pupilar (PD)</td>
-                              <td className="text-right py-1">
+                              <td className="py-1.5 text-gray-600">Dist. Pupilar (PD)</td>
+                              <td className="py-1.5 text-right font-medium">
                                 {order.prescriptionData?.leftEye.pd || 0} mm
                               </td>
                             </tr>
                           </tbody>
                         </table>
-                      </div>
-                      
-                      <div>
-                        <h4 className="font-semibold mb-2">Olho Direito (OD)</h4>
-                        <table className="w-full text-sm">
-                          <thead>
-                            <tr className="border-b">
-                              <th className="text-left py-1">Medida</th>
-                              <th className="text-right py-1">Valor</th>
-                            </tr>
-                          </thead>
+                      </CardContent>
+                    </Card>
+                    
+                    {/* Olho Direito */}
+                    <Card className="shadow-none border">
+                      <CardHeader className="p-3 pb-0">
+                        <CardTitle className="text-sm">Olho Direito (OD)</CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-3">
+                        <table className="w-full text-xs">
                           <tbody>
                             <tr className="border-b">
-                              <td className="py-1">Esférico (sph)</td>
-                              <td className="text-right py-1">
+                              <td className="py-1.5 text-gray-600">Esférico (sph)</td>
+                              <td className="py-1.5 text-right font-medium">
                                 {(order.prescriptionData?.rightEye.sph || 0).toFixed(2)}
                               </td>
                             </tr>
                             <tr className="border-b">
-                              <td className="py-1">Cilíndrico (cyl)</td>
-                              <td className="text-right py-1">
+                              <td className="py-1.5 text-gray-600">Cilíndrico (cyl)</td>
+                              <td className="py-1.5 text-right font-medium">
                                 {(order.prescriptionData?.rightEye.cyl || 0).toFixed(2)}
                               </td>
                             </tr>
                             <tr className="border-b">
-                              <td className="py-1">Eixo (axis)</td>
-                              <td className="text-right py-1">
+                              <td className="py-1.5 text-gray-600">Eixo (axis)</td>
+                              <td className="py-1.5 text-right font-medium">
                                 {order.prescriptionData?.rightEye.axis || 0}°
                               </td>
                             </tr>
                             <tr>
-                              <td className="py-1">Distância Pupilar (PD)</td>
-                              <td className="text-right py-1">
+                              <td className="py-1.5 text-gray-600">Dist. Pupilar (PD)</td>
+                              <td className="py-1.5 text-right font-medium">
                                 {order.prescriptionData?.rightEye.pd || 0} mm
                               </td>
                             </tr>
                           </tbody>
                         </table>
-                      </div>
-                    </div>
+                      </CardContent>
+                    </Card>
                   </div>
                 </div>
               </TabsContent>
             )}
 
             {/* Aba de Laboratório */}
-            <TabsContent value="laboratory" className="space-y-6">
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <h3 className="font-medium text-lg flex items-center">
-                    <Beaker className="h-5 w-5 mr-2" /> Laboratório
-                  </h3>
-                  {/* Componente para atualizar laboratório - independente do tipo de produto */}
-                  <OrderLaboratoryUpdate
-                    order={order}
-                    onUpdateSuccess={handleRefreshData}
-                  />
-                </div>
-
-                {laboratoryInfo ? (
-                  <div className="bg-gray-50 p-4 rounded-md">
-                    <div className="space-y-2">
-                      <p className="text-sm">
-                        <span className="font-semibold">Nome:</span>{" "}
-                        {laboratoryInfo.name}
-                      </p>
-                      {laboratoryInfo.contactName && (
-                        <p className="text-sm">
-                          <span className="font-semibold">Contato:</span>{" "}
-                          {laboratoryInfo.contactName}
-                        </p>
-                      )}
-                      {laboratoryInfo.phone && (
-                        <p className="text-sm">
-                          <span className="font-semibold">Telefone:</span>{" "}
-                          {laboratoryInfo.phone}
-                        </p>
-                      )}
-                      {laboratoryInfo.email && (
-                        <p className="text-sm">
-                          <span className="font-semibold">Email:</span>{" "}
-                          {laboratoryInfo.email}
-                        </p>
-                      )}
-                      <div className="text-sm mt-2">
-                        <span className="font-semibold">Status:</span>{" "}
-                        <Badge
-                          variant={
-                            laboratoryInfo.isActive ? "outline" : "destructive"
-                          }
-                        >
-                          {laboratoryInfo.isActive ? "Ativo" : "Inativo"}
-                        </Badge>
+            <TabsContent value="laboratory" className="p-3">
+              <div className="flex justify-between items-start mb-3">
+                <h3 className="text-sm font-medium">Laboratório Associado</h3>
+                <OrderLaboratoryUpdate
+                  order={order}
+                  onUpdateSuccess={handleRefreshData}
+                />
+              </div>
+              
+              {laboratoryInfo ? (
+                <Card className="shadow-none border">
+                  <CardContent className="p-3">
+                    <div className="grid grid-cols-2 gap-4 text-xs">
+                      <div className="space-y-2">
+                        <div>
+                          <p className="text-gray-600">Nome:</p>
+                          <p className="font-medium flex items-center gap-1">
+                            <Building className="h-3.5 w-3.5 text-gray-400" />
+                            {laboratoryInfo.name}
+                          </p>
+                        </div>
+                        
+                        {laboratoryInfo.contactName && (
+                          <div>
+                            <p className="text-gray-600">Contato:</p>
+                            <p className="font-medium flex items-center gap-1">
+                              <User className="h-3.5 w-3.5 text-gray-400" />
+                              {laboratoryInfo.contactName}
+                            </p>
+                          </div>
+                        )}
+                        
+                        {laboratoryInfo.phone && (
+                          <div>
+                            <p className="text-gray-600">Telefone:</p>
+                            <p className="font-medium flex items-center gap-1">
+                              <Phone className="h-3.5 w-3.5 text-gray-400" />
+                              {laboratoryInfo.phone}
+                            </p>
+                          </div>
+                        )}
                       </div>
-
-                      <div className="mt-4 pt-2 border-t">
-                        <p className="text-sm text-muted-foreground">
-                          Data de entrega prevista: <span className="font-medium">{formatDate(order.deliveryDate)}</span>
-                        </p>
+                      
+                      <div className="space-y-2">
+                        {laboratoryInfo.email && (
+                          <div>
+                            <p className="text-gray-600">Email:</p>
+                            <p className="font-medium flex items-center gap-1">
+                              <Mail className="h-3.5 w-3.5 text-gray-400" />
+                              {laboratoryInfo.email}
+                            </p>
+                          </div>
+                        )}
+                        
+                        <div>
+                          <p className="text-gray-600">Status:</p>
+                          <p>
+                            <Badge
+                              variant={laboratoryInfo.isActive ? "outline" : "destructive"}
+                              className="mt-1 text-xs"
+                            >
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              {laboratoryInfo.isActive ? "Ativo" : "Inativo"}
+                            </Badge>
+                          </p>
+                        </div>
+                        
+                        <div>
+                          <p className="text-gray-600">Data de entrega prevista:</p>
+                          <p className="font-medium flex items-center gap-1">
+                            <CalendarDays className="h-3.5 w-3.5 text-gray-400" />
+                            {formatDate(order.deliveryDate)}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ) : (
-                  <div className="bg-gray-50 p-4 rounded-md">
-                    <p className="text-sm text-muted-foreground">
-                      Nenhum laboratório associado a este pedido.
-                    </p>
-                    <p className="text-sm mt-2">
-                      Use o botão "Associar Laboratório" para vincular um laboratório a este pedido.
-                    </p>
-                  </div>
-                )}
-              </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="bg-gray-50 p-4 rounded-md border text-sm">
+                  <p className="text-gray-600 text-xs">
+                    Nenhum laboratório associado a este pedido.
+                  </p>
+                  <p className="text-xs mt-1">
+                    Use o botão "Associar Laboratório" para vincular um laboratório a este pedido.
+                  </p>
+                </div>
+              )}
             </TabsContent>
           </Tabs>
         </CardContent>
         
-        <CardFooter className="border-t pt-6 flex justify-between">
-          <Button variant="outline" onClick={handleGoBack}>
+        <CardFooter className="border-t p-3 flex justify-between">
+          <Button variant="outline" size="sm" onClick={handleGoBack} className="text-xs h-8">
+            <ChevronLeft className="h-3.5 w-3.5 mr-1" />
             Voltar para Pedidos
           </Button>
           
-          <OrderDetailsPDF
-            order={order}
-            clientName={client ? client.name : "Cliente não encontrado"}
-            employeeName={employee ? employee.name : "Vendedor não encontrado"}
-          />
+          <div className="flex gap-2">
+            <OrderDetailsPDF
+              order={order}
+              clientName={client ? client.name : "Cliente não encontrado"}
+              employeeName={employee ? employee.name : "Vendedor não encontrado"}
+            />
+            
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleRefreshData} 
+              className="text-xs h-8"
+            >
+              <RefreshCw className="h-3.5 w-3.5 mr-1" />
+              Atualizar
+            </Button>
+          </div>
         </CardFooter>
       </Card>
     </div>

@@ -1,4 +1,4 @@
-import { AlertCircle } from "lucide-react"; // Importe o ícone de alerta do Lucide
+import { AlertCircle } from "lucide-react";
 
 interface ErrorAlertProps {
   message: string;
@@ -6,8 +6,8 @@ interface ErrorAlertProps {
 
 export const ErrorAlert: React.FC<ErrorAlertProps> = ({ message }) => {
   return (
-    <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-md flex items-center gap-2">
-      <AlertCircle className="h-5 w-5" /> {/* Ícone de alerta do Lucide */}
+    <div className="p-3 bg-red-50 border border-red-200 text-red-600 rounded-md text-sm flex items-center gap-2">
+      <AlertCircle className="h-5 w-5" />
       <span>{message}</span>
     </div>
   );

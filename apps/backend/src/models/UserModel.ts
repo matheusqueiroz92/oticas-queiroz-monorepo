@@ -1,7 +1,7 @@
 import { User } from "../schemas/UserSchema";
 import type { ICreateUserDTO, IUser } from "../interfaces/IUser";
 import type mongoose from "mongoose";
-import { type Document, Types } from "mongoose";
+import { type Document, Model, Types } from "mongoose";
 import bcrypt from "bcrypt";
 
 interface UserDocument extends Document {
@@ -14,7 +14,7 @@ interface UserDocument extends Document {
   address?: string;
   phone?: string;
   cpf: number;
-  rg: number;
+  rg?: number;
   purchases?: Types.ObjectId[];
   debts?: number;
   sales?: Types.ObjectId[];
@@ -82,13 +82,12 @@ export class UserModel {
   }
 
   async findByEmail(email: string): Promise<IUser | null> {
-    if (!email || email.trim() === "") {
-        return null;
-    }
+    if (!email) return null;
     
-    const user = (await User.findOne({
-        email: { $regex: new RegExp(`^${email}$`, "i") },
-    }).exec()) as UserDocument | null;
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = await User.findOne({ 
+        email: { $regex: new RegExp(`^${normalizedEmail}$`, "i") }
+    }).exec() as UserDocument | null;
 
     return user ? this.convertToIUser(user) : null;
   }
@@ -116,12 +115,11 @@ export class UserModel {
   async search(searchTerm: string): Promise<IUser[]> {
     const searchRegex = new RegExp(searchTerm, "i");
 
-    // Buscar por vários campos
     const users = (await User.find({
       $or: [
         { name: searchRegex },
         { email: searchRegex },
-        { cpf: { $regex: searchTerm.replace(/\D/g, "") } }, // Busca por CPF removendo caracteres não numéricos
+        { cpf: { $regex: searchTerm.replace(/\D/g, "") } },
         { address: searchRegex },
         { phone: searchRegex },
       ],

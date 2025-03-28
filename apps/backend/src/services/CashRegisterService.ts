@@ -1,7 +1,6 @@
 import { CashRegisterModel } from "../models/CashRegisterModel";
 import { PaymentModel } from "../models/PaymentModel";
 import type { ICashRegister } from "../interfaces/ICashRegister";
-import NodeCache from "node-cache";
 import { type ExportOptions, ExportUtils } from "../utils/exportUtils";
 
 export class CashRegisterError extends Error {
@@ -44,31 +43,14 @@ interface RegisterSummary {
 export class CashRegisterService {
   private cashRegisterModel: CashRegisterModel;
   private paymentModel: PaymentModel;
-  private cache: NodeCache;
   private exportUtils: ExportUtils;
 
   constructor() {
     this.cashRegisterModel = new CashRegisterModel();
     this.paymentModel = new PaymentModel();
-    this.cache = new NodeCache({ stdTTL: 300 });
     this.exportUtils = new ExportUtils();
   }
 
-  private invalidateCache(keys: string | string[]): void {
-    if (Array.isArray(keys)) {
-      for (const key of keys) {
-        this.cache.del(key);
-      }
-    } else {
-      this.cache.del(keys);
-    }
-  }
-
-  /**
-   * Valida se há um caixa aberto
-   * @throws CashRegisterError se não houver caixa aberto
-   * @returns O caixa aberto
-   */
   private async validateOpenRegister(): Promise<ICashRegister> {
     const register = await this.cashRegisterModel.findOpenRegister();
     if (!register || !register._id) {
@@ -77,10 +59,6 @@ export class CashRegisterService {
     return register;
   }
 
-  /**
-   * Valida se não há um caixa aberto
-   * @throws CashRegisterError se houver caixa aberto
-   */
   private async validateNoOpenRegister(): Promise<void> {
     const register = await this.cashRegisterModel.findOpenRegister();
     if (register) {
@@ -88,24 +66,12 @@ export class CashRegisterService {
     }
   }
 
-  /**
-   * Valida o valor do saldo inicial
-   * @param balance Valor do saldo
-   * @throws CashRegisterError se o valor for negativo
-   */
   private validateBalance(balance: number): void {
     if (balance < 0) {
       throw new CashRegisterError("Valor não pode ser negativo");
     }
   }
 
-  /**
-   * Obtém todos os registros de caixa com opções de filtro e paginação
-   * @param page Número da página
-   * @param limit Limite de itens por página
-   * @param filters Filtros adicionais
-   * @returns Lista paginada de registros e informações de paginação
-   */
   async getAllRegisters(
     page = 1,
     limit = 10,
@@ -163,7 +129,6 @@ export class CashRegisterService {
       };
 
     const register = await this.cashRegisterModel.create(registerData);
-    this.invalidateCache("current_register");
 
     return register;
   }
@@ -200,45 +165,25 @@ export class CashRegisterService {
       throw new CashRegisterError("Erro ao fechar o caixa");
     }
 
-    this.invalidateCache(["current_register", `register_${openRegister._id}`]);
-
     return closedRegister;
   }
 
   async getCurrentRegister(): Promise<ICashRegister> {
     const cacheKey = "current_register";
 
-    const cachedRegister = this.cache.get<ICashRegister>(cacheKey);
-    if (cachedRegister) {
-      console.log(`Cache hit for ${cacheKey}`);
-      return cachedRegister;
-    }
-
     const register = await this.cashRegisterModel.findOpenRegister();
     if (!register) {
       throw new CashRegisterError("Não há caixa aberto");
     }
 
-    this.cache.set(cacheKey, register);
-
     return register;
   }
 
   async getRegisterById(id: string): Promise<ICashRegister> {
-    const cacheKey = `register_${id}`;
-
-    const cachedRegister = this.cache.get<ICashRegister>(cacheKey);
-    if (cachedRegister) {
-      console.log(`Cache hit for ${cacheKey}`);
-      return cachedRegister;
-    }
-
     const register = await this.cashRegisterModel.findById(id);
     if (!register) {
       throw new CashRegisterError("Caixa não encontrado");
     }
-
-    this.cache.set(cacheKey, register);
 
     return register;
   }
@@ -374,13 +319,6 @@ export class CashRegisterService {
     return this.exportUtils.exportDailySummary(summary, options);
   }
 
-  /**
-   * Realiza exclusão lógica (soft delete) de um registro de caixa
-   * @param id ID do registro de caixa
-   * @param userId ID do usuário que está realizando a exclusão
-   * @returns Registro de caixa marcado como excluído
-   * @throws CashRegisterError se o caixa não for encontrado ou estiver aberto
-   */
   async softDeleteRegister(id: string, userId: string): Promise<ICashRegister> {
     const register = await this.cashRegisterModel.findById(id);
     if (!register) {
@@ -396,17 +334,9 @@ export class CashRegisterService {
       throw new CashRegisterError("Erro ao excluir caixa");
     }
 
-    this.invalidateCache([`register_${id}`, "daily_summary"]);
-
     return deletedRegister;
   }
 
-  /**
-   * Obtém registros de caixa que foram excluídos logicamente
-   * @param page Número da página
-   * @param limit Limite de itens por página
-   * @returns Lista paginada de registros excluídos e total
-   */
   async getDeletedRegisters(
     page = 1,
     limit = 10

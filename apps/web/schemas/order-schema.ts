@@ -1,3 +1,6 @@
+import { OrderFormValues } from "@/app/types/form-types";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 const orderFormSchema = z
@@ -39,3 +42,38 @@ const orderFormSchema = z
     }),
   })
   .passthrough();
+
+export type OrderFormData = z.infer<typeof orderFormSchema>;
+
+export const createOrderform = () => {
+  return useForm<OrderFormValues>({
+    resolver: zodResolver(orderFormSchema) as any,
+    defaultValues: {
+      employeeId: "",
+      clientId: "",
+      products: [],
+      serviceOrder: 0,
+      paymentMethod: "",
+      paymentEntry: 0,
+      installments: undefined,
+      orderDate: new Date().toISOString().split("T")[0],
+      deliveryDate: new Date().toISOString().split("T")[0],
+      status: "pending",
+      laboratoryId: "",
+      observations: "",
+      totalPrice: 0,
+      discount: 0,
+      finalPrice: 0,
+      prescriptionData: {
+        doctorName: "",
+        clinicName: "",
+        appointmentDate: new Date().toISOString().split("T")[0],
+        leftEye: { sph: 0, cyl: 0, axis: 0, pd: 0 },
+        rightEye: { sph: 0, cyl: 0, axis: 0, pd: 0 },
+        nd: 0,
+        oc: 0,
+        addition: 0,
+      },
+    }
+  })
+};

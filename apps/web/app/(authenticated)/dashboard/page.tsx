@@ -170,9 +170,9 @@ export default function DashboardPage() {
   ).slice(0, 3);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-2 max-w-auto mx-auto p-1 md:p-2">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Dashboard</h1>
+      <h1 className="text-2xl font-bold text-primary">Dashboard</h1>
         <div className="text-sm text-muted-foreground">
           {new Date().toLocaleDateString("pt-BR", {
             weekday: "long",

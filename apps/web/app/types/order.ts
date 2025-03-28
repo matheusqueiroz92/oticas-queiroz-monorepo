@@ -40,7 +40,6 @@ export interface Order {
   createdAt?: string | Date;
   updatedAt?: string | Date;
   
-  // Dados normalizados para uso no frontend
   _normalized?: {
     clientName: string;
     clientId: string | null;
@@ -48,4 +47,10 @@ export interface Order {
     employeeId: string | null;
     laboratoryName: string | null;
   };
+}
+
+export interface OrderColumn {
+  key: keyof Order | string;
+  header: string;
+  render?: (data: Order) => React.ReactNode;
 }

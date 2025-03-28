@@ -67,6 +67,7 @@ export const orderQuerySchema = z.object({
   productId: z.string().optional(),
   minPrice: z.string().optional().transform(val => Number(val) || undefined),
   maxPrice: z.string().optional().transform(val => Number(val) || undefined),
+  search: z.string().optional(),
 });
 
 // Schema para validar atualização de status

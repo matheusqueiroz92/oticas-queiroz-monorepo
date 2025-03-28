@@ -30,13 +30,7 @@ const userUpdateSchema = z.object({
     .min(11, "CPF deve ter pelo menos 11 dígitos")
     .refine((cpf) => isValidCPF(cpf), { message: "CPF inválido" })
     .optional(),
-  rg: z
-    .string()
-    .min(6, "RG deve ter pelo menos 6 dígitos")
-    .refine((rg) => /^\d{6,14}$/.test(rg.replace(/[^\d]/g, "")), {
-      message: "RG inválido",
-    })
-    .optional(),
+  rg: z.string().optional(),
   birthDate: z
     .string()
     .refine(
@@ -57,7 +51,6 @@ const userUpdateSchema = z.object({
   sales: z.array(z.string()).optional(),
 });
 
-// Definir o tipo para os dados de atualização do usuário
 type UserUpdateInput = z.infer<typeof userUpdateSchema>;
 
 export class UserController {
@@ -68,17 +61,13 @@ export class UserController {
   }
 
   async getAllUsers(req: Request, res: Response): Promise<void> {
-    // Extrair parâmetros da query
     const { role, search, cpf } = req.query;
 
-    // Obter usuários com base nos filtros
     let users: IUser[];
 
     if (search) {
-      // Busca por termo geral (nome, email, etc.)
       users = await this.userService.searchUsers(search as string);
     } else if (cpf) {
-      // Busca específica por CPF
       try {
         const user = await this.userService.getUserByCpf(cpf as string);
         users = user ? [user] : [];
@@ -90,10 +79,8 @@ export class UserController {
         }
       }
     } else if (role) {
-      // Filtrar por role
       users = await this.userService.getUsersByRole(role as string);
     } else {
-      // Sem filtros, retornar todos os usuários
       users = await this.userService.getAllUsers();
     }
 
@@ -117,7 +104,6 @@ export class UserController {
   }
 
   async updateUser(req: AuthRequest, res: Response): Promise<void> {
-    // Validar os dados de entrada
     let userData: UserUpdateInput;
     try {
       userData = userUpdateSchema.parse(req.body);
@@ -132,7 +118,6 @@ export class UserController {
       throw error;
     }
 
-    // Adicionar imagem ao usuário, se fornecida
     if (req.file) {
       userData = {
         ...userData,
@@ -140,7 +125,6 @@ export class UserController {
       };
     }
 
-    // Verificar permissões de atualização
     if (req.user?.role === "employee" && userData.role) {
       throw new PermissionError(
         "Funcionários não podem alterar 'roles'",
@@ -148,7 +132,6 @@ export class UserController {
       );
     }
 
-    // Verificar se o alvo é acessível para o usuário atual
     const targetUser = await this.userService.getUserById(req.params.id);
     if (req.user?.role === "employee" && targetUser.role !== "customer") {
       throw new PermissionError(
@@ -157,7 +140,6 @@ export class UserController {
       );
     }
 
-    // Atualizar o usuário
     const user = await this.userService.updateUser(req.params.id, userData);
     res.status(200).json(user);
   }
@@ -183,7 +165,6 @@ export class UserController {
       throw new AuthError("Usuário não autenticado", ErrorCode.UNAUTHORIZED);
     }
 
-    // Validar os dados de entrada
     let validatedData: UserUpdateInput;
     try {
       validatedData = userUpdateSchema.parse(req.body);
@@ -219,7 +200,6 @@ export class UserController {
 
     const { currentPassword, newPassword } = req.body;
 
-    // Validar dados
     if (!currentPassword || !newPassword) {
       throw new ValidationError(
         "Senha atual e nova senha são obrigatórias",
@@ -234,7 +214,6 @@ export class UserController {
       );
     }
 
-    // Verificar senha atual
     const isPasswordValid = await this.userService.verifyPassword(
       req.user.id,
       currentPassword
@@ -247,7 +226,6 @@ export class UserController {
       );
     }
 
-    // Atualizar para a nova senha
     await this.userService.updatePassword(req.user.id, newPassword);
 
     res.status(200).json({ message: "Senha alterada com sucesso" });

@@ -99,7 +99,7 @@ export default function VisionSection({ eye, form }: VisionSectionProps) {
         name={`prescriptionData.${eye}Eye.pd`}
         render={({ field }) => (
           <FormItem>
-            <FormLabel>PD</FormLabel>
+            <FormLabel>D.P.</FormLabel>
             <FormControl>
               <Input
                 type="number"

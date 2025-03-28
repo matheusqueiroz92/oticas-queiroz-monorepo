@@ -188,8 +188,8 @@ export default function PaymentsPage() {
   const showEmptyState = !isLoading && !error && payments.length === 0;
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Pagamentos</h1>
+    <div className="space-y-2 max-w-auto mx-auto p-1 md:p-2">
+      <h1 className="text-2xl font-bold text-primary">Pagamentos</h1>
 
       {/* Componente de Status do Caixa */}
       <CashRegisterStatus showOpenButton />

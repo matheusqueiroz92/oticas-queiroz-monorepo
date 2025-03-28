@@ -93,7 +93,7 @@ export class OrderController {
     try {
       const queryParams = orderQuerySchema.parse(req.query);
       console.log("Query params após validação:", queryParams);
-
+  
       const {
         page,
         limit,
@@ -106,11 +106,12 @@ export class OrderController {
         endDate,
         productId,
         minPrice,
-        maxPrice
+        maxPrice,
+        search // Extrair o parâmetro search
       } = queryParams;
-
+  
       const filters: Record<string, any> = {};
-
+  
       if (status) {
         filters.status = status;
         console.log(`Filtro status: ${status}`);
@@ -136,15 +137,21 @@ export class OrderController {
       if (productId) filters.productId = productId;
       if (minPrice !== undefined) filters.minPrice = minPrice;
       if (maxPrice !== undefined) filters.maxPrice = maxPrice;
-
+  
       if (startDate && endDate) {
         filters.startDate = startDate;
         filters.endDate = endDate;
       }
       
+      // Adicionar o parâmetro search aos filtros
+      if (search) {
+        filters.search = search;
+        console.log(`Aplicando filtro de busca textual: ${search}`);
+      }
+      
       console.log("Filtros compilados:", filters);
       const result = await this.orderService.getAllOrders(page, limit, filters);
-
+  
       res.status(200).json({
         orders: result.orders,
         pagination: {

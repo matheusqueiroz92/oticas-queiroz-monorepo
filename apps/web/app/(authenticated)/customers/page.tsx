@@ -19,7 +19,6 @@ export default function CustomersPage() {
     navigateToNewCustomer,
   } = useCustomers();
 
-  // Define as colunas para a lista de clientes
   const customerColumns: Column[] = [
     { key: "name", header: "Nome" },
     { key: "email", header: "Email" },
@@ -38,8 +37,8 @@ export default function CustomersPage() {
   const showEmptyState = !isLoading && !error && customers.length === 0;
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Clientes</h1>
+    <div className="space-y-2 max-w-auto mx-auto p-1 md:p-2">
+      <h1 className="text-2xl font-bold text-primary">Clientes</h1>
       <div className="flex justify-between">
         <Input
           placeholder="Buscar cliente..."

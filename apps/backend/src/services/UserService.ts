@@ -36,6 +36,7 @@ export class UserService {
         ErrorCode.INVALID_PASSWORD
       );
     }
+
     if (
       "role" in userData &&
       userData.role &&
@@ -44,10 +45,8 @@ export class UserService {
       throw new ValidationError("Role inválida", ErrorCode.INVALID_ROLE);
     }
 
-    // Validações para CPF
     if ("cpf" in userData && userData.cpf !== undefined) {
       const cpfString = userData.cpf.toString();
-      // Verificar se o CPF tem 11 dígitos
       if (!/^\d{11}$/.test(cpfString)) {
         throw new ValidationError(
           "CPF inválido. Deve conter 11 dígitos numéricos",
@@ -56,15 +55,15 @@ export class UserService {
       }
     }
 
-    // Validações para RG
-    if ("rg" in userData && userData.rg !== undefined) {
-      const rgString = userData.rg.toString();
-      // Verificar se o RG tem entre 6 e 14 dígitos
-      if (!/^\d{6,14}$/.test(rgString)) {
-        throw new ValidationError(
-          "RG inválido. Deve conter entre 6 e 14 dígitos numéricos",
-          ErrorCode.INVALID_RG
-        );
+    if (userData.rg) {
+      if ("rg" in userData && userData.rg !== undefined) {
+        const rgString = userData.rg.toString();
+        if (!/^\d{6,14}$/.test(rgString)) {
+          throw new ValidationError(
+            "RG inválido. Deve conter entre 6 e 14 dígitos numéricos",
+            ErrorCode.INVALID_RG
+          );
+        }
       }
     }
   }
@@ -73,30 +72,43 @@ export class UserService {
     this.validateUserData(userData);
 
     if (creatorRole === "employee" && userData.role && userData.role !== "customer") {
-        throw new PermissionError(
-            "Funcionários só podem cadastrar clientes",
-            ErrorCode.INSUFFICIENT_PERMISSIONS
-        );
+      throw new PermissionError(
+        "Funcionários só podem cadastrar clientes",
+        ErrorCode.INSUFFICIENT_PERMISSIONS
+      );
     }
     
     const existingUserByCpf = await this.userModel.findByCpf(userData.cpf);
     if (existingUserByCpf) {
-        throw new ValidationError("CPF já cadastrado", ErrorCode.DUPLICATE_CPF);
+      throw new ValidationError("CPF já cadastrado", ErrorCode.DUPLICATE_CPF);
     }
 
-    if (userData.email && userData.email.trim() !== "") {
-        const existingUserByEmail = await this.userModel.findByEmail(userData.email);
-        if (existingUserByEmail) {
-            throw new ValidationError(
-                "Email já cadastrado",
-                ErrorCode.DUPLICATE_EMAIL
-            );
-        }
-    } else {
-        delete userData.email;
-    }    
+    const email = userData.email?.trim().toLowerCase() || null;
 
-    return this.userModel.create(userData);
+    if (email) {
+      const existingUser = await this.userModel.findByEmail(email);
+      if (existingUser) {
+        throw new ValidationError(
+          "Email já cadastrado",
+          ErrorCode.DUPLICATE_EMAIL
+        );
+      }
+    }
+    const userToCreate = {
+        ...userData,
+        email: email || undefined
+    };
+    try {
+      return await this.userModel.create(userToCreate);
+    } catch (error) {
+      if ((error as any).code === 11000 && (error as any).keyPattern?.email) {
+        throw new ValidationError(
+          "Email já cadastrado",
+          ErrorCode.DUPLICATE_EMAIL
+        );
+      }
+      throw error;
+    }
   }
 
 

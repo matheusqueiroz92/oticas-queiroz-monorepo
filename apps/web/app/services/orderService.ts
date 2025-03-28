@@ -2,20 +2,18 @@ import { api } from "./authService";
 import type { Order } from "../types/order";
 import { normalizeOrder, normalizeOrders } from "../utils/data-normalizers";
 
-interface OrderFilters {
+export interface OrderFilters {
   search?: string;
   page?: number;
   limit?: number;
   status?: string;
-  statuses?: string[];
-  employeeId?: string[];
-  paymentMethod?: string[];
-  laboratoryId?: string[];
+  employeeId?: string;
+  paymentMethod?: string;
+  laboratoryId?: string;
   startDate?: string;
   endDate?: string;
   sort?: string;
 }
-
 
 interface PaginationInfo {
   page: number;
@@ -33,32 +31,72 @@ export async function getAllOrders(filters: OrderFilters = {}): Promise<{
     
     const params: Record<string, any> = {};
     
+    // Parâmetros de paginação
     if (filters.page) params.page = filters.page;
-    if (filters.limit) params.limit = filters.limit;
+    if (filters.limit) params.limit = filters.limit || 10;
     if (filters.sort) params.sort = filters.sort;
     
-    if (filters.search) params.search = filters.search;
+    // Parâmetro de busca
+    if (filters.search) {
+      params.search = filters.search;
+      console.log(`Enviando parâmetro search: "${filters.search}"`);
+    }
     
-    if (filters.status) params.status = filters.status;
+    // Status
+    if (filters.status && filters.status !== 'all') {
+      params.status = filters.status;
+      console.log(`Enviando status: ${filters.status}`);
+    }
     
-    if (filters.employeeId) {
+    // EmployeeId
+    if (filters.employeeId && filters.employeeId !== 'all') {
       params.employeeId = filters.employeeId;
       console.log(`Enviando employeeId: ${filters.employeeId}`);
     }
 
-    if (filters.paymentMethod) {
+    // PaymentMethod
+    if (filters.paymentMethod && filters.paymentMethod !== 'all') {
       params.paymentMethod = filters.paymentMethod;
       console.log(`Enviando paymentMethod: ${filters.paymentMethod}`);
     }
 
-    if (filters.laboratoryId) params.laboratoryId = filters.laboratoryId;
+    // LaboratoryId
+    if (filters.laboratoryId && filters.laboratoryId !== 'all') {
+      params.laboratoryId = filters.laboratoryId;
+      console.log(`Enviando laboratoryId: ${filters.laboratoryId}`);
+    }
     
-    if (filters.startDate) params.startDate = filters.startDate;
-    if (filters.endDate) params.endDate = filters.endDate;
+    // Datas
+    if (filters.startDate) {
+      params.startDate = filters.startDate;
+      console.log(`Enviando startDate: ${filters.startDate}`);
+    }
     
-    console.log("Parâmetros enviados para a API:", params);
+    if (filters.endDate) {
+      params.endDate = filters.endDate;
+      console.log(`Enviando endDate: ${filters.endDate}`);
+    }
+    
+    // Adicionar timestamp para evitar cache
+    params._t = new Date().getTime() + Math.random().toString(36).substring(7);
+    
+    console.log("Parâmetros finais enviados para a API:", params);
+    console.log("URL de requisição:", `/api/orders?${new URLSearchParams(params).toString()}`);
 
-    const response = await api.get("/api/orders", { params });
+    // Configuração com headers anti-cache
+    const config = {
+      params,
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-Force-Fetch': 'true',
+        'X-Timestamp': Date.now().toString()
+      }
+    };
+
+    const response = await api.get("/api/orders", config);
     
     console.log("Resposta recebida da API:", response.data);
 
@@ -73,6 +111,7 @@ export async function getAllOrders(filters: OrderFilters = {}): Promise<{
     }
 
     const orders = normalizeOrders(rawOrders);
+    console.log(`Retornando ${orders.length} pedidos normalizados`);
 
     return { orders, pagination };
   } catch (error) {
@@ -101,7 +140,7 @@ export async function getOrdersByClient(clientId: string): Promise<Order[] | nul
   try {
     if (!clientId) return [];
     const response = await api.get(`/api/orders/client/${clientId}`);
-    return Array.isArray(response.data) ? response.data : [];
+    return Array.isArray(response.data) ? normalizeOrders(response.data) : [];
   } catch (error) {
     console.error("Erro ao buscar pedidos do cliente:", error);
     return [];

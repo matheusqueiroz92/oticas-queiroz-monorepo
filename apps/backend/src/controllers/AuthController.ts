@@ -31,12 +31,7 @@ const registerSchema = z.object({
     .string()
     .min(11, "CPF deve ter pelo menos 11 dígitos")
     .refine((cpf) => isValidCPF(cpf), { message: "CPF inválido" }),
-  rg: z
-    .string()
-    .min(6, "RG deve ter pelo menos 6 dígitos")
-    .refine((rg) => /^\d{6,14}$/.test(rg.replace(/[^\d]/g, "")), {
-      message: "RG inválido",
-    }),
+  rg: z.string().optional(),
   birthDate: z
     .string()
     .refine(
@@ -94,7 +89,6 @@ export class AuthController {
       validatedData = registerSchema.parse({
         ...req.body,
         cpf: req.body.cpf,
-        rg: req.body.rg,
         birthDate: req.body.birthDate,
       });
     } catch (e) {

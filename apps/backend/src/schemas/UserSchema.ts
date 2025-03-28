@@ -10,12 +10,11 @@ const userSchema = new Schema<IUser>(
       type: String,
       trim: true,
       lowercase: true,
-      default: null, // Em vez de string vazia
-      validate: {
-          validator: function(v: string) {
-              return v === null || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
-          },
-          message: 'Por favor, insira um email válido'
+      default: null,
+      index: {
+        unique: true,
+        sparse: true,
+        partialFilterExpression: { email: { $ne: null } }
       }
     },
     password: { type: String, required: true },
@@ -25,15 +24,14 @@ const userSchema = new Schema<IUser>(
       enum: ["admin", "employee", "customer"],
       required: true,
     },
-    address: { type: String }, // Apenas para clientes
-    phone: { type: String }, // Apenas para clientes
+    address: { type: String },
+    phone: { type: String },
     cpf: {
       type: String,
       required: true,
       unique: true,
       validate: {
         validator: (v: string) => {
-          // Valida formato e algoritmo do CPF
           return isValidCPF(v);
         },
         message: (props) => `${props.value} não é um CPF válido!`,
@@ -41,27 +39,19 @@ const userSchema = new Schema<IUser>(
     },
     rg: {
       type: String,
-      required: true,
-      validate: {
-        validator: (v: string) => {
-          // RG limpo deve ter pelo menos 6 dígitos
-          return /^\d{6,14}$/.test(v.replace(/[^\d]/g, ""));
-        },
-        message: (props) => `${props.value} não é um RG válido!`,
-      },
+      default: null,
     },
     birthDate: {
       type: Date,
       validate: {
         validator: (date: Date) => {
-          // Verificar se é uma data válida e não é no futuro
           return (
             date instanceof Date &&
             !Number.isNaN(date.getTime()) &&
             date <= new Date()
           );
         },
-        message: (props) => "Data de nascimento inválida ou no futuro!",
+        message: "Data de nascimento inválida ou no futuro!",
       },
     },
     purchases: [{ type: Schema.Types.ObjectId, ref: "Order" }],
@@ -76,5 +66,12 @@ userSchema.methods.comparePassword = async function (
 ): Promise<boolean> {
   return bcrypt.compare(candidatePassword, this.password);
 };
+
+userSchema.pre('save', function(next) {
+  if (this.email === null || this.email === '') {
+      this.email = undefined;
+  }
+  next();
+});
 
 export const User = model<IUser>("User", userSchema);
