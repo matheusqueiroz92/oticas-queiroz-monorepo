@@ -27,6 +27,8 @@ import {
 } from "@/app/services/authService";
 import { useEffect, useState } from "react";
 import Cookies from "js-cookie";
+import Image from "next/image";
+import LogoOticasQueiroz from "../../public/logo-oticas-queiroz-branca.png";
 
 interface SubMenuItem {
   title: string;
@@ -130,7 +132,6 @@ export default function AuthenticatedLayout({
   const [userName, setUserName] = useState("");
   const [userRole, setUserRole] = useState("");
 
-  // Carregar dados do usuário dos cookies
   useEffect(() => {
     const name = Cookies.get("name") || "";
     const role = Cookies.get("role") || "";
@@ -139,17 +140,14 @@ export default function AuthenticatedLayout({
     setUserRole(role);
   }, []);
 
-  // Fechar menu ao navegar
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [pathname]);
 
-  // Determinar o papel do usuário diretamente dos cookies se usePermissions falhar
   const isAdminByRole = userRole === "admin";
   const isEmployeeByRole = userRole === "employee";
   const isCustomerByRole = userRole === "customer";
 
-  // Usar dados dos hooks se disponíveis, senão usar os cookies
   const canAccessAdmin = isAdmin || isAdminByRole;
   const canAccessEmployee = isEmployee || isEmployeeByRole;
   const isCustomer =
@@ -190,6 +188,12 @@ export default function AuthenticatedLayout({
       {/* Botão hambúrguer mobile - visível apenas em dispositivos móveis */}
       <div className="md:hidden bg-[var(--primary-blue)] p-4 flex justify-between items-center text-white">
         <h1 className="text-lg font-bold">Óticas Queiroz</h1>
+        <Image
+            src={LogoOticasQueiroz}
+            alt="Óticas Queiroz Logo"
+            fill
+            className="object-contain"
+          />
         <button 
           onClick={toggleMobileMenu}
           className="p-1 rounded hover:bg-primary-foreground/20"
@@ -215,11 +219,18 @@ export default function AuthenticatedLayout({
         )}
       >
         {/* Cabeçalho - visível apenas em desktop */}
-        <div className="hidden md:block mb-8 p-6">
-          <h1 className="text-xl font-bold">Óticas Queiroz</h1>
-          {userName && (
+        <div className="hidden md:block p-8">
+          <div className="flex flex-col items-center justify-center">
+            <Image
+              src={LogoOticasQueiroz}
+              alt="Óticas Queiroz Logo"
+              height={120}
+              width={120}
+            />
+          {/* {userName && (
             <p className="text-sm text-white/70 mt-2">Olá, {userName}</p>
-          )}
+          )} */}
+          </div>
         </div>
 
         <nav className="space-y-2 flex-1 p-2 md:p-6">

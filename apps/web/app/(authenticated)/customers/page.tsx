@@ -7,6 +7,7 @@ import { Loader2, UserX } from "lucide-react";
 import { useCustomers } from "@/hooks/useCustomers";
 import type { Column } from "@/app/types/user";
 import { ErrorAlert } from "@/components/ErrorAlert";
+import { PageTitle } from "@/components/PageTitle";
 
 export default function CustomersPage() {
   const {
@@ -38,7 +39,10 @@ export default function CustomersPage() {
 
   return (
     <div className="space-y-2 max-w-auto mx-auto p-1 md:p-2">
-      <h1 className="text-2xl font-bold text-primary">Clientes</h1>
+      <PageTitle
+        title="Clientes"
+        description="Lista de clientes da loja"
+      />
       <div className="flex justify-between">
         <Input
           placeholder="Buscar cliente..."

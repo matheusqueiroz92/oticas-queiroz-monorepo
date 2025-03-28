@@ -13,6 +13,7 @@ import { OrderTable } from "@/components/Orders/OrderTable";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { Order } from "@/app/types/order";
 import { formatCurrency, formatDate } from "@/app/utils/formatters";
+import { PageTitle } from "@/components/PageTitle";
 
 // Estilos para as badges de status para impedir comportamento hover
 const customBadgeStyles = `
@@ -217,7 +218,10 @@ export default function OrdersPage() {
       <style jsx global>{customBadgeStyles}</style>
       
       <div className="space-y-2 max-w-auto mx-auto p-1 md:p-2">
-        <h1 className="text-2xl font-bold text-primary">Pedidos</h1>
+        <PageTitle
+          title="Pedidos"
+          description="Lista de pedidos da loja"
+        />
         
         <div className="flex justify-between items-center">
           <div className="flex gap-2 items-center">
@@ -314,13 +318,6 @@ export default function OrdersPage() {
             totalItems={totalOrders}
             key={`order-table-${search}-${JSON.stringify(orders.length)}-${currentPage}`} // Key para forçar atualização
           />
-        )}
-        
-        {/* Debug: Estado atual da tabela (apenas em desenvolvimento) */}
-        {process.env.NODE_ENV !== 'production' && (
-          <div className="text-xs bg-gray-100 p-2 mt-2 rounded">
-            Debug: {orders.length} pedidos | Página {currentPage}/{totalPages} | Total: {totalOrders}
-          </div>
         )}
       </div>
     </>

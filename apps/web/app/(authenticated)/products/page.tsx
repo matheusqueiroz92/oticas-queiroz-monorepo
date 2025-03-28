@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Search, Loader2 } from "lucide-react";
 import { getProductTypeName } from "@/app/services/productService";
+import { PageTitle } from "@/components/PageTitle";
 
 export default function ProductsPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -58,10 +59,13 @@ export default function ProductsPage() {
   }
 
   return (
-    <div className="p-8">
+    <div className="space-y-2 max-w-auto mx-auto p-1 md:p-2">
+      <PageTitle
+        title="Produtos"
+        description="Lista de produtos da loja"
+      />
       <Card>
         <CardHeader>
-          <CardTitle>Produtos</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="mb-6 flex flex-col sm:flex-row gap-4">

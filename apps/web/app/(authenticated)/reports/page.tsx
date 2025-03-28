@@ -49,7 +49,7 @@ export default function ReportsPage() {
   };
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="space-y-2 max-w-auto mx-auto p-1 md:p-2">
       <div className="flex justify-between items-center">
         <PageTitle
           title="Relatórios"

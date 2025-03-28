@@ -7,6 +7,7 @@ import { Loader2, UserX } from "lucide-react";
 import { useEmployees } from "@/hooks/useEmployees";
 import type { Column } from "@/app/types/user";
 import { ErrorAlert } from "@/components/ErrorAlert";
+import { PageTitle } from "@/components/PageTitle";
 
 export default function EmployeesPage() {
   const {
@@ -39,7 +40,10 @@ export default function EmployeesPage() {
 
   return (
     <div className="space-y-2 max-w-auto mx-auto p-1 md:p-2">
-      <h1 className="text-2xl font-bold text-primary">Funcionários</h1>
+      <PageTitle
+        title="Funcionários"
+        description="Lista de funcionários da loja"
+      />
       <div className="flex justify-between">
         <Input
           placeholder="Buscar funcionário..."

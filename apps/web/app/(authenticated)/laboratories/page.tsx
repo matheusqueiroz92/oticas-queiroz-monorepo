@@ -15,6 +15,7 @@ import { Loader2, Beaker } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useLaboratories } from "@/hooks/useLaboratories";
 import type { Laboratory } from "@/app/types/laboratory";
+import { PageTitle } from "@/components/PageTitle";
 
 export default function LaboratoriesPage() {
   const [search, setSearch] = useState("");
@@ -35,8 +36,11 @@ export default function LaboratoriesPage() {
   const showEmptyState = !isLoading && !error && laboratories.length === 0;
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Laboratórios</h1>
+    <div className="space-y-2 max-w-auto mx-auto p-1 md:p-2">
+      <PageTitle
+        title="Laboratórios"
+        description="Lista de laboratórios parceiros da loja"
+      />
       <div className="flex justify-between">
         <div className="flex gap-2">
           <Input

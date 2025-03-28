@@ -113,18 +113,41 @@ export class UserModel {
   }
 
   async search(searchTerm: string): Promise<IUser[]> {
-    const searchRegex = new RegExp(searchTerm, "i");
-
-    const users = (await User.find({
+    if (!searchTerm || searchTerm.trim() === "") {
+      return this.findAll();
+    }
+  
+    const sanitizedTerm = searchTerm.trim().toLowerCase();
+    console.log(`Executando busca de usuários com termo: "${sanitizedTerm}"`);
+  
+    // Construir uma expressão regular para busca case-insensitive
+    const searchRegex = new RegExp(sanitizedTerm, "i");
+    
+    // Verificar se o termo de busca é um CPF
+    const isCpfSearch = /^\d+$/.test(sanitizedTerm);
+    
+    // Construir a query
+    const query: any = {
       $or: [
         { name: searchRegex },
         { email: searchRegex },
-        { cpf: { $regex: searchTerm.replace(/\D/g, "") } },
-        { address: searchRegex },
-        { phone: searchRegex },
-      ],
-    }).exec()) as unknown as UserDocument[];
-
+      ]
+    };
+    
+    // Adicionar busca por CPF se o termo parece ser um CPF (só números)
+    if (isCpfSearch) {
+      query.$or.push({ cpf: { $regex: sanitizedTerm } });
+    }
+    
+    // Adicionar busca por outros campos relevantes
+    query.$or.push({ address: searchRegex });
+    query.$or.push({ phone: searchRegex });
+  
+    console.log("Query de busca construída:", JSON.stringify(query));
+  
+    const users = (await User.find(query).exec()) as unknown as UserDocument[];
+    console.log(`Busca retornou ${users.length} usuários`);
+  
     return users.map((user) => this.convertToIUser(user));
   }
 

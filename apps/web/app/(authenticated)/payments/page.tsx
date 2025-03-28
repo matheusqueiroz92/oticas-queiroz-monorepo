@@ -43,6 +43,7 @@ import {
   getPaymentStatusClass,
 } from "@/app/utils/formatters";
 import type { PaymentType, PaymentStatus, IPayment } from "@/app/types/payment";
+import { PageTitle } from "@/components/PageTitle";
 
 export default function PaymentsPage() {
   const [search, setSearch] = useState("");
@@ -189,7 +190,10 @@ export default function PaymentsPage() {
 
   return (
     <div className="space-y-2 max-w-auto mx-auto p-1 md:p-2">
-      <h1 className="text-2xl font-bold text-primary">Pagamentos</h1>
+      <PageTitle
+        title="Pagamentos"
+        description="Lista de pagamentos da loja"
+      />
 
       {/* Componente de Status do Caixa */}
       <CashRegisterStatus showOpenButton />

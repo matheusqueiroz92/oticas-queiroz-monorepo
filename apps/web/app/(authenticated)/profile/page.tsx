@@ -28,6 +28,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import Cookies from "js-cookie";
+import { PageTitle } from "@/components/PageTitle";
 
 const profileFormSchema = z.object({
   name: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
@@ -125,8 +126,11 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-6">Meu Perfil</h1>
+    <div className="space-y-2 max-w-auto mx-auto p-1 md:p-2">
+      <PageTitle
+        title="Perfil"
+        description="Informações do seu perfil"
+      />
 
       <Tabs defaultValue="info">
         <TabsList className="mb-6">

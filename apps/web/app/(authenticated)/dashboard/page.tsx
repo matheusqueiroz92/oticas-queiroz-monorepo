@@ -35,6 +35,7 @@ import { useEmployees } from "@/hooks/useEmployees";
 import { useLegacyClient } from "@/hooks/useLegacyClient";
 import { Employee } from "@/app/types/employee";
 import { formatDate } from "../../../app/utils/formatters"
+import { PageTitle } from "@/components/PageTitle";
 
 type OrderStatus = "pending" | "in_production" | "ready" | "delivered" | "cancelled";
 
@@ -172,7 +173,10 @@ export default function DashboardPage() {
   return (
     <div className="space-y-2 max-w-auto mx-auto p-1 md:p-2">
       <div className="flex justify-between items-center">
-      <h1 className="text-2xl font-bold text-primary">Dashboard</h1>
+        <PageTitle
+          title="Dashboard"
+          description="Gerencie e visualize dados da loja"
+        />
         <div className="text-sm text-muted-foreground">
           {new Date().toLocaleDateString("pt-BR", {
             weekday: "long",

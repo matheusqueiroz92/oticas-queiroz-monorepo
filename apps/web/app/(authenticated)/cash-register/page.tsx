@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { ca, ptBR } from "date-fns/locale";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -49,6 +49,11 @@ import {
 
 import { useCashRegister } from "../../../hooks/useCashRegister";
 import { formatCurrency, formatDate } from "@/app/utils/formatters";
+import { PageTitle } from "@/components/PageTitle";
+import { useEmployees } from "@/hooks/useEmployees";
+import { Employee } from "@/app/types/employee";
+import { register } from "module";
+import { useUsers } from "@/hooks/useUsers";
 
 export default function CashRegisterPage() {
   const [search, setSearch] = useState("");
@@ -70,6 +75,10 @@ export default function CashRegisterPage() {
     refetch,
   } = useCashRegister();
 
+  const { employees } = useEmployees();
+
+  const { useUserQuery } = useUsers()
+ 
   // Função para aplicar filtro de data
   const applyDateFilter = () => {
     if (date) {
@@ -176,9 +185,22 @@ export default function CashRegisterPage() {
   // Verificar estado vazio
   const showEmptyState = !isLoading && !error && cashRegisters.length === 0;
 
+  // const getNameEmployee = employees.filter((employee: Employee) => {
+  //   return employee._id === '67e1b90db23bc38e0e77d01e'
+  // }).map((nameEmployee: string) => nameEmployee.name);
+
+  // console.log(getNameEmployee[0]);
+
+  // const { data } = useUserQuery(cashRegisters[0].openedBy)
+
+  // console.log(data.name);
+
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Controle de Caixa</h1>
+    <div className="space-y-2 max-w-auto mx-auto p-1 md:p-2">
+      <PageTitle
+        title="Controle de caixa"
+        description="Gerencie e visualize os registros de caixa da loja"
+      />
 
       {/* Dashboard com caixa ativo */}
       {activeRegister && (
