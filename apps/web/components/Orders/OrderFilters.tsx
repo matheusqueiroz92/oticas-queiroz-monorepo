@@ -14,7 +14,7 @@ import { useLaboratories } from "@/hooks/useLaboratories";
 import { useEmployees } from "@/hooks/useEmployees";
 import { Employee } from "@/app/types/employee";
 
-export const OrderFilters = ({ onUpdateFilters }) => {
+export const OrderFilters = ({ onUpdateFilters }: any) => {
   const [dateRange, setDateRange] = useState({
     startDate: '',
     endDate: ''
