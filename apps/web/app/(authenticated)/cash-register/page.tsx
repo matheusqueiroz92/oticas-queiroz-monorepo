@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { ca, ptBR } from "date-fns/locale";
 
@@ -50,9 +50,6 @@ import {
 import { useCashRegister } from "../../../hooks/useCashRegister";
 import { formatCurrency, formatDate } from "@/app/utils/formatters";
 import { PageTitle } from "@/components/PageTitle";
-import { useEmployees } from "@/hooks/useEmployees";
-import { Employee } from "@/app/types/employee";
-import { register } from "module";
 import { useUsers } from "@/hooks/useUsers";
 
 export default function CashRegisterPage() {
@@ -75,11 +72,19 @@ export default function CashRegisterPage() {
     refetch,
   } = useCashRegister();
 
-  const { employees } = useEmployees();
+  const {
+    getAllUsers,
+    usersMap,
+  } = useUsers();
 
-  const { useUserQuery } = useUsers()
+  useEffect(() => {
+    const loadAllUsers = async () => {
+      await getAllUsers();
+    };
+    
+    loadAllUsers();
+  }, [getAllUsers]);
  
-  // Função para aplicar filtro de data
   const applyDateFilter = () => {
     if (date) {
       updateFilters({
@@ -89,14 +94,12 @@ export default function CashRegisterPage() {
     }
   };
 
-  // Função para limpar filtros
   const clearFilters = () => {
     updateFilters({});
     setDate(undefined);
     setSearch("");
   };
 
-  // Função para gerar itens de paginação
   const generatePaginationItems = () => {
     const items = [];
     const maxVisiblePages = 5;
@@ -184,16 +187,6 @@ export default function CashRegisterPage() {
 
   // Verificar estado vazio
   const showEmptyState = !isLoading && !error && cashRegisters.length === 0;
-
-  // const getNameEmployee = employees.filter((employee: Employee) => {
-  //   return employee._id === '67e1b90db23bc38e0e77d01e'
-  // }).map((nameEmployee: string) => nameEmployee.name);
-
-  // console.log(getNameEmployee[0]);
-
-  // const { data } = useUserQuery(cashRegisters[0].openedBy)
-
-  // console.log(data.name);
 
   return (
     <div className="space-y-2 max-w-auto mx-auto p-1 md:p-2">
@@ -346,7 +339,7 @@ export default function CashRegisterPage() {
               {cashRegisters.map((register) => (
                 <TableRow key={register._id}>
                   <TableCell>{formatDate(register.openingDate)}</TableCell>
-                  <TableCell>{register.openedBy}</TableCell>
+                  <TableCell>{usersMap[register.openedBy]?.name || register.openedBy}</TableCell>
                   <TableCell>
                     {formatCurrency(register.openingBalance)}
                   </TableCell>

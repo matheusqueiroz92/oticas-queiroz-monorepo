@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/useToast";
@@ -13,7 +13,55 @@ export function useUsers() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [usersMap, setUsersMap] = useState<Record<string, any>>({});
-  const [isLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Nova função para buscar todos os usuários
+  const getAllUsers = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const response = await api.get(API_ROUTES.USERS.BASE);
+      
+      // Atualizar o cache local com os usuários retornados
+      const updatedUsersMap = response.data.reduce((acc: Record<string, any>, user: any) => {
+        acc[user._id] = user;
+        return acc;
+      }, {});
+      
+      setUsersMap(prevState => ({
+        ...prevState,
+        ...updatedUsersMap
+      }));
+      
+      // Atualizar o cache do React Query
+      queryClient.setQueryData(QUERY_KEYS.USERS.ALL, response.data);
+      
+      // Também atualizar o cache individual para cada usuário
+      response.data.forEach((user: any) => {
+        queryClient.setQueryData(QUERY_KEYS.USERS.DETAIL(user._id), user);
+      });
+      
+      return response.data;
+    } catch (error: any) {
+      console.error('Erro ao buscar todos os usuários:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao buscar usuários",
+        description: error.response?.data?.message || "Ocorreu um erro ao buscar a lista de usuários",
+      });
+      return [];
+    } finally {
+      setIsLoading(false);
+    }
+  }, [queryClient, toast]);
+
+  // Hook de query para usar a função getAllUsers com React Query
+  const useAllUsersQuery = (options = {}) => {
+    return useQuery({
+      queryKey: QUERY_KEYS.USERS.ALL,
+      queryFn: getAllUsers,
+      ...options
+    });
+  };
 
   const fetchUserById = async (id: string) => {
     const response = await api.get(`/api/users/${id}`);
@@ -172,7 +220,11 @@ export function useUsers() {
     createUserMutation,
     getUserImageUrl,
     
-    // Novas funções para gerenciamento de cache
+    // Novas funções
+    getAllUsers,
+    useAllUsersQuery,
+    
+    // Funções existentes para gerenciamento de cache
     usersMap,
     isLoading,
     fetchUsers,
