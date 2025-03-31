@@ -1,21 +1,18 @@
 import { Schema, model, Model, Document } from "mongoose";
 import { IProduct, ILens, ICleanLens, IPrescriptionFrame, ISunglassesFrame } from "../interfaces/IProduct";
 
-// Definir interface para documentos do Mongoose
 interface ProductDocument extends Document, Omit<IProduct, '_id'> { }
 interface LensDocument extends Document, Omit<ILens, '_id'> { }
 interface CleanLensDocument extends Document, Omit<ICleanLens, '_id'> { }
 interface PrescriptionFrameDocument extends Document, Omit<IPrescriptionFrame, '_id'> { }
 interface SunglassesFrameDocument extends Document, Omit<ISunglassesFrame, '_id'> { }
 
-// Definir interfaces para os modelos
 interface ProductModel extends Model<ProductDocument> {}
 interface LensModel extends Model<LensDocument> {}
 interface CleanLensModel extends Model<CleanLensDocument> {}
 interface PrescriptionFrameModel extends Model<PrescriptionFrameDocument> {}
 interface SunglassesFrameModel extends Model<SunglassesFrameDocument> {}
 
-// Schema base com campos comuns
 const baseProductSchema = {
   name: {
     type: String,
@@ -43,7 +40,6 @@ const baseProductSchema = {
   },
 };
 
-// Schema principal com discriminator
 const productSchema = new Schema(
   {
     ...baseProductSchema,
@@ -59,10 +55,8 @@ const productSchema = new Schema(
   }
 );
 
-// Criar o modelo base
 const ProductBase = model<ProductDocument, ProductModel>("Product", productSchema);
 
-// Discriminator para lentes
 const lensSchema = new Schema({
   lensType: {
     type: String,
@@ -70,10 +64,8 @@ const lensSchema = new Schema({
   }
 });
 
-// Discriminator para limpa-lentes (sem campos adicionais)
 const cleanLensSchema = new Schema({});
 
-// Schema para armações (base para prescrição e solares)
 const frameSchema = {
   typeFrame: {
     type: String,
@@ -90,13 +82,16 @@ const frameSchema = {
   reference: {
     type: String,
     required: true,
+  },
+  stock: {
+    type: Number,
+    required: false,
+    default: 0,
   }
 };
 
-// Discriminator para armações de grau
 const prescriptionFrameSchema = new Schema(frameSchema);
 
-// Discriminator para armações solares
 const sunglassesFrameSchema = new Schema({
   ...frameSchema,
   modelSunglasses: {
@@ -105,7 +100,6 @@ const sunglassesFrameSchema = new Schema({
   }
 });
 
-// Criar os modelos com discriminators
 const Lens = ProductBase.discriminator<LensDocument, LensModel>(
   "lenses", 
   lensSchema

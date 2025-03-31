@@ -31,6 +31,8 @@ export class ProductModel {
       image: rawDoc.image,
       brand: rawDoc.brand,
       costPrice: rawDoc.costPrice,
+      stock: typeof rawDoc.stock === 'number' ? rawDoc.stock : 
+             (rawDoc.stock ? Number(rawDoc.stock) : undefined),
       createdAt: rawDoc.createdAt,
       updatedAt: rawDoc.updatedAt
     };
@@ -51,7 +53,9 @@ export class ProductModel {
           typeFrame: rawDoc.typeFrame,
           color: rawDoc.color,
           shape: rawDoc.shape,
-          reference: rawDoc.reference
+          reference: rawDoc.reference,
+          stock: typeof rawDoc.stock === 'number' ? rawDoc.stock : 
+                 (rawDoc.stock ? Number(rawDoc.stock) : 0)
         } as IPrescriptionFrame;
       
       case 'sunglasses_frame':
@@ -61,7 +65,9 @@ export class ProductModel {
           typeFrame: rawDoc.typeFrame,
           color: rawDoc.color,
           shape: rawDoc.shape,
-          reference: rawDoc.reference
+          reference: rawDoc.reference,
+          stock: typeof rawDoc.stock === 'number' ? rawDoc.stock : 
+                 (rawDoc.stock ? Number(rawDoc.stock) : 0)
         } as ISunglassesFrame;
       
       default:
@@ -140,7 +146,11 @@ export class ProductModel {
     if (updateData.productType) {
       delete updateData.productType;
     }
-
+  
+    if (updateData.stock !== undefined && typeof updateData.stock !== 'number') {
+      updateData.stock = Number(updateData.stock);
+    }
+  
     const product = await Product.findByIdAndUpdate(
       id,
       { $set: updateData },
@@ -149,7 +159,7 @@ export class ProductModel {
         runValidators: true,
       }
     );
-
+  
     if (!product) return null;
     return this.convertToIProduct(product);
   }

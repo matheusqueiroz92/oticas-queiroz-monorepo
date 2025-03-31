@@ -25,6 +25,10 @@ export class ProductController {
 
       if (data.sellPrice) data.sellPrice = Number(data.sellPrice);
       if (data.costPrice) data.costPrice = Number(data.costPrice);
+
+      if (data.stock !== undefined) {
+        data.stock = Number(data.stock);
+      }
       
       let validatedData: any;
       switch (data.productType) {
@@ -144,6 +148,9 @@ export class ProductController {
       if (data.brand !== undefined) updateData.brand = data.brand;
       if (data.sellPrice !== undefined) updateData.sellPrice = Number(data.sellPrice);
       if (data.costPrice !== undefined) updateData.costPrice = Number(data.costPrice);
+      if (data.stock !== undefined) {
+        updateData.stock = Number(data.stock);
+      }
       
       const originalProduct = await this.productService.getProductById(req.params.id);
       
@@ -164,12 +171,10 @@ export class ProductController {
           break;
       }
 
-      // Adiciona imagem se existir
       if (req.file) {
         updateData.image = `/images/products/${req.file.filename}`;
       }
 
-      // Atualiza o produto
       const product = await this.productService.updateProduct(
         req.params.id,
         updateData
@@ -203,6 +208,30 @@ export class ProductController {
         return;
       }
       console.error("Error deleting product:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  }
+
+  async updateProductStock(req: Request, res: Response): Promise<void> {
+    try {
+      const productId = req.params.id;
+      const { stock } = req.body;
+      
+      if (stock === undefined || isNaN(Number(stock))) {
+        res.status(400).json({ message: "Valor de estoque inválido" });
+        return;
+      }
+      
+      const stockValue = Number(stock);
+      
+      const product = await this.productService.updateProduct(productId, { stock: stockValue });
+      res.status(200).json(product);
+    } catch (error) {
+      if (error instanceof ProductError) {
+        res.status(400).json({ message: error.message });
+        return;
+      }
+      console.error("Error updating product stock:", error);
       res.status(500).json({ message: "Erro interno do servidor" });
     }
   }

@@ -31,7 +31,9 @@ export class OrderModel {
           image: product.image,
           sellPrice: product.sellPrice || 0,
           brand: product.brand,
-          costPrice: product.costPrice
+          costPrice: product.costPrice,
+          stock: typeof product.stock === 'number' ? product.stock : 
+                 (product.stock ? Number(product.stock) : undefined)
         };
         
         if (product.productType === 'lenses') {
@@ -58,7 +60,9 @@ export class OrderModel {
             typeFrame: product.typeFrame || "",
             color: product.color || "",
             shape: product.shape || "",
-            reference: product.reference || ""
+            reference: product.reference || "",
+            stock: typeof product.stock === 'number' ? product.stock : 
+                   (product.stock ? Number(product.stock) : 0)
           };
           return prescriptionFrameProduct;
         }
@@ -71,7 +75,9 @@ export class OrderModel {
             typeFrame: product.typeFrame || "",
             color: product.color || "",
             shape: product.shape || "",
-            reference: product.reference || ""
+            reference: product.reference || "",
+            stock: typeof product.stock === 'number' ? product.stock : 
+                   (product.stock ? Number(product.stock) : 0)
           };
           return sunglassesFrameProduct;
         }

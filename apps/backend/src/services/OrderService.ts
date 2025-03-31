@@ -1,6 +1,7 @@
 import { OrderModel } from "../models/OrderModel";
 import { UserModel } from "../models/UserModel";
 import { ProductModel } from "../models/ProductModel";
+import { StockService } from "./StockService";
 import type { CreateOrderDTO, IOrder, OrderProduct } from "../interfaces/IOrder";
 import type { IProduct, ILens, ICleanLens } from "../interfaces/IProduct";
 import { ExportUtils, type ExportOptions } from "../utils/exportUtils";
@@ -18,12 +19,14 @@ export class OrderService {
   private userModel: UserModel;
   private productModel: ProductModel;
   private exportUtils: ExportUtils;
+  private stockService: StockService;
 
   constructor() {
     this.orderModel = new OrderModel();
     this.userModel = new UserModel();
     this.productModel = new ProductModel();
     this.exportUtils = new ExportUtils();
+    this.stockService = new StockService();
   }
 
   private isProductReference(product: OrderProduct): product is string | mongoose.Types.ObjectId {
@@ -199,6 +202,19 @@ export class OrderService {
   
       await this.validateOrder(orderData);
       const order = await this.orderModel.create(orderData);
+
+      if (order.status !== 'cancelled') {
+        try {
+          await this.stockService.processOrderProducts(
+            order.products, 
+            'decrease',
+            orderData.employeeId.toString(),
+            order._id?.toString()
+          );
+        } catch (stockError) {
+          console.error('Erro ao atualizar estoque:', stockError);
+        }
+      }
   
       return order;
     } catch (error) {
@@ -257,12 +273,10 @@ export class OrderService {
       throw new OrderError("Pedido não encontrado");
     }
 
-    // Verificar permissões
     if (userRole === "customer" && userId !== order.clientId.toString()) {
       throw new OrderError("Sem permissão para atualizar este pedido");
     }
 
-    // Validar transição de status
     const validTransitions: Record<IOrder["status"], IOrder["status"][]> = {
       pending: ["in_production", "cancelled"],
       in_production: ["ready", "cancelled"],
@@ -277,7 +291,38 @@ export class OrderService {
       );
     }
 
-    // Sempre usar populate = true
+    if (status === 'cancelled' && order.status !== 'cancelled') {
+      const updatedOrder = await this.orderModel.updateStatus(id, status, true);
+      
+      if (!updatedOrder) {
+        throw new OrderError("Erro ao atualizar status do pedido");
+      }
+
+      try {
+        await this.stockService.processOrderProducts(order.products, 'increase');
+      } catch (stockError) {
+        console.error('Erro ao restaurar estoque:', stockError);
+      }
+      
+      return updatedOrder;
+    }
+    
+    if (order.status === 'cancelled' && status !== 'cancelled') {
+      const updatedOrder = await this.orderModel.updateStatus(id, status, true);
+      
+      if (!updatedOrder) {
+        throw new OrderError("Erro ao atualizar status do pedido");
+      }
+      
+      try {
+        await this.stockService.processOrderProducts(order.products, 'decrease');
+      } catch (stockError) {
+        console.error('Erro ao atualizar estoque:', stockError);
+      }
+      
+      return updatedOrder;
+    }
+
     const updatedOrder = await this.orderModel.updateStatus(id, status, true);
     if (!updatedOrder) {
       throw new OrderError("Erro ao atualizar status do pedido");
@@ -453,8 +498,20 @@ export class OrderService {
       "cancelled",
       true
     );
+
     if (!updatedOrder) {
       throw new OrderError("Erro ao cancelar pedido");
+    }
+
+    try {
+      await this.stockService.processOrderProducts(
+        updatedOrder.products, 
+        'increase',
+        userId,
+        id.toString()
+      );
+    } catch (stockError) {
+      console.error('Erro ao restaurar estoque:', stockError);
     }
 
     return updatedOrder;

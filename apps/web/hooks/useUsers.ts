@@ -15,7 +15,7 @@ export function useUsers() {
   const [usersMap, setUsersMap] = useState<Record<string, any>>({});
   const [isLoading, setIsLoading] = useState(false);
 
-  // Nova função para buscar todos os usuários
+  // Função para buscar todos os usuários
   const getAllUsers = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -64,7 +64,7 @@ export function useUsers() {
   };
 
   const fetchUserById = async (id: string) => {
-    const response = await api.get(`/api/users/${id}`);
+    const response = await api.get(API_ROUTES.USERS.BY_ID(id));
     return response.data;
   };
 

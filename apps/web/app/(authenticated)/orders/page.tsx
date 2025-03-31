@@ -14,14 +14,7 @@ import { ErrorAlert } from "@/components/ErrorAlert";
 import { Order } from "@/app/types/order";
 import { formatCurrency, formatDate } from "@/app/utils/formatters";
 import { PageTitle } from "@/components/PageTitle";
-
-// Estilos para as badges de status para impedir comportamento hover
-const customBadgeStyles = `
-  .status-badge {
-    cursor: default;
-    pointer-events: none;
-  }
-`;
+import { customBadgeStyles } from "@/app/utils/custom-badge-styles";
 
 export default function OrdersPage() {
   const [search, setSearch] = useState("");
@@ -48,7 +41,6 @@ export default function OrdersPage() {
     getLaboratoryName
   } = useOrders();
 
-  // Função debounce melhorada para a busca
   const debouncedSearch = useMemo(
     () => {
       const handler = (value: string) => {
@@ -74,12 +66,6 @@ export default function OrdersPage() {
     },
     [updateFilters]
   );
-
-  // Aplicar busca quando o valor mudar
-  useEffect(() => {
-    const cleanup = debouncedSearch(search);
-    return cleanup;
-  }, [search, debouncedSearch]);
 
   const handleManualRefresh = async () => {
     setIsRefreshing(true);
@@ -167,7 +153,6 @@ export default function OrdersPage() {
     return count;
   };
 
-  // Verificar se não há pedidos para mostrar
   const showEmptyState = !isLoading && !error && orders.length === 0;
 
   const orderColumns = [
@@ -212,9 +197,13 @@ export default function OrdersPage() {
     },
   ];
 
+  useEffect(() => {
+    const cleanup = debouncedSearch(search);
+    return cleanup;
+  }, [search, debouncedSearch]);
+
   return (
     <>
-      {/* CSS personalizado para as badges de status */}
       <style jsx global>{customBadgeStyles}</style>
       
       <div className="space-y-2 max-w-auto mx-auto p-1 md:p-2">
@@ -274,20 +263,16 @@ export default function OrdersPage() {
           </div>
         </div>
 
-        {/* Componente de filtros */}
         {showFilters && <OrderFilters onUpdateFilters={updateFilters} />}
 
-        {/* Estado de Carregamento */}
         {isLoading && (
           <div className="flex justify-center items-center py-12">
             <Loader2 className="h-8 w-8 animate-spin" />
           </div>
         )}
 
-        {/* Estado de Erro */}
         {error && <ErrorAlert message={error} />}
 
-        {/* Estado Vazio */}
         {showEmptyState && (
           <div className="flex flex-col items-center justify-center py-12 text-center border rounded-lg bg-background">
             <FileX className="h-16 w-16 text-muted-foreground mb-4" />
@@ -306,7 +291,6 @@ export default function OrdersPage() {
           </div>
         )}
 
-        {/* Estado com Dados */}
         {!isLoading && !error && orders.length > 0 && (
           <OrderTable
             data={orders}

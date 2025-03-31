@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
-import { ca, ptBR } from "date-fns/locale";
-
+import { ptBR } from "date-fns/locale";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,15 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
+import { PaginationItems } from "@/components/PaginationItems";
 import { Badge } from "@/components/ui/badge";
 import {
   CalendarIcon,
@@ -69,7 +60,6 @@ export default function CashRegisterPage() {
     navigateToOpenRegister,
     navigateToRegisterDetails,
     navigateToCloseRegister,
-    refetch,
   } = useCashRegister();
 
   const {
@@ -100,92 +90,6 @@ export default function CashRegisterPage() {
     setSearch("");
   };
 
-  const generatePaginationItems = () => {
-    const items = [];
-    const maxVisiblePages = 5;
-
-    if (totalPages <= maxVisiblePages) {
-      for (let i = 1; i <= totalPages; i++) {
-        items.push(
-          <PaginationItem key={i}>
-            <PaginationLink
-              onClick={() => setCurrentPage(i)}
-              isActive={currentPage === i}
-            >
-              {i}
-            </PaginationLink>
-          </PaginationItem>
-        );
-      }
-      return items;
-    }
-
-    // Caso contrário, mostrar um subconjunto com elipses
-    items.push(
-      <PaginationItem key={1}>
-        <PaginationLink
-          onClick={() => setCurrentPage(1)}
-          isActive={currentPage === 1}
-        >
-          1
-        </PaginationLink>
-      </PaginationItem>
-    );
-
-    // Adicionar elipse se necessário
-    if (currentPage > 3) {
-      items.push(
-        <PaginationItem key="ellipsis-start">
-          <PaginationEllipsis />
-        </PaginationItem>
-      );
-    }
-
-    // Páginas próximas à atual
-    const startPage = Math.max(2, currentPage - 1);
-    const endPage = Math.min(totalPages - 1, currentPage + 1);
-
-    for (let i = startPage; i <= endPage; i++) {
-      if (i <= 1 || i >= totalPages) continue;
-      items.push(
-        <PaginationItem key={i}>
-          <PaginationLink
-            onClick={() => setCurrentPage(i)}
-            isActive={currentPage === i}
-          >
-            {i}
-          </PaginationLink>
-        </PaginationItem>
-      );
-    }
-
-    // Adicionar elipse se necessário
-    if (currentPage < totalPages - 2) {
-      items.push(
-        <PaginationItem key="ellipsis-end">
-          <PaginationEllipsis />
-        </PaginationItem>
-      );
-    }
-
-    // Última página
-    if (totalPages > 1) {
-      items.push(
-        <PaginationItem key={totalPages}>
-          <PaginationLink
-            onClick={() => setCurrentPage(totalPages)}
-            isActive={currentPage === totalPages}
-          >
-            {totalPages}
-          </PaginationLink>
-        </PaginationItem>
-      );
-    }
-
-    return items;
-  };
-
-  // Verificar estado vazio
   const showEmptyState = !isLoading && !error && cashRegisters.length === 0;
 
   return (
@@ -195,7 +99,6 @@ export default function CashRegisterPage() {
         description="Gerencie e visualize os registros de caixa da loja"
       />
 
-      {/* Dashboard com caixa ativo */}
       {activeRegister && (
         <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
           <CardHeader className="pb-2">
@@ -244,7 +147,6 @@ export default function CashRegisterPage() {
         </Card>
       )}
 
-      {/* Ações principais */}
       <div className="flex flex-col md:flex-row justify-between gap-4">
         <div className="flex items-center space-x-2">
           <Input
@@ -384,46 +286,13 @@ export default function CashRegisterPage() {
             </TableBody>
           </Table>
 
-          {/* Paginação */}
-          {totalPages > 1 && (
-            <div className="mt-4">
-              <Pagination>
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious
-                      onClick={() =>
-                        setCurrentPage((prev) => Math.max(1, prev - 1))
-                      }
-                      aria-disabled={currentPage === 1}
-                      className={
-                        currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""
-                      }
-                    />
-                  </PaginationItem>
-
-                  {generatePaginationItems()}
-
-                  <PaginationItem>
-                    <PaginationNext
-                      onClick={() =>
-                        setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-                      }
-                      aria-disabled={currentPage === totalPages}
-                      className={
-                        currentPage === totalPages
-                          ? "opacity-50 cursor-not-allowed"
-                          : ""
-                      }
-                    />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
-
-              <div className="text-center text-sm text-gray-500 mt-2">
-                Mostrando {cashRegisters.length} de {totalRegisters} registros
-              </div>
-            </div>
-          )}
+          <PaginationItems
+            currentPage={currentPage}
+            totalPages={totalPages}
+            setCurrentPage={setCurrentPage}
+            totalItems={totalRegisters}
+            pageSize={cashRegisters.length}
+          />
         </>
       )}
     </div>

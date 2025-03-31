@@ -26,6 +26,7 @@ export interface PrescriptionFrame extends BaseProduct {
   color: string;
   shape: string;
   reference: string;
+  stock: number;
 }
 
 export interface SunglassesFrame extends BaseProduct {
@@ -35,9 +36,9 @@ export interface SunglassesFrame extends BaseProduct {
   color: string;
   shape: string;
   reference: string;
+  stock: number;
 }
 
 export type Product = Lens | CleanLens | PrescriptionFrame | SunglassesFrame;
 
-// Tipo de utilidade para criar um novo produto
 export type CreateProductDTO = Omit<Product, "_id" | "createdAt" | "updatedAt">;

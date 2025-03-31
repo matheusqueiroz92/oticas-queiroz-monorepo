@@ -56,7 +56,6 @@ import { normalizeProduct, getCorrectPrice, checkForLenses } from "@/app/utils/p
 import { useCustomers } from "@/hooks/useCustomers";
 import { createOrderform } from "@/schemas/order-schema";
 
-// CSS para remover as setas dos inputs numéricos
 const numericInputStyles = `
   /* Remove as setas para todos os navegadores */
   input::-webkit-outer-spin-button,
@@ -71,7 +70,6 @@ const numericInputStyles = `
   }
 `;
 
-// Definição dos steps
 const steps = [
   { id: "client", label: "Cliente e Produtos" },
   { id: "prescription", label: "Receita" },
@@ -166,11 +164,8 @@ export default function NewOrderPage() {
         discount: formData.discount,
         finalPrice: formData.finalPrice,
       };
-      
-      console.log("Enviando pedido:", orderData);
   
       const newOrder = await handleCreateOrder(orderData as any);
-      console.log("Resposta do pedido:", newOrder);
       
       if (newOrder) {
         setSubmittedOrder(newOrder);
@@ -200,7 +195,6 @@ export default function NewOrderPage() {
   };
   
   const onSubmit = (data: OrderFormValues) => {
-    console.log("onSubmit called with data:", data);
     handleCreateNewOrder(data);
   };
 
@@ -998,7 +992,6 @@ export default function NewOrderPage() {
                     id="orderForm"
                     onSubmit={(e) => {
                       e.preventDefault();
-                      console.log("Form submitted", form.getValues());
                       onSubmit(form.getValues() as OrderFormValues);
                     }}
                     className="space-y-4"
@@ -1052,13 +1045,11 @@ export default function NewOrderPage() {
                             size="sm"
                             className="text-sm h-9"
                             onClick={() => {
-                              console.log("Finalizar Pedido clicked");
                               const formElement = document.getElementById('orderForm') as HTMLFormElement;
                               if (formElement) {
                                 formElement.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
                               } else {
                                 console.error("Form element not found");
-                                // Fallback direto
                                 onSubmit(form.getValues() as OrderFormValues);
                               }
                             }}

@@ -7,6 +7,7 @@ export interface IProduct {
   brand?: string;
   name: string;
   costPrice?: number;
+  stock?: number;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -26,6 +27,7 @@ export interface IPrescriptionFrame extends IProduct {
   color: string;
   shape: string;
   reference: string;
+  stock: number;
 }
 
 export interface ISunglassesFrame extends IProduct {
@@ -35,12 +37,11 @@ export interface ISunglassesFrame extends IProduct {
   color: string;
   shape: string;
   reference: string;
+  stock: number;
 }
 
-// Type union para representar qualquer tipo de produto
 export type ProductType = ILens | ICleanLens | IPrescriptionFrame | ISunglassesFrame;
 
-// DTOs com verificação de tipo
 export type CreateProductDTO<T extends ProductType['productType']> = 
   T extends "lenses" ? Omit<ILens, "_id" | "createdAt" | "updatedAt"> :
   T extends "clean_lenses" ? Omit<ICleanLens, "_id" | "createdAt" | "updatedAt"> :

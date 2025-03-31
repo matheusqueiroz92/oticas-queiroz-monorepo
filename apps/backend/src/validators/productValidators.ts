@@ -1,6 +1,5 @@
 import { z } from 'zod';
 
-// Schema base para todos os produtos
 const baseProductSchema = z.object({
   name: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
   description: z.string().optional(),
@@ -10,7 +9,6 @@ const baseProductSchema = z.object({
   image: z.string().optional(),
 });
 
-// Schemas específicos para cada tipo
 export const lensSchema = baseProductSchema.extend({
   productType: z.literal("lenses"),
   lensType: z.string().min(2, "Tipo de lente é obrigatório"),
@@ -26,6 +24,7 @@ export const prescriptionFrameSchema = baseProductSchema.extend({
   color: z.string().min(2, "Cor é obrigatória"),
   shape: z.string().min(2, "Formato é obrigatório"),
   reference: z.string().min(2, "Referência é obrigatória"),
+  stock: z.number().nonnegative("Estoque não pode ser negativo").default(0)
 });
 
 export const sunglassesFrameSchema = baseProductSchema.extend({
@@ -35,9 +34,9 @@ export const sunglassesFrameSchema = baseProductSchema.extend({
   color: z.string().min(2, "Cor é obrigatória"),
   shape: z.string().min(2, "Formato é obrigatório"),
   reference: z.string().min(2, "Referência é obrigatória"),
+  stock: z.number().nonnegative("Estoque não pode ser negativo").default(0)
 });
 
-// Discriminating union para validação
 export const productSchema = z.discriminatedUnion("productType", [
   lensSchema,
   cleanLensSchema,
@@ -45,7 +44,6 @@ export const productSchema = z.discriminatedUnion("productType", [
   sunglassesFrameSchema
 ]);
 
-// Exporta tipos inferidos
 export type LensType = z.infer<typeof lensSchema>;
 export type CleanLensType = z.infer<typeof cleanLensSchema>;
 export type PrescriptionFrameType = z.infer<typeof prescriptionFrameSchema>;

@@ -20,6 +20,15 @@ export class ProductService {
   private validateProduct(productData: IProduct): void {
     try {
       productSchema.parse(productData);
+      
+      if (
+        (productData.productType === 'prescription_frame' || 
+         productData.productType === 'sunglasses_frame') &&
+        (productData as any).stock === undefined
+      ) {
+        (productData as any).stock = 0;
+      }
+      
     } catch (error) {
       if (error instanceof z.ZodError) {
         const errorMessage = error.errors.map(e => e.message).join(', ');

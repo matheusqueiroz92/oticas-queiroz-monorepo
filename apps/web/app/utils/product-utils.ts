@@ -239,6 +239,23 @@ export function getProductTypeLabel(type?: string): string {
     return products.some(product => product.productType === 'lenses');
   };
 
+
+// Função auxiliar para obter o nome amigável do tipo de produto
+export const getProductTypeName = (productType: Product['productType']): string => {
+  switch (productType) {
+    case 'lenses':
+      return 'Lentes';
+    case 'clean_lenses':
+      return 'Limpa-lentes';
+    case 'prescription_frame':
+      return 'Armação de Grau';
+    case 'sunglasses_frame':
+      return 'Armação Solar';
+    default:
+      return 'Produto';
+  }
+}
+
   /**
  * Busca um produto com detalhes consistentes
  */

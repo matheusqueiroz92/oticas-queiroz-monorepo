@@ -146,6 +146,43 @@ export function useProducts() {
     },
   });
 
+  const updateStockMutation = useMutation({
+    mutationFn: ({ id, stock }: { id: string; stock: number }) => {
+      const formData = new FormData();
+      formData.append("stock", stock.toString());
+      return updateProduct(id, formData);
+    },
+    onSuccess: (updatedProduct) => {
+      toast({
+        title: "Estoque atualizado",
+        description: "O estoque do produto foi atualizado com sucesso.",
+      });
+  
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.PRODUCTS.DETAIL(updatedProduct._id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.PRODUCTS.PAGINATED(),
+      });
+  
+      return updatedProduct;
+    },
+    onError: (error: unknown, variables) => {
+      console.error(`Erro ao atualizar estoque do produto com ID ${variables.id}:`, error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível atualizar o estoque do produto.",
+      });
+    },
+  });
+  
+  // Função para atualizar o estoque
+  const handleUpdateStock = (id: string, stock: number) => {
+    return updateStockMutation.mutateAsync({ id, stock });
+  };
+
+
   // Função para buscar um produto por ID
   const fetchProductById = (id: string) => {
     setProductId(id);
@@ -206,6 +243,7 @@ export function useProducts() {
     products,
     currentProduct: productData as Product | null,
     loading: isLoading || isProductLoading,
+    isUpdatingStock: updateStockMutation.isPending,
     error: error || productError,
     totalPages,
     totalProducts,
@@ -224,6 +262,7 @@ export function useProducts() {
     handleCreateProduct,
     handleUpdateProduct,
     handleDeleteProduct,
+    handleUpdateStock,
     navigateToProductDetails,
     navigateToCreateProduct,
     navigateToEditProduct,
