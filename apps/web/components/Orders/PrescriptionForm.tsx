@@ -15,6 +15,24 @@ interface PrescriptionFormProps {
 }
 
 export default function PrescriptionForm({ form }: PrescriptionFormProps) {
+  // Função para lidar com inputs numéricos, permitindo valores vazios
+  const handleNumericInput = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    onChange: (value: number | undefined) => void
+  ) => {
+    const value = e.target.value;
+    
+    // Se o campo estiver vazio, definimos como undefined
+    if (value === "") {
+      onChange(undefined);
+      return;
+    }
+    
+    // Caso contrário, convertemos para número
+    const numValue = Number.parseFloat(value);
+    onChange(Number.isNaN(numValue) ? undefined : numValue);
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -80,16 +98,16 @@ export default function PrescriptionForm({ form }: PrescriptionFormProps) {
                     type="number"
                     step="0.25"
                     {...field}
-                    onChange={(e) =>
-                      field.onChange(Number.parseFloat(e.target.value) || 0)
-                    }
+                    // Garantir que "0" não seja exibido como valor inicial
+                    value={field.value === 0 && field.value !== undefined ? "" : field.value ?? ""}
+                    onChange={(e) => handleNumericInput(e, field.onChange)}
                   />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-
+          
           <FormField
             control={form.control}
             name="prescriptionData.oc"
@@ -101,9 +119,9 @@ export default function PrescriptionForm({ form }: PrescriptionFormProps) {
                     type="number"
                     step="0.25"
                     {...field}
-                    onChange={(e) =>
-                      field.onChange(Number.parseFloat(e.target.value) || 0)
-                    }
+                    // Garantir que "0" não seja exibido como valor inicial
+                    value={field.value === 0 && field.value !== undefined ? "" : field.value ?? ""}
+                    onChange={(e) => handleNumericInput(e, field.onChange)}
                   />
                 </FormControl>
                 <FormMessage />
@@ -122,9 +140,9 @@ export default function PrescriptionForm({ form }: PrescriptionFormProps) {
                     type="number"
                     step="0.25"
                     {...field}
-                    onChange={(e) =>
-                      field.onChange(Number.parseFloat(e.target.value) || 0)
-                    }
+                    // Garantir que "0" não seja exibido como valor inicial
+                    value={field.value === 0 && field.value !== undefined ? "" : field.value ?? ""}
+                    onChange={(e) => handleNumericInput(e, field.onChange)}
                   />
                 </FormControl>
                 <FormMessage />

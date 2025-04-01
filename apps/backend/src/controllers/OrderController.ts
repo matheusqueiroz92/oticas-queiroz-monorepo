@@ -101,6 +101,7 @@ export class OrderController {
         employeeId,
         clientId,
         laboratoryId,
+        serviceOrder,
         paymentMethod,
         startDate,
         endDate,
@@ -130,6 +131,10 @@ export class OrderController {
         filters.laboratoryId = laboratoryId;
       }
       
+      if (serviceOrder) {
+        filters.serviceOrder = serviceOrder;
+      }
+
       if (paymentMethod) {
         filters.paymentMethod = paymentMethod;
         console.log(`Filtro paymentMethod: ${paymentMethod}`);

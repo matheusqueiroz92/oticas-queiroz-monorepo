@@ -22,6 +22,9 @@ interface PaginationInfo {
   totalPages: number;
 }
 
+/**
+ * Busca todos os pedidos
+ */
 export async function getAllOrders(filters: OrderFilters = {}): Promise<{
   orders: Order[];
   pagination?: PaginationInfo;
@@ -188,12 +191,14 @@ export async function createOrder(
   orderData: Omit<Order, "_id" | "createdAt" | "updatedAt">
 ): Promise<Order | null> {
   try {
-    // Garantir que product é um array
+    // Garantir que products é um array (corrigido de "product" para "products")
     const data = {
       ...orderData,
-      product: Array.isArray(orderData.products) 
+      products: Array.isArray(orderData.products) 
         ? orderData.products 
         : [orderData.products],
+      // Garantir que serviceOrder é string
+      serviceOrder: orderData.serviceOrder?.toString() || null,
       // Garantir que os campos de preço estão definidos
       totalPrice: orderData.totalPrice || 0,
       discount: orderData.discount || 0,
