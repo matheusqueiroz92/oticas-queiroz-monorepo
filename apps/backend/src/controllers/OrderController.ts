@@ -92,7 +92,6 @@ export class OrderController {
   async getAllOrders(req: Request, res: Response): Promise<void> {
     try {
       const queryParams = orderQuerySchema.parse(req.query);
-      console.log("Query params após validação:", queryParams);
   
       const {
         page,
@@ -107,19 +106,17 @@ export class OrderController {
         productId,
         minPrice,
         maxPrice,
-        search // Extrair o parâmetro search
+        search
       } = queryParams;
   
       const filters: Record<string, any> = {};
   
       if (status) {
         filters.status = status;
-        console.log(`Filtro status: ${status}`);
       }
       
       if (employeeId) {
         filters.employeeId = employeeId;
-        console.log(`Filtro employeeId: ${employeeId}`);
       }
       
       if (clientId) {
@@ -132,7 +129,6 @@ export class OrderController {
       
       if (paymentMethod) {
         filters.paymentMethod = paymentMethod;
-        console.log(`Filtro paymentMethod: ${paymentMethod}`);
       }
       if (productId) filters.productId = productId;
       if (minPrice !== undefined) filters.minPrice = minPrice;
@@ -143,13 +139,10 @@ export class OrderController {
         filters.endDate = endDate;
       }
       
-      // Adicionar o parâmetro search aos filtros
       if (search) {
         filters.search = search;
-        console.log(`Aplicando filtro de busca textual: ${search}`);
       }
       
-      console.log("Filtros compilados:", filters);
       const result = await this.orderService.getAllOrders(page, limit, filters);
   
       res.status(200).json({
@@ -315,7 +308,6 @@ export class OrderController {
   
       const validatedData = updateOrderLaboratorySchema.parse(req.body);
   
-      // Converter laboratoryId para ObjectId ou null
       const laboratoryId = validatedData.laboratoryId ? new Types.ObjectId(validatedData.laboratoryId) : null;
   
       const order = await this.orderService.updateOrderLaboratory(
@@ -478,7 +470,6 @@ export class OrderController {
         maxPrice
       } = queryParams;
       
-      // Construir filtros
       const filters: Record<string, any> = {};
       if (status) filters.status = status;
       if (clientId) filters.clientId = clientId;
@@ -492,7 +483,6 @@ export class OrderController {
         filters.endDate = endDate;
       }
 
-      // Exportar os pedidos
       const exportOptions: ExportOptions = {
         format: format as "excel" | "pdf" | "csv" | "json",
         title: title as string,
@@ -502,7 +492,6 @@ export class OrderController {
       const { buffer, contentType, filename } =
         await this.orderService.exportOrders(exportOptions, filters);
 
-      // Configurar cabeçalhos e enviar arquivo
       res.setHeader("Content-Type", contentType);
       res.setHeader(
         "Content-Disposition",
@@ -538,7 +527,6 @@ export class OrderController {
       const format =
         (req.query.format as "excel" | "pdf" | "csv" | "json") || "excel";
 
-      // Exportar resumo diário
       const exportOptions: ExportOptions = {
         format,
         title: `Resumo Diário de Pedidos - ${date.toLocaleDateString()}`,
@@ -548,7 +536,6 @@ export class OrderController {
       const { buffer, contentType, filename } =
         await this.orderService.exportDailySummary(date, exportOptions);
 
-      // Configurar cabeçalhos e enviar arquivo
       res.setHeader("Content-Type", contentType);
       res.setHeader(
         "Content-Disposition",
@@ -574,7 +561,6 @@ export class OrderController {
       const format =
         (req.query.format as "excel" | "pdf" | "csv" | "json") || "excel";
 
-      // Exportar detalhes do pedido
       const exportOptions: ExportOptions = {
         format,
         title: `Detalhes do Pedido - ${req.params.id}`,
@@ -587,7 +573,6 @@ export class OrderController {
           exportOptions
         );
 
-      // Configurar cabeçalhos e enviar arquivo
       res.setHeader("Content-Type", contentType);
       res.setHeader(
         "Content-Disposition",

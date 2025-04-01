@@ -1,4 +1,4 @@
-import { Types, FilterQuery } from "mongoose";
+import mongoose, { Types, FilterQuery } from "mongoose";
 import { 
   Product, 
   Lens, 
@@ -151,6 +151,9 @@ export class ProductModel {
       updateData.stock = Number(updateData.stock);
     }
   
+    // Log para debug
+    console.log(`[ProductModel] Atualizando produto ${id} com dados:`, JSON.stringify(updateData));
+  
     const product = await Product.findByIdAndUpdate(
       id,
       { $set: updateData },
@@ -160,8 +163,73 @@ export class ProductModel {
       }
     );
   
-    if (!product) return null;
+    if (!product) {
+      console.error(`[ProductModel] Produto não encontrado para atualização: ${id}`);
+      return null;
+    }
+    
+    // Log para debug
+    console.log(`[ProductModel] Produto atualizado:`, JSON.stringify(product.toObject()));
+    
     return this.convertToIProduct(product);
+  }
+
+  async updateStock(
+    id: string,
+    stockChange: number
+  ): Promise<IProduct | null> {
+    if (!this.isValidId(id)) {
+      console.error(`[ProductModel] ID inválido para atualização de estoque: ${id}`);
+      return null;
+    }
+  
+    const session = await mongoose.startSession();
+    session.startTransaction();
+  
+    try {
+      console.log(`[ProductModel] Atualizando estoque do produto ${id} com alteração: ${stockChange}`);
+      
+      // 1. Buscar o produto com sessão ativa
+      const product = await Product.findById(id).session(session);
+      if (!product) {
+        throw new Error(`Produto não encontrado: ${id}`);
+      }
+  
+      // 2. Calcular novo estoque
+      const currentStock = product.stock ?? 0;
+      const newStock = currentStock + stockChange;
+      
+      if (newStock < 0) {
+        throw new Error(`Estoque não pode ficar negativo (tentativa: ${newStock})`);
+      }
+  
+      // 3. Atualização direta com verificação
+      const updated = await Product.updateOne(
+        { _id: id },
+        { $set: { stock: newStock } },
+        { session }
+      );
+  
+      if (updated.modifiedCount !== 1) {
+        throw new Error('Nenhum documento foi modificado');
+      }
+  
+      // 4. Buscar novamente para verificar
+      const verifiedProduct = await Product.findById(id).session(session);
+      if (verifiedProduct?.stock !== newStock) {
+        throw new Error(`Discrepância no estoque após atualização. Esperado: ${newStock}, Obtido: ${verifiedProduct?.stock}`);
+      }
+  
+      await session.commitTransaction();
+      console.log(`[ProductModel] Estoque atualizado com sucesso para: ${newStock}`);
+      return this.convertToIProduct(verifiedProduct);
+    } catch (error) {
+      await session.abortTransaction();
+      console.error(`[ProductModel] Erro na transação:`, error);
+      throw error;
+    } finally {
+      session.endSession();
+    }
   }
 
   async delete(id: string): Promise<IProduct | null> {

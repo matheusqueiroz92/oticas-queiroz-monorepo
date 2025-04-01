@@ -203,16 +203,30 @@ export class OrderService {
       await this.validateOrder(orderData);
       const order = await this.orderModel.create(orderData);
 
+      console.log("Pedido criado:", order._id);
+      console.log("Produtos no pedido:", order.products);
+
       if (order.status !== 'cancelled') {
         try {
+          // Log para verificar a chamada ao StockService
+          console.log("Iniciando processamento de estoque para os produtos:", 
+            order.products.map(p => typeof p === 'object' ? p._id : p).join(', '));
+          
           await this.stockService.processOrderProducts(
             order.products, 
             'decrease',
             orderData.employeeId.toString(),
-            order._id?.toString()
+            order._id ? order._id.toString() : ''
           );
+          
+          console.log("Estoque atualizado com sucesso para todos os produtos");
         } catch (stockError) {
-          console.error('Erro ao atualizar estoque:', stockError);
+          // Log detalhado do erro
+          console.error('Erro detalhado ao atualizar estoque:', stockError);
+          if (stockError instanceof Error) {
+            console.error('Mensagem:', stockError.message);
+            console.error('Stack:', stockError.stack);
+          }
         }
       }
   

@@ -55,6 +55,9 @@ const productSchema = new Schema(
   }
 );
 
+// Adicionar índice para melhorar performance das consultas por ID
+productSchema.index({ _id: 1 });
+
 const ProductBase = model<ProductDocument, ProductModel>("Product", productSchema);
 
 const lensSchema = new Schema({
@@ -87,6 +90,7 @@ const frameSchema = {
     type: Number,
     required: false,
     default: 0,
+    min: 0
   }
 };
 
@@ -99,6 +103,28 @@ const sunglassesFrameSchema = new Schema({
     required: true,
   }
 });
+
+// Logging para verificar alterações no estoque
+const addStockLogging = (schema: Schema) => {
+  schema.pre('findOneAndUpdate', function(this: any) {
+    const update = this.getUpdate();
+    if (update && update.$inc && update.$inc.stock !== undefined) {
+      console.log(`[MongooseMiddleware] Atualizando estoque: ${update.$inc.stock}`);
+    } else if (update && update.$set && update.$set.stock !== undefined) {
+      console.log(`[MongooseMiddleware] Definindo estoque: ${update.$set.stock}`);
+    }
+  });
+
+  schema.post('findOneAndUpdate', function(doc: Document) {
+    if (doc) {
+      console.log(`[MongooseMiddleware] Estoque após atualização: ${(doc as any).stock}`);
+    }
+  });
+};
+
+// Aplicar middleware de logging
+addStockLogging(prescriptionFrameSchema);
+addStockLogging(sunglassesFrameSchema);
 
 const Lens = ProductBase.discriminator<LensDocument, LensModel>(
   "lenses", 
