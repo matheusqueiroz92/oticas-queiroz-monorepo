@@ -10,7 +10,7 @@ export interface IOrder {
   clientId: string | Types.ObjectId;
   employeeId: string | Types.ObjectId;
   products: OrderProduct[];
-  serviceOrder?: number | null;
+  serviceOrder?: string;
   paymentMethod: string;
   paymentEntry?: number;
   installments?: number;

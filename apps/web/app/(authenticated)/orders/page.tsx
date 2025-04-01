@@ -67,6 +67,16 @@ export default function OrdersPage() {
     [updateFilters]
   );
 
+  console.log(orders);
+  
+
+  // Aplicar busca quando o valor mudar
+  useEffect(() => {
+    const cleanup = debouncedSearch(search);
+    return cleanup;
+  }, [search, debouncedSearch]);
+
+  
   const handleManualRefresh = async () => {
     setIsRefreshing(true);
     try {
@@ -156,6 +166,11 @@ export default function OrdersPage() {
   const showEmptyState = !isLoading && !error && orders.length === 0;
 
   const orderColumns = [
+    { 
+      key: "serviceOrder", 
+      header: "O.S.",
+      render: (order: Order) => (order.serviceOrder ? order.serviceOrder : "Sem O.S.")
+    },
     { 
       key: "client", 
       header: "Cliente",

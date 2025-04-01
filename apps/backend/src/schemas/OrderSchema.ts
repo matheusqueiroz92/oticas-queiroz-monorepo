@@ -17,9 +17,9 @@ const orderSchema = new Schema<IOrder>({
     required: true
   }],
   serviceOrder: {
-    type: Number,
+    type: String,
   },
-  paymentMethod: { 
+  paymentMethod: {
     type: String, 
     required: true,
     enum: ["credit", "debit", "cash", "pix", "installment"],

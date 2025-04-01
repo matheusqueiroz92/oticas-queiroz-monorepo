@@ -465,12 +465,18 @@ export default function NewOrderPage() {
     const totalPrice = form.getValues("totalPrice") || 0;
     const discount = form.getValues("discount") || 0;
     const finalPrice = form.getValues("finalPrice") || 0;
-    
+    const serviceOrder = form.getValues("serviceOrder") as string | undefined;
+
     return (
       <div className="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
         <div className="border-b border-gray-200 p-3">
           <h3 className="font-medium">Resumo do Pedido</h3>
-        </div>
+          {serviceOrder && (
+            <div className="text-xs text-gray-500 mt-1">
+             O.S.: {serviceOrder}
+            </div>
+          )}
+       </div>
         
         <div className="p-3 space-y-3">
           {selectedProducts.length > 0 ? (
@@ -716,11 +722,11 @@ export default function NewOrderPage() {
                         name="serviceOrder"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-xs">Nº da Ordem</FormLabel>
+                            <FormLabel className="text-xs">Nº da O.S.</FormLabel>
                             <FormControl>
                               <Input
-                                type="number"
-                                placeholder="Número"
+                                type="text"
+                                placeholder="Número da O.S."
                                 onChange={(e) => {
                                   const value = e.target.value ? Number.parseInt(e.target.value) : '';
                                   field.onChange(value);
@@ -907,6 +913,13 @@ export default function NewOrderPage() {
                       <h5 className="font-medium text-gray-600">Data de Entrega</h5>
                       <p>{form && form.getValues("deliveryDate")}</p>
                     </div>
+
+                    {form && (form.getValues("serviceOrder") as string | undefined) && (
+                      <div>
+                        <h5 className="font-medium text-gray-600">Ordem de Serviço</h5>
+                        <p>{form.getValues("serviceOrder") as string}</p>
+                      </div>
+                    )}
                   </div>
                   
                   <div className="mt-3">
