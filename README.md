@@ -1,48 +1,159 @@
 # Óticas Queiroz Monorepo
 
-Este repositório contém um sistema de gerenciamento para óticas que integra controle de clientes, funcionários, produtos, pedidos, pagamentos, registros de caixa e laboratórios. Esta aplicação inclui backend, frontend, mobile e desktop, e é gerenciada com Turborepo.
+Este é um sistema completo de gestão para a Óticas Queiroz, desenvolvido para facilitar a organização e o planejamento da empresa. O sistema permite o gerenciamento detalhado de vendas, pagamentos, controle de caixa, gestão de usuários (funcionários e clientes), controle de produtos (lentes, armações de grau e solares) e laboratórios óticos, além de fornecer relatórios detalhados para análise estatística e tomada de decisões.
 
-## 🚀 Tecnologias
+## 🧩 Principais Funcionalidades
+
+### Autenticação e Gestão de Usuários
+- **Perfis de Acesso**: Implementação de diferentes níveis de acesso:
+  - Administradores: Acesso completo ao sistema;
+  - Funcionários: Podem registrar vendas, gerenciar clientes e produtos;
+  - Clientes: Acesso limitado aos seus pedidos e perfil;
+- **Autenticação Segura**: Login com email ou CPF, protegido por JWT (JSON Web Tokens);
+- **Recuperação de Senha**: Sistema de reset de senha via tokens enviados por email;
+- **Gerenciamento de Perfil**: Upload de foto, atualização de dados pessoais e senha;
+- **Validação de CPF**: Verificação automática da validade do CPF para evitar cadastros fraudulentos;
+- **Controle de Sessão**: Verificação e renovação automática de tokens de autenticação.
+
+### Gestão de Produtos
+- **Categorização de Produtos**: Suporte a diferentes tipos de produtos óticos:
+  - Lentes oftálmicas (lentes de grau);
+  - Armações para óculos de grau;
+  - Armações para óculos de sol;
+  - Limpadores de lentes;
+- **Controle de Estoque**: Registro de entradas e saídas com histórico completo
+- **Gestão de Imagens**: Upload e gerenciamento de imagens para produtos
+- **Configurações Específicas por Tipo**:
+  - Lentes: Associação com tipos de lentes;
+  - Armações: Registro de características como tipo de armação, cor, formato, referência;
+  - Óculos de Sol: Detalhes específicos como modelo e características especiais;
+- **Busca Avançada**: Filtros por tipo, marca, preço, cor e outros atributos;
+- **Exportação de Catálogo**: Geração de relatórios detalhados de produtos.
+
+### Gestão de Pedidos
+- **Criação Intuitiva**: Interface amigável para registro de novos pedidos;
+- **Seleção de Produtos**: Adição de múltiplos produtos em um mesmo pedido;
+- **Dados de Prescrição**: Registro detalhado da receita médica:
+  - Dados do médico e clínica;
+  - Data da consulta;
+  - Informações de dioptria para olho direito e esquerdo (SPH, CYL, AXIS, PD);
+  - Valores de adição, ND e OC;
+- **Gerenciamento de Status**:
+  - Pendente: Pedido registrado, aguardando produção;
+  - Em Produção: Enviado para laboratório;
+  - Pronto: Produto finalizado, aguardando retirada;
+  - Entregue: Produto entregue ao cliente;
+  - Cancelado: Pedido cancelado;
+- **Integração com Laboratórios**: Envio automático para laboratórios óticos parceiros;
+- **Cálculos Financeiros**: Automatização de cálculos de total, desconto e valor final;
+- **Histórico de Alterações**: Registro de todas as modificações em pedidos;
+- **Exportação de Documentos**: Geração de ordens de serviço em múltiplos formatos;
+- **Busca Avançada**: Filtros por cliente, status, data, laboratório e método de pagamento;
+- **Exportação de Dados**: Geração de relatórios diários e customizados.
+
+### Gestão de Pagamentos
+- **Múltiplos Tipos de Transação**:
+  - Venda: Pagamentos relacionados a pedidos;
+  - Pagamento de Dívida: Para clientes com débitos pendentes;
+  - Despesa: Registro de gastos da empresa;
+- **Métodos de Pagamento Diversificados**:
+  - Cartão de Crédito: Com suporte a parcelamento;
+  - Cartão de Débito;
+  - Dinheiro;
+  - PIX;
+  - Boleto Bancário: Com registro de código e banco;
+  - Promissória: Com registro de número e controle;
+- **Parcelamento Inteligente**: Cálculo automático de valores parcelados;
+- **Gerenciamento de Dívidas**: Controle de débitos de clientes;
+  - Geração automática de planos de pagamento;
+  - Registro de datas de vencimento;
+  - Histórico de pagamentos realizados;
+- **Cancelamento e Estorno**: Processo seguro para cancelamento de pagamentos;
+- **Exclusão Lógica**: Marcação de pagamentos excluídos sem remoção física do banco;
+- **Relatórios Financeiros**: Exportação detalhada de transações;
+- **Resumo por Período**: Visualização de pagamentos diários, mensais e customizados.
+
+### Gestão de Registros de Caixa
+- **Controle de Abertura e Fechamento**: Registro de início e fim de operações diárias;
+- **Saldo Inicial e Final**: Registro de valores de abertura e conferência no fechamento;
+- **Resumo de Operações**:
+  - Total de vendas por método de pagamento;
+  - Total de pagamentos recebidos;
+  - Total de despesas realizadas;
+- **Diferença de Caixa**: Cálculo automático de sobras ou faltas no fechamento;
+- **Exportação de Movimentações**: Geração de relatórios em diferentes formatos;
+- **Histórico Detalhado**: Registro de todas as operações realizadas no caixa;
+- **Exclusão Lógica**: Mecanismo de segurança para operações canceladas;
+- **Visualização por Período**: Resumos diários, mensais e customizados.
+
+### Gestão de Laboratórios
+- **Cadastro Completo**: Registro de laboratórios óticos parceiros;
+- **Dados de Contato**: Informações detalhadas para comunicação;
+- **Endereço Estruturado**: Registro completo de localização;
+- **Controle de Status**: Ativação/desativação de laboratórios;
+- **Associação com Pedidos**: Vinculação entre laboratórios e serviços;
+- **Histórico de Envios**: Registro de pedidos enviados para cada laboratório;
+- **Busca e Filtragem**: Localização rápida por nome, cidade ou status.
+
+### Gestão de Clientes Legados
+- **Cadastro de Clientes Antigos**: Registro de clientes com histórico anterior ao sistema;
+- **Controle de Dívidas**: Gerenciamento de débitos pendentes;
+- **Histórico de Pagamentos**: Registro de todas as transações realizadas;
+- **Planos de Pagamento**: Criação de acordos de quitação parcelada;
+- **Notificações**: Alertas sobre vencimentos e pagamentos;
+- **Busca Avançada**: Filtros por nome, documento, valor de dívida;
+- **Exportação de Dados**: Geração de relatórios personalizados;
+- **Controle de Status**: Ativação/inativação de clientes.
+
+### Geração de Relatórios
+- **Relatórios de Vendas**: Análise detalhada de vendas por período;
+- **Relatórios de Estoque**: Controle de produtos disponíveis e movimentações;
+- **Relatórios de Clientes**: Análise de base de clientes e comportamento;
+- **Relatórios de Pedidos**: Visualização de status, laboratórios e valores;
+- **Relatórios Financeiros**: Análise completa de receitas e despesas;
+- **Múltiplos Formatos**: Exportação em Excel, PDF, CSV e JSON;
+- **Filtros Avançados**: Customização de relatórios por diversos parâmetros;
+- **Agendamento**: Possibilidade de configurar geração periódica;
+- **Visualização Gráfica**: Apresentação visual de dados relevantes.
+
+### Controle de Estoque
+- **Gestão de Inventário**: Controle preciso de produtos disponíveis;
+- **Movimentação Automática**: Redução de estoque em vendas e reposição em cancelamentos;
+- **Histórico de Alterações**: Registro detalhado de todas as movimentações;
+- **Alertas de Estoque Baixo**: Notificações para produtos com quantidade crítica;
+- **Registro de Motivos**: Documentação de razões para alterações no estoque;
+- **Identificação de Responsáveis**: Registro de quem realizou cada operação;
+- **Vinculação com Pedidos**: Associação entre movimentações e vendas;
+- **Exportação de Dados**: Geração de relatórios de inventário.
+
+## 🚀 Tecnologias utilizadas
 
 ### Backend
+- **Node.js**: Ambiente de execução JavaScript do lado do servidor;
+- **Express**: Framework web para criação de APIs;
+- **TypeScript**: Superset tipado de JavaScript para maior segurança e produtividade;
+- **MongoDB**: Banco de dados NoSQL para armazenamento flexível de dados;
+- **Mongoose**: ODM (Object Document Mapper) para modelagem de dados;
+- **JWT**: JSON Web Tokens para autenticação segura;
+- **Bcrypt**: Biblioteca para hash seguro de senhas;
+- **Multer**: Middleware para upload de arquivos;
+- **Nodemailer**: Biblioteca para envio de emails;
+- **Zod**: Sistema de validação de dados com tipagem;
+- **Swagger**: Documentação interativa da API;
+- **Jest**: Framework para testes automatizados;
+- **ExcelJS/PDFKit**: Bibliotecas para geração de relatórios.
 
-- Node.js
-- Express
-- MongoDB
-- Mongoose
-- Swagger
-- TypeScript
-- Jest
-- Supertest
-- MongoDB Memory Server
-- JWT
-- BCrypt
-- Zod
-- Cors
-- Dotenv
-- Multer
-- Node Mailer
-- PDF Kit
-- Excel JS
-- Json 2 CSV
-
-### Frontend
-
-- Next.js
-- TypeScript
-- Tailwind CSS
-- Shadcn UI
-- Zod
-- React Query
-- React Hook Form
-- Axios
-- Js Cookie
-- Lucide React
-- Js PDF
-- Recharts
-- Lodash
-- Date fns
-
+### Frontend (Web)
+- **NextJS**: Framework para construção das páginas e interfaces;
+- **TypeScript**: Tipagem estática para desenvolvimento seguro;
+- **React Router**: Gerenciamento de rotas da aplicação
+- **Axios**: Cliente HTTP para comunicação com a API;
+- **React Query**: Gerenciamento de estado e cache de dados;
+- **React Hook Form**: Biblioteca para gerenciamento de formulários;
+- **Zod**: Validação de dados no frontend;
+- **React-PDF/Excel.js**: Visualização e geração de documentos;
+- **Tailwind CSS**: Framework CSS para estilização;
+- **Recharts/D3.js**: Visualização gráfica de dados.
 
 ### Mobile
 
@@ -52,12 +163,19 @@ Este repositório contém um sistema de gerenciamento para óticas que integra c
 
 - Electron
 
-### DevOps
+### Infraestrutura
+- **Turborepo**: Gerenciamento de monorepo para frontend e backend;
+- **Git/GitHub**: Controle de versão e colaboração;
+- **Docker**: Containerização para desenvolvimento e produção;
+- **GitHub Actions/Jenkins**: CI/CD para integração e deploy contínuos;
+- **Nginx**: Servidor web para produção;
+- **PM2**: Gerenciador de processos para Node.js;
+- **MongoDB Atlas/Self-hosted**: Opções de hospedagem do banco de dados;
+- **Sentry**: Monitoramento de erros;
+- **Hostinger VPS**: Servidor virtual para hospedagem;
+- **AlmaLinux 8**: Sistema operacional do servidor;
+- **Webmin**: Interface de administração do servidor.
 
-- Turborepo
-- ESLint
-- Docker
-- Kubernetes
 
 ## 📂 Estrutura de pastas do projeto
 
@@ -108,206 +226,168 @@ oticas-queiroz-monorepo/
 │   └── shared/       # Código compartilhado
 ```
 
-## 🔒 Autenticação
+## 🛣️ API Endpoints
 
-### Features
+A API expõe diversos endpoints organizados por domínio:
 
-- Login via email ou username
-- JWT (JSON Web Token)
-- Autorização baseada em roles
-- Middleware de proteção de rotas
-- Middleware para tratamento de erros
-- Recuperação de senha via email
+### 🔒 Autenticação
+- `POST /api/auth/login`: Autenticação de usuários
+- `POST /api/auth/register`: Registro de novos usuários (requer autorização)
+- `POST /api/auth/forgot-password`: Solicita redefinição de senha
+- `POST /api/auth/reset-password`: Redefine senha com token
+- `GET /api/auth/validate-token/:token`: Valida token de redefinição
 
-### Roles
+### 👥 Usuários
+- `GET /api/users`: Lista todos os usuários
+- `GET /api/users/:id`: Obtém detalhes de um usuário
+- `PUT /api/users/:id`: Atualiza dados de um usuário
+- `DELETE /api/users/:id`: Remove um usuário
+- `GET /api/users/profile`: Obtém perfil do usuário autenticado
+- `PUT /api/users/profile`: Atualiza perfil do usuário autenticado
+- `POST /api/users/change-password`: Altera senha do usuário autenticado
 
-- **Admin**: Acesso total ao sistema
-- **Employee**: Gestão de clientes, produtos e pedidos
-- **Customer**: Consulta de pedidos e débitos
+### 📦 Produtos e Estoque
+- `POST /api/products`: Cria um novo produto
+- `GET /api/products`: Lista produtos com filtros
+- `GET /api/products/:id`: Obtém detalhes de um produto
+- `PUT /api/products/:id`: Atualiza um produto
+- `DELETE /api/products/:id`: Remove um produto
+- `GET api/products/:id/stock-history`: Obtém histórico de estoque de um produto
+- `PATCH api/products/:id/stock`: Atualiza o estoque de um produto
 
-### Rotas
+### 🛍️ Pedidos
+- `POST /api/orders`: Cria um novo pedido
+- `GET /api/orders`: Lista pedidos com filtros
+- `GET /api/orders/:id`: Obtém detalhes de um pedido
+- `PUT /api/orders/:id`: Atualiza um pedido
+- `PUT /api/orders/:id/status`: Atualiza o status de um pedido
+- `PUT /api/orders/:id/laboratory`: Atualiza o laboratório de um pedido
+- `GET /api/orders/client/:clientId`: Lista pedidos de um cliente
+- `POST /api/orders/:id/cancel`: Cancela um pedido
+- `POST /api/orders/:id/delete`: Exclusão lógica de um pedido
+- `GET /api/orders/deleted`: Lista pedidos excluídos
+- `GET /api/orders/daily`: Pedidos do dia atual
+- `GET /api/orders/export`: Exporta pedidos filtrados
+- `GET /api/orders/export/daily`: Exporta resumo diário
+- `GET /api/orders/:id/export`: Exporta detalhes de um pedido
 
-- POST `/api/auth/login`
+### 🔬 Laboratórios
+- `POST /api/laboratories`: Cria um novo laboratório
+- `GET /api/laboratories`: Lista laboratórios
+- `GET /api/laboratories/:id`: Obtém detalhes de um laboratório
+- `PUT /api/laboratories/:id`: Atualiza um laboratório
+- `DELETE /api/laboratories/:id`: Remove um laboratório
+- `PATCH /api/laboratories/:id/toggle-status`: Altera status ativo/inativo
 
-  ```typescript
-  // Request
-  {
-    "login": string,    // email ou cpf
-    "password": string
-  }
+### 💵 Pagamentos
+- `POST /api/payments`: Cria um novo pagamento
+- `GET /api/payments`: Lista pagamentos
+- `GET /api/payments/:id`: Obtém detalhes de um pagamento
+- `GET /api/payments/daily`: Pagamentos do dia
+- `POST /api/payments/:id/cancel`: Cancela um pagamento
+- `POST /api/payments/:id/delete`: Exclusão lógica de um pagamento
+- `GET /api/payments/deleted`: Lista pagamentos excluídos
+- `GET /api/payments/export`: Exporta pagamentos
+- `GET /api/payments/report/daily`: Relatório financeiro diário
 
-  // Response 200
-  {
-    "token": string,
-    "user": {
-      "id": string,
-      "name": string,
-      "email": string,
-      "cpf": string,
-      "role": "admin" | "employee" | "customer"
-    }
-  }
-  ```
+### 📊 Registros de Caixa
+- `POST /api/cash-registers/open`: Abre um novo caixa
+- `POST /api/cash-registers/close`: Fecha o caixa atual
+- `GET /api/cash-registers`: Lista registros de caixa
+- `GET /api/cash-registers/current`: Obtém o caixa atual
+- `GET /api/cash-registers/:id`: Obtém um caixa específico
+- `GET /api/cash-registers/:id/summary`: Resumo de um caixa
+- `GET /api/cash-registers/summary/daily`: Resumo diário
+- `POST /api/cash-registers/:id/delete`: Exclusão lógica de um caixa
+- `GET /api/cash-registers/deleted`: Lista caixas excluídos
+- `GET /api/cash-registers/:id/export`: Exporta resumo de um caixa
+- `GET /api/cash-registers/export/daily`: Exporta resumo diário
 
-  - POST `/api/auth/forgot-password`
+### 🕰️ Clientes Legados
+- `POST /api/legacy-clients`: Cria um novo cliente legado
+- `GET /api/legacy-clients`: Lista clientes legados
+- `GET /api/legacy-clients/:id`: Obtém detalhes de um cliente legado
+- `PUT /api/legacy-clients/:id`: Atualiza um cliente legado
+- `GET /api/legacy-clients/debtors`: Lista clientes com dívidas
+- `GET /api/legacy-clients/:id/payment-history`: Histórico de pagamentos
+- `PATCH /api/legacy-clients/:id/toggle-status`: Altera status ativo/inativo
 
-  ```typescript
-  // Request
-  {
-    "email": string    // email cadastrado do usuário
-  }
+### 📈 Relatórios
+- `POST /api/reports`: Cria um novo relatório
+- `GET /api/reports`: Lista relatórios do usuário
+- `GET /api/reports/:id`: Obtém detalhes de um relatório
+- `GET /api/reports/:id/download`: Faz download de um relatório
 
-  // Response 200
-  {
-    "message": string  // Mensagem de sucesso (mesmo se o email não existir, por segurança)
-  }
-  ```
+## 📐 Schemas da Aplicação
 
-- POST `/api/auth/reset-password`
+Schemas do Typescript de cada entidade da aplicação
 
-```typescript
-// Request
-{
-  "token": string,    // token recebido por email
-  "password": string  // nova senha
-}
-
-// Response 200
-{
-  "message": string   // Confirmação de redefinição
-}
-```
-
-- GET `/api/auth/validate-reset-token/{token}`
-
-```typescript
-// Response 200
-{
-  "valid": boolean // Indica se o token é válido e não expirou
-}
-```
-
-## 👥 Usuários
-
-### Rotas
-
-- POST `/api/auth/register`: Registra um novo usuário
-- GET `/api/users`: Listar todos os usuários
-- GET `/api/users/profile`: Obtém o perfil do usário logado
-- PUT `/api/users/profile`: Atualiza o perfil do usário logado
-- GET `/api/users/:id`: Obtém um usuário pelo ID
-- PUT `/api/users/:id`: Atualiza um usuário
-- DELETE `/api/users/:id`: Remover usuário
-
-### Schema
+### Schema de Usuário
 
 ```typescript
 {
   _id: string;
   name: string;
-  email: string;
-  cpf: string;
+  email?: string;
   password: string;
-  image: string;
   role: "admin" | "employee" | "customer";
+  image?: string;
   address?: string;
   phone?: string;
-  sales?: string[];
-  purchases?: string[];
-  debts?: number;
+  cpf: string;
+  rg?: string;
+  birthDate?: Date;
+  sales?: string[]; // apenas para funcionários
+  purchases?: string[]; // apenas para clientes
+  debts?: number; // apenas para clientes
   createdAt?: Date;
   updatedAt?: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
 ```
 
-## 📦 Produtos
-
-### Alterações na Estrutura
-
-O sistema agora suporta quatro tipos específicos de produtos:
-- Lentes (lenses)
-- Limpa-lentes (clean_lenses)
-- Armações de Grau (prescription_frame)
-- Armações Solares (sunglasses_frame)
-
-Cada tipo de produto possui características específicas, mantendo também propriedades em comum.
-
-### Rotas
-
-- POST `/api/products`: Criar produto
-- GET `/api/products`: Listar todos os produtos
-- GET `/api/products/:id`: Buscar produto
-- PUT `/api/products/:id`: Atualizar produto
-- DELETE `/api/products/:id`: Remover produto
-
-### Schema
+### Schema de Produto
 
 ```typescript
 {
   _id: string;
   name: string;
   productType: "lenses" | "clean_lenses" | "prescription_frame" | "sunglasses_frame";
-  description: string;
   image?: string;
-  brand?: string;
   sellPrice: number;
+  description?: string;
+  brand?: string;
   costPrice?: number;
+  stock: number;
+  
   // Campos específicos baseados em productType
-  // Para lentes:
+  
+  // Para lentes (lenses):
   lensType?: string;
+  
   // Para armações (prescription_frame e sunglasses_frame):
   typeFrame?: string;
   color?: string;
   shape?: string;
   reference?: string;
+  
   // Apenas para armações solares:
   modelSunglasses?: string;
+  
   createdAt: Date;
   updatedAt: Date;
 }
 ```
 
-## 🛍️ Pedidos
-
-### Alterações na Estrutura
-
-A estrutura de pedidos foi aprimorada para suportar múltiplos produtos e cálculo de descontos:
-- Agora um pedido pode conter vários produtos
-- Adição de campos para desconto e preço final (totalPrice - discount)
-- Melhor integração com os diferentes tipos de produtos
-
-### Rotas
-
-- POST `/api/orders`: Criar pedido
-- GET `/api/orders`: Listar todos os pedidos
-- GET `/api/orders/:id`: Buscar pedido
-- PUT `/api/orders/:id/status`: Atualizar status do pedido
-- PUT `/api/orders/:id/laboratory`: Atualizar laboratório do pedido
-- POST `/api/orders/:id/cancel`: Cancelar pedido
-- POST `/api/orders/:id/delete`: Exclusão lógica (soft delete) de pedido
-- GET `/api/orders/deleted`: Listar pedidos excluídos logicamente
-- GET `/api/orders/client/:clientId`: Listar pedidos de um cliente específico
-- GET `/api/orders/daily`: Buscar pedidos do dia
-- GET `/api/orders/export`: Exportar pedidos em vários formatos
-- GET `/api/orders/export/daily`: Exportar resumo diário dos pedidos
-- GET `/api/orders/:id/export`: Exportar detalhes de um pedido específico
-
-### Schema
+### Schema de Pedido
 
 ```typescript
 {
   _id?: string;
   clientId: string;
   employeeId: string;
-  product: [{ // Array de produtos
-    _id: string;
-    name: string;
-    productType: "lenses" | "clean_lenses" | "prescription_frame" | "sunglasses_frame";
-    description: string;
-    sellPrice: number;
-    // Outros campos específicos por tipo
-  }];
+  products: Product[]; // Array de produtos
+  serviceOrder?: string;
   paymentMethod: string;
   paymentEntry?: number;
   installments?: number;
@@ -315,7 +395,7 @@ A estrutura de pedidos foi aprimorada para suportar múltiplos produtos e cálcu
   deliveryDate?: Date;
   status: "pending" | "in_production" | "ready" | "delivered" | "cancelled";
   laboratoryId?: string | null;
-  prescriptionData?: {
+  prescriptionData?: { // Dados da prescrição dos óculos
     doctorName: string;
     clinicName: string;
     appointmentDate: Date;
@@ -337,8 +417,8 @@ A estrutura de pedidos foi aprimorada para suportar múltiplos produtos e cálcu
   };
   observations?: string;
   totalPrice: number;
-  discount: number; // Novo campo para desconto
-  finalPrice: number; // Novo campo para preço final (totalPrice - discount)
+  discount: number;
+  finalPrice: number;
   isDeleted?: boolean;
   deletedAt?: Date;
   deletedBy?: string;
@@ -347,18 +427,7 @@ A estrutura de pedidos foi aprimorada para suportar múltiplos produtos e cálcu
 }
 ```
 
-## 🔬 Laboratórios
-
-### Rotas
-
-- POST `/api/laboratories`: Criar laboratório
-- GET `/api/laboratories`: Listar todos os laboratórios
-- GET `/api/laboratories/:id`: Buscar laboratório
-- PUT `/api/laboratories/:id`: Atualizar laboratório
-- DELETE `/api/laboratories/:id`: Remover laboratório
-- PATCH `/api/laboratories/:id/toggle-status` : Atualizar status do laboratório
-
-### Schema
+### Schema de Laboratório
 
 ```typescript
 {
@@ -382,42 +451,46 @@ A estrutura de pedidos foi aprimorada para suportar múltiplos produtos e cálcu
 }
 ```
 
-## 💰 Pagamentos
-
-### Rotas
-
-- POST `/api/payments`: Criar pagamento
-- GET `/api/payments`: Listar todos os pagamentos
-- GET `/api/payments/daily`: Buscar pagamentos do dia
-- GET `/api/payments/:id`: Buscar pagamento
-- POST `/api/payments/:id/cancel`: Cancelar pagamento
-- POST `/api/payments/:id/delete`: Exclusão lógica (soft delete) de pagamento
-- GET `/api/payments/deleted`: Listar pagamentos excluídos logicamente
-- GET `/api/payments/export`: Exportar pagamentos em vários formatos
-- GET `/api/payments/report/daily`: Gerar relatório financeiro diário
-
-### Schema
+### Schema de Pagamento
 
 ```typescript
 {
   _id: string;
+  createdBy: string;
+  customerId?: string;
+  legacyClientId?: string;
+  orderId?: string;
+  cashRegisterId: string;
   amount: number;
   date: Date;
   type: "sale" | "debt_payment" | "expense";
-  paymentMethod: "credit" | "debit" | "cash" | "pix" | "installment";
-  installments?: {
+  paymentMethod: "credit" | "debit" | "cash" | "pix" | "installment" | "bank_slip" | "promissory_note";
+  status: "pending" | "completed" | "cancelled";
+
+  // Campos para cartão de crédito
+  creditCardInstallments?: {
     current: number;
     total: number;
     value: number;
   };
-  status: "pending" | "completed" | "cancelled";
-  orderId?: string;
-  customerId?: string;
-  employeeId?: string;
-  legacyClientId?: string;
-  cashRegisterId: string;
+
+  // Campos para boleto
+  bank_slip?: {
+    code: string;
+    bank: string;
+  };
+
+  // Campos para débito ao cliente
+  clientDebt?: {
+    generateDebt: boolean;
+    installments?: {
+      total: number;
+      value: number;
+    };
+    dueDates?: Date[];
+  };
+
   description?: string;
-  createdBy: string;
   isDeleted?: boolean;
   deletedAt?: Date;
   deletedBy?: string;
@@ -426,33 +499,7 @@ A estrutura de pedidos foi aprimorada para suportar múltiplos produtos e cálcu
 }
 ```
 
-## 💵 Cash Register
-
-### Features
-
-- Controle de abertura e fechamento de caixa
-- Balanço detalhado por tipo de pagamento
-- Relatórios diários e por caixa específico
-- Exportação em múltiplos formatos (Excel, PDF, CSV, JSON)
-- Cache para consultas frequentes
-- Validações robustas e modulares
-- Soft delete para manter histórico completo
-- Resumos financeiros detalhados
-
-### Rotas
-
-- POST `/api/cash-registers/open`: Abrir o registro de caixa atual
-- POST `/api/cash-registers/close`: Fechar o registro de caixa atual
-- GET `/api/cash-registers/current`: Buscar o registro de caixa atual
-- GET `/api/cash-registers/summary/daily`: Resumo diário dos registros de caixa
-- GET `/api/cash-registers/:id`: Buscar um registro de caixa específico
-- GET `/api/cash-registers/:id/summary`: Resumo de um registro de caixa específico
-- POST `/api/cash-registers/:id/delete`: Exclusão lógica de um registro
-- GET `/api/cash-registers/deleted`: Listar registros excluídos logicamente
-- GET `/api/cash-registers/:id/export`: Exportar resumo de um caixa específico
-- GET `/api/cash-registers/export/daily`: Exportar resumo diário dos caixas
-
-### Schema
+### Schema de Registro de Caixa
 
 ```typescript
 {
@@ -485,20 +532,7 @@ A estrutura de pedidos foi aprimorada para suportar múltiplos produtos e cálcu
 }
 ```
 
-## 🚫 Legacy Client
-
-### Rotas
-
-- POST `/api/legacy-clients`: Cadastrar cliente legado
-- GET `/api/legacy-clients`: Listar todos os cliente legados
-- GET `/api/legacy-clients/search`: Buscar cliente legado pelo documento
-- GET `/api/legacy-clients/debtors`: Listar os clientes com dívidas
-- GET `/api/legacy-clients/:id`: Buscar um cliente legado pelo id
-- PUT `/api/legacy-clients/:id`: Atualizar um cliente legado
-- GET `/api/legacy-clients/:id/payment-history`: Buscar o histórico de pagmendo de um cliente legado
-- PATCH `/api/legacy-clients/:id/toggle-status`: Alterar o status de um cliente legado
-
-### Schema
+### Schema de Cliente Legado
 
 ```typescript
 {
@@ -524,15 +558,7 @@ A estrutura de pedidos foi aprimorada para suportar múltiplos produtos e cálcu
 }
 ```
 
-## 📊 Relatórios
-
-### Rotas
-
-- POST `/api/reports`: Criar novo relatório
-- GET `/api/reports`: Listar relatórios do usuário
-- GET `/api/reports/:id`: Buscar relatório específico
-
-### Schema
+### Schema de Relatório
 
 ```typescript
 {
@@ -558,69 +584,67 @@ A estrutura de pedidos foi aprimorada para suportar múltiplos produtos e cálcu
 }
 ```
 
-## 👓 Tipos de Lente
 
-### Rotas
 
-- POST `/api/lens-type`: Criar tipo de lente
-- GET `/api/lens-type`: Listar todos os tipos de lente
-- GET `/api/lens-type/:id`: Buscar tipo de lente
-- PUT `/api/lens-type/:id`: Atualizar tipo de lente
-- DELETE `/api/lens-type/:id`: Remover tipo de lente
 
-### Schema
 
-```typescript
-{
-  _id: string;
-  name: string;
-  description: string;
-  brand: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-```
 
 ## 🛠️ Setup
 
 ### Pré-requisitos
 
-- Node.js (v18 ou superior)
-- MongoDB
-- Docker (opcional)
+- Node.js (v18+)
+- NPM ou Yarn
+- MongoDB (v4.4+)
+- Git
 
-### Instalação
+### Passos para Instalação
 
+1. Clone o repositório do GitHub:
 ```bash
-# Clone o repositório
 git clone https://github.com/matheusqueiroz92/oticas-queiroz-monorepo.git
+```
 
-# Entre na pasta
+2. Entre na pasta do projeto
+```bash
 cd oticas-queiroz-monorepo
+```
 
-# Instale as dependências
-npm install 
-
-## Entre na pasta do backend
-cd apps/backend
-npm install
-
-## Entre na pasta do frontend
-cd apps/frontend
+3. Instale as dependências:
+```bash
 npm install
 ```
 
-### Variáveis de Ambiente
+4. Entre na pasta do backend e instale as dependências
+```bash
+cd apps/backend
+npm install
+```
+
+5. Entre na pasta do frontend (web) e instale as dependências
+```bash
+cd apps/web
+npm install
+```
+
+6. Configure as variáveis de ambiente:
+```bash
+cp apps/backend/.env.example apps/backend/.env
+cp apps/web/.env.example apps/web/.env
+```
+
+### Configuração das Variáveis de Ambiente
+
+1. Adicione o arquivo (.env) na pasta raiz do backend para as variáveis de ambiente da API
 
 ```bash
-# Adicione o arquivo (.env) na pasta raiz do backend para as variáveis de ambiente
 PORT=3333 # porta de conexão utilizada
 MONGODB_URI=uri_de_conexao_com_mongoDB # string de conexão com o MongoDB
 JWT_SECRET=sua_senha_jwt # senha JWT
 NODE_ENV=development_ou_production # ambiente node
 JWT_EXPIRES_IN=24h # tempo de expiração do token JWT
-CORS_ORIGIN=https://localhost:3000 # url de origem da conexão com o frontend
-API_URL=https://localhost:3333 # url da api
+CORS_ORIGIN=https://localhost:3000 # URL de origem da conexão com o frontend
+API_URL=https://localhost:3333 # URL da API
 
 # dados de login mongoDB
 USERNAME=usuario_mongodb
@@ -634,7 +658,13 @@ EMAIL_USER=e-mail_do_usuario
 EMAIL_PASSWORD=senha_do_usuario
 ```
 
-### Desenvolvimento
+2. Adicione o arquivo (.env) na pasta raiz do frontend (web) para as variáveis de ambiente do Next
+
+```bash
+NEXT_PUBLIC_API_URL=http://localhost:3333 # URL da API
+```
+
+### Iniciando Servidor em Desenvolvimento
 
 ```bash
 # Roda todos os apps
@@ -649,86 +679,58 @@ cd apps/frontend
 npm run dev
 ```
 
-## 📱 Recursos Frontend Implementados
+### Acessando a aplicação:
 
-### Autenticação
+- Frontend: http://localhost:3000
+- API: http://localhost:3333
+- Documentação API: http://localhost:3333/api-docs
 
-- Login com diferentes tipos de usuário
-- Proteção de rotas baseado em perfis
-- Gerenciamento de sessão com cookies
 
-### Dashboard
+### Deploy em Produção
 
-- Visão geral personalizada para cada tipo de usuário
-- Exibição de métricas relevantes por perfil
-- Acesso rápido às principais funcionalidades
+1. Construa os artefatos para produção:
+```bash
+npm run build
+```
 
-### Gestão de Usuários
+2. Configure o servidor Nginx para servir a aplicação:
+```nginx
+server {
+    listen 80;
+    server_name dominio_da_aplicacao;
 
-- Cadastro, edição e visualização de funcionários
-- Cadastro, edição e visualização de clientes
-- Perfil de usuário com informações detalhadas
+    location / {
+        root /path/to/build/web;
+        try_files $uri $uri/ /index.html;
+    }
 
-### Gestão de Produtos
+    location /api {
+        proxy_pass http://localhost:3333;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
 
-- Cadastro, edição e visualização de produtos
-- Listagem com filtros e paginação
-- Detalhes com características
+3. Configure o PM2 para gerenciar o processo Node.js:
+```bash
+npm install -g pm2
+pm2 start apps/backend/dist/server.js --name oticas-queiroz-backend
+pm2 start apps/web/dist/ --name oticas-queiroz-frontend
+pm2 save
+```
 
-### Gestão de Laboratórios
+4. Execute o script
+```bash
+./deploy.sh
+```
 
-- Cadastro, edição e visualização de laboratórios
-- Ativação/desativação de laboratórios
-- Associação de laboratórios a pedidos
+## Testes Implementados
 
-### Gestão de Pedidos
-
-- Fluxo completo de criação de pedidos
-- Associação com laboratórios
-- Atualização de status independente
-- Informações específicas do pedido
-- Integração com sistema de pagamentos e caixa da loja
-- Suporte a dados de prescrição médica
-
-### Exportação de dados
-
-- Exportação de pedidos em PDF
-- Exportação de relatórios financeiros em múltiplos formatos
-- Visualização de detalhes completos
-
-### Estrutura de Componentes
-
-- **Formulários**
-
-  - Validação com Zod
-  - Feedback visual de erros
-  - Campos dinâmicos baseados em contexto
-
-- **Tabelas**
-
-  - Exibição de dados com paginação
-  - Ações contextuais por tipo de registro
-  - Estados vazios informativos
-
-- **Modais e Diálogos**
-
-  - Confirmação de ações importantes
-  - Formulários de edição rápida
-
-- **Tratamento de Erros**
-
-  - Feedback visual para o usuário
-  - Estados vazios para listas sem dados
-  - Manipulação robusta de erros da API
-
-### Padrões de Interface
-
-- Design system consistente com Shadcn UI
-- Responsividade para diferentes tamanhos de tela
-- Feedback visual para operações assíncronas
-- Temas claros e escuros (suporte parcial)
-
-### Testes Implementados
+### Testes do Backend
 
 - ✅ Testes unitários para Models
 
@@ -791,38 +793,24 @@ cd apps/frontend
 npm test
 ```
 
-## ✨ Melhorias Recentes
+## 🤖 Docker, Kubernetes e CI/CD
 
-### Melhorias na Estrutura de Dados
+🐳 Para rodar o projeto com Docker:
 
-- ✅ **Tipos de Produtos Especializados**: Implementação de um sistema de tipos de produtos que permite características específicas para lentes, limpa-lentes, armações de grau e armações solares.
-- ✅ **Pedidos com Múltiplos Produtos**: Agora os pedidos podem conter vários produtos, facilitando a gestão de compras com itens diversos.
-- ✅ **Sistema de Descontos**: Adição de campos para desconto e preço final nos pedidos, permitindo um controle financeiro mais detalhado.
-- ✅ **Validação por Tipo**: Implementação de validadores específicos para cada tipo de produto, garantindo a integridade dos dados.
-- ✅ **Exportação Aprimorada**: Sistema de exportação de pedidos e relatórios adaptado para a nova estrutura de dados, com informações mais detalhadas.
+```bash
+docker-compose up --build
+```
 
-### Módulos de Pagamentos e Caixa
+- Kubernetes (opcional)
+  Os arquivos de configuração do Kubernetes estão na pasta kubernetes/.
 
-- ✅ **Validação Modular**: Refatoração da validação em funções específicas para melhorar manutenção e testabilidade.
-- ✅ **Soft Delete**: Implementação de exclusão lógica para manter histórico completo de todas as operações.
-- ✅ **Cache Eficiente**: Adição de caching para consultas frequentes, melhorando performance do sistema.
-- ✅ **Swagger Aprimorado**: Documentação detalhada das APIs para facilitar integração com frontend.
-- ✅ **Exportação Flexível**: Suporte a exportação para Excel, PDF, CSV e JSON para relatórios financeiros.
-- ✅ **Relatórios Avançados**: Adição de relatórios personalizados para análise financeira detalhada.
-- ✅ **Correção de Bugs**: Resolução de inconsistências e bugs em ambos os módulos.
+- CI/CD
+  O projeto utiliza GitHub Actions para CI/CD. O workflow está configurado em .github/workflows/ci.yml.
 
-### Features de pagamentos
+## 📚 Documentação da API
 
-- ✅ Registro de diferentes tipos de pagamentos (vendas, recebimentos, despesas)
-- ✅ Suporte a múltiplos métodos de pagamento
-- ✅ Controle de parcelamentos
-- ✅ Relatórios financeiros personalizados
-- ✅ Exportação em múltiplos formatos (Excel, PDF, CSV, JSON)
-- ✅ Cancelamento com estorno automático
-- ✅ Cache para consultas frequentes
-- ✅ Transações atômicas para garantir integridade
-- ✅ Soft delete para manter histórico completo
-- ✅ Validações robustas e modulares
+A documentação da API está disponível no Swagger UI: https://app.oticasqueiroz.com.br/api-docs.
+
 
 ## 🔄 Melhorias Sugeridas
 
@@ -927,24 +915,12 @@ npm test
 
 ## 📝 Licença
 
-Este projeto está sob a licença MIT.
+Este software é propriedade da Óticas Queiroz e seu uso é restrito aos termos estabelecidos no contrato.
 
-## 📚 Documentação da API
+## Autor
 
-A documentação da API está disponível no Swagger UI: https://app.oticasqueiroz.com.br/api-docs.
-
-## 🤖 Docker, Kubernetes e CI/CD
-
-🐳 Para rodar o projeto com Docker:
-
-```bash
-docker-compose up --build
-```
-
-- Kubernetes (opcional)
-  Os arquivos de configuração do Kubernetes estão na pasta kubernetes/.
-
-- CI/CD
-  O projeto utiliza GitHub Actions para CI/CD. O workflow está configurado em .github/workflows/ci.yml.
+- Matheus Queiroz
 
 ---
+
+&copy; 2025 Óticas Queiroz. Todos os direitos reservados.

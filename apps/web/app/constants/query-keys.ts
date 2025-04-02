@@ -38,6 +38,7 @@ export const QUERY_KEYS = {
     PAGINATED: (page?: number, filters?: Record<string, any>) => 
       ['products', 'paginated', page, filters],
     DETAIL: (id: string) => ['products', 'detail', id],
+    STOCK_HISTORY: (id: string) => ['products', 'stock-history', id],
   },
 
   PAYMENTS: {

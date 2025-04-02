@@ -1,5 +1,7 @@
 import type { Request, Response } from "express";
 import { ProductService, ProductError } from "../services/ProductService";
+import { StockService } from "../services/StockService";
+import { JwtPayload } from 'jsonwebtoken';
 import { z } from "zod";
 import { 
   lensSchema, 
@@ -8,11 +10,17 @@ import {
   sunglassesFrameSchema 
 } from '../validators/productValidators';
 
+interface AuthRequest extends Request {
+  user?: JwtPayload & { id?: string; role?: string };
+}
+
 export class ProductController {
   private productService: ProductService;
+  private stockService: StockService;
 
   constructor() {
     this.productService = new ProductService();
+    this.stockService = new StockService();
   }
 
   async createProduct(req: Request, res: Response): Promise<void> {
@@ -212,7 +220,7 @@ export class ProductController {
     }
   }
 
-  async updateProductStock(req: Request, res: Response): Promise<void> {
+  async updateProductStock(req: AuthRequest, res: Response): Promise<void> {
     try {
       const productId = req.params.id;
       const { stock } = req.body;
@@ -224,7 +232,46 @@ export class ProductController {
       
       const stockValue = Number(stock);
       
+      // Buscar o produto antes de atualizar para saber o estoque anterior
+      const currentProduct = await this.productService.getProductById(productId);
+      if (!currentProduct) {
+        res.status(404).json({ message: "Produto não encontrado" });
+        return;
+      }
+      
+      // Verificar se é um produto com controle de estoque
+      if (currentProduct.productType !== 'prescription_frame' && currentProduct.productType !== 'sunglasses_frame') {
+        res.status(400).json({ message: "Este produto não possui controle de estoque" });
+        return;
+      }
+      
+      const previousStock = (currentProduct as any).stock || 0;
+      
+      // Atualizar o estoque no banco de dados
       const product = await this.productService.updateProduct(productId, { stock: stockValue });
+      
+      // Registrar a alteração no log de estoque
+      try {
+        const operation = stockValue > previousStock ? 'increase' : 'decrease';
+        const difference = Math.abs(stockValue - previousStock);
+        const reason = `Ajuste manual de estoque: ${previousStock} → ${stockValue}`;
+        
+        await this.stockService.createStockLog(
+          productId,
+          previousStock,
+          stockValue,
+          difference,
+          operation,
+          reason,
+          req.user?.id || 'system',
+        );
+        
+        console.log(`Estoque do produto ${productId} atualizado de ${previousStock} para ${stockValue}`);
+      } catch (stockError) {
+        console.error('Erro ao registrar log de estoque:', stockError);
+        // Não impedir a atualização do produto se o log falhar
+      }
+      
       res.status(200).json(product);
     } catch (error) {
       if (error instanceof ProductError) {
@@ -232,6 +279,42 @@ export class ProductController {
         return;
       }
       console.error("Error updating product stock:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  }
+
+  async getProductStockHistory(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const productId = req.params.id;
+      
+      // Verificar se o produto existe
+      const product = await this.productService.getProductById(productId);
+      if (!product) {
+        res.status(404).json({ message: "Produto não encontrado" });
+        return;
+      }
+      
+      // Verificar se é um produto com controle de estoque (armação)
+      if (product.productType !== 'prescription_frame' && product.productType !== 'sunglasses_frame') {
+        res.status(400).json({ 
+          message: "Este produto não possui controle de estoque. Apenas armações possuem histórico de estoque."
+        });
+        return;
+      }
+      
+      try {
+        // Chamar método estático no modelo StockLog para buscar histórico
+        const stockHistory = await this.stockService.getProductStockHistory(productId);
+        res.status(200).json(stockHistory);
+      } catch (error) {
+        console.error("Erro ao buscar histórico de estoque:", error);
+        res.status(500).json({ 
+          message: "Erro ao buscar histórico de estoque",
+          error: error instanceof Error ? error.message : String(error)
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao buscar histórico de estoque do produto:", error);
       res.status(500).json({ message: "Erro interno do servidor" });
     }
   }

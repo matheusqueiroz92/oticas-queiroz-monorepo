@@ -11,6 +11,7 @@ import {
   updateProduct,
   deleteProduct,
   formatCurrency,
+  getProductStockHistory,
 } from "../app/services/productService";
 import { QUERY_KEYS } from "../app/constants/query-keys";
 import { Product } from "@/app/types/product";
@@ -44,14 +45,12 @@ export function useProducts() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Query para buscar produtos paginados com filtros
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: QUERY_KEYS.PRODUCTS.PAGINATED(currentPage, filters),
     queryFn: () => getAllProducts({ ...filters, page: currentPage, limit: 10 }),
     placeholderData: (prevData) => prevData,
   });
 
-  // Query para buscar um produto específico
   const {
     data: productData,
     isLoading: isProductLoading,
@@ -62,12 +61,10 @@ export function useProducts() {
     enabled: !!productId,
   });
 
-  // Dados normalizados da query
   const products = data?.products || [];
   const totalPages = data?.pagination?.totalPages || 1;
   const totalProducts = data?.pagination?.total || 0;
 
-  // Mutation para criar produto
   const createProductMutation = useMutation({
     mutationFn: createProduct,
     onSuccess: (newProduct) => {
@@ -93,7 +90,6 @@ export function useProducts() {
     },
   });
 
-  // Mutation para atualizar produto
   const updateProductMutation = useMutation({
     mutationFn: ({ id, formData }: { id: string; formData: FormData }) =>
       updateProduct(id, formData),
@@ -122,7 +118,6 @@ export function useProducts() {
     },
   });
 
-  // Mutation para deletar produto
   const deleteProductMutation = useMutation({
     mutationFn: deleteProduct,
     onSuccess: () => {
@@ -176,40 +171,40 @@ export function useProducts() {
       });
     },
   });
+
+  const getStockHistory = (productId: string) => {
+    return useQuery({
+      queryKey: QUERY_KEYS.PRODUCTS.STOCK_HISTORY(productId),
+      queryFn: () => getProductStockHistory(productId),
+      enabled: !!productId
+    });
+  };
   
-  // Função para atualizar o estoque
   const handleUpdateStock = (id: string, stock: number) => {
     return updateStockMutation.mutateAsync({ id, stock });
   };
 
-
-  // Função para buscar um produto por ID
   const fetchProductById = (id: string) => {
     setProductId(id);
   };
 
-  // Função para atualizar filtros
   const updateFilters = (newFilters: ProductFilters) => {
     setFilters((prevFilters) => ({ ...prevFilters, ...newFilters }));
-    setCurrentPage(1); // Voltar para a primeira página ao filtrar
+    setCurrentPage(1);
   };
 
-  // Função para navegar para a página de detalhes do produto
   const navigateToProductDetails = (id: string) => {
     router.push(`/products/${id}`);
   };
 
-  // Função para navegar para a página de criação de produto
   const navigateToCreateProduct = () => {
     router.push("/products/new");
   };
 
-  // Função para navegar para a página de edição de produto
   const navigateToEditProduct = (id: string) => {
     router.push(`/products/${id}/edit`);
   };
 
-  // Funções expostas pelo hook que utilizam as mutations
   const handleCreateProduct = (formData: FormData) => {
     return createProductMutation.mutateAsync(formData);
   };
@@ -222,15 +217,11 @@ export function useProducts() {
     return deleteProductMutation.mutateAsync(id);
   };
 
-  /**
-   * Busca um produto com detalhes consistentes
-   */
   const fetchProductWithConsistentDetails = async (id: string): Promise<Product | null> => {
     try {
       const product = await getProductById(id);
       if (!product) return null;
       
-      // Usamos as-any como intermediário para evitar erros de tipo
       return normalizeProduct(product as any);
     } catch (error) {
       console.error("Erro ao buscar produto:", error);
@@ -239,7 +230,6 @@ export function useProducts() {
   };
 
   return {
-    // Dados e estado
     products,
     currentProduct: productData as Product | null,
     loading: isLoading || isProductLoading,
@@ -250,12 +240,10 @@ export function useProducts() {
     filters,
     currentPage,
 
-    // Mutações e seus estados
     isCreating: createProductMutation.isPending,
     isUpdating: updateProductMutation.isPending,
     isDeleting: deleteProductMutation.isPending,
 
-    // Ações
     setCurrentPage,
     updateFilters,
     fetchProductById,
@@ -268,8 +256,7 @@ export function useProducts() {
     navigateToEditProduct,
     formatCurrency,
     refetch,
-    
-    // Funções importadas
+    getStockHistory,
     getCorrectPrice,
     normalizeProduct,
     fetchProductWithConsistentDetails

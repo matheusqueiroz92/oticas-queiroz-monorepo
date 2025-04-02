@@ -119,6 +119,19 @@ export function formatCurrency(value: number): string {
 }
 
 /**
+ * Busca o histórico de estoque de um produto
+ */
+export async function getProductStockHistory(productId: string): Promise<any[]> {
+  try {
+    const response = await api.get(`/api/products/${productId}/stock-history`);
+    return response.data;
+  } catch (error) {
+    console.error(`Erro ao buscar histórico de estoque do produto ${productId}:`, error);
+    throw new Error("Não foi possível buscar o histórico de estoque");
+  }
+}
+
+/**
  * Obtém o nome amigável para o tipo de produto
  */
 export function getProductTypeName(productType: Product['productType']): string {

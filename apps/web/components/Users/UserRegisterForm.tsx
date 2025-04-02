@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createUserForm, UserFormData } from "@/schemas/user-schema";
 import {
@@ -35,6 +35,26 @@ export default function UserForm({ userType, title, description }: UserFormProps
   
   const form = createUserForm();
 
+  // Efeito para preencher automaticamente a senha quando o CPF for digitado (apenas para clientes)
+  useEffect(() => {
+    if (userType === "customer") {
+      const subscription = form.watch((value, { name }) => {
+        if (name === "cpf") {
+          const cpf = value.cpf;
+          // Verifica se o CPF tem pelo menos 6 dígitos
+          if (cpf && cpf.length >= 6) {
+            // Extrai os 6 primeiros dígitos e define como senha e confirmação
+            const defaultPassword = cpf.slice(0, 6);
+            form.setValue("password", defaultPassword);
+            form.setValue("confirmPassword", defaultPassword);
+          }
+        }
+      });
+      
+      return () => subscription.unsubscribe();
+    }
+  }, [form, userType]);
+
   const onSubmit = (data: UserFormData) => {
     const formData = new FormData();
 
@@ -60,6 +80,11 @@ export default function UserForm({ userType, title, description }: UserFormProps
         <CardHeader>
           <CardTitle>{title}</CardTitle>
           <CardDescription>{description}</CardDescription>
+          {userType === "customer" && (
+            <p className="text-sm text-muted-foreground mt-2">
+              A senha será preenchida automaticamente com os 6 primeiros dígitos do CPF.
+            </p>
+          )}
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -99,6 +124,24 @@ export default function UserForm({ userType, title, description }: UserFormProps
                 )}
               />
 
+              <FormField
+                control={form.control}
+                name="cpf"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>CPF</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="Apenas números (11 dígitos)" 
+                        autoComplete="off" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -112,6 +155,8 @@ export default function UserForm({ userType, title, description }: UserFormProps
                           placeholder="Senha" 
                           autoComplete="new-password" 
                           {...field} 
+                          readOnly={userType === "customer"}
+                          className={userType === "customer" ? "bg-gray-100" : ""}
                         />
                       </FormControl>
                       <FormMessage />
@@ -131,6 +176,8 @@ export default function UserForm({ userType, title, description }: UserFormProps
                           placeholder="Confirme a senha"
                           autoComplete="new-password"
                           {...field}
+                          readOnly={userType === "customer"}
+                          className={userType === "customer" ? "bg-gray-100" : ""}
                         />
                       </FormControl>
                       <FormMessage />
@@ -138,24 +185,6 @@ export default function UserForm({ userType, title, description }: UserFormProps
                   )}
                 />
               </div>
-
-              <FormField
-                control={form.control}
-                name="cpf"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>CPF</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="Apenas números (11 dígitos)" 
-                        autoComplete="off" 
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
 
               <FormField
                 control={form.control}

@@ -399,4 +399,128 @@ router.delete(
   asyncHandler(productController.deleteProduct.bind(productController))
 );
 
+/**
+ * @swagger
+ * /api/products/{id}/stock-history:
+ *   get:
+ *     summary: Obtém histórico de estoque de um produto
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Products]
+ *     description: Retorna o histórico de movimentações de estoque de um produto específico
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID do produto
+ *         example: "60d21b4667d0d8992e610c85"
+ *     responses:
+ *       200:
+ *         description: Histórico de estoque
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   _id:
+ *                     type: string
+ *                   productId:
+ *                     type: string
+ *                   orderId:
+ *                     type: string
+ *                   previousStock:
+ *                     type: number
+ *                   newStock:
+ *                     type: number
+ *                   quantity:
+ *                     type: number
+ *                   operation:
+ *                     type: string
+ *                     enum: [increase, decrease]
+ *                   reason:
+ *                     type: string
+ *                   performedBy:
+ *                     type: string
+ *                   createdAt:
+ *                     type: string
+ *                     format: date-time
+ *       404:
+ *         description: Produto não encontrado
+ *       401:
+ *         description: Não autorizado
+ *       403:
+ *         description: Acesso negado. Requer permissão de administrador ou funcionário.
+ *       500:
+ *         description: Erro interno do servidor
+ */
+router.get(
+  "/products/:id/stock-history",
+  authenticate,
+  authorize(["admin", "employee"]),
+  asyncHandler(productController.getProductStockHistory.bind(productController))
+);
+
+/**
+ * @swagger
+ * /api/products/{id}/stock:
+ *   patch:
+ *     summary: Atualiza o estoque de um produto
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Products]
+ *     description: Permite que administradores e funcionários atualizem o estoque de um produto
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID do produto
+ *         example: "60d21b4667d0d8992e610c85"
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - stock
+ *             properties:
+ *               stock:
+ *                 type: number
+ *                 description: Nova quantidade em estoque
+ *                 example: 10
+ *               reason:
+ *                 type: string
+ *                 description: Motivo da alteração (opcional)
+ *                 example: "Recebimento de mercadoria"
+ *     responses:
+ *       200:
+ *         description: Estoque atualizado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Product'
+ *       400:
+ *         description: Dados inválidos ou produto não suporta controle de estoque
+ *       404:
+ *         description: Produto não encontrado
+ *       401:
+ *         description: Não autorizado
+ *       403:
+ *         description: Acesso negado. Requer permissão de administrador ou funcionário.
+ *       500:
+ *         description: Erro interno do servidor
+ */
+router.patch(
+  "/products/:id/stock",
+  authenticate,
+  authorize(["admin", "employee"]),
+  asyncHandler(productController.updateProductStock.bind(productController))
+);
+
 export default router;

@@ -42,7 +42,7 @@ import { useRef, useState } from "react";
 import { useProducts } from "@/hooks/useProducts";
 import { Product } from "@/app/types/product";
 import { createProductForm, ProductFormData } from "@/schemas/product-schema";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "@/hooks/useToast";
 
 const steps = [
   { id: "basic", label: "Informações Básicas" },
@@ -58,6 +58,7 @@ export default function NewProductPage() {
   const [selectedProductType, setSelectedProductType] = useState<Product['productType']>("clean_lenses");
   const [currentStep, setCurrentStep] = useState(0);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const form = createProductForm();
 
@@ -83,13 +84,15 @@ export default function NewProductPage() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setSelectedFile(file);
+      
       const reader = new FileReader();
       reader.onload = (event) => {
         setPreviewUrl(event.target?.result as string);
       };
       reader.readAsDataURL(file);
-      form.setValue("image", file);
     } else {
+      setSelectedFile(null);
       setPreviewUrl(null);
     }
   };
@@ -98,7 +101,8 @@ export default function NewProductPage() {
     setIsSubmitting(true);
     try {
       const formData = new FormData();
-
+      
+      // Adicionar campos básicos
       formData.append("name", data.name);
       formData.append("productType", data.productType);
       formData.append("sellPrice", String(data.sellPrice));
@@ -106,7 +110,8 @@ export default function NewProductPage() {
       if (data.description) formData.append("description", data.description);
       if (data.brand) formData.append("brand", data.brand);
       if (data.costPrice !== undefined) formData.append("costPrice", String(data.costPrice));
-
+      
+      // Adicionar campos específicos do tipo de produto
       if (data.productType === "lenses") {
         formData.append("lensType", (data as any).lensType);
       } else if (data.productType === "prescription_frame" || data.productType === "sunglasses_frame") {
@@ -120,16 +125,37 @@ export default function NewProductPage() {
           formData.append("modelSunglasses", (data as any).modelSunglasses);
         }
       }
-
-      const file = fileInputRef.current?.files?.[0];
-      if (file) {
-        formData.append("productImage", file);
+      
+      // Anexar a imagem
+      if (selectedFile) {
+        console.log("Adicionando arquivo ao FormData:", selectedFile.name);
+        // Aqui usamos "productImage", que parece ser o nome esperado pelo backend
+        // baseado na estrutura do código que você mostrou anteriormente
+        formData.append("productImage", selectedFile);
       }
-
+      
+      // Log para verificar o FormData
+      console.log("Conteúdo do FormData:");
+      for (let [key, value] of formData.entries()) {
+        console.log(`${key}: ${value instanceof File ? value.name : value}`);
+      }
+      
       const newProduct = await handleCreateProduct(formData);
+      
       if (newProduct) {
+        toast({
+          title: "Produto criado",
+          description: "Produto cadastrado com sucesso."
+        });
         router.push("/products");
       }
+    } catch (error) {
+      console.error("Erro detalhado ao criar produto:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao criar produto",
+        description: error instanceof Error ? error.message : "Falha ao criar produto"
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -222,7 +248,7 @@ export default function NewProductPage() {
 
   const renderStepContent = () => {
     switch (currentStep) {
-      case 0: // Informações Básicas
+      case 0:
         return (
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -331,8 +357,10 @@ export default function NewProductPage() {
                         <Input
                           type="file"
                           accept="image/jpeg,image/png,image/webp"
-                          ref={fileInputRef}
-                          onChange={handleFileChange}
+                          onChange={(e) => {
+                            handleFileChange(e);
+                            // Aqui, não precisamos usar field.onChange porque vamos gerenciar o arquivo separadamente
+                          }}
                           className="h-10"
                         />
                         <p className="text-xs text-muted-foreground mt-1">
@@ -362,7 +390,7 @@ export default function NewProductPage() {
           </div>
         );
       
-      case 1: // Detalhes Específicos
+      case 1:
         return (
           <div className="space-y-4">
             <Card className="border shadow-sm bg-gray-50">
@@ -485,7 +513,7 @@ export default function NewProductPage() {
           </div>
         );
       
-      case 2: // Preço e Estoque
+      case 2:
         return (
           <div className="space-y-4">
             <Card className="border shadow-sm">
@@ -511,13 +539,11 @@ export default function NewProductPage() {
                               step="0.01"
                               min="0"
                               placeholder="0,00"
-                              {...field}
-                              onChange={(e) =>
-                                field.onChange(
-                                  Number.parseFloat(e.target.value) || 0
-                                )
-                              }
-                              value={field.value}
+                              onChange={(e) => {
+                                const value = e.target.value !== "" ? Number.parseFloat(e.target.value) : 0;
+                                field.onChange(value);
+                              }}
+                              value={field.value === 0 ? "0" : field.value}
                               className="pl-10 h-10"
                             />
                           </div>
@@ -541,13 +567,11 @@ export default function NewProductPage() {
                               step="0.01"
                               min="0"
                               placeholder="0,00"
-                              {...field}
-                              onChange={(e) =>
-                                field.onChange(
-                                  e.target.value ? Number.parseFloat(e.target.value) : undefined
-                                )
-                              }
-                              value={field.value === undefined ? "" : field.value}
+                              onChange={(e) => {
+                                const value = e.target.value !== "" ? Number.parseFloat(e.target.value) : 0;
+                                field.onChange(value);
+                              }}
+                              value={field.value === 0 ? "0" : field.value}
                               className="pl-10 h-10"
                             />
                           </div>
@@ -606,23 +630,20 @@ export default function NewProductPage() {
   };
 
   const checkCanContinue = () => {
-    // Verificar se o formulário está inicializado
     if (!form || !form.getValues) return false;
     
     let canContinue = true;
     
     switch (currentStep) {
-      case 0: // Informações Básicas
+      case 0:
         canContinue = 
           !!form.getValues("name") && 
           !!form.getValues("productType");
         break;
-      case 1: // Detalhes Específicos
-        // Para lentes, verificar se o tipo de lente foi preenchido
+      case 1:
         if (selectedProductType === "lenses") {
           canContinue = !!form.getValues("lensType");
         }
-        // Para armações, verificar os campos obrigatórios
         else if (selectedProductType === "prescription_frame" || selectedProductType === "sunglasses_frame") {
           canContinue = 
             !!form.getValues("typeFrame") && 
@@ -630,14 +651,12 @@ export default function NewProductPage() {
             !!form.getValues("shape") && 
             !!form.getValues("reference");
           
-          // Para armações solares, verificar também o modelo
           if (selectedProductType === "sunglasses_frame") {
             canContinue = canContinue && !!form.getValues("modelSunglasses");
           }
         }
-        // Para limpa-lentes, não há campos específicos obrigatórios
         break;
-      case 2: // Preço e Estoque
+      case 2:
         canContinue = (form.getValues("sellPrice") || 0) > 0;
         break;
     }

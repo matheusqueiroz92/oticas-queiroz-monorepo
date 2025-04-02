@@ -195,6 +195,28 @@ export default function NewOrderPage() {
   };
   
   const onSubmit = (data: OrderFormValues) => {
+    const productsWithoutStock = selectedProducts.filter(product => {
+      if (product.productType === 'prescription_frame' || product.productType === 'sunglasses_frame') {
+        const stock = (product as any).stock || 0;
+        return stock <= 0;
+      }
+      return false;
+    });
+    
+    if (productsWithoutStock.length > 0) {
+      const productNames = productsWithoutStock.map(p => p.name).join(", ");
+      
+      toast({
+        variant: "destructive",
+        title: "Produtos sem estoque",
+        description: `Os seguintes produtos não possuem estoque: ${productNames}. Remova-os ou atualize o estoque para continuar.`
+      });
+      
+      if (!window.confirm("Deseja continuar mesmo com produtos sem estoque?")) {
+        return;
+      }
+    }
+    
     handleCreateNewOrder(data);
   };
 

@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import type { Column, User } from "@/app/types/user";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,13 +14,36 @@ interface UserTableProps {
   data: User[];
   columns: Column[];
   onDetailsClick: (id: string) => void;
+  sortField?: keyof User;
+  sortDirection?: "asc" | "desc";
 }
 
 export const UserTable: React.FC<UserTableProps> = ({
   data,
   columns,
   onDetailsClick,
+  sortField = "name",
+  sortDirection = "asc",
 }) => {
+  const sortedData = useMemo(() => {
+    const dataToSort = [...data];
+    
+    return dataToSort.sort((a, b) => {
+      const valueA = String(a[sortField] || "").toLowerCase();
+      const valueB = String(b[sortField] || "").toLowerCase();
+      
+      if (sortDirection === "asc") {
+        return valueA.localeCompare(valueB);
+      } else {
+        return valueB.localeCompare(valueA);
+      }
+    });
+  }, [data, sortField, sortDirection]);
+
+  if (sortedData.length === 0) {
+    return <div className="text-center py-4">Nenhum usuário encontrado.</div>;
+  }
+
   return (
     <Table>
       <TableHeader>
@@ -31,7 +55,7 @@ export const UserTable: React.FC<UserTableProps> = ({
         </TableRow>
       </TableHeader>
       <TableBody>
-        {data.map((item) => (
+        {sortedData.map((item) => (
           <TableRow key={item._id}>
             {columns.map((column) => (
               <TableCell key={column.key}>

@@ -55,33 +55,37 @@ export default function EditProductPage() {
 
   useEffect(() => {
     if (currentProduct) {
+      
+      form.reset({
+        name: currentProduct.name || "",
+        productType: currentProduct.productType,
+        description: currentProduct.description || "",
+        brand: currentProduct.brand || "",
+        sellPrice: typeof currentProduct.sellPrice === 'string' ? 
+          parseFloat(currentProduct.sellPrice) : 
+          (currentProduct.sellPrice || 0),
+        costPrice: typeof currentProduct.costPrice === 'string' ? 
+          parseFloat(currentProduct.costPrice) : 
+          (currentProduct.costPrice || 0)
+      });
+      
       setSelectedProductType(currentProduct.productType);
       
-      // Set preview URL for image
       if (currentProduct.image) {
         setPreviewUrl(`${process.env.NEXT_PUBLIC_API_URL}${currentProduct.image}`);
       }
-      
-      form.reset({
-        name: currentProduct.name,
-        productType: currentProduct.productType,
-        description: currentProduct.description,
-        brand: currentProduct.brand || "",
-        sellPrice: currentProduct.sellPrice,
-        costPrice: currentProduct.costPrice || 0,
-      });
-      
+
       if (currentProduct.productType === "lenses") {
-        form.setValue("lensType", (currentProduct as any).lensType);
+        form.setValue("lensType", (currentProduct as any).lensType || "");
       } else if (currentProduct.productType === "prescription_frame" || currentProduct.productType === "sunglasses_frame") {
-        form.setValue("typeFrame", (currentProduct as any).typeFrame);
-        form.setValue("color", (currentProduct as any).color);
-        form.setValue("shape", (currentProduct as any).shape);
-        form.setValue("reference", (currentProduct as any).reference);
-        form.setValue("stock", (currentProduct as any).stock);
+        form.setValue("typeFrame", (currentProduct as any).typeFrame || "");
+        form.setValue("color", (currentProduct as any).color || "");
+        form.setValue("shape", (currentProduct as any).shape || "");
+        form.setValue("reference", (currentProduct as any).reference || "");
+        form.setValue("stock", Number((currentProduct as any).stock) || 0);
         
         if (currentProduct.productType === "sunglasses_frame") {
-          form.setValue("modelSunglasses", (currentProduct as any).modelSunglasses);
+          form.setValue("modelSunglasses", (currentProduct as any).modelSunglasses || "");
         }
       }
     }
@@ -304,7 +308,6 @@ export default function EditProductPage() {
     { id: "price", label: "Preço e Estoque" },
   ];
 
-  // Renderiza o progresso dos steps
   const renderStepProgress = () => {
     return (
       <div className="w-full mb-6">
@@ -351,7 +354,7 @@ export default function EditProductPage() {
 
   const renderStepContent = () => {
     switch (currentStep) {
-      case 0: // Informações Básicas
+      case 0:
         return (
           <div className="space-y-4">
             <div className="flex items-center gap-2 mb-4 pb-2 border-b">
@@ -460,7 +463,7 @@ export default function EditProductPage() {
           </div>
         );
       
-      case 1: // Detalhes Específicos
+      case 1:
         return (
           <div className="space-y-4">
             <div className="bg-gray-50 rounded-md p-4 border">
@@ -475,7 +478,7 @@ export default function EditProductPage() {
           </div>
         );
       
-      case 2: // Preço e Estoque
+      case 2:
         return (
           <div className="space-y-4">
             <div className="bg-gray-50 rounded-md p-4 border">
@@ -484,65 +487,63 @@ export default function EditProductPage() {
                 Informações de Preço
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                <FormField
-                  control={form.control}
-                  name="sellPrice"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Preço de Venda</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <DollarSign className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                          <Input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            placeholder="0,00"
-                            {...field}
-                            onChange={(e) =>
-                              field.onChange(
-                                Number.parseFloat(e.target.value) || 0
-                              )
-                            }
-                            value={field.value}
-                            className="pl-10 h-10"
-                          />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              <FormField
+                control={form.control}
+                name="sellPrice"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Preço de Venda</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <DollarSign className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="0,00"
+                          {...field}
+                          value={field.value || 0}
+                          onChange={(e) => {
+                            const value = e.target.value ? Number(e.target.value) : 0;
+                            field.onChange(value);
+                          }}
+                          className="pl-10 h-10"
+                        />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-                <FormField
-                  control={form.control}
-                  name="costPrice"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Preço de Custo (opcional)</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <DollarSign className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                          <Input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            placeholder="0,00"
-                            {...field}
-                            onChange={(e) =>
-                              field.onChange(
-                                e.target.value ? Number.parseFloat(e.target.value) : undefined
-                              )
-                            }
-                            value={field.value === undefined ? "" : field.value}
-                            className="pl-10 h-10"
-                          />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              <FormField
+                control={form.control}
+                name="costPrice"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Preço de Custo (opcional)</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <DollarSign className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="0,00"
+                          {...field}
+                          value={field.value || 0}
+                          onChange={(e) => {
+                            const value = e.target.value ? Number(e.target.value) : 0;
+                            field.onChange(value);
+                          }}
+                          className="pl-10 h-10"
+                        />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               </div>
             </div>
           </div>
@@ -559,17 +560,15 @@ export default function EditProductPage() {
     if (!form) return false;
     
     switch (currentStep) {
-      case 0: // Informações Básicas
+      case 0:
         canContinue = 
           !!form.getValues("name") && 
           !!form.getValues("productType");
         break;
-      case 1: // Detalhes Específicos
-        // Para lentes, verificar se o tipo de lente foi preenchido
+      case 1:
         if (selectedProductType === "lenses") {
           canContinue = !!form.getValues("lensType");
         }
-        // Para armações, verificar os campos obrigatórios
         else if (selectedProductType === "prescription_frame" || selectedProductType === "sunglasses_frame") {
           canContinue = 
             !!form.getValues("typeFrame") && 
@@ -577,14 +576,12 @@ export default function EditProductPage() {
             !!form.getValues("shape") && 
             !!form.getValues("reference");
           
-          // Para armações solares, verificar também o modelo
           if (selectedProductType === "sunglasses_frame") {
             canContinue = canContinue && !!form.getValues("modelSunglasses");
           }
         }
-        // Para limpa-lentes, não há campos específicos obrigatórios
         break;
-      case 2: // Preço e Estoque
+      case 2:
         canContinue = form.getValues("sellPrice") > 0;
         break;
     }

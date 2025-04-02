@@ -55,9 +55,6 @@ const productSchema = new Schema(
   }
 );
 
-// Adicionar índice para melhorar performance das consultas por ID
-productSchema.index({ _id: 1 });
-
 const ProductBase = model<ProductDocument, ProductModel>("Product", productSchema);
 
 const lensSchema = new Schema({
@@ -145,5 +142,15 @@ const SunglassesFrame = ProductBase.discriminator<SunglassesFrameDocument, Sungl
   "sunglasses_frame", 
   sunglassesFrameSchema
 );
+
+const discriminatorOptions = {
+  toObject: { virtuals: true },
+  toJSON: { virtuals: true },
+  id: false,
+  versionKey: false,
+  timestamps: true,
+  strict: 'throw',
+  optimisticConcurrency: true // Adicionar controle de concorrência
+}
 
 export { ProductBase as Product, Lens, CleanLens, PrescriptionFrame, SunglassesFrame };

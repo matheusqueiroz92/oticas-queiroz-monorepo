@@ -19,11 +19,13 @@ const stockLogSchema = new Schema({
   productId: {
     type: Schema.Types.ObjectId,
     ref: 'Product',
-    required: true
+    required: true,
+    index: true
   },
   orderId: {
     type: Schema.Types.ObjectId,
-    ref: 'Order'
+    ref: 'Order',
+    index: true
   },
   previousStock: {
     type: Number,
@@ -40,7 +42,8 @@ const stockLogSchema = new Schema({
   operation: {
     type: String,
     enum: ['increase', 'decrease'],
-    required: true
+    required: true,
+    index: true
   },
   reason: {
     type: String,
@@ -51,7 +54,32 @@ const stockLogSchema = new Schema({
     ref: 'User',
     required: true
   }
-}, { timestamps: true });
+}, { 
+  timestamps: true,
+  // Adicionando índices compostos para otimizar consultas
+  indexes: [
+    { productId: 1, createdAt: -1 },
+    { orderId: 1, operation: 1 }
+  ]
+});
+
+// Método para buscar histórico de estoque de um produto
+stockLogSchema.statics.getProductStockHistory = async function(productId: string) {
+  return this.find({ productId: new mongoose.Types.ObjectId(productId) })
+    .sort({ createdAt: -1 })
+    .populate('performedBy', 'name')
+    .populate('orderId')
+    .exec();
+};
+
+// Método para buscar movimentações de estoque de um pedido
+stockLogSchema.statics.getOrderStockMovements = async function(orderId: string) {
+  return this.find({ orderId: new mongoose.Types.ObjectId(orderId) })
+    .sort({ createdAt: -1 })
+    .populate('productId', 'name productType')
+    .populate('performedBy', 'name')
+    .exec();
+};
 
 const StockLog = mongoose.model<StockLogDocument>('StockLog', stockLogSchema);
 

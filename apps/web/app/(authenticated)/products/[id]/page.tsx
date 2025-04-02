@@ -7,12 +7,10 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardFooter,
-  CardDescription
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+import { StockManagement } from "@/components/Products/StockManagement";
 import { Input } from "@/components/ui/input";
 import { 
   Loader2, 

@@ -142,36 +142,28 @@ export class ProductModel {
   ): Promise<IProduct | null> {
     if (!this.isValidId(id)) return null;
     
-    const updateData = { ...productData };
-    if (updateData.productType) {
-      delete updateData.productType;
-    }
-  
-    if (updateData.stock !== undefined && typeof updateData.stock !== 'number') {
-      updateData.stock = Number(updateData.stock);
-    }
-  
-    // Log para debug
-    console.log(`[ProductModel] Atualizando produto ${id} com dados:`, JSON.stringify(updateData));
-  
-    const product = await Product.findByIdAndUpdate(
-      id,
-      { $set: updateData },
-      {
-        new: true,
-        runValidators: true,
+    // Adicione logs para debug
+    console.log(`Atualizando produto ${id} com dados:`, JSON.stringify(productData));
+    
+    try {
+      // Usar findOneAndUpdate com opção { new: true } para garantir que retorne o documento atualizado
+      const product = await Product.findOneAndUpdate(
+        { _id: id },
+        { $set: productData },
+        { new: true, runValidators: true }
+      );
+      
+      if (!product) {
+        console.log(`Produto não encontrado para atualização: ${id}`);
+        return null;
       }
-    );
-  
-    if (!product) {
-      console.error(`[ProductModel] Produto não encontrado para atualização: ${id}`);
+      
+      console.log(`Produto atualizado com sucesso: ${id}, novo estoque: ${(product as any).stock}`);
+      return this.convertToIProduct(product);
+    } catch (error) {
+      console.error(`Erro ao atualizar produto ${id}:`, error);
       return null;
     }
-    
-    // Log para debug
-    console.log(`[ProductModel] Produto atualizado:`, JSON.stringify(product.toObject()));
-    
-    return this.convertToIProduct(product);
   }
 
   async updateStock(

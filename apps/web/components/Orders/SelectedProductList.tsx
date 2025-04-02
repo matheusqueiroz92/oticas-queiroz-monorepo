@@ -3,6 +3,8 @@ import { Input } from "@/components/ui/input";
 import type { Product } from "../../app/types/product";
 import { formatCurrency } from "../../app/utils/formatters";
 import { getCorrectPrice, getProductTypeLabel, normalizeProduct } from "@/app/utils/product-utils";
+import { AlertTriangle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface SelectedProductsListProps {
   products: Product[];
@@ -44,7 +46,21 @@ export default function SelectedProductsList({
         <tbody>
           {normalizedProducts.map((product) => (
             <tr key={product._id} className="border-t">
-              <td className="px-4 py-2">{product.name}</td>
+              <td className="px-4 py-2">
+                <div>
+                  <span className="font-medium">{product.name}</span>
+                  
+                  {(product.productType === 'prescription_frame' || product.productType === 'sunglasses_frame') && 
+                  (product as any).stock <= 0 && (
+                    <div className="flex items-center gap-1 mt-1">
+                      <Badge variant="destructive" className="text-xs py-0 px-1 h-5">
+                        <AlertTriangle className="h-3 w-3 mr-1" />
+                        Sem estoque
+                      </Badge>
+                    </div>
+                  )}
+                </div>
+              </td>
               <td className="px-4 py-2">{getProductTypeLabel(product.productType)}</td>
               <td className="px-4 py-2 text-right">
                 <Input

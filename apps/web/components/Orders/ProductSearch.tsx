@@ -9,6 +9,7 @@ import {
 import type { Product } from "../../app/types/product";
 import { formatCurrency } from "../../app/utils/formatters";
 import { normalizeProduct } from "@/app/utils/product-utils";
+import { Badge } from "@/components/ui/badge";
 
 interface ProductSearchProps {
   products: Product[];
@@ -105,34 +106,59 @@ export default function ProductSearch({
             {showResults && productSearch && (
               <div className="absolute z-10 w-full bg-white border rounded-md shadow-lg mt-1">
                 <ul className="py-1">
-                  {filteredProducts.length > 0 ? (
-                    filteredProducts.map((product) => (
-                      <li key={product._id} className="p-0">
-                        <button
-                          type="button"
-                          className="w-full text-left px-3 py-2 hover:bg-slate-100 cursor-pointer"
-                          onClick={() => handleAddProduct(product)}
-                          aria-label={`Adicionar produto ${product.name}`}
-                        >
-                          <div className="flex justify-between">
-                            <div>
-                              <span className="font-medium">{product.name}</span>
-                              <span className="block text-xs text-gray-500">
+                {filteredProducts.length > 0 ? (
+                  filteredProducts.map((product) => (
+                    <li key={product._id} className="p-0">
+                      <button
+                        type="button"
+                        className="w-full text-left px-3 py-2 hover:bg-slate-100 cursor-pointer"
+                        onClick={() => handleAddProduct(product)}
+                        aria-label={`Adicionar produto ${product.name}`}
+                      >
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <span className="font-medium">{product.name}</span>
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <span className="text-xs text-gray-500">
                                 {getProductTypeLabel(product.productType)}
                               </span>
+                              
+                              {/* Indicador de estoque para armações */}
+                              {(product.productType === 'prescription_frame' || product.productType === 'sunglasses_frame') && (
+                                <>
+                                  <span className="text-gray-300 mx-1">•</span>
+                                  {(product as any).stock > 0 ? (
+                                    <Badge 
+                                      variant="outline" 
+                                      className={`text-xs py-0 px-1 ${
+                                        (product as any).stock <= 5 
+                                          ? 'bg-amber-50 text-amber-800 border-amber-200'
+                                          : 'bg-green-50 text-green-800 border-green-200'
+                                      }`}
+                                    >
+                                      Estoque: {(product as any).stock}
+                                    </Badge>
+                                  ) : (
+                                    <Badge variant="destructive" className="text-xs py-0 px-1">
+                                      Sem estoque
+                                    </Badge>
+                                  )}
+                                </>
+                              )}
                             </div>
-                            <span className="text-sm">
-                              {formatCurrency(product.sellPrice || 0)}
-                            </span>
                           </div>
-                        </button>
-                      </li>
-                    ))
-                  ) : (
-                    <li className="p-2 text-sm text-gray-500">
-                      Nenhum produto encontrado com este nome.
+                          <span className="text-sm">
+                            {formatCurrency(product.sellPrice || 0)}
+                          </span>
+                        </div>
+                      </button>
                     </li>
-                  )}
+                  ))
+                ) : (
+                  <li className="p-2 text-sm text-gray-500">
+                    Nenhum produto encontrado com este nome.
+                  </li>
+                )}
                   
                   <li className="border-t">
                     <button

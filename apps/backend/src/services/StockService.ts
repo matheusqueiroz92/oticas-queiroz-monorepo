@@ -3,6 +3,10 @@ import { IProduct, IPrescriptionFrame, ISunglassesFrame } from "../interfaces/IP
 import { OrderProduct } from "../interfaces/IOrder";
 import mongoose from "mongoose";
 import { StockLog } from "../schemas/StockLogSchema";
+import {
+  PrescriptionFrame, 
+  SunglassesFrame 
+} from "../schemas/ProductSchema";
 
 export class StockError extends Error {
   constructor(message: string) {
@@ -18,12 +22,27 @@ export class StockService {
     this.productModel = new ProductModel();
   }
 
+  /**
+   * Verifica se um produto é do tipo que possui controle de estoque (apenas armações)
+   * @param product Produto a ser verificado
+   * @returns true se for um produto com controle de estoque, false caso contrário
+   */
   private isFrameProduct(product: IProduct): product is IPrescriptionFrame | ISunglassesFrame {
     return product.productType === 'prescription_frame' || product.productType === 'sunglasses_frame';
   }
 
+  /**
+   * Obtém um produto pelo ID
+   * @param productId ID do produto
+   * @returns Produto ou null se não encontrado
+   */
   private async getProductById(productId: string): Promise<IProduct | null> {
-    return this.productModel.findById(productId);
+    try {
+      return await this.productModel.findById(productId);
+    } catch (error) {
+      console.error(`Erro ao buscar produto com ID ${productId}:`, error);
+      return null;
+    }
   }
 
   /**
@@ -41,15 +60,17 @@ export class StockService {
   ): Promise<void> {
     try {
       await StockLog.create({
-        productId,
-        orderId,
+        productId: new mongoose.Types.ObjectId(productId),
+        orderId: orderId ? new mongoose.Types.ObjectId(orderId) : undefined,
         previousStock,
         newStock,
         quantity,
         operation,
         reason,
-        performedBy
+        performedBy: new mongoose.Types.ObjectId(performedBy)
       });
+      
+      console.log(`Log de estoque criado: ${operation} de ${quantity} unidades do produto ${productId}`);
     } catch (error) {
       console.error('Erro ao criar log de estoque:', error);
     }
@@ -58,10 +79,11 @@ export class StockService {
   /**
    * Reduz o estoque de um produto quando um pedido é criado
    * @param productId ID do produto
-   * @param quantity Quantidade a ser reduzida (padrão: 1)
-   * @param reason Motivo da redução (padrão: 'Pedido criado')
+   * @param quantity Quantidade a reduzir
+   * @param reason Motivo da redução
    * @param performedBy ID do usuário que realizou a operação
-   * @param orderId ID do pedido relacionado (opcional)
+   * @param orderId ID do pedido relacionado
+   * @returns Produto atualizado ou null
    */
   async decreaseStock(
     productId: string, 
@@ -70,56 +92,59 @@ export class StockService {
     performedBy: string = 'system',
     orderId?: string
   ): Promise<IProduct | null> {
-    console.log(`Iniciando diminuição de estoque para produto ${productId}, quantidade: ${quantity}`);
-    
-    const product = await this.getProductById(productId);
-    
-    if (!product) {
-      console.error(`Produto com ID ${productId} não encontrado`);
-      throw new StockError(`Produto com ID ${productId} não encontrado`);
-    }
-    
-    console.log(`Produto encontrado: ${product.name}, tipo: ${product.productType}`);
-    
-    if (!this.isFrameProduct(product)) {
-      console.log(`Produto ${productId} não é do tipo armação, não precisa de controle de estoque`);
-      return product;
-    }
-    
-    // Garantir que stock não seja undefined
-    const currentStock = product.stock ?? 0;
-    console.log(`Estoque atual: ${currentStock}`);
-    
-    if (currentStock < quantity) {
-      console.error(`Estoque insuficiente para o produto ${product.name}. Disponível: ${currentStock}, Necessário: ${quantity}`);
-      throw new StockError(`Estoque insuficiente para o produto ${product.name}. Disponível: ${currentStock}`);
-    }
-    
-    const newStock = currentStock - quantity;
-    console.log(`Novo estoque após diminuição: ${newStock}`);
-    
-    // Usar o método updateStock modificado
     try {
-      const updatedProduct = await this.productModel.updateStock(productId, -quantity);
+      const product = await this.getProductById(productId);
       
-      if (!updatedProduct) {
-        console.error(`Falha ao atualizar estoque do produto ${productId}`);
+      if (!product) {
+        throw new StockError(`Produto com ID ${productId} não encontrado`);
+      }
+      
+      // Se não for um produto de armação, não mexer no estoque
+      if (!this.isFrameProduct(product)) {
+        console.log(`Produto ${productId} (${product.name}) não é uma armação, ignorando atualização de estoque.`);
+        return product;
+      }
+      
+      const currentStock = product.stock || 0;
+      
+      if (currentStock < quantity) {
+        throw new StockError(`Estoque insuficiente para o produto ${product.name}. Disponível: ${currentStock}, Necessário: ${quantity}`);
+      }
+      
+      const newStock = currentStock - quantity;
+      
+      console.log(`Atualizando estoque do produto ${productId} (${product.name}) de ${currentStock} para ${newStock}`);
+      
+      // Usar diretamente o modelo Mongoose para garantir a atualização
+      // Usamos o modelo correto com base no tipo de produto
+      let result;
+      if (product.productType === 'prescription_frame') {
+        result = await PrescriptionFrame.findByIdAndUpdate(
+          productId,
+          { $set: { stock: newStock } },
+          { new: true }
+        );
+      } else if (product.productType === 'sunglasses_frame') {
+        result = await SunglassesFrame.findByIdAndUpdate(
+          productId,
+          { $set: { stock: newStock } },
+          { new: true }
+        );
+      }
+      
+      if (!result) {
         throw new StockError(`Falha ao atualizar estoque do produto ${productId}`);
       }
       
-      // Verificação adicional
-      if (updatedProduct.stock !== newStock) {
-        console.error(`ATENÇÃO: Discrepância no estoque! Tentando atualização alternativa...`);
-        // Tentar atualização direta como fallback
-        const fallbackUpdate = await this.productModel.update(productId, { stock: newStock });
-        if (!fallbackUpdate || fallbackUpdate.stock !== newStock) {
-          console.error(`FALHA CRÍTICA: Não foi possível atualizar o estoque do produto ${productId}`);
-          throw new StockError(`Falha crítica ao atualizar estoque do produto ${productId}`);
-        }
-        console.log(`Estoque atualizado via fallback para: ${fallbackUpdate.stock}`);
-      }
+      // Verificar se a atualização realmente aconteceu
+      const updatedProduct = await this.getProductById(productId);
+      const updatedStock = updatedProduct?.stock || 0;
       
-      console.log(`Estoque atualizado com sucesso para ${updatedProduct.stock}`);
+      if (updatedStock !== newStock) {
+        console.error(`Atenção: O estoque não foi atualizado corretamente. Esperado: ${newStock}, Atual: ${updatedStock}`);
+      } else {
+        console.log(`Estoque atualizado com sucesso para ${newStock}`);
+      }
       
       // Registrar log
       await this.createStockLog(
@@ -135,18 +160,22 @@ export class StockService {
       
       return updatedProduct;
     } catch (error) {
-      console.error(`Erro ao atualizar estoque do produto ${productId}:`, error);
-      throw new StockError(`Erro ao atualizar estoque: ${error instanceof Error ? error.message : String(error)}`);
+      console.error(`Erro ao reduzir estoque para ${productId}:`, error);
+      if (error instanceof StockError) {
+        throw error;
+      }
+      throw new StockError(`Erro desconhecido ao processar estoque: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
   /**
    * Aumenta o estoque de um produto quando um pedido é cancelado
    * @param productId ID do produto
-   * @param quantity Quantidade a ser aumentada (padrão: 1)
-   * @param reason Motivo do aumento (padrão: 'Pedido cancelado')
+   * @param quantity Quantidade a aumentar
+   * @param reason Motivo do aumento
    * @param performedBy ID do usuário que realizou a operação
-   * @param orderId ID do pedido relacionado (opcional)
+   * @param orderId ID do pedido relacionado
+   * @returns Produto atualizado ou null
    */
   async increaseStock(
     productId: string, 
@@ -155,52 +184,83 @@ export class StockService {
     performedBy: string = 'system',
     orderId?: string
   ): Promise<IProduct | null> {
-    const product = await this.getProductById(productId);
-    
-    if (!product) {
-      throw new StockError(`Produto com ID ${productId} não encontrado`);
+    try {
+      const product = await this.getProductById(productId);
+      
+      if (!product) {
+        throw new StockError(`Produto com ID ${productId} não encontrado`);
+      }
+      
+      // Se não for um produto de armação, não mexer no estoque
+      if (!this.isFrameProduct(product)) {
+        console.log(`Produto ${productId} (${product.name}) não é uma armação, ignorando atualização de estoque.`);
+        return product;
+      }
+      
+      const currentStock = product.stock || 0;
+      const newStock = currentStock + quantity;
+      
+      console.log(`Atualizando estoque do produto ${productId} (${product.name}) de ${currentStock} para ${newStock}`);
+      
+      // Usar diretamente o modelo Mongoose para garantir a atualização
+      // Usamos o modelo correto com base no tipo de produto
+      let result;
+      if (product.productType === 'prescription_frame') {
+        result = await PrescriptionFrame.findByIdAndUpdate(
+          productId,
+          { $set: { stock: newStock } },
+          { new: true }
+        );
+      } else if (product.productType === 'sunglasses_frame') {
+        result = await SunglassesFrame.findByIdAndUpdate(
+          productId,
+          { $set: { stock: newStock } },
+          { new: true }
+        );
+      }
+      
+      if (!result) {
+        throw new StockError(`Falha ao atualizar estoque do produto ${productId}`);
+      }
+      
+      // Verificar se a atualização realmente aconteceu
+      const updatedProduct = await this.getProductById(productId);
+      const updatedStock = updatedProduct?.stock || 0;
+      
+      if (updatedStock !== newStock) {
+        console.error(`Atenção: O estoque não foi atualizado corretamente. Esperado: ${newStock}, Atual: ${updatedStock}`);
+      } else {
+        console.log(`Estoque atualizado com sucesso para ${newStock}`);
+      }
+      
+      // Registrar log
+      await this.createStockLog(
+        productId,
+        currentStock,
+        newStock,
+        quantity,
+        'increase',
+        reason,
+        performedBy,
+        orderId
+      );
+      
+      return updatedProduct;
+    } catch (error) {
+      console.error(`Erro ao aumentar estoque para ${productId}:`, error);
+      if (error instanceof StockError) {
+        throw error;
+      }
+      throw new StockError(`Erro desconhecido ao processar estoque: ${error instanceof Error ? error.message : String(error)}`);
     }
-    
-    if (!this.isFrameProduct(product)) {
-      // Não é um produto que precisa controle de estoque
-      return product;
-    }
-    
-    const currentStock = product.stock || 0;
-    const newStock = currentStock + quantity;
-    
-    // Usar o método updateStock para uma atualização atômica
-    const updatedProduct = await this.productModel.updateStock(productId, quantity);
-    
-    if (!updatedProduct) {
-      throw new StockError(`Falha ao atualizar estoque do produto ${productId}`);
-    }
-    
-    // Verificação após atualização
-    const verifiedProduct = await this.productModel.findById(productId);
-    console.log(`Verificação - Estoque após aumento: ${verifiedProduct?.stock}`);
-    
-    // Registrar log
-    await this.createStockLog(
-      productId,
-      currentStock,
-      newStock,
-      quantity,
-      'increase',
-      reason,
-      performedBy,
-      orderId
-    );
-    
-    return updatedProduct;
   }
   
   /**
    * Processa múltiplos produtos de um pedido para atualização de estoque
-   * @param products Array de produtos ou IDs de produtos
-   * @param operation 'decrease' para diminuir o estoque, 'increase' para aumentar
+   * @param products Lista de produtos
+   * @param operation Operação (decrease para criar pedido, increase para cancelar)
    * @param performedBy ID do usuário que realizou a operação
-   * @param orderId ID do pedido relacionado (opcional)
+   * @param orderId ID do pedido relacionado
    */
   async processOrderProducts(
     products: OrderProduct[], 
@@ -208,70 +268,92 @@ export class StockService {
     performedBy: string = 'system',
     orderId?: string
   ): Promise<void> {
-    console.log(`Processando ${products.length} produtos para operação: ${operation}`);
+    console.log(`Processando estoque para ${products.length} produtos. Operação: ${operation}`);
+    
+    // Contadores para log
+    let atualizados = 0;
+    let ignorados = 0;
+    let erros = 0;
     
     for (const product of products) {
-      let productId: string;
-      let productObject: IProduct | null = null;
-      
-      // Determinar o ID do produto
-      if (typeof product === 'string') {
-        productId = product;
-        console.log(`Produto é uma string ID: ${productId}`);
-      } else if (product instanceof mongoose.Types.ObjectId) {
-        productId = product.toString();
-        console.log(`Produto é um ObjectId: ${productId}`);
-      } else if (typeof product === 'object' && product !== null && '_id' in product) {
-        productId = product._id.toString();
-        productObject = product as IProduct;
-        console.log(`Produto é um objeto completo. ID: ${productId}, Tipo: ${productObject.productType}`);
-      } else {
-        console.error(`Formato de produto inválido:`, product);
-        throw new StockError(`Formato de produto inválido: ${JSON.stringify(product)}`);
-      }
-      
-      // Se já temos o objeto do produto, verificamos diretamente
-      if (productObject) {
-        const isFrameProduct = 
-          productObject.productType === 'prescription_frame' || 
-          productObject.productType === 'sunglasses_frame';
+      try {
+        let productId: string;
         
-        console.log(`Produto ${productId} é do tipo frame? ${isFrameProduct}`);
-        
-        // Se não for um produto de armação, pular
-        if (!isFrameProduct) {
-          console.log(`Produto ${productId} não é do tipo armação, pulando atualização de estoque`);
+        // Extrair o ID do produto conforme o formato
+        if (typeof product === 'string') {
+          productId = product;
+        } else if (product instanceof mongoose.Types.ObjectId) {
+          productId = product.toString();
+        } else if (typeof product === 'object' && product !== null && '_id' in product) {
+          productId = typeof product._id === 'string' ? product._id : (product._id as mongoose.Types.ObjectId).toString();
+        } else {
+          console.error(`Formato de produto inválido:`, product);
+          erros++;
           continue;
         }
-      } else {
-        // Se não temos o objeto, precisamos buscá-lo para verificar o tipo
-        const fetchedProduct = await this.getProductById(productId);
-        if (!fetchedProduct) {
-          console.error(`Produto com ID ${productId} não encontrado`);
-          throw new StockError(`Produto com ID ${productId} não encontrado`);
-        }
         
-        const isFrameProduct = 
-          fetchedProduct.productType === 'prescription_frame' || 
-          fetchedProduct.productType === 'sunglasses_frame';
+        // Buscar o produto completo para verificar o tipo
+        const productDetails = await this.getProductById(productId);
         
-        console.log(`Produto ${productId} é do tipo frame? ${isFrameProduct}`);
-        
-        // Se não for um produto de armação, pular
-        if (!isFrameProduct) {
-          console.log(`Produto ${productId} não é do tipo armação, pulando atualização de estoque`);
+        // Se não for uma armação, pular
+        if (!productDetails || !this.isFrameProduct(productDetails)) {
+          console.log(`Produto ${productId} não é uma armação, ignorando estoque.`);
+          ignorados++;
           continue;
         }
+        
+        console.log(`Processando estoque para armação ${productId} (${productDetails.name})`);
+        
+        // Realizar a operação adequada
+        if (operation === 'decrease') {
+          await this.decreaseStock(productId, 1, 'Pedido criado', performedBy, orderId);
+        } else {
+          await this.increaseStock(productId, 1, 'Pedido cancelado/revertido', performedBy, orderId);
+        }
+        
+        atualizados++;
+      } catch (error) {
+        console.error(`Erro ao processar estoque para produto:`, error);
+        erros++;
+      }
+    }
+    
+    console.log(`Processamento de estoque concluído. Armações atualizadas: ${atualizados}, Ignorados (não armações): ${ignorados}, Erros: ${erros}`);
+  }
+
+  /**
+ * Obtém o histórico de estoque de um produto específico
+ * @param productId ID do produto
+ * @returns Array com histórico de movimentações
+ */
+  async getProductStockHistory(productId: string) {
+    try {
+      // Verificar se o produto existe e é do tipo com estoque
+      const product = await this.getProductById(productId);
+      if (!product) {
+        throw new StockError(`Produto com ID ${productId} não encontrado`);
       }
       
-      // Atualizar o estoque
-      if (operation === 'decrease') {
-        console.log(`Diminuindo estoque do produto ${productId}`);
-        await this.decreaseStock(productId, 1, 'Pedido criado', performedBy, orderId);
-      } else {
-        console.log(`Aumentando estoque do produto ${productId}`);
-        await this.increaseStock(productId, 1, 'Pedido cancelado', performedBy, orderId);
+      if (!this.isFrameProduct(product)) {
+        throw new StockError(`Produto ${product.name} não possui controle de estoque.`);
       }
+      
+      // Buscar histórico no modelo StockLog
+      const history = await StockLog.find({ 
+        productId: new mongoose.Types.ObjectId(productId) 
+      })
+      .sort({ createdAt: -1 })
+      .populate('performedBy', 'name')
+      .populate('orderId', 'serviceOrder')
+      .exec();
+      
+      return history;
+    } catch (error) {
+      console.error(`Erro ao obter histórico de estoque para produto ${productId}:`, error);
+      if (error instanceof StockError) {
+        throw error;
+      }
+      throw new StockError(`Erro ao buscar histórico de estoque: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 }
