@@ -46,9 +46,9 @@ export default function OrdersPage() {
       const handler = (value: string) => {
         console.log("Executando busca para:", value);
         if (value.trim() === "") {
-          updateFilters({});
+          updateFilters({ sort: "-createdAt" });
         } else {
-          updateFilters({ search: value });
+          updateFilters({ search: value, sort: "-createdAt" });
         }
       };
       
@@ -66,11 +66,7 @@ export default function OrdersPage() {
     },
     [updateFilters]
   );
-
-  console.log(orders);
   
-
-  // Aplicar busca quando o valor mudar
   useEffect(() => {
     const cleanup = debouncedSearch(search);
     return cleanup;
@@ -213,9 +209,8 @@ export default function OrdersPage() {
   ];
 
   useEffect(() => {
-    const cleanup = debouncedSearch(search);
-    return cleanup;
-  }, [search, debouncedSearch]);
+    updateFilters({ sort: "-createdAt" });
+  }, [updateFilters]);
 
   return (
     <>
@@ -278,7 +273,16 @@ export default function OrdersPage() {
           </div>
         </div>
 
-        {showFilters && <OrderFilters onUpdateFilters={updateFilters} />}
+        {showFilters && (
+          <OrderFilters 
+            onUpdateFilters={(newFilters: Record<string, any>) => {
+              updateFilters({
+                ...newFilters,
+                sort: "-createdAt"
+              });
+            }} 
+          />
+        )}
 
         {isLoading && (
           <div className="flex justify-center items-center py-12">
@@ -315,7 +319,9 @@ export default function OrdersPage() {
             totalPages={totalPages}
             setCurrentPage={setCurrentPage}
             totalItems={totalOrders}
-            key={`order-table-${search}-${JSON.stringify(orders.length)}-${currentPage}`} // Key para forçar atualização
+            sortField="createdAt"
+            sortDirection="desc"
+            key={`order-table-${search}-${JSON.stringify(orders.length)}-${currentPage}`}
           />
         )}
       </div>

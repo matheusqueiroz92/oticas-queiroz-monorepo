@@ -29,9 +29,10 @@ export const OrderFilters = ({ onUpdateFilters }: any) => {
   const { laboratories, isLoading: isLoadingLabs } = useLaboratories();
   const { employees, isLoading: isLoadingEmployees } = useEmployees();
 
-  // Função para obter todos os filtros atuais
   const getCurrentFilters = () => {
-    const filters: Record<string, string> = {};
+    const filters: Record<string, string> = {
+      sort: "-createdAt"
+    };
     
     if (selectedStatus && selectedStatus !== "all") {
       filters.status = selectedStatus;
@@ -60,7 +61,6 @@ export const OrderFilters = ({ onUpdateFilters }: any) => {
     return filters;
   };
 
-  // Validar datas antes de aplicar o filtro
   const validateDates = () => {
     if (dateRange.startDate && dateRange.endDate) {
       const start = new Date(dateRange.startDate);
@@ -76,10 +76,10 @@ export const OrderFilters = ({ onUpdateFilters }: any) => {
     return true;
   };
 
-  // Efeito para aplicar filtros quando valores mudarem
   useEffect(() => {
     if (validateDates()) {
       console.log('Aplicando filtros via OrderFilters:', { 
+        sort: "-createdAt",
         status: selectedStatus,
         employeeId: selectedEmployeeId,
         paymentMethod: selectedPaymentMethod,
@@ -92,7 +92,6 @@ export const OrderFilters = ({ onUpdateFilters }: any) => {
     }
   }, [selectedStatus, selectedEmployeeId, selectedPaymentMethod, selectedLaboratoryId, dateRange.startDate, dateRange.endDate]);
 
-  // Função para limpar filtros
   const handleClearFilters = () => {
     setDateRange({ startDate: '', endDate: '' });
     setSelectedStatus("all");
@@ -101,10 +100,9 @@ export const OrderFilters = ({ onUpdateFilters }: any) => {
     setSelectedLaboratoryId("all");
     setDateError(null);
     
-    onUpdateFilters({});
+    onUpdateFilters({ sort: "-createdAt" });
   };
 
-  // Lista de métodos de pagamento
   const paymentMethods = [
     { value: "credit", label: "Cartão de Crédito" },
     { value: "debit", label: "Cartão de Débito" },

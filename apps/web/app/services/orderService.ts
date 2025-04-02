@@ -30,63 +30,43 @@ export async function getAllOrders(filters: OrderFilters = {}): Promise<{
   pagination?: PaginationInfo;
 }> {
   try {
-    console.log("Filtros sendo enviados para a API:", filters);
-    
     const params: Record<string, any> = {};
     
-    // Parâmetros de paginação
-    if (filters.page) params.page = filters.page;
-    if (filters.limit) params.limit = filters.limit || 10;
-    if (filters.sort) params.sort = filters.sort;
+    params.page = filters.page || 1;
+    params.limit = filters.limit || 10;
     
-    // Parâmetro de busca
+    params.sort = filters.sort || "-createdAt";
+    
     if (filters.search) {
       params.search = filters.search;
-      console.log(`Enviando parâmetro search: "${filters.search}"`);
     }
     
-    // Status
     if (filters.status && filters.status !== 'all') {
       params.status = filters.status;
-      console.log(`Enviando status: ${filters.status}`);
     }
     
-    // EmployeeId
     if (filters.employeeId && filters.employeeId !== 'all') {
       params.employeeId = filters.employeeId;
-      console.log(`Enviando employeeId: ${filters.employeeId}`);
     }
 
-    // PaymentMethod
     if (filters.paymentMethod && filters.paymentMethod !== 'all') {
       params.paymentMethod = filters.paymentMethod;
-      console.log(`Enviando paymentMethod: ${filters.paymentMethod}`);
     }
 
-    // LaboratoryId
     if (filters.laboratoryId && filters.laboratoryId !== 'all') {
       params.laboratoryId = filters.laboratoryId;
-      console.log(`Enviando laboratoryId: ${filters.laboratoryId}`);
     }
     
-    // Datas
     if (filters.startDate) {
       params.startDate = filters.startDate;
-      console.log(`Enviando startDate: ${filters.startDate}`);
     }
     
     if (filters.endDate) {
       params.endDate = filters.endDate;
-      console.log(`Enviando endDate: ${filters.endDate}`);
     }
     
-    // Adicionar timestamp para evitar cache
-    params._t = new Date().getTime() + Math.random().toString(36).substring(7);
-    
-    console.log("Parâmetros finais enviados para a API:", params);
-    console.log("URL de requisição:", `/api/orders?${new URLSearchParams(params).toString()}`);
+    params._t = Date.now() + Math.random().toString(36).substring(7);
 
-    // Configuração com headers anti-cache
     const config = {
       params,
       headers: {
@@ -100,8 +80,6 @@ export async function getAllOrders(filters: OrderFilters = {}): Promise<{
     };
 
     const response = await api.get("/api/orders", config);
-    
-    console.log("Resposta recebida da API:", response.data);
 
     let rawOrders: any[] = [];
     let pagination: PaginationInfo | undefined = undefined;
@@ -114,7 +92,6 @@ export async function getAllOrders(filters: OrderFilters = {}): Promise<{
     }
 
     const orders = normalizeOrders(rawOrders);
-    console.log(`Retornando ${orders.length} pedidos normalizados`);
 
     return { orders, pagination };
   } catch (error) {
@@ -142,7 +119,12 @@ export async function getOrderById(id: string): Promise<Order | null> {
 export async function getOrdersByClient(clientId: string): Promise<Order[] | null> {
   try {
     if (!clientId) return [];
-    const response = await api.get(`/api/orders/client/${clientId}`);
+    const params = {
+      sort: "-createdAt",
+      _t: new Date().getTime()
+    };
+    
+    const response = await api.get(`/api/orders/client/${clientId}`, { params });
     return Array.isArray(response.data) ? normalizeOrders(response.data) : [];
   } catch (error) {
     console.error("Erro ao buscar pedidos do cliente:", error);
@@ -191,19 +173,15 @@ export async function createOrder(
   orderData: Omit<Order, "_id" | "createdAt" | "updatedAt">
 ): Promise<Order | null> {
   try {
-    // Garantir que products é um array (corrigido de "product" para "products")
     const data = {
       ...orderData,
       products: Array.isArray(orderData.products) 
         ? orderData.products 
         : [orderData.products],
-      // Garantir que serviceOrder é string
       serviceOrder: orderData.serviceOrder?.toString() || null,
-      // Garantir que os campos de preço estão definidos
       totalPrice: orderData.totalPrice || 0,
       discount: orderData.discount || 0,
-      finalPrice: orderData.finalPrice || 
-                (orderData.totalPrice || 0) - (orderData.discount || 0)
+      finalPrice: orderData.finalPrice || (orderData.totalPrice || 0) - (orderData.discount || 0)
     };
     
     const response = await api.post("/api/orders", data);

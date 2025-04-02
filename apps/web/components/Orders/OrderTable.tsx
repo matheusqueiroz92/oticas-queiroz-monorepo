@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import type { Order } from "@/app/types/order";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,6 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PaginationItems } from "@/components/PaginationItems";
+
 interface OrderColumn {
   key: string;
   header: string;
@@ -24,6 +25,8 @@ interface OrderTableProps {
   totalPages: number;
   setCurrentPage: (page: number) => void;
   totalItems?: number;
+  sortField?: keyof Order;
+  sortDirection?: "asc" | "desc";
 }
 
 export const OrderTable: React.FC<OrderTableProps> = ({
@@ -34,7 +37,41 @@ export const OrderTable: React.FC<OrderTableProps> = ({
   totalPages,
   setCurrentPage,
   totalItems,
+  sortField = "orderDate",
+  sortDirection = "desc",
 }) => {
+  const sortedData = useMemo(() => {
+    if (!data || data.length === 0) return [];
+    
+    const dataToSort = [...data];
+    
+    return dataToSort.sort((a, b) => {
+      if (sortField === "orderDate" || sortField === "deliveryDate" || sortField === "createdAt") {
+        const dateA = a[sortField] ? new Date(a[sortField] as string).getTime() : 0;
+        const dateB = b[sortField] ? new Date(b[sortField] as string).getTime() : 0;
+        
+        return sortDirection === "desc" ? dateB - dateA : dateA - dateB;
+      }
+      
+      const valueA = String(a[sortField as keyof Order] || "").toLowerCase();
+      const valueB = String(b[sortField as keyof Order] || "").toLowerCase();
+      
+      if (sortDirection === "desc") {
+        return valueB.localeCompare(valueA);
+      } else {
+        return valueA.localeCompare(valueB);
+      }
+    });
+  }, [data, sortField, sortDirection]);
+
+  if (sortedData.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-muted-foreground">Nenhum pedido encontrado.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <Table>
@@ -47,7 +84,7 @@ export const OrderTable: React.FC<OrderTableProps> = ({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {data.map((item) => (
+          {sortedData.map((item) => (
             <TableRow key={item._id}>
               {columns.map((column) => (
                 <TableCell key={column.key}>
@@ -72,7 +109,7 @@ export const OrderTable: React.FC<OrderTableProps> = ({
         totalPages={totalPages}
         setCurrentPage={setCurrentPage}
         totalItems={totalItems}
-        pageSize={data.length}
+        pageSize={sortedData.length}
       />
     </div>
   );

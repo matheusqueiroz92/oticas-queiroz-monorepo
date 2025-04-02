@@ -47,7 +47,7 @@ export function useCustomers() {
   }, [debouncedSearch]);
 
   const {
-    data: customers = [],
+    data: customersData = [],
     isLoading,
     error,
     refetch,
@@ -89,6 +89,12 @@ export function useCustomers() {
     refetchOnMount: true,
     refetchOnWindowFocus: false,
   });
+
+  const customers = useMemo(() => {
+    return [...customersData].sort((a, b) => 
+      (a.name || '').localeCompare(b.name || '')
+    );
+  }, [customersData]);
 
   const navigateToCustomerDetails = useCallback((id: string) => {
     router.push(`/customers/${id}`);

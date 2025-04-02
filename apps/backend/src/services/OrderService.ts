@@ -249,7 +249,20 @@ export class OrderService {
     limit?: number,
     filters?: Record<string, any>
   ): Promise<{ orders: IOrder[]; total: number }> {
-    const result = await this.orderModel.findAll(page, limit, filters, true);
+    console.log(`OrderService - getAllOrders - página: ${page}, limite: ${limit}`);
+    console.log(`OrderService - Filtros recebidos:`, filters);
+    
+    // Garantir que temos um objeto de filtros
+    const queryFilters = filters || {};
+    
+    // Garantir ordenação padrão por data de criação decrescente se não especificada
+    if (!queryFilters.sort) {
+      queryFilters.sort = "-createdAt";
+    }
+    
+    console.log(`OrderService - Ordenação aplicada: ${queryFilters.sort}`);
+    
+    const result = await this.orderModel.findAll(page, limit, queryFilters, true);
 
     if (!result.orders.length) {
       throw new OrderError("Nenhum pedido encontrado");

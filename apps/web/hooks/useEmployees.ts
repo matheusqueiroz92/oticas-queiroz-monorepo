@@ -15,12 +15,8 @@ export function useEmployees() {
   const queryClient = useQueryClient();
   const { getUserImageUrl } = useUsers();
 
-  // Função debounce para a busca
   const debouncedSearch = useMemo(
     () => debounce((value: string) => {
-      console.log("Executando debounced search para funcionários:", value);
-      
-      // Invalidar o cache atual para forçar nova requisição
       queryClient.invalidateQueries({ 
         queryKey: QUERY_KEYS.USERS.EMPLOYEES() 
       });
@@ -28,23 +24,14 @@ export function useEmployees() {
     [queryClient]
   );
 
-  // Função para atualizar o termo de busca
   const setSearch = useCallback((value: string) => {
-    console.log("Valor de busca de funcionários alterado:", value);
-    
-    // Atualizar o estado visual imediatamente
     setSearchValue(value);
-    
-    // Cancelar o debounce anterior se existir
     if (debouncedSearch.cancel) {
       debouncedSearch.cancel();
     }
-    
-    // Aplicar o debounce para a chamada da API
     debouncedSearch(value);
   }, [debouncedSearch]);
   
-  // Limpar debounce ao desmontar
   useEffect(() => {
     return () => {
       if (debouncedSearch.cancel) {
@@ -53,9 +40,8 @@ export function useEmployees() {
     };
   }, [debouncedSearch]);
 
-  // Query para listar todos os funcionários
   const {
-    data: employees = [],
+    data: employeesData = [],
     isLoading,
     error,
     refetch,
@@ -63,9 +49,6 @@ export function useEmployees() {
     queryKey: QUERY_KEYS.USERS.EMPLOYEES(search),
     queryFn: async () => {
       try {
-        console.log("Buscando funcionários com termo:", search);
-        
-        // Adicionar timestamp para evitar cache
         const timestamp = new Date().getTime();
         
         const response = await api.get(API_ROUTES.USERS.BASE, {
@@ -82,10 +65,8 @@ export function useEmployees() {
           }
         });
         
-        console.log("Resposta da busca de funcionários:", response.data.length, "resultados");
         return response.data;
       } catch (error: any) {
-        // Se for um erro 404 específico de "nenhum funcionário encontrado", retorna array vazio
         if (
           error.response?.status === 404 &&
           error.response?.data?.message ===
@@ -101,7 +82,12 @@ export function useEmployees() {
     refetchOnWindowFocus: false,
   });
 
-  // Funções de navegação
+  const employees = useMemo(() => {
+    return [...employeesData].sort((a, b) => 
+      (a.name || '').localeCompare(b.name || '')
+    );
+  }, [employeesData]);
+
   const navigateToEmployeeDetails = useCallback((id: string) => {
     router.push(`/employees/${id}`);
   }, [router]);
@@ -110,7 +96,6 @@ export function useEmployees() {
     router.push("/employees/new");
   }, [router]);
 
-  // Função para atualizar manualmente a lista
   const refreshEmployeesList = useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey: QUERY_KEYS.USERS.EMPLOYEES() });
     await refetch();

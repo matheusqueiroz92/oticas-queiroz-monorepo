@@ -56,8 +56,8 @@ const baseOrderSchema = z.object({
 
 // Schema para validar parâmetros de consulta
 export const orderQuerySchema = z.object({
-  page: z.string().optional().transform(val => Number(val) || 1),
-  limit: z.string().optional().transform(val => Number(val) || 10),
+  page: z.union([z.string(), z.number()]).optional().transform(val => Number(val) || 1),
+  limit: z.union([z.string(), z.number()]).optional().transform(val => Number(val) || 10),
   status: z.enum(["pending", "in_production", "ready", "delivered", "cancelled"]).optional(),
   employeeId: z.string().optional(),
   clientId: z.string().optional(),
@@ -67,9 +67,13 @@ export const orderQuerySchema = z.object({
   startDate: z.string().optional(),
   endDate: z.string().optional(),
   productId: z.string().optional(),
-  minPrice: z.string().optional().transform(val => Number(val) || undefined),
-  maxPrice: z.string().optional().transform(val => Number(val) || undefined),
+  minPrice: z.union([z.string(), z.number()]).optional()
+    .transform(val => typeof val === 'string' ? Number(val) || undefined : val),
+  maxPrice: z.union([z.string(), z.number()]).optional()
+    .transform(val => typeof val === 'string' ? Number(val) || undefined : val),
   search: z.string().optional(),
+  // Adicionar campo de ordenação
+  sort: z.string().optional().default("-createdAt"), // Ordenação padrão: mais recentes primeiro
 });
 
 // Schema para validar atualização de status

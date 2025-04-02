@@ -36,7 +36,7 @@ interface UseOrdersOptions {
 
 export function useOrders(options: UseOrdersOptions = {}) {
   const { enableQueries = true } = options;
-  const [filters, setFilters] = useState<OrderFilters>({});
+  const [filters, setFilters] = useState<OrderFilters>({ sort: "-createdAt" });
   const [currentPage, setCurrentPage] = useState(1);
 
   const router = useRouter();
@@ -45,10 +45,8 @@ export function useOrders(options: UseOrdersOptions = {}) {
   const { fetchUsers, getUserName } = useUsers();
   const { getLaboratoryName } = useLaboratories();
 
-  // Gera uma chave de cache para os filtros atuais
   const filterKey = JSON.stringify(filters);
 
-  // Query principal para buscar pedidos
   const {
     data, 
     isLoading, 
@@ -56,45 +54,88 @@ export function useOrders(options: UseOrdersOptions = {}) {
     refetch 
   } = useQuery({
     queryKey: QUERY_KEYS.ORDERS.PAGINATED(currentPage, filterKey),
-    queryFn: () => getAllOrders({
-      ...filters,
-      page: currentPage,
-      sort: "-createdAt",
-    }),
+    queryFn: async () => {
+      return await getAllOrders({
+        ...filters,
+        page: currentPage,
+        sort: "-createdAt",
+      });
+    },
     enabled: enableQueries,
     staleTime: 0,
+    gcTime: 0,
     refetchOnMount: true,
     refetchOnWindowFocus: false,
   });
 
-  // Extraindo dados da query
   const orders = data?.orders || [];
   const totalPages = data?.pagination?.totalPages || 1;
   const totalOrders = data?.pagination?.total || 0;
   
-
-  // Efeito para buscar os dados de usuários quando os pedidos são carregados
   useEffect(() => {
     if (enableQueries && orders.length > 0) {
-      // Extrair os IDs únicos de usuários (clientes e funcionários)
       const userIdsToFetch = [
         ...orders.map(order => typeof order.clientId === 'string' ? order.clientId : '').filter(Boolean),
         ...orders.map(order => typeof order.employeeId === 'string' ? order.employeeId : '').filter(Boolean)
       ];
-      
-      // Remover duplicatas
+
       const uniqueUserIds = [...new Set(userIdsToFetch)];
       
-      console.log("Buscando dados para usuários:", uniqueUserIds);
-      
-      // Buscar os dados dos usuários
       if (uniqueUserIds.length > 0) {
         fetchUsers(uniqueUserIds);
       }
     }
   }, [orders, fetchUsers, enableQueries]);
 
-  // Buscar pedidos de um cliente específico
+  const handlePageChange = useCallback((page: number) => {
+    if (currentPage !== page) {
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.ORDERS.PAGINATED(currentPage, filterKey)
+      });
+    }
+    
+    setCurrentPage(page);
+
+    queryClient.invalidateQueries({
+      queryKey: QUERY_KEYS.ORDERS.PAGINATED(page, filterKey)
+    });
+    
+    setTimeout(() => {
+      refetch();
+    }, 0);
+  }, [currentPage, filterKey, queryClient, refetch]);
+
+  const updateFilters = useCallback((newFilters: OrderFilters) => {
+    const filtersWithSort = {
+      ...newFilters,
+      sort: "-createdAt"
+    };
+    
+    setFilters(filtersWithSort);
+    setCurrentPage(1);
+    
+    queryClient.invalidateQueries({ 
+      queryKey: [QUERY_KEYS.ORDERS.ALL]
+    });
+    
+    queryClient.resetQueries({
+      queryKey: [QUERY_KEYS.ORDERS.ALL]
+    });
+  }, [queryClient]);
+   
+  const refreshOrdersList = useCallback(async () => {
+    await queryClient.invalidateQueries({ 
+      queryKey: [QUERY_KEYS.ORDERS.ALL],
+      refetchType: 'all'
+    });
+  
+    await queryClient.resetQueries({ 
+      queryKey: [QUERY_KEYS.ORDERS.ALL]
+    });
+
+    await refetch();
+  }, [queryClient, refetch]);
+
   const useClientOrders = (clientId?: string) => {
     return useQuery({
       queryKey: QUERY_KEYS.ORDERS.CLIENT(clientId || ""),
@@ -103,7 +144,6 @@ export function useOrders(options: UseOrdersOptions = {}) {
     });
   };
 
-  // Buscar pedido por ID
   const fetchOrderById = (id: string) => {
     return useQuery({
       queryKey: QUERY_KEYS.ORDERS.DETAIL(id),
@@ -112,7 +152,6 @@ export function useOrders(options: UseOrdersOptions = {}) {
     });
   };
 
-  // Mutação para atualizar status
   const updateOrderStatusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: string }) =>
       updateOrderStatus(id, status),
@@ -134,7 +173,6 @@ export function useOrders(options: UseOrdersOptions = {}) {
     }
   });
 
-  // Mutação para atualizar laboratório
   const updateOrderLaboratoryMutation = useMutation({
     mutationFn: ({ id, laboratoryId }: { id: string; laboratoryId: string }) =>
       updateOrderLaboratory(id, laboratoryId),
@@ -155,8 +193,7 @@ export function useOrders(options: UseOrdersOptions = {}) {
       });
     }
   });
-   
-  // Mutação para criar pedido
+
   const createOrderMutation = useMutation({
     mutationFn: createOrder,
     onSuccess: (newOrder) => {
@@ -178,24 +215,7 @@ export function useOrders(options: UseOrdersOptions = {}) {
       });
     }
   });
-   
-  // Função para atualizar filtros
-  const updateFilters = useCallback((newFilters: OrderFilters) => {
-    console.log('useOrders - updateFilters recebeu:', newFilters);
-    
-    // Atualiza os filtros no estado
-    setFilters(newFilters);
-    
-    // Reseta a página para 1 ao aplicar novos filtros
-    setCurrentPage(1);
-    
-    // Invalida o cache atual para forçar nova requisição
-    queryClient.invalidateQueries({ 
-      queryKey: QUERY_KEYS.ORDERS.PAGINATED() 
-    });
-  }, [queryClient]);
-   
-  // Handlers para ações em pedidos
+
   const handleUpdateOrderStatus = useCallback((id: string, status: string) => {
     return updateOrderStatusMutation.mutateAsync({ id, status });
   }, [updateOrderStatusMutation]);
@@ -208,7 +228,6 @@ export function useOrders(options: UseOrdersOptions = {}) {
     return createOrderMutation.mutateAsync(orderData);
   }, [createOrderMutation]);
    
-  // Funções de navegação
   const navigateToOrderDetails = useCallback((id: string) => {
     router.push(`/orders/${id}`);
   }, [router]);
@@ -216,14 +235,7 @@ export function useOrders(options: UseOrdersOptions = {}) {
   const navigateToCreateOrder = useCallback(() => {
     router.push("/orders/new");
   }, [router]);
-   
-  // Função para atualizar manualmente a lista
-  const refreshOrdersList = useCallback(async () => {
-    await queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS.ALL] });
-    await refetch();
-  }, [queryClient, refetch]);
-   
-  // Funções de utilidade
+
   const translateOrderStatus = useCallback((status: string): string => {
     const statusMap: Record<string, string> = {
       pending: "Pendente",
@@ -251,12 +263,10 @@ export function useOrders(options: UseOrdersOptions = {}) {
         return "text-gray-600 bg-gray-100 px-2 py-1 rounded";
     }
   }, []);
-   
-  // Funções para obter nomes a partir de IDs
+
   const getClientName = useCallback((clientId: string) => {
     if (!clientId) return "N/A";
-    
-    // Limpar o ID se tiver formato ObjectId
+
     let cleanId = clientId;
     if (typeof clientId === 'string' && clientId.includes('ObjectId')) {
       try {
@@ -268,13 +278,10 @@ export function useOrders(options: UseOrdersOptions = {}) {
         console.error("Erro ao extrair ID do cliente:", err);
       }
     }
-    
-    // Buscar o nome do usuário
+
     const name = getUserName(cleanId);
-    
-    // Se o nome for "Carregando...", forçar a busca dos dados do usuário
+
     if (name === "Carregando...") {
-      console.log("Buscando dados do cliente:", cleanId);
       fetchUsers([cleanId]);
     }
     
@@ -283,8 +290,7 @@ export function useOrders(options: UseOrdersOptions = {}) {
    
   const getEmployeeName = useCallback((employeeId: string) => {
     if (!employeeId) return "N/A";
-    
-    // Limpar o ID se tiver formato ObjectId
+
     let cleanId = employeeId;
     if (typeof employeeId === 'string' && employeeId.includes('ObjectId')) {
       try {
@@ -297,17 +303,20 @@ export function useOrders(options: UseOrdersOptions = {}) {
       }
     }
     
-    // Buscar o nome do usuário
     const name = getUserName(cleanId);
-    
-    // Se o nome for "Carregando...", forçar a busca dos dados do usuário
+
     if (name === "Carregando...") {
-      console.log("Buscando dados do funcionário:", cleanId);
       fetchUsers([cleanId]);
     }
     
     return name || "Funcionário não encontrado";
   }, [getUserName, fetchUsers]);
+
+  useEffect(() => {
+    if (!filters.sort) {
+      setFilters(prev => ({ ...prev, sort: "-createdAt" }));
+    }
+  }, []);
    
   return {
     orders,
@@ -321,7 +330,7 @@ export function useOrders(options: UseOrdersOptions = {}) {
     isUpdatingStatus: updateOrderStatusMutation.isPending,
     isUpdatingLaboratory: updateOrderLaboratoryMutation.isPending,
    
-    setCurrentPage,
+    setCurrentPage: handlePageChange, // Usar a função de mudança de página melhorada
     updateFilters,
     fetchOrderById,
     useClientOrders,

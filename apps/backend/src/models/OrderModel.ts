@@ -234,8 +234,30 @@ export class OrderModel {
   ): Promise<{ orders: IOrder[]; total: number }> {
     const skip = (page - 1) * limit;
     
+    // Extrair e processar a ordenação
+    const sortParam = filters.sort || "-createdAt"; // Padrão: mais recentes primeiro
+    
+    // Processar string de ordenação para formato do MongoDB
+    const sortObj: Record<string, 1 | -1> = {};
+    
+    // Processar múltiplos campos de ordenação separados por vírgula
+    sortParam.split(',').forEach((field: string) => {
+      const trimmed = field.trim();
+      if (trimmed.startsWith('-')) {
+        sortObj[trimmed.substring(1)] = -1;
+      } else {
+        sortObj[trimmed] = 1;
+      }
+    });
+    
+    console.log(`OrderModel - Aplicando ordenação: ${JSON.stringify(sortObj)}`);
+    
+    // Remover o parâmetro sort para não interferir na construção da query
+    const queryFilters = { ...filters };
+    delete queryFilters.sort;
+    
     // Verificar se há um parâmetro de busca
-    const searchTerm = filters.search;
+    const searchTerm = queryFilters.search;
     let clientIds: string[] = [];
     
     // Se houver um termo de busca, encontrar os clientes correspondentes
@@ -256,11 +278,11 @@ export class OrderModel {
       }
       
       // Remover o parâmetro search para não interferir na construção da query
-      delete filters.search;
+      delete queryFilters.search;
     }
     
     // Construir a query com os outros filtros
-    const query = this.buildFilterQuery(filters);
+    const query = this.buildFilterQuery(queryFilters);
   
     if (!includeDeleted) {
       query.isDeleted = { $ne: true };
@@ -273,7 +295,12 @@ export class OrderModel {
   
     console.log("Query final após processamento de busca:", query);
     
-    let orderQuery = Order.find(query).skip(skip).limit(limit);
+    // Aplicar ordenação com a query
+    let orderQuery = Order.find(query)
+      .sort(sortObj) // Aplicar ordenação
+      .skip(skip)
+      .limit(limit)
+      .collation({ locale: 'pt', strength: 2 }); // Garantir ordenação consistente
   
     if (populate) {
       orderQuery = orderQuery

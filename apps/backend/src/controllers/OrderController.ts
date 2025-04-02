@@ -107,7 +107,8 @@ export class OrderController {
         productId,
         minPrice,
         maxPrice,
-        search
+        search,
+        sort
       } = queryParams;
   
       const filters: Record<string, any> = {};
@@ -131,10 +132,11 @@ export class OrderController {
       if (serviceOrder) {
         filters.serviceOrder = serviceOrder;
       }
-
+  
       if (paymentMethod) {
         filters.paymentMethod = paymentMethod;
       }
+      
       if (productId) filters.productId = productId;
       if (minPrice !== undefined) filters.minPrice = minPrice;
       if (maxPrice !== undefined) filters.maxPrice = maxPrice;
@@ -148,6 +150,14 @@ export class OrderController {
         filters.search = search;
       }
       
+      if (sort) {
+        filters.sort = sort;
+      } else {
+        filters.sort = "-createdAt";
+      }
+      
+      console.log(`OrderController - Ordenação aplicada: ${filters.sort}`);
+  
       const result = await this.orderService.getAllOrders(page, limit, filters);
   
       res.status(200).json({
