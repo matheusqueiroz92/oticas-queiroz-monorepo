@@ -144,6 +144,11 @@ export class OrderModel {
       }
     }
 
+    if (filters.serviceOrder) {
+      const cleanServiceOrder = filters.serviceOrder.replace(/\D/g, '');
+      query.serviceOrder = cleanServiceOrder;
+    }
+
     if (filters.status) {
       query.status = filters.status;
     }

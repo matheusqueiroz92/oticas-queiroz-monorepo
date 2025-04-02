@@ -117,16 +117,12 @@ export class OrderController {
   
       const filters: Record<string, any> = {};
   
-      // Processamento de filtro por CPF
       if (cpf) {
         try {
-          // Buscar cliente por CPF
           const client = await this.userService.getUserByCpf(cpf as string);
           if (client) {
-            // Se cliente encontrado, buscar pedidos deste cliente
             filters.clientId = client._id.toString();
           } else {
-            // Se não encontrar cliente, retorna array vazio
             res.status(200).json({
               orders: [],
               pagination: {
@@ -139,8 +135,6 @@ export class OrderController {
             return;
           }
         } catch (error) {
-          console.log("Cliente não encontrado com o CPF fornecido");
-          // Se erro ao buscar cliente, retorna array vazio
           res.status(200).json({
             orders: [],
             pagination: {
@@ -154,9 +148,9 @@ export class OrderController {
         }
       }
       
-      // Processamento de filtro por número de OS
       if (serviceOrder) {
-        filters.serviceOrder = serviceOrder;
+        const cleanServiceOrder = serviceOrder.replace(/\D/g, '');
+        filters.serviceOrder = cleanServiceOrder;
       }
       
       if (status) {
@@ -192,11 +186,10 @@ export class OrderController {
         filters.search = search;
       }
       
-      // Adicionar ordenação aos filtros
       if (sort) {
         filters.sort = sort;
       } else {
-        filters.sort = "-createdAt"; // Ordenação padrão
+        filters.sort = "-createdAt";
       }
       
       console.log(`OrderController - Processando busca de pedidos com filtros:`, filters);

@@ -65,18 +65,24 @@ export function useOrders(options: UseOrdersOptions = {}) {
       
       if (/^\d{11}$/.test(cleanSearch)) {
         newFilters.cpf = cleanSearch;
+        newFilters.search = undefined;
+        newFilters.serviceOrder = undefined;
       } 
       else if (/^\d{4,7}$/.test(cleanSearch)) {
         newFilters.serviceOrder = cleanSearch;
+        newFilters.search = undefined;
+        newFilters.cpf = undefined;
       } 
       else {
         newFilters.search = value.trim();
+        newFilters.cpf = undefined;
+        newFilters.serviceOrder = undefined;
       }
     }
-
+  
     setCurrentPage(1);
     setFilters(newFilters);
-
+  
     queryClient.invalidateQueries({ 
       queryKey: QUERY_KEYS.ORDERS.PAGINATED(1, JSON.stringify(newFilters))
     });
