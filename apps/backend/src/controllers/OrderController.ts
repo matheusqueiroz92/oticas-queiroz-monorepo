@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import { OrderService, OrderError } from "../services/OrderService";
+import { UserService } from "../services/UserService";
 import { z } from "zod";
 import type { CreateOrderDTO, IOrder } from "../interfaces/IOrder";
 import type { JwtPayload } from "jsonwebtoken";
@@ -20,9 +21,11 @@ interface AuthRequest extends Request {
 
 export class OrderController {
   private orderService: OrderService;
+  private userService: UserService;
 
   constructor() {
     this.orderService = new OrderService();
+    this.userService = new UserService();
   }
 
   async createOrder(req: AuthRequest, res: Response): Promise<void> {
@@ -108,11 +111,54 @@ export class OrderController {
         minPrice,
         maxPrice,
         search,
-        sort
+        cpf,
+        sort // Extrair o parâmetro sort da query
       } = queryParams;
   
       const filters: Record<string, any> = {};
   
+      // Processamento de filtro por CPF
+      if (cpf) {
+        try {
+          // Buscar cliente por CPF
+          const client = await this.userService.getUserByCpf(cpf as string);
+          if (client) {
+            // Se cliente encontrado, buscar pedidos deste cliente
+            filters.clientId = client._id.toString();
+          } else {
+            // Se não encontrar cliente, retorna array vazio
+            res.status(200).json({
+              orders: [],
+              pagination: {
+                page,
+                limit,
+                total: 0,
+                totalPages: 0,
+              },
+            });
+            return;
+          }
+        } catch (error) {
+          console.log("Cliente não encontrado com o CPF fornecido");
+          // Se erro ao buscar cliente, retorna array vazio
+          res.status(200).json({
+            orders: [],
+            pagination: {
+              page,
+              limit,
+              total: 0,
+              totalPages: 0,
+            },
+          });
+          return;
+        }
+      }
+      
+      // Processamento de filtro por número de OS
+      if (serviceOrder) {
+        filters.serviceOrder = serviceOrder;
+      }
+      
       if (status) {
         filters.status = status;
       }
@@ -129,10 +175,6 @@ export class OrderController {
         filters.laboratoryId = laboratoryId;
       }
       
-      if (serviceOrder) {
-        filters.serviceOrder = serviceOrder;
-      }
-  
       if (paymentMethod) {
         filters.paymentMethod = paymentMethod;
       }
@@ -150,11 +192,14 @@ export class OrderController {
         filters.search = search;
       }
       
+      // Adicionar ordenação aos filtros
       if (sort) {
         filters.sort = sort;
       } else {
-        filters.sort = "-createdAt";
+        filters.sort = "-createdAt"; // Ordenação padrão
       }
+      
+      console.log(`OrderController - Processando busca de pedidos com filtros:`, filters);
   
       const result = await this.orderService.getAllOrders(page, limit, filters);
   

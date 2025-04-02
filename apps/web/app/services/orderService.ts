@@ -13,6 +13,8 @@ export interface OrderFilters {
   startDate?: string;
   endDate?: string;
   sort?: string;
+  cpf?: string;
+  serviceOrder?: string;
 }
 
 interface PaginationInfo {
@@ -23,7 +25,7 @@ interface PaginationInfo {
 }
 
 /**
- * Busca todos os pedidos
+ * Busca todos os pedidos com suporte a paginação, filtragem e ordenação
  */
 export async function getAllOrders(filters: OrderFilters = {}): Promise<{
   orders: Order[];
@@ -31,14 +33,22 @@ export async function getAllOrders(filters: OrderFilters = {}): Promise<{
 }> {
   try {
     const params: Record<string, any> = {};
-    
+
     params.page = filters.page || 1;
     params.limit = filters.limit || 10;
-    
+  
     params.sort = filters.sort || "-createdAt";
     
     if (filters.search) {
       params.search = filters.search;
+    }
+
+    if (filters.cpf) {
+      params.cpf = filters.cpf;
+    }
+    
+    if (filters.serviceOrder) {
+      params.serviceOrder = filters.serviceOrder;
     }
     
     if (filters.status && filters.status !== 'all') {
@@ -78,7 +88,6 @@ export async function getAllOrders(filters: OrderFilters = {}): Promise<{
         'X-Timestamp': Date.now().toString()
       }
     };
-
     const response = await api.get("/api/orders", config);
 
     let rawOrders: any[] = [];
@@ -90,7 +99,6 @@ export async function getAllOrders(filters: OrderFilters = {}): Promise<{
       rawOrders = response.data.orders;
       pagination = response.data.pagination;
     }
-
     const orders = normalizeOrders(rawOrders);
 
     return { orders, pagination };
@@ -123,8 +131,8 @@ export async function getOrdersByClient(clientId: string): Promise<Order[] | nul
       sort: "-createdAt",
       _t: new Date().getTime()
     };
-    
     const response = await api.get(`/api/orders/client/${clientId}`, { params });
+
     return Array.isArray(response.data) ? normalizeOrders(response.data) : [];
   } catch (error) {
     console.error("Erro ao buscar pedidos do cliente:", error);

@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, FileX, RefreshCw, Download, Plus, Filter } from "lucide-react";
+import { Loader2, FileX, RefreshCw, Download, Plus, Filter, Search, X } from "lucide-react";
 import { useOrders } from "@/hooks/useOrders";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/useToast";
@@ -15,9 +15,14 @@ import { Order } from "@/app/types/order";
 import { formatCurrency, formatDate } from "@/app/utils/formatters";
 import { PageTitle } from "@/components/PageTitle";
 import { customBadgeStyles } from "@/app/utils/custom-badge-styles";
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export default function OrdersPage() {
-  const [search, setSearch] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -31,6 +36,9 @@ export default function OrdersPage() {
     currentPage,
     totalPages,
     totalOrders,
+    search,
+    setSearch,
+    clearFilters,
     setCurrentPage,
     updateFilters,
     navigateToOrderDetails,
@@ -40,37 +48,6 @@ export default function OrdersPage() {
     getEmployeeName,
     getLaboratoryName
   } = useOrders();
-
-  const debouncedSearch = useMemo(
-    () => {
-      const handler = (value: string) => {
-        if (value.trim() === "") {
-          updateFilters({ sort: "-createdAt" });
-        } else {
-          updateFilters({ search: value, sort: "-createdAt" });
-        }
-      };
-      
-      const debounced = (value: string) => {
-        const timer = setTimeout(() => {
-          handler(value);
-        }, 300);
-        
-        return () => {
-          clearTimeout(timer);
-        };
-      };
-      
-      return debounced;
-    },
-    [updateFilters]
-  );
-  
-  useEffect(() => {
-    const cleanup = debouncedSearch(search);
-    return cleanup;
-  }, [search, debouncedSearch]);
-
   
   const handleManualRefresh = async () => {
     setIsRefreshing(true);
@@ -207,9 +184,9 @@ export default function OrdersPage() {
     },
   ];
 
-  useEffect(() => {
-    updateFilters({ sort: "-createdAt" });
-  }, [updateFilters]);
+  const handleClearSearch = () => {
+    setSearch('');
+  };
 
   return (
     <>
@@ -223,12 +200,42 @@ export default function OrdersPage() {
         
         <div className="flex justify-between items-center">
           <div className="flex gap-2 items-center">
-            <Input
-              placeholder="Buscar pedido..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="max-w-sm"
-            />
+            <div className="relative w-full max-w-md">
+              <Input
+                placeholder="Buscar por cliente, CPF ou O.S."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9 pr-8 w-full"
+              />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              
+              {search && (
+                <button 
+                  onClick={handleClearSearch}
+                  className="absolute right-10 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+              
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer">
+                      <div className="w-4 h-4 rounded-full bg-muted-foreground/20 flex items-center justify-center text-xs">?</div>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p>Você pode buscar por:</p>
+                    <ul className="list-disc pl-4 text-xs mt-1">
+                      <li>Nome do cliente</li>
+                      <li>CPF do cliente (formato: 12345678900)</li>
+                      <li>Número da O.S. (4 a 7 dígitos)</li>
+                    </ul>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
             
             <Button 
               variant={showFilters ? "default" : "outline"}
@@ -275,10 +282,8 @@ export default function OrdersPage() {
         {showFilters && (
           <OrderFilters 
             onUpdateFilters={(newFilters: Record<string, any>) => {
-              updateFilters({
-                ...newFilters,
-                sort: "-createdAt"
-              });
+              // Importante: não sobrescrever a busca atual ao aplicar filtros
+              updateFilters(newFilters);
             }} 
           />
         )}
@@ -298,10 +303,20 @@ export default function OrdersPage() {
             <p className="text-muted-foreground mt-2">
               Não há pedidos cadastrados ou nenhum corresponde aos filtros aplicados.
             </p>
+            {(search || Object.keys(updateFilters).length > 1) && (
+              <Button 
+                variant="outline" 
+                onClick={clearFilters}
+                className="mt-4 mb-2"
+              >
+                <X className="h-4 w-4 mr-1" />
+                Limpar Filtros
+              </Button>
+            )}
             <Button 
               variant="outline" 
               onClick={navigateToCreateOrder}
-              className="mt-4"
+              className="mt-2"
             >
               <Plus className="h-4 w-4 mr-1" />
               Criar Novo Pedido

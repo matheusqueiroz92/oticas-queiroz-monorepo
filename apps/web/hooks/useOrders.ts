@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/useToast";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import {
   getAllOrders,
   getOrderById,
@@ -17,6 +17,7 @@ import type { Order } from "@/app/types/order";
 import { useUsers } from "@/hooks/useUsers";
 import { useLaboratories } from "@/hooks/useLaboratories";
 import { formatCurrency, formatDate } from "@/app/utils/formatters";
+import debounce from 'lodash/debounce';
 
 interface OrderFilters {
   search?: string;
@@ -28,6 +29,8 @@ interface OrderFilters {
   startDate?: string;
   endDate?: string;
   sort?: string;
+  serviceOrder?: string;
+  cpf?: string;
 }
 
 interface UseOrdersOptions {
@@ -38,6 +41,7 @@ export function useOrders(options: UseOrdersOptions = {}) {
   const { enableQueries = true } = options;
   const [filters, setFilters] = useState<OrderFilters>({ sort: "-createdAt" });
   const [currentPage, setCurrentPage] = useState(1);
+  const [search, setSearchValue] = useState("");
 
   const router = useRouter();
   const { toast } = useToast();
@@ -46,6 +50,60 @@ export function useOrders(options: UseOrdersOptions = {}) {
   const { getLaboratoryName } = useLaboratories();
 
   const filterKey = JSON.stringify(filters);
+
+  const processSearch = useCallback((value: string) => {
+    const newFilters: OrderFilters = { 
+      ...filters,
+      search: undefined,
+      cpf: undefined,
+      serviceOrder: undefined,
+      sort: "-createdAt" 
+    };
+    
+    if (value.trim()) {
+      const cleanSearch = value.trim().replace(/\D/g, '');
+      
+      if (/^\d{11}$/.test(cleanSearch)) {
+        newFilters.cpf = cleanSearch;
+      } 
+      else if (/^\d{4,7}$/.test(cleanSearch)) {
+        newFilters.serviceOrder = cleanSearch;
+      } 
+      else {
+        newFilters.search = value.trim();
+      }
+    }
+
+    setCurrentPage(1);
+    setFilters(newFilters);
+
+    queryClient.invalidateQueries({ 
+      queryKey: QUERY_KEYS.ORDERS.PAGINATED(1, JSON.stringify(newFilters))
+    });
+  }, [filters, queryClient]);
+
+  const debouncedSearch = useMemo(
+    () => debounce(processSearch, 300),
+    [processSearch]
+  );
+
+  const setSearch = useCallback((value: string) => {
+    setSearchValue(value);
+    
+    if (debouncedSearch.cancel) {
+      debouncedSearch.cancel();
+    }
+    
+    debouncedSearch(value);
+  }, [debouncedSearch]);
+
+  useEffect(() => {
+    return () => {
+      if (debouncedSearch.cancel) {
+        debouncedSearch.cancel();
+      }
+    };
+  }, [debouncedSearch]);
 
   const {
     data, 
@@ -58,7 +116,6 @@ export function useOrders(options: UseOrdersOptions = {}) {
       return await getAllOrders({
         ...filters,
         page: currentPage,
-        sort: "-createdAt",
       });
     },
     enabled: enableQueries,
@@ -78,7 +135,7 @@ export function useOrders(options: UseOrdersOptions = {}) {
         ...orders.map(order => typeof order.clientId === 'string' ? order.clientId : '').filter(Boolean),
         ...orders.map(order => typeof order.employeeId === 'string' ? order.employeeId : '').filter(Boolean)
       ];
-
+      
       const uniqueUserIds = [...new Set(userIdsToFetch)];
       
       if (uniqueUserIds.length > 0) {
@@ -88,51 +145,64 @@ export function useOrders(options: UseOrdersOptions = {}) {
   }, [orders, fetchUsers, enableQueries]);
 
   const handlePageChange = useCallback((page: number) => {
-    if (currentPage !== page) {
-      queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.ORDERS.PAGINATED(currentPage, filterKey)
-      });
-    }
-    
     setCurrentPage(page);
-
-    queryClient.invalidateQueries({
-      queryKey: QUERY_KEYS.ORDERS.PAGINATED(page, filterKey)
-    });
     
     setTimeout(() => {
       refetch();
     }, 0);
-  }, [currentPage, filterKey, queryClient, refetch]);
+  }, [refetch]);
 
   const updateFilters = useCallback((newFilters: OrderFilters) => {
-    const filtersWithSort = {
+    const updatedFilters = {
       ...newFilters,
-      sort: "-createdAt"
+      sort: "-createdAt",
+      search: newFilters.search !== undefined ? newFilters.search : filters.search,
+      cpf: newFilters.cpf !== undefined ? newFilters.cpf : filters.cpf,
+      serviceOrder: newFilters.serviceOrder !== undefined ? newFilters.serviceOrder : filters.serviceOrder,
     };
     
-    setFilters(filtersWithSort);
+    // Atualiza os filtros no estado
+    setFilters(updatedFilters);
+    
+    // Reseta a página para 1 ao aplicar novos filtros
     setCurrentPage(1);
+    
+    // Invalidar o cache para forçar nova busca
+    queryClient.invalidateQueries({ 
+      queryKey: QUERY_KEYS.ORDERS.PAGINATED(1, JSON.stringify(updatedFilters))
+    });
+    
+    // Forçar refetch imediato
+    setTimeout(() => {
+      refetch();
+    }, 10);
+  }, [filters, queryClient, refetch]);
+
+  const clearFilters = useCallback(() => {
+    const baseFilters = { sort: "-createdAt" };
+    setFilters(baseFilters);
+    setCurrentPage(1);
+    setSearchValue("");
     
     queryClient.invalidateQueries({ 
       queryKey: [QUERY_KEYS.ORDERS.ALL]
     });
     
-    queryClient.resetQueries({
-      queryKey: [QUERY_KEYS.ORDERS.ALL]
-    });
-  }, [queryClient]);
+    setTimeout(() => {
+      refetch();
+    }, 10);
+  }, [queryClient, refetch]);
    
   const refreshOrdersList = useCallback(async () => {
     await queryClient.invalidateQueries({ 
       queryKey: [QUERY_KEYS.ORDERS.ALL],
       refetchType: 'all'
     });
-  
+    
     await queryClient.resetQueries({ 
       queryKey: [QUERY_KEYS.ORDERS.ALL]
     });
-
+    
     await refetch();
   }, [queryClient, refetch]);
 
@@ -193,7 +263,7 @@ export function useOrders(options: UseOrdersOptions = {}) {
       });
     }
   });
-
+   
   const createOrderMutation = useMutation({
     mutationFn: createOrder,
     onSuccess: (newOrder) => {
@@ -215,7 +285,7 @@ export function useOrders(options: UseOrdersOptions = {}) {
       });
     }
   });
-
+   
   const handleUpdateOrderStatus = useCallback((id: string, status: string) => {
     return updateOrderStatusMutation.mutateAsync({ id, status });
   }, [updateOrderStatusMutation]);
@@ -235,7 +305,7 @@ export function useOrders(options: UseOrdersOptions = {}) {
   const navigateToCreateOrder = useCallback(() => {
     router.push("/orders/new");
   }, [router]);
-
+   
   const translateOrderStatus = useCallback((status: string): string => {
     const statusMap: Record<string, string> = {
       pending: "Pendente",
@@ -263,10 +333,9 @@ export function useOrders(options: UseOrdersOptions = {}) {
         return "text-gray-600 bg-gray-100 px-2 py-1 rounded";
     }
   }, []);
-
+   
   const getClientName = useCallback((clientId: string) => {
     if (!clientId) return "N/A";
-
     let cleanId = clientId;
     if (typeof clientId === 'string' && clientId.includes('ObjectId')) {
       try {
@@ -278,7 +347,6 @@ export function useOrders(options: UseOrdersOptions = {}) {
         console.error("Erro ao extrair ID do cliente:", err);
       }
     }
-
     const name = getUserName(cleanId);
 
     if (name === "Carregando...") {
@@ -290,8 +358,8 @@ export function useOrders(options: UseOrdersOptions = {}) {
    
   const getEmployeeName = useCallback((employeeId: string) => {
     if (!employeeId) return "N/A";
-
     let cleanId = employeeId;
+
     if (typeof employeeId === 'string' && employeeId.includes('ObjectId')) {
       try {
         const matches = employeeId.match(/ObjectId\('([^']+)'\)/);
@@ -302,9 +370,8 @@ export function useOrders(options: UseOrdersOptions = {}) {
         console.error("Erro ao extrair ID do funcionário:", err);
       }
     }
-    
     const name = getUserName(cleanId);
-
+    
     if (name === "Carregando...") {
       fetchUsers([cleanId]);
     }
@@ -326,11 +393,14 @@ export function useOrders(options: UseOrdersOptions = {}) {
     totalPages,
     totalOrders,
     filters,
-    isCreating: createOrderMutation.isPending,
-    isUpdatingStatus: updateOrderStatusMutation.isPending,
-    isUpdatingLaboratory: updateOrderLaboratoryMutation.isPending,
+    search,
+    setSearch,
+    clearFilters,
+    isCreating: createOrderMutation?.isPending,
+    isUpdatingStatus: updateOrderStatusMutation?.isPending,
+    isUpdatingLaboratory: updateOrderLaboratoryMutation?.isPending,
    
-    setCurrentPage: handlePageChange, // Usar a função de mudança de página melhorada
+    setCurrentPage: handlePageChange,
     updateFilters,
     fetchOrderById,
     useClientOrders,
