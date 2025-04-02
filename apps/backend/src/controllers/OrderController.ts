@@ -155,8 +155,6 @@ export class OrderController {
       } else {
         filters.sort = "-createdAt";
       }
-      
-      console.log(`OrderController - Ordenação aplicada: ${filters.sort}`);
   
       const result = await this.orderService.getAllOrders(page, limit, filters);
   

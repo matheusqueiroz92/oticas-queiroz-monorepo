@@ -8,6 +8,7 @@ import { API_ROUTES } from "@/app/constants/api-routes";
 import { QUERY_KEYS } from "@/app/constants/query-keys";
 import { useUsers } from "@/hooks/useUsers";
 import debounce from 'lodash/debounce';
+import { User } from "@/app/types/user";
 
 export function useCustomers() {
   const [search, setSearchValue] = useState("");
@@ -17,7 +18,6 @@ export function useCustomers() {
 
   const debouncedSearch = useMemo(
     () => debounce((value: string) => {
-      console.log("Executando debounced search para clientes:", value);
       
       queryClient.invalidateQueries({ 
         queryKey: QUERY_KEYS.USERS.CUSTOMERS() 
@@ -27,8 +27,6 @@ export function useCustomers() {
   );
 
   const setSearch = useCallback((value: string) => {
-    console.log("Valor de busca de clientes alterado:", value);
-
     setSearchValue(value);
     
     if (debouncedSearch.cancel) {
@@ -55,15 +53,29 @@ export function useCustomers() {
     queryKey: QUERY_KEYS.USERS.CUSTOMERS(search),
     queryFn: async () => {
       try {
-        console.log("Buscando clientes com termo:", search);
-        
         const timestamp = new Date().getTime();
         
-        const response = await api.get(API_ROUTES.USERS.CUSTOMERS, {
-          params: { 
-            search: search || undefined,
-            _t: timestamp
-          },
+        const searchParams: Record<string, any> = { 
+          role: "customer",
+          _t: timestamp
+        };
+        
+        if (search) {
+          const cleanSearch = search.trim().replace(/\D/g, '');
+          
+          if (/^\d{11}$/.test(cleanSearch)) {
+            searchParams.cpf = cleanSearch;
+          } 
+          else if (/^\d{4,7}$/.test(cleanSearch)) {
+            searchParams.serviceOrder = cleanSearch;
+          } 
+          else {
+            searchParams.search = search;
+          }
+        }
+        
+        const response = await api.get(API_ROUTES.USERS.BASE, {
+          params: searchParams,
           headers: {
             'Cache-Control': 'no-cache, no-store, must-revalidate',
             'Pragma': 'no-cache',
@@ -72,7 +84,6 @@ export function useCustomers() {
           }
         });
         
-        console.log("Resposta da busca de clientes:", response.data.length, "resultados");
         return response.data;
       } catch (error: any) {
         if (
@@ -91,7 +102,9 @@ export function useCustomers() {
   });
 
   const customers = useMemo(() => {
-    return [...customersData].sort((a, b) => 
+    const onlyCustomers = customersData.filter((user: User) => user.role === 'customer');
+    
+    return [...onlyCustomers].sort((a, b) => 
       (a.name || '').localeCompare(b.name || '')
     );
   }, [customersData]);

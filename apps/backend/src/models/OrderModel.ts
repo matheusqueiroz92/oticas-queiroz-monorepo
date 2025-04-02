@@ -131,8 +131,6 @@ export class OrderModel {
   private buildFilterQuery(filters: Record<string, any>): FilterQuery<any> {
     const query: Record<string, any> = {};
 
-    console.log("Construindo query com filtros:", filters);
-
     if (filters.clientId) {
       query.clientId = new Types.ObjectId(filters.clientId);
     }
@@ -140,7 +138,6 @@ export class OrderModel {
     if (filters.employeeId) {
       try {
         query.employeeId = new Types.ObjectId(filters.employeeId);
-        console.log(`Filtro de employeeId aplicado: ${filters.employeeId}`);
       } catch (error) {
         console.error(`Erro ao converter employeeId: ${filters.employeeId}`, error);
         query.employeeId = filters.employeeId;
@@ -157,7 +154,6 @@ export class OrderModel {
 
     if (filters.paymentMethod) {
       query.paymentMethod = filters.paymentMethod;
-      console.log(`Filtro de paymentMethod aplicado: ${filters.paymentMethod}`);
     }
 
     if (filters.productId) {
@@ -192,26 +188,22 @@ export class OrderModel {
       }
     }
 
-    console.log("Query final construída:", query);
     return query;
   }
 
   private async findClientIdsBySearchTerm(searchTerm: string): Promise<string[]> {
     try {
-      // Obter o modelo de usuário usando mongoose.model
       const UserModel = mongoose.model('User');
-      
-      // Executar a busca por texto nos campos relevantes
+
       const matchingClients = await UserModel.find({
         $or: [
           { name: { $regex: searchTerm, $options: 'i' } },
           { cpf: { $regex: searchTerm, $options: 'i' } },
           { email: { $regex: searchTerm, $options: 'i' } }
         ],
-        role: 'customer' // Garantir que estamos apenas buscando clientes
+        role: 'customer'
       }).select('_id');
       
-      // Extrair os IDs
       return matchingClients.map(client => client._id.toString());
     } catch (error) {
       console.error('Erro ao buscar clientes por termo:', error);
@@ -233,14 +225,11 @@ export class OrderModel {
     includeDeleted = false
   ): Promise<{ orders: IOrder[]; total: number }> {
     const skip = (page - 1) * limit;
-    
-    // Extrair e processar a ordenação
-    const sortParam = filters.sort || "-createdAt"; // Padrão: mais recentes primeiro
-    
-    // Processar string de ordenação para formato do MongoDB
+
+    const sortParam = filters.sort || "-createdAt";
+
     const sortObj: Record<string, 1 | -1> = {};
-    
-    // Processar múltiplos campos de ordenação separados por vírgula
+
     sortParam.split(',').forEach((field: string) => {
       const trimmed = field.trim();
       if (trimmed.startsWith('-')) {
@@ -250,26 +239,15 @@ export class OrderModel {
       }
     });
     
-    console.log(`OrderModel - Aplicando ordenação: ${JSON.stringify(sortObj)}`);
-    
-    // Remover o parâmetro sort para não interferir na construção da query
     const queryFilters = { ...filters };
     delete queryFilters.sort;
     
-    // Verificar se há um parâmetro de busca
     const searchTerm = queryFilters.search;
     let clientIds: string[] = [];
-    
-    // Se houver um termo de busca, encontrar os clientes correspondentes
+
     if (searchTerm) {
-      console.log(`Processando busca por termo: "${searchTerm}"`);
-      
-      // Buscar IDs de clientes que correspondem ao termo
       clientIds = await this.findClientIdsBySearchTerm(searchTerm);
       
-      console.log(`Encontrados ${clientIds.length} clientes correspondentes à busca`);
-      
-      // Se não encontrarmos clientes, podemos retornar um resultado vazio imediatamente
       if (clientIds.length === 0) {
         return {
           orders: [],
@@ -277,31 +255,25 @@ export class OrderModel {
         };
       }
       
-      // Remover o parâmetro search para não interferir na construção da query
       delete queryFilters.search;
     }
     
-    // Construir a query com os outros filtros
     const query = this.buildFilterQuery(queryFilters);
   
     if (!includeDeleted) {
       query.isDeleted = { $ne: true };
     }
-    
-    // Se tivermos clientes correspondentes à busca, adicionar à query
+
     if (clientIds.length > 0) {
       query.clientId = { $in: clientIds.map(id => new Types.ObjectId(id)) };
     }
-  
-    console.log("Query final após processamento de busca:", query);
     
-    // Aplicar ordenação com a query
     let orderQuery = Order.find(query)
-      .sort(sortObj) // Aplicar ordenação
+      .sort(sortObj)
       .skip(skip)
       .limit(limit)
-      .collation({ locale: 'pt', strength: 2 }); // Garantir ordenação consistente
-  
+      .collation({ locale: 'pt', strength: 2 });
+      
     if (populate) {
       orderQuery = orderQuery
         .populate("clientId", "name email role")
@@ -526,6 +498,39 @@ export class OrderModel {
       }
     }
 
+    const orders = await orderQuery.exec();
+    return orders.map((order) => this.convertToIOrder(order));
+  }
+
+  async findByServiceOrder(
+    serviceOrder: string,
+    populate = false,
+    includeDeleted = false
+  ): Promise<IOrder[]> {
+    const cleanServiceOrder = serviceOrder.trim().replace(/\D/g, '');
+    
+    const query: FilterQuery<any> = { 
+      serviceOrder: cleanServiceOrder
+    };
+  
+    if (!includeDeleted) {
+      query.isDeleted = { $ne: true };
+    }
+  
+    let orderQuery = Order.find(query);
+  
+    if (populate) {
+      orderQuery = orderQuery
+        .populate("clientId", "name email role")
+        .populate("employeeId", "name email")
+        .populate("laboratoryId")
+        .populate("products");
+  
+      if (includeDeleted) {
+        orderQuery = orderQuery.populate("deletedBy", "name email");
+      }
+    }
+  
     const orders = await orderQuery.exec();
     return orders.map((order) => this.convertToIOrder(order));
   }

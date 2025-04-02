@@ -1,8 +1,8 @@
 import type { Request, Response } from "express";
 import { UserService } from "../services/UserService";
+import { OrderService } from "../services/OrderService";
 import type { JwtPayload } from "jsonwebtoken";
 import { z } from "zod";
-import { isValidCPF } from "../utils/validators";
 import type { IUser } from "../interfaces/IUser";
 import {
   ValidationError,
@@ -11,80 +11,90 @@ import {
   NotFoundError,
 } from "../utils/AppError";
 import { ErrorCode } from "../utils/errorCodes";
+import { userSchema, UserType } from "../validators/userValidators";
 
 interface AuthRequest extends Request {
   user?: JwtPayload;
   file?: Express.Multer.File;
 }
 
-const userUpdateSchema = z.object({
-  name: z.string().min(2).optional(),
-  email: z.string().email().optional(),
-  password: z.string().min(6).optional(),
-  role: z.enum(["admin", "employee", "customer"]).optional(),
-  address: z.string().optional(),
-  phone: z.string().optional(),
-  image: z.string().optional(),
-  cpf: z
-    .string()
-    .min(11, "CPF deve ter pelo menos 11 dígitos")
-    .refine((cpf) => isValidCPF(cpf), { message: "CPF inválido" })
-    .optional(),
-  rg: z.string().optional(),
-  birthDate: z
-    .string()
-    .refine(
-      (date) => {
-        const parsedDate = new Date(date);
-        return (
-          parsedDate instanceof Date &&
-          !Number.isNaN(parsedDate.getTime()) &&
-          parsedDate <= new Date()
-        );
-      },
-      { message: "Data de nascimento inválida ou no futuro" }
-    )
-    .transform((date) => new Date(date))
-    .optional(),
-  purchases: z.array(z.string()).optional(),
-  debts: z.number().optional(),
-  sales: z.array(z.string()).optional(),
-});
-
-type UserUpdateInput = z.infer<typeof userUpdateSchema>;
-
 export class UserController {
   private userService: UserService;
+  private orderService: OrderService;
 
   constructor() {
     this.userService = new UserService();
+    this.orderService = new OrderService();
   }
 
   async getAllUsers(req: Request, res: Response): Promise<void> {
-    const { role, search, cpf } = req.query;
-
-    let users: IUser[];
-
-    if (search) {
-      users = await this.userService.searchUsers(search as string);
-    } else if (cpf) {
-      try {
-        const user = await this.userService.getUserByCpf(cpf as string);
-        users = user ? [user] : [];
-      } catch (error) {
-        if (error instanceof NotFoundError) {
-          users = [];
+    try {
+      const { role, search, cpf, serviceOrder } = req.query;
+  
+      let users: IUser[] = [];
+  
+      if (serviceOrder) {
+        const cleanServiceOrder = (serviceOrder as string).replace(/\D/g, '');
+        if (cleanServiceOrder.length >= 4 && cleanServiceOrder.length <= 7) {
+          const clientIds = await this.orderService.getClientsByServiceOrder(cleanServiceOrder);
+          
+          if (clientIds.length > 0) {
+            const userPromises = clientIds.map(id => this.userService.getUserById(id));
+            users = await Promise.all(userPromises);
+          }
         } else {
-          throw error;
+          throw new ValidationError(
+            "Número de OS inválido. Deve ter entre 4 e 7 dígitos.",
+            ErrorCode.VALIDATION_ERROR
+          );
         }
       }
-    } else if (role) {
-      users = await this.userService.getUsersByRole(role as string);
-    } else {
-      users = await this.userService.getAllUsers();
-    }
 
-    res.status(200).json(users);
+      else if (cpf) {
+        try {
+          const user = await this.userService.getUserByCpf(cpf as string);
+          users = user ? [user] : [];
+        } catch (error) {
+          if (error instanceof NotFoundError) {
+            users = [];
+          } else {
+            throw error;
+          }
+        }
+      }
+
+      else if (search) {
+        users = await this.userService.searchUsers(search as string);
+        if (role) {
+          users = users.filter(user => user.role === role);
+        }
+      }
+      
+      else if (role) {
+        users = await this.userService.getUsersByRole(role as string);
+      }
+      
+      else {
+        users = await this.userService.getAllUsers();
+      }
+  
+      if (serviceOrder && role === 'customer') {
+        users = users.filter(user => user.role === 'customer');
+      }
+  
+      res.status(200).json(users);
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        res.status(400).json({ message: error.message });
+        return;
+      }
+      if (error instanceof NotFoundError) {
+        res.status(404).json({ message: error.message });
+        return;
+      }
+      console.error("Erro ao buscar usuários:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
   }
 
   async getUserById(req: AuthRequest, res: Response): Promise<void> {
@@ -104,9 +114,9 @@ export class UserController {
   }
 
   async updateUser(req: AuthRequest, res: Response): Promise<void> {
-    let userData: UserUpdateInput;
+    let userData: UserType;
     try {
-      userData = userUpdateSchema.parse(req.body);
+      userData = userSchema.parse(req.body);
     } catch (error) {
       if (error instanceof z.ZodError) {
         throw new ValidationError(
@@ -165,9 +175,9 @@ export class UserController {
       throw new AuthError("Usuário não autenticado", ErrorCode.UNAUTHORIZED);
     }
 
-    let validatedData: UserUpdateInput;
+    let validatedData: UserType;
     try {
-      validatedData = userUpdateSchema.parse(req.body);
+      validatedData = userSchema.parse(req.body);
     } catch (error) {
       if (error instanceof z.ZodError) {
         throw new ValidationError(

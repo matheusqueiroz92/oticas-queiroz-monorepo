@@ -3,11 +3,17 @@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { UserTable } from "@/components/Users/UserTable";
-import { Loader2, UserX } from "lucide-react";
+import { Loader2, UserX, Search } from "lucide-react";
 import { useCustomers } from "@/hooks/useCustomers";
 import type { Column } from "@/app/types/user";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { PageTitle } from "@/components/PageTitle";
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export default function CustomersPage() {
   const {
@@ -43,14 +49,36 @@ export default function CustomersPage() {
         title="Clientes"
         description="Lista de clientes da loja"
       />
-      <div className="flex justify-between">
-        <Input
-          placeholder="Buscar cliente..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="max-w-sm"
-        />
-        <Button onClick={navigateToNewCustomer}>Novo Cliente</Button>
+      <div className="flex justify-between items-center">
+        <div className="relative w-full max-w-md">
+          <Input
+            placeholder="Buscar por nome, CPF ou O.S."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9 pr-8 w-full"
+            size={50}
+          />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer">
+                  <div className="w-4 h-4 rounded-full bg-muted-foreground/20 flex items-center justify-center text-xs">?</div>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                <p>Você pode buscar por:</p>
+                <ul className="list-disc pl-4 text-xs mt-1">
+                  <li>Nome do cliente</li>
+                  <li>CPF (formato: 12345678900)</li>
+                  <li>Número da O.S. (4 a 7 dígitos)</li>
+                </ul>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+        <Button onClick={navigateToNewCustomer} className="ml-4">Novo Cliente</Button>
       </div>
 
       {isLoading && (

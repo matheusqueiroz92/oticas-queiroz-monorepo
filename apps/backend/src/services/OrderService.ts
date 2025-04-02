@@ -55,8 +55,7 @@ export class OrderService {
         return true;
       }
       
-      return typeof completeProduct.name === 'string' && 
-             completeProduct.name.toLowerCase().includes('lente');
+      return typeof completeProduct.name === 'string' && completeProduct.name.toLowerCase().includes('lente');
     } 
     
     if (this.isProductComplete(product)) {
@@ -64,8 +63,7 @@ export class OrderService {
         return true;
       }
       
-      return typeof product.name === 'string' && 
-             product.name.toLowerCase().includes('lente');
+      return typeof product.name === 'string' && product.name.toLowerCase().includes('lente');
     }
     
     return false;
@@ -162,7 +160,6 @@ export class OrderService {
 
   async createOrder(orderData: Omit<IOrder, "_id">): Promise<IOrder> {
     try {
-      // Validações e preparação dos dados
       if (orderData.laboratoryId?.toString() === "") {
         orderData.laboratoryId = undefined;
       }
@@ -171,7 +168,6 @@ export class OrderService {
         orderData.finalPrice = orderData.totalPrice - (orderData.discount || 0);
       }
   
-      // Verificar se contém lentes para definir status inicial
       const productLensChecks = await Promise.all(
         orderData.products.map(product => this.isLensProduct(product))
       );
@@ -181,12 +177,10 @@ export class OrderService {
         orderData.status = containsLenses ? 'pending' : 'ready';
       }
   
-      // Processar isDeleted
       const isDeleted = typeof orderData.isDeleted === 'string' 
         ? orderData.isDeleted === 'true' 
         : Boolean(orderData.isDeleted);
   
-      // Preparar DTO para criação
       const orderDTO: CreateOrderDTO = {
         clientId: new mongoose.Types.ObjectId(orderData.clientId.toString()),
         employeeId: new mongoose.Types.ObjectId(orderData.employeeId.toString()),
@@ -204,28 +198,19 @@ export class OrderService {
         isDeleted: isDeleted,
       };
   
-      // Validar o pedido
       await this.validateOrder(orderData);
       
-      // Criar o pedido no banco de dados
       const order = await this.orderModel.create(orderData);
   
-      // Processar o estoque apenas se o pedido não estiver cancelado
       if (order.status !== 'cancelled') {
-        try {
-          console.log(`Processando estoque para o pedido ${order._id}`);
-          
-          // Processar os produtos para controle de estoque
+        try {          
           await this.stockService.processOrderProducts(
             order.products, 
             'decrease',
             orderData.employeeId.toString(),
             order._id?.toString()
           );
-          
-          console.log(`Estoque processado com sucesso para o pedido ${order._id}`);
         } catch (stockError) {
-          // Capturar erro de estoque para não interromper a criação do pedido
           console.error('Erro ao processar estoque para o pedido:', stockError);
         }
       }
@@ -249,18 +234,11 @@ export class OrderService {
     limit?: number,
     filters?: Record<string, any>
   ): Promise<{ orders: IOrder[]; total: number }> {
-    console.log(`OrderService - getAllOrders - página: ${page}, limite: ${limit}`);
-    console.log(`OrderService - Filtros recebidos:`, filters);
-    
-    // Garantir que temos um objeto de filtros
     const queryFilters = filters || {};
     
-    // Garantir ordenação padrão por data de criação decrescente se não especificada
     if (!queryFilters.sort) {
       queryFilters.sort = "-createdAt";
     }
-    
-    console.log(`OrderService - Ordenação aplicada: ${queryFilters.sort}`);
     
     const result = await this.orderModel.findAll(page, limit, queryFilters, true);
 
@@ -304,7 +282,6 @@ export class OrderService {
       throw new OrderError("Sem permissão para atualizar este pedido");
     }
   
-    // Verificar transições válidas de status
     const validTransitions: Record<IOrder["status"], IOrder["status"][]> = {
       pending: ["in_production", "cancelled"],
       in_production: ["ready", "cancelled"],
@@ -319,7 +296,6 @@ export class OrderService {
       );
     }
   
-    // Caso 1: Cancelando um pedido ativo (restaurar estoque)
     if (status === 'cancelled' && order.status !== 'cancelled') {
       const updatedOrder = await this.orderModel.updateStatus(id, status, true);
       
@@ -327,7 +303,6 @@ export class OrderService {
         throw new OrderError("Erro ao atualizar status do pedido");
       }
   
-      // Restaurar o estoque (apenas para armações)
       try {
         await this.stockService.processOrderProducts(
           order.products, 
@@ -342,7 +317,6 @@ export class OrderService {
       return updatedOrder;
     }
     
-    // Caso 2: Reativando um pedido cancelado (reduzir estoque novamente)
     if (order.status === 'cancelled' && status !== 'cancelled') {
       const updatedOrder = await this.orderModel.updateStatus(id, status, true);
       
@@ -350,7 +324,6 @@ export class OrderService {
         throw new OrderError("Erro ao atualizar status do pedido");
       }
       
-      // Reduzir o estoque novamente (apenas para armações)
       try {
         await this.stockService.processOrderProducts(
           order.products, 
@@ -365,7 +338,6 @@ export class OrderService {
       return updatedOrder;
     }
   
-    // Caso 3: Transição normal de status sem impacto no estoque
     const updatedOrder = await this.orderModel.updateStatus(id, status, true);
     if (!updatedOrder) {
       throw new OrderError("Erro ao atualizar status do pedido");
@@ -385,15 +357,12 @@ export class OrderService {
       throw new OrderError("Pedido não encontrado");
     }
 
-    // Verificar permissões
     if (userRole === "customer" && userId !== order.clientId.toString()) {
       throw new OrderError("Sem permissão para atualizar este pedido");
     }
 
-    // Garantir que laboratoryId não é uma string vazia
     const validLaboratoryId = laboratoryId?.toString() === "" ? undefined : laboratoryId;
 
-    // Sempre usar populate = true
     const updatedOrder = await this.orderModel.updateLaboratory(
       id,
       validLaboratoryId,
@@ -442,7 +411,6 @@ export class OrderService {
       }
     }
 
-    // Validar outros campos
     if (orderData.discount !== undefined && orderData.discount < 0) {
       throw new OrderError("Desconto não pode ser negativo");
     }
@@ -451,7 +419,6 @@ export class OrderService {
       throw new OrderError("Preço total deve ser maior que zero");
     }
 
-    // Calcular preço final se necessário
     if ((orderData.totalPrice !== undefined || orderData.discount !== undefined) && 
         orderData.finalPrice === undefined) {
       const newTotalPrice = orderData.totalPrice ?? order.totalPrice;
@@ -459,14 +426,12 @@ export class OrderService {
       orderData.finalPrice = newTotalPrice - newDiscount;
     }
 
-    // Converter isDeleted para booleano se presente
     if (orderData.isDeleted !== undefined) {
       orderData.isDeleted = typeof orderData.isDeleted === 'string'
         ? orderData.isDeleted === 'true'
         : Boolean(orderData.isDeleted);
     }
 
-    // Realizar atualização - sempre com populate = true
     const updatedOrder = await this.orderModel.update(id, orderData, true);
     if (!updatedOrder) {
       throw new OrderError("Erro ao atualizar pedido");
@@ -536,7 +501,6 @@ export class OrderService {
       throw new OrderError("O pedido já está cancelado");
     }
   
-    // Atualizar o status do pedido para cancelado
     const updatedOrder = await this.orderModel.updateStatus(
       id,
       "cancelled",
@@ -547,20 +511,14 @@ export class OrderService {
       throw new OrderError("Erro ao cancelar pedido");
     }
   
-    // Restaurar o estoque dos produtos (apenas para armações)
     try {
-      console.log(`Restaurando estoque para o pedido ${id} (cancelado)`);
-      
       await this.stockService.processOrderProducts(
         order.products, 
         'increase',
         userId,
         id
       );
-      
-      console.log(`Estoque restaurado com sucesso para o pedido ${id}`);
     } catch (stockError) {
-      // Não impedir a conclusão do cancelamento se houver erro no estoque
       console.error('Erro ao restaurar estoque após cancelamento:', stockError);
     }
   
@@ -641,5 +599,29 @@ export class OrderService {
     const order = await this.getOrderById(id);
 
     return this.exportUtils.exportOrderDetails(order, options);
+  }
+
+  async getOrdersByServiceOrder(serviceOrder: string): Promise<IOrder[]> {
+    const cleanServiceOrder = serviceOrder.replace(/\D/g, '');
+    
+    if (cleanServiceOrder.length < 4 || cleanServiceOrder.length > 7) {
+      throw new OrderError("Número de ordem de serviço deve ter entre 4 e 7 dígitos");
+    }
+    
+    const orders = await this.orderModel.findByServiceOrder(cleanServiceOrder);
+    
+    if (!orders.length) {
+      return [];
+    }
+    
+    return orders;
+  }
+
+  async getClientsByServiceOrder(serviceOrder: string): Promise<string[]> {
+    const orders = await this.getOrdersByServiceOrder(serviceOrder);
+    
+    const clientIds = [...new Set(orders.map(order => order.clientId.toString()))];
+    
+    return clientIds;
   }
 }

@@ -44,7 +44,6 @@ export default function OrdersPage() {
   const debouncedSearch = useMemo(
     () => {
       const handler = (value: string) => {
-        console.log("Executando busca para:", value);
         if (value.trim() === "") {
           updateFilters({ sort: "-createdAt" });
         } else {

@@ -8,6 +8,7 @@ import { API_ROUTES } from "@/app/constants/api-routes";
 import { QUERY_KEYS } from "@/app/constants/query-keys";
 import { useUsers } from "@/hooks/useUsers";
 import debounce from 'lodash/debounce';
+import { User } from "@/app/types/user";
 
 export function useEmployees() {
   const [search, setSearchValue] = useState("");
@@ -51,9 +52,8 @@ export function useEmployees() {
       try {
         const timestamp = new Date().getTime();
         
-        const response = await api.get(API_ROUTES.USERS.BASE, {
+        const response = await api.get(API_ROUTES.USERS.EMPLOYEES, {
           params: {
-            role: "employee",
             search: search || undefined,
             _t: timestamp
           },
@@ -83,7 +83,9 @@ export function useEmployees() {
   });
 
   const employees = useMemo(() => {
-    return [...employeesData].sort((a, b) => 
+    const onlyEmployees = employeesData.filter((user: User) => user.role === 'employee');
+    
+    return [...onlyEmployees].sort((a, b) => 
       (a.name || '').localeCompare(b.name || '')
     );
   }, [employeesData]);
