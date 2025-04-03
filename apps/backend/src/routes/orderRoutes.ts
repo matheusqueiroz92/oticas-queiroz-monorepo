@@ -787,6 +787,7 @@ router.get(
 router.get(
   "/orders/daily",
   authenticate,
+  
   authorize(["admin", "employee"]),
   asyncHandler(orderController.getDailyOrders.bind(orderController))
 );

@@ -17,6 +17,7 @@ import type {
   ReportStatus,
   ReportFormat,
 } from "../app/types/report";
+import { exportService } from "../app/services/exportService";
 
 interface ReportFilters {
   search?: string;
@@ -94,7 +95,7 @@ export function useReports() {
     try {
       // Verificar se o relatório está pronto para download
       const report = await getReportById(id);
-
+  
       if (report.status !== "completed") {
         toast({
           variant: "destructive",
@@ -104,23 +105,24 @@ export function useReports() {
         });
         return null;
       }
-
-      const blob = await downloadReport(id, format);
-
-      // Criar link para download
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${report.name.replace(/\s+/g, "-").toLowerCase()}.${format}`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-
+  
+      // Usar o serviço de exportação
+      const blob = await exportService.exportReport(id, { format });
+  
+      // Criar nome de arquivo baseado no nome do relatório
+      const filename = exportService.generateFilename(
+        report.name.replace(/\s+/g, "-").toLowerCase(),
+        format
+      );
+      
+      // Download do blob
+      exportService.downloadBlob(blob, filename);
+  
       toast({
         title: "Download iniciado",
         description: `Seu relatório está sendo baixado no formato ${format.toUpperCase()}.`,
       });
-
+  
       return blob;
     } catch (error) {
       console.error(`Erro ao baixar relatório com ID ${id}:`, error);

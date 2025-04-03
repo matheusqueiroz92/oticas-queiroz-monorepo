@@ -11,12 +11,13 @@ import type {
   ReportData,
 } from "../interfaces/IReport";
 import { Order } from "../schemas/OrderSchema";
-import { Product } from "../schemas/ProductSchema";
 import { User } from "../schemas/UserSchema";
 import { Payment } from "../schemas/PaymentSchema";
+import { Product } from "../schemas/ProductSchema";
 
 export class ReportService {
   private reportModel: ReportModel;
+  private reportCache = new Map<string, ReportData>();
 
   constructor() {
     this.reportModel = new ReportModel();
@@ -29,7 +30,6 @@ export class ReportService {
     createdBy: string,
     format: IReport["format"] = "json"
   ): Promise<IReport> {
-    // Validar filtros
     if (
       filters.startDate &&
       filters.endDate &&
@@ -48,7 +48,6 @@ export class ReportService {
       data: null,
     });
 
-    // Iniciar geração assíncrona do relatório
     if (report?._id) {
       this.generateReportData(report._id).catch(console.error);
     }
@@ -59,18 +58,25 @@ export class ReportService {
   private async generateReportData(reportId: string): Promise<void> {
     const report = await this.reportModel.findById(reportId);
     if (!report) return;
-
+  
     try {
       await this.reportModel.updateStatus(reportId, "processing");
-
+  
+      const cacheKey = `${report.type}_${JSON.stringify(report.filters)}`;
+      if (this.reportCache.has(cacheKey)) {
+        const cachedData = this.reportCache.get(cacheKey);
+        await this.reportModel.updateStatus(reportId, "completed", cachedData);
+        return;
+      }
+  
       let data: ReportData = null;
       switch (report.type) {
         case "sales":
           data = await this.generateSalesReport(report.filters);
           break;
-        // case "inventory":
-        //   data = await this.generateInventoryReport(report.filters);
-        //   break;
+        case "inventory":
+          data = await this.generateInventoryReport(report.filters);
+          break;
         case "customers":
           data = await this.generateCustomersReport(report.filters);
           break;
@@ -81,7 +87,18 @@ export class ReportService {
           data = await this.generateFinancialReport(report.filters);
           break;
       }
-
+  
+      // Armazenar em cache
+      this.reportCache.set(cacheKey, data);
+      
+      // Limitar o tamanho do cache
+      if (this.reportCache.size > 100) {
+        const oldestKey = this.reportCache.keys().next().value;
+        if (oldestKey) {
+          this.reportCache.delete(oldestKey);
+        }
+      }
+  
       await this.reportModel.updateStatus(reportId, "completed", data);
     } catch (error) {
       await this.reportModel.updateStatus(
@@ -162,57 +179,59 @@ export class ReportService {
     };
   }
 
-  // private async generateInventoryReport(
-  //   filters: ReportFilters
-  // ): Promise<InventoryReportData> {
-  //   const query: Record<string, unknown> = {};
+  private async generateInventoryReport(
+    filters: ReportFilters
+  ): Promise<InventoryReportData> {
+    const query: Record<string, unknown> = {};
 
-  //   if (filters.productCategory && filters.productCategory.length > 0) {
-  //     query.category = { $in: filters.productCategory };
-  //   }
+    if (filters.productCategory && filters.productCategory.length > 0) {
+      query.category = { $in: filters.productCategory };
+    }
 
-  //   // Dados por categoria
-  //   const categoryData = await Product.aggregate([
-  //     { $match: query },
-  //     {
-  //       $group: {
-  //         _id: "$category",
-  //         count: { $sum: 1 },
-  //         value: { $sum: { $multiply: ["$price", "$stock"] } },
-  //       },
-  //     },
-  //     { $sort: { value: -1 } },
-  //   ]);
+    // Dados por categoria
+    const categoryData = await Product.aggregate([
+      { $match: query },
+      {
+        $group: {
+          _id: "$category",
+          count: { $sum: 1 },
+          value: { $sum: { $multiply: ["$price", "$stock"] } },
+        },
+      },
+      { $sort: { value: -1 } },
+    ]);
 
-  //   const byCategory = categoryData.map((item) => ({
-  //     category: item._id,
-  //     count: item.count,
-  //     value: item.value,
-  //   }));
+    const byCategory = categoryData.map((item) => ({
+      category: item._id,
+      count: item.count,
+      value: item.value,
+    }));
 
-  //   // Produtos com estoque baixo
-  //   const lowStockProducts = await Product.find({ stock: { $lt: 5 } })
-  //     .select("_id name stock")
-  //     .limit(10)
-  //     .lean();
+    // Produtos com estoque baixo
+    const lowStockProducts = await Product.find({ stock: { $lt: 5 } })
+      .select("_id name stock")
+      .limit(10)
+      .lean();
 
-  //   const lowStock = lowStockProducts.map((product) => ({
-  //     productId: product._id.toString(),
-  //     name: product.name,
-  //     stock: product.stock,
-  //   }));
+    const lowStock = lowStockProducts
+      .filter((product) => product.stock !== undefined)
+      .map((product) => ({
+        productId: product._id.toString(),
+        name: product.name,
+        stock: product.stock as number,
+      }));
 
-  //   // Calcular totais
-  //   const totalItems = byCategory.reduce((sum, item) => sum + item.count, 0);
-  //   const totalValue = byCategory.reduce((sum, item) => sum + item.value, 0);
+    // Calcular totais
+    const totalItems = byCategory.reduce((sum, item) => sum + item.count, 0);
+    const totalValue = byCategory.reduce((sum, item) => sum + item.value, 0);
 
-  //   return {
-  //     totalItems,
-  //     totalValue,
-  //     byCategory,
-  //     lowStock,
-  //   };
-  // }
+    return {
+      totalItems,
+      totalValue,
+      byCategory,
+      lowStock,
+    };
+  }
 
   private async generateCustomersReport(
     filters: ReportFilters

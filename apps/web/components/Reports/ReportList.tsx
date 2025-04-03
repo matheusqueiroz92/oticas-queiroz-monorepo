@@ -25,14 +25,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
 import { Button } from "@/components/ui/button";
 import { ReportStatusBadge } from "./ReportStatusBadge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -40,6 +32,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import type { IReport, ReportFormat } from "@/app/types/report";
 import { reportTypeMap } from "@/app/types/report";
 import { useReports } from "@/hooks/useReports";
+import { toast } from "@/hooks/useToast";
+import { exportService } from "@/app/services/exportService";
+import { PaginationItems } from "../PaginationItems";
 
 interface ReportListProps {
   reports: IReport[];
@@ -60,7 +55,7 @@ export function ReportList({
   onRefresh,
 }: ReportListProps) {
   const router = useRouter();
-  const { handleDownloadReport } = useReports();
+  const { totalPages, currentPage, totalReports, pageSize } = useReports();
   const [refreshing, setRefreshing] = useState(false);
 
   const handleRefresh = async () => {
@@ -74,95 +69,37 @@ export function ReportList({
   };
 
   const handleDownload = async (id: string, format: ReportFormat) => {
-    await handleDownloadReport(id, format);
-  };
-
-  // Função para gerar os itens de paginação
-  const generatePaginationItems = () => {
-    const items = [];
-    const { page, totalPages } = pagination;
-    const maxVisiblePages = 5;
-
-    if (totalPages <= maxVisiblePages) {
-      // Se tiver poucas páginas, mostra todas
-      for (let i = 1; i <= totalPages; i++) {
-        items.push(
-          <PaginationItem key={i}>
-            <PaginationLink
-              onClick={() => pagination.onPageChange(i)}
-              isActive={page === i}
-            >
-              {i}
-            </PaginationLink>
-          </PaginationItem>
-        );
+    try {
+      // Verificar se relatório está pronto
+      const currentReport = reports.find(report => report._id === id);
+      if (!currentReport || currentReport.status !== "completed") {
+        toast({
+          variant: "destructive",
+          title: "Relatório não está pronto",
+          description: "Aguarde até que o relatório seja concluído para fazer o download."
+        });
+        return;
       }
-      return items;
-    }
-
-    // Caso contrário, mostra um subconjunto com elipses
-    items.push(
-      <PaginationItem key={1}>
-        <PaginationLink
-          onClick={() => pagination.onPageChange(1)}
-          isActive={page === 1}
-        >
-          1
-        </PaginationLink>
-      </PaginationItem>
-    );
-
-    // Adicionar elipse se necessário
-    if (page > 3) {
-      items.push(
-        <PaginationItem key="ellipsis-start">
-          <span className="px-4">...</span>
-        </PaginationItem>
+      
+      // Usar o exportService
+      const blob = await exportService.exportReport(id, { format });
+      
+      // Nome do arquivo baseado no relatório
+      const filename = exportService.generateFilename(
+        currentReport.name.replace(/\s+/g, "-").toLowerCase(),
+        format
       );
+      
+      // Download
+      exportService.downloadBlob(blob, filename);
+    } catch (error) {
+      console.error("Erro ao fazer download:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro no download",
+        description: "Não foi possível baixar o relatório. Tente novamente."
+      });
     }
-
-    // Páginas próximas à atual
-    const startPage = Math.max(2, page - 1);
-    const endPage = Math.min(totalPages - 1, page + 1);
-
-    for (let i = startPage; i <= endPage; i++) {
-      if (i <= 1 || i >= totalPages) continue;
-      items.push(
-        <PaginationItem key={i}>
-          <PaginationLink
-            onClick={() => pagination.onPageChange(i)}
-            isActive={page === i}
-          >
-            {i}
-          </PaginationLink>
-        </PaginationItem>
-      );
-    }
-
-    // Adicionar elipse se necessário
-    if (page < totalPages - 2) {
-      items.push(
-        <PaginationItem key="ellipsis-end">
-          <span className="px-4">...</span>
-        </PaginationItem>
-      );
-    }
-
-    // Última página
-    if (totalPages > 1) {
-      items.push(
-        <PaginationItem key={totalPages}>
-          <PaginationLink
-            onClick={() => pagination.onPageChange(totalPages)}
-            isActive={page === totalPages}
-          >
-            {totalPages}
-          </PaginationLink>
-        </PaginationItem>
-      );
-    }
-
-    return items;
   };
 
   if (reports.length === 0) {
@@ -252,49 +189,13 @@ export function ReportList({
         </Table>
       </div>
 
-      {pagination.totalPages > 1 && (
-        <div className="mt-4">
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious
-                  onClick={() =>
-                    pagination.onPageChange(Math.max(1, pagination.page - 1))
-                  }
-                  aria-disabled={pagination.page === 1}
-                  className={
-                    pagination.page === 1
-                      ? "pointer-events-none opacity-50"
-                      : ""
-                  }
-                />
-              </PaginationItem>
-
-              {generatePaginationItems()}
-
-              <PaginationItem>
-                <PaginationNext
-                  onClick={() =>
-                    pagination.onPageChange(
-                      Math.min(pagination.totalPages, pagination.page + 1)
-                    )
-                  }
-                  aria-disabled={pagination.page === pagination.totalPages}
-                  className={
-                    pagination.page === pagination.totalPages
-                      ? "pointer-events-none opacity-50"
-                      : ""
-                  }
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-
-          <div className="text-center text-sm text-muted-foreground mt-2">
-            Mostrando {reports.length} de {pagination.total} relatórios
-          </div>
-        </div>
-      )}
+      <PaginationItems
+        currentPage={currentPage}
+        totalPages={totalPages}
+        setCurrentPage={pagination.onPageChange}
+        totalItems={totalReports}
+        pageSize={pageSize}
+      />
     </div>
   );
 }

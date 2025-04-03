@@ -8,6 +8,7 @@ import { useOrders } from "@/hooks/useOrders";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/useToast";
 import { exportToPDF } from "@/app/utils/exportToPdf";
+import { OrderExportButton } from "@/components/Orders/exports/OrderExportButton";
 import { OrderFilters } from "@/components/Orders/OrderFilters";
 import { OrderTable } from "@/components/Orders/OrderTable";
 import { ErrorAlert } from "@/components/ErrorAlert";
@@ -264,15 +265,13 @@ export default function OrdersPage() {
               <RefreshCw className={`h-4 w-4 mr-1 ${isRefreshing ? 'animate-spin' : ''}`} />
               Atualizar
             </Button>
-            <Button 
+            <OrderExportButton 
+              filters={updateFilters}
+              buttonText="Exportar"
               variant="outline"
-              onClick={handleExportToPDF}
-              disabled={isExporting || isLoading || orders.length === 0}
-              size="sm"
-            >
-              <Download className="h-4 w-4 mr-1" />
-              Exportar
-            </Button>
+              // disabled={isLoading || orders.length === 0}
+              // size="sm"
+            />
             <Button onClick={navigateToCreateOrder}>
               <Plus className="h-4 w-4 mr-1" />
               Novo Pedido

@@ -4,6 +4,10 @@ export const API_ROUTES = {
     BY_ID: (id: string) => `/api/orders/${id}`,
     STATUS: (id: string) => `/api/orders/${id}/status`,
     LABORATORY: (id: string) => `/api/orders/${id}/laboratory`,
+    DAILY: "api/orders/daily",
+    EXPORT: "/api/orders/export",
+    EXPORT_DAILY: "api/orders/export/daily",
+    EXPORT_BY_ID: (id: string) => `api/orders/${id}/export`
   },
   CASH_REGISTERS: {
     BASE: "/api/cash-registers",

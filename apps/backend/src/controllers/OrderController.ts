@@ -112,7 +112,7 @@ export class OrderController {
         maxPrice,
         search,
         cpf,
-        sort // Extrair o parâmetro sort da query
+        sort
       } = queryParams;
   
       const filters: Record<string, any> = {};
@@ -191,8 +191,6 @@ export class OrderController {
       } else {
         filters.sort = "-createdAt";
       }
-      
-      console.log(`OrderController - Processando busca de pedidos com filtros:`, filters);
   
       const result = await this.orderService.getAllOrders(page, limit, filters);
   
