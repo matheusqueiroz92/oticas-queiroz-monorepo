@@ -18,6 +18,8 @@ import { useUsers } from "@/hooks/useUsers";
 import { useLaboratories } from "@/hooks/useLaboratories";
 import { formatCurrency, formatDate } from "@/app/utils/formatters";
 import debounce from 'lodash/debounce';
+import { api } from "@/app/services/authService";
+import { API_ROUTES } from "@/app/constants/api-routes";
 
 interface OrderFilters {
   search?: string;
@@ -167,18 +169,14 @@ export function useOrders(options: UseOrdersOptions = {}) {
       serviceOrder: newFilters.serviceOrder !== undefined ? newFilters.serviceOrder : filters.serviceOrder,
     };
     
-    // Atualiza os filtros no estado
     setFilters(updatedFilters);
     
-    // Reseta a página para 1 ao aplicar novos filtros
     setCurrentPage(1);
     
-    // Invalidar o cache para forçar nova busca
     queryClient.invalidateQueries({ 
       queryKey: QUERY_KEYS.ORDERS.PAGINATED(1, JSON.stringify(updatedFilters))
     });
     
-    // Forçar refetch imediato
     setTimeout(() => {
       refetch();
     }, 10);
@@ -236,16 +234,20 @@ export function useOrders(options: UseOrdersOptions = {}) {
         title: "Status atualizado",
         description: "O status do pedido foi atualizado com sucesso.",
       });
-
+  
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS.ALL] });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Erro ao atualizar status:", error);
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Não foi possível atualizar o status do pedido.",
-      });
+      let errorMessage = "Não foi possível atualizar o status do pedido.";
+      
+      if (error.response && error.response.data && error.response.data.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      throw new Error(errorMessage);
     }
   });
 
@@ -369,6 +371,32 @@ export function useOrders(options: UseOrdersOptions = {}) {
       className: "bg-gray-100 text-gray-800",
     };
   }, []);
+
+  const getPaymentMethodText = useCallback((method?: string) => {
+    if (!method) return "N/A";
+
+    const methodMap: Record<string, string> = {
+      credit: "Cartão de Crédito",
+      debit: "Cartão de Débito",
+      cash: "Dinheiro",
+      pix: "PIX",
+      installment: "Parcelado",
+    };
+
+    return methodMap[method] || method;
+  }, []);
+
+  const getProductTypeLabel = useCallback((type?: string): string => {
+    const types: Record<string, string> = {
+      lenses: "Lentes",
+      clean_lenses: "Limpa-lentes",
+      prescription_frame: "Armação de grau",
+      sunglasses_frame: "Armação solar"
+    };
+    
+    if (!type) return "Não especificado";
+    return types[type] || type;
+  }, []);
    
   const getClientName = useCallback((clientId: string) => {
     if (!clientId) return "N/A";
@@ -415,6 +443,58 @@ export function useOrders(options: UseOrdersOptions = {}) {
     return name || "Funcionário não encontrado";
   }, [getUserName, fetchUsers]);
 
+  const fetchOrderComplementaryDetails = useCallback(async (order: Order) => {
+    if (!order) return { client: null, employee: null, laboratoryInfo: null };
+    
+    try {
+      const results = {
+        client: null,
+        employee: null,
+        laboratoryInfo: null
+      };
+      
+      if (typeof order.clientId === "string") {
+        try {
+          const response = await api.get(API_ROUTES.USERS.BY_ID(order.clientId));
+          results.client = response.data;
+        } catch (clientError) {
+          console.error("Erro ao buscar cliente:", clientError);
+        }
+      } else if (typeof order.clientId === "object" && order.clientId !== null) {
+        results.client = order.clientId;
+      }
+
+      if (typeof order.employeeId === "string") {
+        try {
+          const response = await api.get(API_ROUTES.USERS.BY_ID(order.employeeId));
+          results.employee = response.data;
+        } catch (employeeError) {
+          console.error("Erro ao buscar funcionário:", employeeError);
+        }
+      } else if (typeof order.employeeId === "object" && order.employeeId !== null) {
+        results.employee = order.employeeId;
+      }
+
+      if (order.laboratoryId) {
+        try {
+          if (typeof order.laboratoryId === "string") {
+            const labResponse = await api.get(API_ROUTES.LABORATORIES.BY_ID(order.laboratoryId));
+            results.laboratoryInfo = labResponse.data;
+          } else if (typeof order.laboratoryId === "object" && order.laboratoryId !== null) {
+            results.laboratoryInfo = order.laboratoryId;
+          }
+        } catch (labError) {
+          console.error("Erro ao buscar laboratório:", labError);
+        }
+      }
+      
+      return results;
+    } catch (error) {
+      console.error("Erro ao buscar detalhes complementares:", error);
+      return { client: null, employee: null, laboratoryInfo: null };
+    }
+  }, []);
+
   useEffect(() => {
     if (!filters.sort) {
       setFilters(prev => ({ ...prev, sort: "-createdAt" }));
@@ -448,12 +528,15 @@ export function useOrders(options: UseOrdersOptions = {}) {
     translateOrderStatus,
     getOrderStatusClass,
     getStatusBadge,
+    getPaymentMethodText,
+    getProductTypeLabel,
     getClientName,
     getEmployeeName,
     getLaboratoryName,
     refetch,
     refreshOrdersList,
     formatCurrency,
-    formatDate
+    formatDate,
+    fetchOrderComplementaryDetails
   };
 }

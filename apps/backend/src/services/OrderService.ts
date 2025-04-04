@@ -279,7 +279,7 @@ export class OrderService {
     }
   
     if (userRole === "customer" && userId !== order.clientId.toString()) {
-      throw new OrderError("Sem permissão para atualizar este pedido");
+      throw new OrderError("Sem permissão para atualizar o status deste pedido");
     }
   
     const validTransitions: Record<IOrder["status"], IOrder["status"][]> = {
@@ -294,6 +294,14 @@ export class OrderService {
       throw new OrderError(
         `Não é possível alterar o status de ${order.status} para ${status}`
       );
+    }
+
+    if (order.status === "pending" && status === "in_production") {
+      if (!order.laboratoryId) {
+        throw new OrderError(
+          "Não é possível alterar o status para 'Em Produção' sem associar um laboratório ao pedido"
+        );
+      }
     }
   
     if (status === 'cancelled' && order.status !== 'cancelled') {

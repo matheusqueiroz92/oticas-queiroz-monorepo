@@ -15,13 +15,11 @@ export function useUsers() {
   const [usersMap, setUsersMap] = useState<Record<string, any>>({});
   const [isLoading, setIsLoading] = useState(false);
 
-  // Função para buscar todos os usuários
   const getAllUsers = useCallback(async () => {
     setIsLoading(true);
     try {
       const response = await api.get(API_ROUTES.USERS.BASE);
       
-      // Atualizar o cache local com os usuários retornados
       const updatedUsersMap = response.data.reduce((acc: Record<string, any>, user: any) => {
         acc[user._id] = user;
         return acc;
@@ -32,10 +30,8 @@ export function useUsers() {
         ...updatedUsersMap
       }));
       
-      // Atualizar o cache do React Query
       queryClient.setQueryData(QUERY_KEYS.USERS.ALL, response.data);
       
-      // Também atualizar o cache individual para cada usuário
       response.data.forEach((user: any) => {
         queryClient.setQueryData(QUERY_KEYS.USERS.DETAIL(user._id), user);
       });
@@ -54,7 +50,6 @@ export function useUsers() {
     }
   }, [queryClient, toast]);
 
-  // Hook de query para usar a função getAllUsers com React Query
   const useAllUsersQuery = (options = {}) => {
     return useQuery({
       queryKey: QUERY_KEYS.USERS.ALL,
@@ -68,24 +63,19 @@ export function useUsers() {
     return response.data;
   };
 
-  // Função para buscar usuário por ID
   const getUserById = async (id: string) => {
     try {
-      // Verificar se já temos no cache local
       if (usersMap[id]) {
         return usersMap[id];
       }
       
-      // Verificar se está no cache do React Query
       const cachedUser = queryClient.getQueryData(QUERY_KEYS.USERS.DETAIL(id));
       if (cachedUser) {
         return cachedUser;
       }
       
-      // Buscar da API
       const response = await api.get(API_ROUTES.USERS.BY_ID(id));
       
-      // Atualizar cache local
       setUsersMap(prev => ({
         ...prev,
         [id]: response.data

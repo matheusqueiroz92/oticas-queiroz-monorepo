@@ -206,16 +206,12 @@ export async function createOrder(
  */
 export const getAllOrdersForExport = async (filters: Record<string, any> = {}): Promise<Order[]> => {
   try {
-    // Configurar para buscar com limite alto
     const params = new URLSearchParams();
     
-    // Limite alto para pegar todos os registros que correspondam aos filtros
     params.append('limit', '9999');
     
-    // Adicionar filtros à query
     Object.entries(filters).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== '') {
-        // Não incluir os parâmetros de paginação na exportação
         if (key !== 'page' && key !== 'limit') {
           params.append(key, String(value));
         }
@@ -228,7 +224,6 @@ export const getAllOrdersForExport = async (filters: Record<string, any> = {}): 
     
     let result = [];
     
-    // Verificar formato da resposta
     if (Array.isArray(response.data)) {
       result = response.data;
     } else if (response.data?.orders && Array.isArray(response.data.orders)) {
@@ -237,8 +232,7 @@ export const getAllOrdersForExport = async (filters: Record<string, any> = {}): 
       console.warn('Formato de resposta inesperado na exportação:', response.data);
       result = [];
     }
-    
-    // Normalizar os pedidos (garantir que estejam no formato correto)
+
     return normalizeOrders(result);
   } catch (error) {
     console.error('Erro ao buscar pedidos para exportação:', error);

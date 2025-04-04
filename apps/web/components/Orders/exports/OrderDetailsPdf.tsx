@@ -522,8 +522,13 @@ const OrderDetailsPDF = ({
       className="block w-full"
     >
       {({ loading }) => (
-        <Button variant="outline" className="w-full" disabled={loading}>
-          <FileDown className="mr-2 h-4 w-4" />
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full"
+          disabled={loading}
+        >
+          <FileDown/>
           {loading ? "Gerando PDF..." : "Exportar PDF"}
         </Button>
       )}

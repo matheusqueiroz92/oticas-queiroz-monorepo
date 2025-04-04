@@ -214,7 +214,7 @@ export default function AuthenticatedLayout({
       >
         <div className="hidden md:block p-6">
           <div className="flex flex-col items-center justify-center">
-            <div className="relative w-36 h-14">
+            <div className="relative w-48 h-24">
               <Image
                 src={LogoOticasQueiroz}
                 alt="Óticas Queiroz Logo"
