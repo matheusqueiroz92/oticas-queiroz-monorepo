@@ -1,6 +1,7 @@
 import { api } from "./authService";
 import type { Order } from "../types/order";
 import { normalizeOrder, normalizeOrders } from "../utils/data-normalizers";
+import { API_ROUTES } from "../constants/api-routes"
 
 export interface OrderFilters {
   search?: string;
@@ -88,7 +89,7 @@ export async function getAllOrders(filters: OrderFilters = {}): Promise<{
         'X-Timestamp': Date.now().toString()
       }
     };
-    const response = await api.get("/api/orders", config);
+    const response = await api.get(API_ROUTES.ORDERS.LIST, config);
 
     let rawOrders: any[] = [];
     let pagination: PaginationInfo | undefined = undefined;
@@ -113,7 +114,7 @@ export async function getAllOrders(filters: OrderFilters = {}): Promise<{
  */
 export async function getOrderById(id: string): Promise<Order | null> {
   try {
-    const response = await api.get(`/api/orders/${id}`);
+    const response = await api.get(API_ROUTES.ORDERS.BY_ID(id));
     return normalizeOrder(response.data);
   } catch (error) {
     console.error(`Erro ao buscar pedido com ID ${id}:`, error);
@@ -131,7 +132,7 @@ export async function getOrdersByClient(clientId: string): Promise<Order[] | nul
       sort: "-createdAt",
       _t: new Date().getTime()
     };
-    const response = await api.get(`/api/orders/client/${clientId}`, { params });
+    const response = await api.get(API_ROUTES.ORDERS.CLIENT(clientId), { params });
 
     return Array.isArray(response.data) ? normalizeOrders(response.data) : [];
   } catch (error) {
@@ -148,7 +149,7 @@ export async function updateOrderStatus(
   status: string
 ): Promise<Order | null> {
   try {
-    const response = await api.put(`/api/orders/${id}/status`, { status });
+    const response = await api.put(API_ROUTES.ORDERS.STATUS(id), { status });
     return normalizeOrder(response.data);
   } catch (error) {
     console.error(`Erro ao atualizar status do pedido ${id}:`, error);
@@ -164,7 +165,7 @@ export async function updateOrderLaboratory(
   laboratoryId: string
 ): Promise<Order | null> {
   try {
-    const response = await api.put(`/api/orders/${id}/laboratory`, {
+    const response = await api.put(API_ROUTES.ORDERS.LABORATORY(id), {
       laboratoryId,
     });
     return normalizeOrder(response.data);
@@ -192,10 +193,34 @@ export async function createOrder(
       finalPrice: orderData.finalPrice || (orderData.totalPrice || 0) - (orderData.discount || 0)
     };
     
-    const response = await api.post("/api/orders", data);
+    const response = await api.post(API_ROUTES.ORDERS.CREATE, data);
     return normalizeOrder(response.data);
   } catch (error) {
     console.error("Erro ao criar pedido:", error);
     throw error;
   }
 }
+
+/**
+ * Busca todos os pedidos para exportação, aplicando filtros opcionais
+ */
+export const getAllOrdersForExport = async (filters: Record<string, any> = {}): Promise<Order[]> => {
+  try {
+    // Configurar para buscar com limite alto
+    const params = new URLSearchParams();
+    params.append('limit', '9999'); // Limite alto para pegar todos
+    
+    // Adicionar filtros à query
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        params.append(key, String(value));
+      }
+    });
+    
+    const response = await api.get(API_ROUTES.ORDERS.PARAMS(params.toString()));
+    return response.data.orders || [];
+  } catch (error) {
+    console.error('Erro ao buscar pedidos para exportação:', error);
+    throw error;
+  }
+};

@@ -81,8 +81,19 @@ export function ReportList({
         return;
       }
       
-      // Usar o exportService
+      // Mostrar toast de início de download
+      toast({
+        title: "Iniciando download",
+        description: "Preparando seu relatório para download...",
+      });
+      
+      // Usar o serviço de exportação
       const blob = await exportService.exportReport(id, { format });
+      
+      // Verificar se o blob contém uma mensagem de erro
+      if (await exportService.isErrorBlob(blob)) {
+        throw new Error("O servidor retornou um erro ao gerar o relatório");
+      }
       
       // Nome do arquivo baseado no relatório
       const filename = exportService.generateFilename(
@@ -90,8 +101,13 @@ export function ReportList({
         format
       );
       
-      // Download
+      // Fazer download
       exportService.downloadBlob(blob, filename);
+      
+      toast({
+        title: "Download concluído",
+        description: `Seu relatório foi baixado com sucesso em formato ${format.toUpperCase()}.`,
+      });
     } catch (error) {
       console.error("Erro ao fazer download:", error);
       toast({

@@ -1,119 +1,150 @@
-// apps/web/components/Orders/exports/OrderExportButton.tsx
-import React, { useState } from 'react';
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { 
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { FileDown, Loader2 } from "lucide-react";
+import { Download, FileDown, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/useToast";
-import { exportService } from '@/app/services/exportService';
-import type { Order } from "@/app/types/order";
+import { useOrders } from "@/hooks/useOrders";
+import { getAllOrdersForExport } from "@/app/services/orderService"; // Importar o novo serviço
+import { 
+  exportOrdersToExcel, 
+  exportOrdersToPDF, 
+  exportOrdersToCSV, 
+  exportOrdersToJSON 
+} from "@/app/utils/clientExport";
 
 interface OrderExportButtonProps {
-  orderId?: string;
-  orderData?: Order;
   filters?: Record<string, any>;
-  variant?: "outline" | "default" | "destructive" | "secondary" | "ghost" | "link";
   buttonText?: string;
-  fullWidth?: boolean;
+  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
+  size?: "default" | "sm" | "lg" | "icon";
+  disabled?: boolean;
 }
 
-export const OrderExportButton = ({ 
-  orderId, 
-  orderData, 
-  filters,
-  variant = "outline",
+export function OrderExportButton({
+  filters = {},
   buttonText = "Exportar",
-  fullWidth = false
-}: OrderExportButtonProps) => {
+  variant = "default",
+  size = "default",
+  disabled = false,
+}: OrderExportButtonProps) {
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const [isExporting, setIsExporting] = useState(false);
+  
+  // Obter funções do hook useOrders
+  const { 
+    getClientName, 
+    getEmployeeName, 
+    getOrderStatusClass, 
+    translateOrderStatus 
+  } = useOrders();
 
-  // Validar que temos ou ID ou dados completos ou filtros
-  if (!orderId && !orderData && !filters) {
-    console.error("OrderExportButton precisa receber orderId, orderData ou filters");
-    return null;
-  }
+  // Função auxiliar para obter informações de status
+  const getOrderStatus = (status: string) => {
+    return {
+      label: translateOrderStatus(status),
+      className: getOrderStatusClass(status)
+    };
+  };
 
   const handleExport = async (format: "excel" | "pdf" | "csv" | "json") => {
+    setIsLoading(true);
+    
     try {
-      setIsExporting(true);
-      let blob: Blob;
-      let filename: string;
+      toast({
+        title: "Iniciando exportação",
+        description: `Buscando dados para exportação em formato ${format.toUpperCase()}...`,
+      });
 
-      // Exportar baseado em ID do pedido
-      if (orderId) {
-        blob = await exportService.exportOrderDetails(orderId, { format });
-        filename = exportService.generateFilename(`pedido-${orderId}`, format);
-      } 
-      // Exportar múltiplos pedidos com filtros
-      else if (filters) {
-        blob = await exportService.exportOrders(filters, { 
-          format,
-          title: "Relatório de Pedidos"
+      // Buscar todos os pedidos com os filtros aplicados
+      const allOrders = await getAllOrdersForExport(filters);
+      
+      // Verificar se há dados para exportar
+      if (!allOrders || allOrders.length === 0) {
+        toast({
+          variant: "warning",
+          title: "Sem dados para exportar",
+          description: "Não há pedidos que correspondam aos filtros aplicados.",
         });
-        filename = exportService.generateFilename("pedidos", format);
-      } 
-      // Erro - não deveria chegar aqui com as validações acima
-      else {
-        throw new Error("Dados insuficientes para exportação");
+        return;
       }
-
-      // Download do arquivo
-      exportService.downloadBlob(blob, filename);
+      
+      toast({
+        title: "Processando exportação",
+        description: `Preparando arquivo com ${allOrders.length} pedidos...`,
+      });
+      
+      const title = `Relatório de Pedidos (${allOrders.length} itens)`;
+      
+      // Chamar função de exportação específica baseada no formato
+      switch (format) {
+        case "excel":
+          exportOrdersToExcel(allOrders, title, getClientName, getEmployeeName, getOrderStatus);
+          break;
+        case "pdf":
+          exportOrdersToPDF(allOrders, title, getClientName, getEmployeeName, getOrderStatus);
+          break;
+        case "csv":
+          exportOrdersToCSV(allOrders, getClientName, getEmployeeName, getOrderStatus);
+          break;
+        case "json":
+          exportOrdersToJSON(allOrders);
+          break;
+      }
       
       toast({
         title: "Exportação concluída",
-        description: `Seu arquivo foi baixado com sucesso no formato ${format.toUpperCase()}.`,
+        description: `${allOrders.length} pedidos exportados com sucesso em formato ${format.toUpperCase()}.`,
       });
     } catch (error) {
-      console.error("Erro ao exportar pedido:", error);
+      console.error("Erro ao exportar pedidos:", error);
+      
       toast({
         variant: "destructive",
         title: "Erro na exportação",
-        description: "Não foi possível exportar o pedido. Tente novamente."
+        description: "Ocorreu um erro ao exportar os pedidos. Tente novamente.",
       });
     } finally {
-      setIsExporting(false);
+      setIsLoading(false);
     }
   };
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button 
-          variant={variant} 
-          disabled={isExporting} 
-          className={fullWidth ? "w-full" : ""}
+        <Button
+          variant={variant}
+          size={size}
+          disabled={disabled || isLoading}
         >
-          {isExporting ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Exportando...
-            </>
+          {isLoading ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (
-            <>
-              <FileDown className="mr-2 h-4 w-4" />
-              {buttonText}
-            </>
+            <FileDown className="mr-2 h-4 w-4" />
           )}
+          {buttonText}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => handleExport("pdf")}>
-          PDF
-        </DropdownMenuItem>
         <DropdownMenuItem onClick={() => handleExport("excel")}>
-          Excel
+          <Download className="mr-2 h-4 w-4" />
+          Excel (.xlsx)
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handleExport("pdf")}>
+          <Download className="mr-2 h-4 w-4" />
+          PDF (.pdf)
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => handleExport("csv")}>
-          CSV
+          <Download className="mr-2 h-4 w-4" />
+          CSV (.csv)
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => handleExport("json")}>
-          JSON
+          <Download className="mr-2 h-4 w-4" />
+          JSON (.json)
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

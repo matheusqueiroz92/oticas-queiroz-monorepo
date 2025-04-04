@@ -75,14 +75,24 @@ export function ReportDataVisualization({
   const renderSalesReport = () => {
     const data = report.data as any;
 
-    // Preparar dados para gráficos
-    const periodData = data.byPeriod || [];
-    const paymentMethodData = Object.entries(data.byPaymentMethod || {}).map(
-      ([name, value]) => ({
+    if (!data || typeof data !== 'object') {
+      return (
+        <Alert>
+          <AlertCircle className="h-4 w-4 mr-2" />
+          <AlertDescription>
+            Dados do relatório inválidos ou em formato não suportado.
+          </AlertDescription>
+        </Alert>
+      );
+    }
+
+    const periodData = Array.isArray(data.byPeriod) ? data.byPeriod : [];
+    const paymentMethodData = data.byPaymentMethod && typeof data.byPaymentMethod === 'object' 
+    ? Object.entries(data.byPaymentMethod).map(([name, value]) => ({
         name,
-        value,
-      })
-    );
+        value: typeof value === 'number' ? value : 0,
+      }))
+    : [];
 
     return (
       <Tabs defaultValue="summary" className="w-full">

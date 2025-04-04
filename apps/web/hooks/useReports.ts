@@ -106,8 +106,19 @@ export function useReports() {
         return null;
       }
   
+      // Mostrar toast de início do download
+      toast({
+        title: "Processando download",
+        description: "Preparando seu relatório para download...",
+      });
+  
       // Usar o serviço de exportação
       const blob = await exportService.exportReport(id, { format });
+      
+      // Verificar se o blob contém uma mensagem de erro
+      if (await exportService.isErrorBlob(blob)) {
+        throw new Error("O servidor retornou um erro ao gerar o relatório");
+      }
   
       // Criar nome de arquivo baseado no nome do relatório
       const filename = exportService.generateFilename(
@@ -119,8 +130,8 @@ export function useReports() {
       exportService.downloadBlob(blob, filename);
   
       toast({
-        title: "Download iniciado",
-        description: `Seu relatório está sendo baixado no formato ${format.toUpperCase()}.`,
+        title: "Download concluído",
+        description: `Seu relatório foi baixado com sucesso.`,
       });
   
       return blob;
@@ -128,7 +139,7 @@ export function useReports() {
       console.error(`Erro ao baixar relatório com ID ${id}:`, error);
       toast({
         variant: "destructive",
-        title: "Erro",
+        title: "Erro no download",
         description: "Não foi possível baixar o relatório. Tente novamente.",
       });
       return null;

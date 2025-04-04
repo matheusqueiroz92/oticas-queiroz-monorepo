@@ -503,41 +503,42 @@ export class OrderController {
     }
   }
 
-  async exportOrders(req: Request, res: Response): Promise<void> {
+  async exportOrders(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const { format = "excel", title } = req.query;
+
+    const queryParams = orderQuerySchema.parse(req.query);
+    const {
+      status,
+      clientId,
+      laboratoryId,
+      startDate,
+      endDate,
+      productId,
+      minPrice,
+      maxPrice
+    } = queryParams;
+    
+    const filters: Record<string, any> = {};
+    if (status) filters.status = status;
+    if (clientId) filters.clientId = clientId;
+    if (laboratoryId) filters.laboratoryId = laboratoryId;
+    if (productId) filters.productId = productId;
+    if (minPrice !== undefined) filters.minPrice = minPrice;
+    if (maxPrice !== undefined) filters.maxPrice = maxPrice;
+
+    if (startDate && endDate) {
+      filters.startDate = startDate;
+      filters.endDate = endDate;
+    }
+
+    const exportOptions: ExportOptions = {
+      format: format as "excel" | "pdf" | "csv" | "json",
+      title: title as string,
+      filename: `pedidos-${Date.now()}`,
+    };
+
     try {
-      const { format = "excel", title } = req.query;
-
-      const queryParams = orderQuerySchema.parse(req.query);
-      const {
-        status,
-        clientId,
-        laboratoryId,
-        startDate,
-        endDate,
-        productId,
-        minPrice,
-        maxPrice
-      } = queryParams;
-      
-      const filters: Record<string, any> = {};
-      if (status) filters.status = status;
-      if (clientId) filters.clientId = clientId;
-      if (laboratoryId) filters.laboratoryId = laboratoryId;
-      if (productId) filters.productId = productId;
-      if (minPrice !== undefined) filters.minPrice = minPrice;
-      if (maxPrice !== undefined) filters.maxPrice = maxPrice;
-
-      if (startDate && endDate) {
-        filters.startDate = startDate;
-        filters.endDate = endDate;
-      }
-
-      const exportOptions: ExportOptions = {
-        format: format as "excel" | "pdf" | "csv" | "json",
-        title: title as string,
-        filename: `pedidos-${Date.now()}`,
-      };
-
       const { buffer, contentType, filename } =
         await this.orderService.exportOrders(exportOptions, filters);
 
@@ -547,25 +548,29 @@ export class OrderController {
         `attachment; filename="${filename}"`
       );
       res.send(buffer);
-    } catch (error) {
-      console.error("Error exporting orders:", error);
-
-      if (error instanceof OrderError) {
-        res.status(400).json({ message: error.message });
-        return;
-      }
-
-      res.status(500).json({
-        message: "Erro interno do servidor",
-        details:
-          process.env.NODE_ENV !== "production"
-            ? error instanceof Error
-              ? error.message
-              : String(error)
-            : undefined,
-      });
+    } catch (exportError) {
+      console.error("Erro específico na exportação:", exportError);
+      throw exportError;
     }
+  } catch (error) {
+    console.error("Erro detalhado ao exportar pedidos:", error);
+
+    if (error instanceof OrderError) {
+      res.status(400).json({ message: error.message });
+      return;
+    }
+
+    res.status(500).json({
+      message: "Erro interno do servidor ao exportar pedidos",
+      details:
+        process.env.NODE_ENV !== "production"
+          ? error instanceof Error
+            ? error.message
+            : String(error)
+          : undefined,
+    });
   }
+}
 
   async exportDailySummary(req: Request, res: Response): Promise<void> {
     try {

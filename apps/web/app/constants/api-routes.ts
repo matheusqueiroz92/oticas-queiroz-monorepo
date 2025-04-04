@@ -1,13 +1,20 @@
 export const API_ROUTES = {
   ORDERS: {
     BASE: "/api/orders",
+    LIST: '/api/orders',
+    CREATE: '/api/orders',
     BY_ID: (id: string) => `/api/orders/${id}`,
+    UPDATE: (id: string) => `/api/orders/${id}`,
+    DELETE: (id: string) => `/api/orders/${id}/delete`,
+    CANCEL: (id: string) => `/api/orders/${id}/cancel`,
     STATUS: (id: string) => `/api/orders/${id}/status`,
     LABORATORY: (id: string) => `/api/orders/${id}/laboratory`,
     DAILY: "api/orders/daily",
     EXPORT: "/api/orders/export",
+    EXPORT_DETAILS: (id: string) => `/api/orders/${id}/export`,
     EXPORT_DAILY: "api/orders/export/daily",
-    EXPORT_BY_ID: (id: string) => `api/orders/${id}/export`
+    CLIENT: (id: string) => `/api/orders/client/${id}`,
+    PARAMS: (params: string) => `/api/orders?${params}`
   },
   CASH_REGISTERS: {
     BASE: "/api/cash-registers",

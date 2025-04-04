@@ -78,14 +78,14 @@ export const OrderFilters = ({ onUpdateFilters }: any) => {
 
   useEffect(() => {
     if (validateDates()) {
-      console.log('Aplicando filtros via OrderFilters:', { 
-        sort: "-createdAt",
-        status: selectedStatus,
-        employeeId: selectedEmployeeId,
-        paymentMethod: selectedPaymentMethod,
-        laboratoryId: selectedLaboratoryId,
-        dateRange 
-      });
+      // console.log('Aplicando filtros via OrderFilters:', { 
+      //   sort: "-createdAt",
+      //   status: selectedStatus,
+      //   employeeId: selectedEmployeeId,
+      //   paymentMethod: selectedPaymentMethod,
+      //   laboratoryId: selectedLaboratoryId,
+      //   dateRange 
+      // });
       
       const newFilters = getCurrentFilters();
       onUpdateFilters(newFilters);

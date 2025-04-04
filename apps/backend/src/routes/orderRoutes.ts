@@ -408,6 +408,259 @@ router.get(
 
 /**
  * @swagger
+ * /api/orders/deleted:
+ *   get:
+ *     summary: Lista pedidos excluídos logicamente
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Orders]
+ *     description: Retorna uma lista paginada de pedidos marcados como excluídos
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Número da página
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
+ *         description: Limite de itens por página
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [pending, in_production, ready, delivered, cancelled]
+ *         description: Filtrar por status
+ *       - in: query
+ *         name: clientId
+ *         schema:
+ *           type: string
+ *         description: Filtrar por cliente
+ *     responses:
+ *       200:
+ *         description: Lista de pedidos excluídos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 orders:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Order'
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     page:
+ *                       type: integer
+ *                     limit:
+ *                       type: integer
+ *                     total:
+ *                       type: integer
+ *                     totalPages:
+ *                       type: integer
+ *       401:
+ *         description: Não autorizado
+ *       403:
+ *         description: Acesso negado. Requer permissão de administrador.
+ *       500:
+ *         description: Erro interno do servidor
+ */
+router.get(
+  "/orders/deleted",
+  authenticate,
+  authorize(["admin"]),
+  asyncHandler(orderController.getDeletedOrders.bind(orderController))
+);
+
+/**
+ * @swagger
+ * /api/orders/daily:
+ *   get:
+ *     summary: Retorna os pedidos do dia
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Orders]
+ *     description: Busca todos os pedidos de uma data específica ou da data atual
+ *     parameters:
+ *       - in: query
+ *         name: date
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Data para consulta (default é a data atual)
+ *     responses:
+ *       200:
+ *         description: Lista de pedidos do dia
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Order'
+ *       401:
+ *         description: Não autorizado
+ *       403:
+ *         description: Acesso negado. Requer permissão de administrador ou funcionário.
+ *       500:
+ *         description: Erro interno do servidor
+ */
+router.get(
+  "/orders/daily",
+  authenticate,
+  
+  authorize(["admin", "employee"]),
+  asyncHandler(orderController.getDailyOrders.bind(orderController))
+);
+
+/**
+ * @swagger
+ * /api/orders/export:
+ *   get:
+ *     summary: Exporta pedidos filtrados
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Orders]
+ *     description: Gera um arquivo de exportação dos pedidos com base nos filtros
+ *     parameters:
+ *       - in: query
+ *         name: format
+ *         schema:
+ *           type: string
+ *           enum: [json, excel, pdf, csv]
+ *           default: excel
+ *         description: Formato do arquivo gerado
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Data inicial para filtro
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Data final para filtro
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [pending, in_production, ready, delivered, cancelled]
+ *         description: Filtrar por status do pedido
+ *       - in: query
+ *         name: clientId
+ *         schema:
+ *           type: string
+ *         description: Filtrar por cliente
+ *       - in: query
+ *         name: laboratoryId
+ *         schema:
+ *           type: string
+ *         description: Filtrar por laboratório
+ *       - in: query
+ *         name: title
+ *         schema:
+ *           type: string
+ *         description: Título personalizado para o relatório
+ *     responses:
+ *       200:
+ *         description: Arquivo de exportação gerado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *           application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *           application/pdf:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *           text/csv:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       401:
+ *         description: Não autorizado
+ *       403:
+ *         description: Acesso negado. Requer permissão de administrador ou funcionário.
+ *       500:
+ *         description: Erro interno do servidor
+ */
+router.get(
+  "/orders/export",
+  authenticate,
+  authorize(["admin", "employee"]),
+  asyncHandler(orderController.exportOrders.bind(orderController))
+);
+
+/**
+ * @swagger
+ * /api/orders/export/daily:
+ *   get:
+ *     summary: Exporta o resumo diário dos pedidos
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Orders]
+ *     description: Gera um arquivo com o resumo de todos os pedidos de um dia específico
+ *     parameters:
+ *       - in: query
+ *         name: date
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Data para o relatório (padrão é a data atual)
+ *         example: "2023-12-31"
+ *       - in: query
+ *         name: format
+ *         schema:
+ *           type: string
+ *           enum: [json, excel, pdf, csv]
+ *           default: excel
+ *         description: Formato de exportação
+ *     responses:
+ *       200:
+ *         description: Arquivo exportado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *           application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *           application/pdf:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *           text/csv:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       401:
+ *         description: Não autorizado
+ *       403:
+ *         description: Acesso negado. Requer permissão de administrador ou funcionário.
+ *       500:
+ *         description: Erro interno do servidor
+ */
+router.get(
+  "/orders/export/daily",
+  authenticate,
+  authorize(["admin", "employee"]),
+  asyncHandler(orderController.exportDailySummary.bind(orderController))
+);
+
+/**
+ * @swagger
  * /api/orders/{id}:
  *   get:
  *     summary: Obtém um pedido pelo ID
@@ -677,259 +930,6 @@ router.post(
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler(orderController.softDeleteOrder.bind(orderController))
-);
-
-/**
- * @swagger
- * /api/orders/deleted:
- *   get:
- *     summary: Lista pedidos excluídos logicamente
- *     security:
- *       - bearerAuth: []
- *     tags: [Orders]
- *     description: Retorna uma lista paginada de pedidos marcados como excluídos
- *     parameters:
- *       - in: query
- *         name: page
- *         schema:
- *           type: integer
- *           minimum: 1
- *           default: 1
- *         description: Número da página
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           minimum: 1
- *           maximum: 100
- *           default: 10
- *         description: Limite de itens por página
- *       - in: query
- *         name: status
- *         schema:
- *           type: string
- *           enum: [pending, in_production, ready, delivered, cancelled]
- *         description: Filtrar por status
- *       - in: query
- *         name: clientId
- *         schema:
- *           type: string
- *         description: Filtrar por cliente
- *     responses:
- *       200:
- *         description: Lista de pedidos excluídos
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 orders:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/Order'
- *                 pagination:
- *                   type: object
- *                   properties:
- *                     page:
- *                       type: integer
- *                     limit:
- *                       type: integer
- *                     total:
- *                       type: integer
- *                     totalPages:
- *                       type: integer
- *       401:
- *         description: Não autorizado
- *       403:
- *         description: Acesso negado. Requer permissão de administrador.
- *       500:
- *         description: Erro interno do servidor
- */
-router.get(
-  "/orders/deleted",
-  authenticate,
-  authorize(["admin"]),
-  asyncHandler(orderController.getDeletedOrders.bind(orderController))
-);
-
-/**
- * @swagger
- * /api/orders/daily:
- *   get:
- *     summary: Retorna os pedidos do dia
- *     security:
- *       - bearerAuth: []
- *     tags: [Orders]
- *     description: Busca todos os pedidos de uma data específica ou da data atual
- *     parameters:
- *       - in: query
- *         name: date
- *         schema:
- *           type: string
- *           format: date
- *         description: Data para consulta (default é a data atual)
- *     responses:
- *       200:
- *         description: Lista de pedidos do dia
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Order'
- *       401:
- *         description: Não autorizado
- *       403:
- *         description: Acesso negado. Requer permissão de administrador ou funcionário.
- *       500:
- *         description: Erro interno do servidor
- */
-router.get(
-  "/orders/daily",
-  authenticate,
-  
-  authorize(["admin", "employee"]),
-  asyncHandler(orderController.getDailyOrders.bind(orderController))
-);
-
-/**
- * @swagger
- * /api/orders/export:
- *   get:
- *     summary: Exporta pedidos filtrados
- *     security:
- *       - bearerAuth: []
- *     tags: [Orders]
- *     description: Gera um arquivo de exportação dos pedidos com base nos filtros
- *     parameters:
- *       - in: query
- *         name: format
- *         schema:
- *           type: string
- *           enum: [json, excel, pdf, csv]
- *           default: excel
- *         description: Formato do arquivo gerado
- *       - in: query
- *         name: startDate
- *         schema:
- *           type: string
- *           format: date
- *         description: Data inicial para filtro
- *       - in: query
- *         name: endDate
- *         schema:
- *           type: string
- *           format: date
- *         description: Data final para filtro
- *       - in: query
- *         name: status
- *         schema:
- *           type: string
- *           enum: [pending, in_production, ready, delivered, cancelled]
- *         description: Filtrar por status do pedido
- *       - in: query
- *         name: clientId
- *         schema:
- *           type: string
- *         description: Filtrar por cliente
- *       - in: query
- *         name: laboratoryId
- *         schema:
- *           type: string
- *         description: Filtrar por laboratório
- *       - in: query
- *         name: title
- *         schema:
- *           type: string
- *         description: Título personalizado para o relatório
- *     responses:
- *       200:
- *         description: Arquivo de exportação gerado
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *           application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
- *             schema:
- *               type: string
- *               format: binary
- *           application/pdf:
- *             schema:
- *               type: string
- *               format: binary
- *           text/csv:
- *             schema:
- *               type: string
- *               format: binary
- *       401:
- *         description: Não autorizado
- *       403:
- *         description: Acesso negado. Requer permissão de administrador ou funcionário.
- *       500:
- *         description: Erro interno do servidor
- */
-router.get(
-  "/orders/export",
-  authenticate,
-  authorize(["admin", "employee"]),
-  asyncHandler(orderController.exportOrders.bind(orderController))
-);
-
-/**
- * @swagger
- * /api/orders/export/daily:
- *   get:
- *     summary: Exporta o resumo diário dos pedidos
- *     security:
- *       - bearerAuth: []
- *     tags: [Orders]
- *     description: Gera um arquivo com o resumo de todos os pedidos de um dia específico
- *     parameters:
- *       - in: query
- *         name: date
- *         schema:
- *           type: string
- *           format: date
- *         description: Data para o relatório (padrão é a data atual)
- *         example: "2023-12-31"
- *       - in: query
- *         name: format
- *         schema:
- *           type: string
- *           enum: [json, excel, pdf, csv]
- *           default: excel
- *         description: Formato de exportação
- *     responses:
- *       200:
- *         description: Arquivo exportado com sucesso
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *           application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
- *             schema:
- *               type: string
- *               format: binary
- *           application/pdf:
- *             schema:
- *               type: string
- *               format: binary
- *           text/csv:
- *             schema:
- *               type: string
- *               format: binary
- *       401:
- *         description: Não autorizado
- *       403:
- *         description: Acesso negado. Requer permissão de administrador ou funcionário.
- *       500:
- *         description: Erro interno do servidor
- */
-router.get(
-  "/orders/export/daily",
-  authenticate,
-  authorize(["admin", "employee"]),
-  asyncHandler(orderController.exportDailySummary.bind(orderController))
 );
 
 /**
