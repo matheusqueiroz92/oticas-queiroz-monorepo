@@ -23,24 +23,19 @@ export const exportOrders = async (
   try {
     console.log('Iniciando exportação de pedidos com opções:', options);
     
-    // Validar as opções
     if (typeof options.filters === 'function') {
       console.warn('Filtros fornecidos como função, isso pode causar problemas de serialização');
-      options.filters = {}; // Resetar para objeto vazio para evitar problemas
+      options.filters = {};
     }
     
-    // Construir os parâmetros de query
     const params = new URLSearchParams();
     
-    // Adicionar formato (com valor padrão)
     params.append('format', options.format || 'excel');
-    
-    // Adicionar título se fornecido
+
     if (options.title) {
       params.append('title', options.title);
     }
     
-    // Adicionar filtros à URL se for um objeto válido
     if (options.filters && typeof options.filters === 'object') {
       Object.entries(options.filters).forEach(([key, value]) => {
         if (value !== undefined && value !== null && value !== '' && typeof value !== 'function') {
@@ -49,14 +44,12 @@ export const exportOrders = async (
       });
     }
     
-    // URL para exportação - usar caminho absoluto
     const url = `/api/orders/export?${params.toString()}`;
     console.log('URL de exportação:', url);
     
-    // Usar apiClient para a requisição
     const response = await api.get(url, {
       responseType: 'blob',
-      timeout: 60000, // 60 segundos para arquivos maiores
+      timeout: 60000,
       onDownloadProgress: progressEvent => {
         if (progressEvent.total && onProgress) {
           const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
@@ -65,12 +58,10 @@ export const exportOrders = async (
       }
     });
     
-    // Verificar se a resposta é válida
     if (!response.data || !(response.data instanceof Blob)) {
       throw new Error('Resposta inválida do servidor');
     }
     
-    // Se for um blob com tipo JSON, verificar se é uma mensagem de erro
     if (response.data.type.includes('application/json')) {
       try {
         const textData = await response.data.text();
@@ -84,7 +75,6 @@ export const exportOrders = async (
         if (e instanceof Error && e.message !== "Unexpected end of JSON input") {
           throw e;
         }
-        // Ignorar erros de parsing se não for JSON válido
       }
     }
     
@@ -93,20 +83,18 @@ export const exportOrders = async (
   } catch (error) {
     console.error("Erro detalhado ao exportar pedidos:", error);
     
-    // Tentar extrair mais informações do erro
-    if (error.response?.data instanceof Blob) {
+    if ((error as any).response?.data instanceof Blob) {
       try {
-        const text = await error.response.data.text();
+        const text = await (error as any).response.data.text();
         console.error('Conteúdo do erro (blob):', text);
         
-        // Tentar analisar como JSON
         try {
           const jsonData = JSON.parse(text);
           if (jsonData.message) {
             throw new Error(jsonData.message);
           }
         } catch (e) {
-          // Ignorar erros de parsing JSON
+          console.error('Erro ao analisar o blob como JSON:', e);
         }
       } catch (e) {
         console.error('Não foi possível ler o conteúdo do blob:', e);
