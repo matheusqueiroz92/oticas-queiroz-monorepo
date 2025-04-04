@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from "react";
 import {
   FormField,
   FormItem,
@@ -14,22 +15,77 @@ interface VisionSectionProps {
 }
 
 export default function VisionSection({ eye, form }: VisionSectionProps) {
-  // Modificação na função handleNumericInput para permitir valores vazios
+  // Estados para armazenar os valores de input como strings
+  const [sphInput, setSphInput] = useState<string>("");
+  const [cylInput, setCylInput] = useState<string>("");
+  const [axisInput, setAxisInput] = useState<string>("");
+  const [pdInput, setPdInput] = useState<string>("");
+
+  // Inicializar os valores dos inputs baseados nos valores do formulário
+  useEffect(() => {
+    const sph = form.getValues(`prescriptionData.${eye}Eye.sph`);
+    if (sph !== 0 && sph !== undefined) {
+      setSphInput(sph.toString());
+    }
+
+    const cyl = form.getValues(`prescriptionData.${eye}Eye.cyl`);
+    if (cyl !== 0 && cyl !== undefined) {
+      setCylInput(cyl.toString());
+    }
+
+    const axis = form.getValues(`prescriptionData.${eye}Eye.axis`);
+    if (axis !== 0 && axis !== undefined) {
+      setAxisInput(axis.toString());
+    }
+
+    const pd = form.getValues(`prescriptionData.${eye}Eye.pd`);
+    if (pd !== 0 && pd !== undefined) {
+      setPdInput(pd.toString());
+    }
+  }, [form, eye]);
+
+  // Função para lidar com inputs numéricos genéricos
   const handleNumericInput = (
     e: React.ChangeEvent<HTMLInputElement>,
-    onChange: (value: number | undefined) => void
+    onChange: (value: number | undefined) => void,
+    setInputState: React.Dispatch<React.SetStateAction<string>>
   ) => {
-    const value = e.target.value;
+    const inputValue = e.target.value;
+    setInputState(inputValue);
     
-    // Se o campo estiver vazio, definimos como undefined (em vez de 0)
-    if (value === "") {
+    // Se o campo estiver vazio, definimos como undefined
+    if (inputValue === "") {
       onChange(undefined);
       return;
     }
     
-    // Caso contrário, continuamos com a lógica de parsing numérico
-    const numValue = Number.parseFloat(value);
-    onChange(Number.isNaN(numValue) ? undefined : numValue);
+    // Caso contrário, convertemos para número
+    const numValue = Number.parseFloat(inputValue);
+    if (!Number.isNaN(numValue)) {
+      onChange(numValue);
+    }
+  };
+
+  // Função específica para o campo de eixo que tem validação de min/max
+  const handleAxisInput = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    onChange: (value: number | undefined) => void
+  ) => {
+    const inputValue = e.target.value;
+    setAxisInput(inputValue);
+    
+    // Se o campo estiver vazio, definimos como undefined
+    if (inputValue === "") {
+      onChange(undefined);
+      return;
+    }
+    
+    // Validação de min/max para o eixo
+    const numValue = Number.parseInt(inputValue, 10);
+    if (!Number.isNaN(numValue)) {
+      const boundedValue = Math.min(180, Math.max(0, numValue));
+      onChange(boundedValue);
+    }
   };
 
   return (
@@ -42,12 +98,10 @@ export default function VisionSection({ eye, form }: VisionSectionProps) {
             <FormLabel>Esf.</FormLabel>
             <FormControl>
               <Input
-                type="number"
-                step="0.25"
-                {...field}
-                // Garantir que "0" não seja exibido como valor inicial
-                value={field.value === 0 && field.value !== undefined ? "" : field.value ?? ""}
-                onChange={(e) => handleNumericInput(e, field.onChange)}
+                type="text"
+                inputMode="decimal"
+                value={sphInput}
+                onChange={(e) => handleNumericInput(e, field.onChange, setSphInput)}
                 aria-label={`Esférico do olho ${eye === "left" ? "esquerdo" : "direito"}`}
               />
             </FormControl>
@@ -64,12 +118,10 @@ export default function VisionSection({ eye, form }: VisionSectionProps) {
             <FormLabel>Cil.</FormLabel>
             <FormControl>
               <Input
-                type="number"
-                step="0.25"
-                {...field}
-                // Garantir que "0" não seja exibido como valor inicial
-                value={field.value === 0 && field.value !== undefined ? "" : field.value ?? ""}
-                onChange={(e) => handleNumericInput(e, field.onChange)}
+                type="text"
+                inputMode="decimal"
+                value={cylInput}
+                onChange={(e) => handleNumericInput(e, field.onChange, setCylInput)}
                 aria-label={`Cilíndrico do olho ${eye === "left" ? "esquerdo" : "direito"}`}
               />
             </FormControl>
@@ -86,28 +138,10 @@ export default function VisionSection({ eye, form }: VisionSectionProps) {
             <FormLabel>Eixo</FormLabel>
             <FormControl>
               <Input
-                type="number"
-                min="0"
-                max="180"
-                {...field}
-                // Garantir que "0" não seja exibido como valor inicial
-                value={field.value === 0 && field.value !== undefined ? "" : field.value ?? ""}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  
-                  // Se o campo estiver vazio, definimos como undefined
-                  if (value === "") {
-                    field.onChange(undefined);
-                    return;
-                  }
-                  
-                  // Validação de min/max para o eixo
-                  const numValue = Number.parseInt(value, 10);
-                  if (!Number.isNaN(numValue)) {
-                    const boundedValue = Math.min(180, Math.max(0, numValue));
-                    field.onChange(boundedValue);
-                  }
-                }}
+                type="text"
+                inputMode="numeric"
+                value={axisInput}
+                onChange={(e) => handleAxisInput(e, field.onChange)}
                 aria-label={`Eixo do olho ${eye === "left" ? "esquerdo" : "direito"}`}
               />
             </FormControl>
@@ -124,13 +158,10 @@ export default function VisionSection({ eye, form }: VisionSectionProps) {
             <FormLabel>D.P.</FormLabel>
             <FormControl>
               <Input
-                type="number"
-                step="0.5"
-                min="0"
-                {...field}
-                // Garantir que "0" não seja exibido como valor inicial
-                value={field.value === 0 && field.value !== undefined ? "" : field.value ?? ""}
-                onChange={(e) => handleNumericInput(e, field.onChange)}
+                type="text"
+                inputMode="decimal"
+                value={pdInput}
+                onChange={(e) => handleNumericInput(e, field.onChange, setPdInput)}
                 aria-label={`PD do olho ${eye === "left" ? "esquerdo" : "direito"}`}
               />
             </FormControl>

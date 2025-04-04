@@ -22,7 +22,6 @@ export default function ReportsPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const { toast } = useToast();
 
-  // Usar o hook de relatórios
   const {
     reports,
     isLoading,
@@ -34,10 +33,8 @@ export default function ReportsPage() {
     setCurrentPage,
     setPageSize,
     refetch,
-    navigateToCreateReport,
   } = useReports();
 
-  // Função para atualizar após a criação de relatório
   const handleCreateSuccess = async () => {
     setIsCreateModalOpen(false);
     toast({
@@ -48,6 +45,8 @@ export default function ReportsPage() {
     refetch();
   };
 
+  console.log(reports);
+  
   return (
     <div className="space-y-2 max-w-auto mx-auto p-1 md:p-2">
       <div className="flex justify-between items-center">

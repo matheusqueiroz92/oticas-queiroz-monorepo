@@ -91,7 +91,7 @@ export default function ForgotPasswordPage() {
       <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-8">
         <Card className="w-full max-w-md">
           <CardHeader className="space-y-1">
-            <h2 className="text-2xl font-bold text-center">Recuperar Senha</h2>
+            <h2 className="text-2xl font-bold text-center text-[var(--primary-blue)]">Recuperar Senha</h2>
             <p className="text-sm text-muted-foreground text-center">
               Digite seu email para receber um link de recuperação
             </p>
@@ -131,7 +131,7 @@ export default function ForgotPasswordPage() {
 
               <Button
                 type="submit"
-                className="w-full bg-[#2f67ff] hover:bg-[#1e40af] text-white"
+                className="w-full bg-[var(--primary-blue)] hover:bg-primary text-white"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (

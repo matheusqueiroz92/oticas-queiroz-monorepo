@@ -7,6 +7,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { useEffect, useState } from "react";
 import EyeFormSection from "./EyeFormSection";
 import type { OrderFormReturn } from "../../app/types/form-types";
 
@@ -15,22 +16,50 @@ interface PrescriptionFormProps {
 }
 
 export default function PrescriptionForm({ form }: PrescriptionFormProps) {
-  // Função para lidar com inputs numéricos, permitindo valores vazios
+  // Armazenar os valores de input como strings para manter comportamento consistente
+  const [ndInput, setNdInput] = useState<string>("");
+  const [ocInput, setOcInput] = useState<string>("");
+  const [additionInput, setAdditionInput] = useState<string>("");
+
+  // Inicializar os valores dos inputs baseados nos valores do formulário
+  useEffect(() => {
+    // Só inicializar se não for 0 ou undefined
+    const nd = form.getValues("prescriptionData.nd");
+    if (nd !== 0 && nd !== undefined) {
+      setNdInput(nd.toString());
+    }
+
+    const oc = form.getValues("prescriptionData.oc");
+    if (oc !== 0 && oc !== undefined) {
+      setOcInput(oc.toString());
+    }
+
+    const addition = form.getValues("prescriptionData.addition");
+    if (addition !== 0 && addition !== undefined) {
+      setAdditionInput(addition.toString());
+    }
+  }, [form]);
+
+  // Função para lidar com inputs numéricos de forma consistente
   const handleNumericInput = (
     e: React.ChangeEvent<HTMLInputElement>,
-    onChange: (value: number | undefined) => void
+    onChange: (value: number | undefined) => void,
+    setInputState: React.Dispatch<React.SetStateAction<string>>
   ) => {
-    const value = e.target.value;
+    const inputValue = e.target.value;
+    setInputState(inputValue);
     
     // Se o campo estiver vazio, definimos como undefined
-    if (value === "") {
+    if (inputValue === "") {
       onChange(undefined);
       return;
     }
     
     // Caso contrário, convertemos para número
-    const numValue = Number.parseFloat(value);
-    onChange(Number.isNaN(numValue) ? undefined : numValue);
+    const numValue = Number.parseFloat(inputValue);
+    if (!Number.isNaN(numValue)) {
+      onChange(numValue);
+    }
   };
 
   return (
@@ -95,12 +124,12 @@ export default function PrescriptionForm({ form }: PrescriptionFormProps) {
                 <FormLabel>D.N.P.</FormLabel>
                 <FormControl>
                   <Input
-                    type="number"
-                    step="0.25"
-                    {...field}
-                    // Garantir que "0" não seja exibido como valor inicial
-                    value={field.value === 0 && field.value !== undefined ? "" : field.value ?? ""}
-                    onChange={(e) => handleNumericInput(e, field.onChange)}
+                    type="text"
+                    inputMode="decimal"
+                    value={ndInput}
+                    onChange={(e) => 
+                      handleNumericInput(e, field.onChange, setNdInput)
+                    }
                   />
                 </FormControl>
                 <FormMessage />
@@ -116,12 +145,12 @@ export default function PrescriptionForm({ form }: PrescriptionFormProps) {
                 <FormLabel>C.O.</FormLabel>
                 <FormControl>
                   <Input
-                    type="number"
-                    step="0.25"
-                    {...field}
-                    // Garantir que "0" não seja exibido como valor inicial
-                    value={field.value === 0 && field.value !== undefined ? "" : field.value ?? ""}
-                    onChange={(e) => handleNumericInput(e, field.onChange)}
+                    type="text"
+                    inputMode="decimal"
+                    value={ocInput}
+                    onChange={(e) => 
+                      handleNumericInput(e, field.onChange, setOcInput)
+                    }
                   />
                 </FormControl>
                 <FormMessage />
@@ -137,12 +166,12 @@ export default function PrescriptionForm({ form }: PrescriptionFormProps) {
                 <FormLabel>Adição</FormLabel>
                 <FormControl>
                   <Input
-                    type="number"
-                    step="0.25"
-                    {...field}
-                    // Garantir que "0" não seja exibido como valor inicial
-                    value={field.value === 0 && field.value !== undefined ? "" : field.value ?? ""}
-                    onChange={(e) => handleNumericInput(e, field.onChange)}
+                    type="text"
+                    inputMode="decimal"
+                    value={additionInput}
+                    onChange={(e) => 
+                      handleNumericInput(e, field.onChange, setAdditionInput)
+                    }
                   />
                 </FormControl>
                 <FormMessage />
