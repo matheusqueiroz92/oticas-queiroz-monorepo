@@ -323,7 +323,7 @@ const renderTableView = () => (
 );
 
 return (
-  <div className="space-y-4 max-w-auto mx-auto p-4">
+  <div className="space-y-2 max-w-auto mx-auto p-1 md:p-2">
     <PageTitle
       title="Produtos"
       description="Gerenciamento de produtos da loja"

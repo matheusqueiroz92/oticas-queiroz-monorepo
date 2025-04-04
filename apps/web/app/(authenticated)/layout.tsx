@@ -164,36 +164,34 @@ export default function AuthenticatedLayout({
     redirectAfterLogout();
   };
 
-  // Função para verificar se um item do menu deve ser exibido com base no papel do usuário
   const shouldShowMenuItem = (itemRoles: string[]): boolean => {
-    // Se é admin, mostra todos os itens marcados para admin
     if (canAccessAdmin && itemRoles.includes("admin")) return true;
 
-    // Se é funcionário, mostra todos os itens marcados para funcionário
     if (canAccessEmployee && itemRoles.includes("employee")) return true;
 
-    // Se é cliente, mostra apenas os itens marcados para cliente
     if (isCustomer && itemRoles.includes("customer")) return true;
 
     return false;
   };
 
-  // Toggle do menu mobile
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
-      {/* Botão hambúrguer mobile - visível apenas em dispositivos móveis */}
       <div className="md:hidden bg-[var(--primary-blue)] p-4 flex justify-between items-center text-white">
-        <h1 className="text-lg font-bold">Óticas Queiroz</h1>
-        <Image
-            src={LogoOticasQueiroz}
-            alt="Óticas Queiroz Logo"
-            fill
-            className="object-contain"
-          />
+        <div className="flex items-center">
+          <div className="relative w-32 h-10">
+            <Image
+              src={LogoOticasQueiroz}
+              alt="Óticas Queiroz Logo"
+              fill
+              className="object-contain"
+              priority
+            />
+          </div>
+        </div>
         <button 
           onClick={toggleMobileMenu}
           className="p-1 rounded hover:bg-primary-foreground/20"
@@ -206,36 +204,33 @@ export default function AuthenticatedLayout({
         </button>
       </div>
 
-      {/* Sidebar com implementação responsiva */}
       <aside 
         className={cn(
           "bg-[var(--primary-blue)] text-white transition-all z-20",
-          // Versão mobile
           "fixed inset-y-0 left-0 w-16 mt-14 md:mt-0",
-          // Quando fechado em mobile
           !isMobileMenuOpen && "max-md:-translate-x-full",
-          // Layout desktop
           "md:sticky md:top-0 md:w-64 md:flex md:flex-col md:translate-x-0"
         )}
       >
-        {/* Cabeçalho - visível apenas em desktop */}
-        <div className="hidden md:block p-8">
+        <div className="hidden md:block p-6">
           <div className="flex flex-col items-center justify-center">
-            <Image
-              src={LogoOticasQueiroz}
-              alt="Óticas Queiroz Logo"
-              height={120}
-              width={120}
-            />
+            <div className="relative w-36 h-14">
+              <Image
+                src={LogoOticasQueiroz}
+                alt="Óticas Queiroz Logo"
+                fill
+                className="object-contain"
+                priority
+              />
+            </div>
           {/* {userName && (
             <p className="text-sm text-white/70 mt-2">Olá, {userName}</p>
           )} */}
           </div>
         </div>
 
-        <nav className="space-y-2 flex-1 p-2 md:p-6">
+        <nav className="space-y-2 flex-1 p-2 md:p-6 overflow-y-auto">
           {menuItems.map((item) => {
-            // Verificar se o item deve ser exibido para o papel atual do usuário
             if (!shouldShowMenuItem(item.roles)) return null;
 
             return (
@@ -244,20 +239,17 @@ export default function AuthenticatedLayout({
                   href={item.href}
                   className={cn(
                     "flex items-center rounded-lg hover:bg-primary-foreground/10 text-white group w-full",
-                    // Estilo quando ativo
                     isActiveGroup(item) && "bg-primary-foreground/20",
-                    // Tamanho e padding responsivo
                     "max-md:justify-center max-md:p-2",
                     "md:space-x-2 md:px-4 md:py-2"
                   )}
-                  title={item.title} // Adiciona tooltip para móveis
+                  title={item.title}
                 >
                   <item.icon className="h-5 w-5" />
                   <span className="max-md:hidden">{item.title}</span>
                 </Link>
 
                 {item.subItems?.map((subItem) => {
-                  // Verificar se o subitem deve ser exibido
                   if (!shouldShowMenuItem(subItem.roles)) return null;
 
                   return (
@@ -267,9 +259,7 @@ export default function AuthenticatedLayout({
                       className={cn(
                         "flex items-center rounded-lg hover:bg-primary-foreground/10 text-white/80 text-sm group w-full",
                         isActiveLink(subItem.href) && "bg-primary-foreground/20",
-                        // Estilo mobile
                         "max-md:justify-center max-md:p-2",
-                        // Estilo desktop
                         "md:space-x-2 md:px-4 md:py-2 md:pl-10"
                       )}
                       title={subItem.title}
@@ -300,7 +290,6 @@ export default function AuthenticatedLayout({
         </div>
       </aside>
 
-      {/* Overlay para fechar o menu em dispositivos móveis */}
       {isMobileMenuOpen && (
         <div 
           className="fixed inset-0 bg-black/50 z-10 md:hidden"
@@ -308,12 +297,19 @@ export default function AuthenticatedLayout({
         />
       )}
 
-      {/* Conteúdo principal */}
       <main className={cn(
-        "flex-1 bg-background",
+        "flex-1 bg-background flex flex-col",
         "md:ml-0"
       )}>
-        <div className="p-4 md:p-8">{children}</div>
+        <div className="flex-1 p-4 md:p-8">{children}</div>
+        
+        <footer className="mt-auto py-[30] px-6 border-t text-center text-sm text-muted-foreground">
+          <p>
+            © {new Date().getFullYear()} Óticas Queiroz. Todos os direitos
+            reservados. Desenvolvido por{" "}
+            <span className="font-medium">Matheus Queiroz</span>
+          </p>
+        </footer>
       </main>
     </div>
   );

@@ -23,6 +23,7 @@ import {
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -32,7 +33,10 @@ import {
   Users, 
   ShoppingBag, 
   CheckCircle2,
-  ChevronRight
+  ChevronRight,
+  User,
+  List,
+  File
 } from "lucide-react";
 import type { Customer } from "@/app/types/customer";
 import type { Product } from "@/app/types/product";
@@ -988,10 +992,6 @@ export default function NewOrderPage() {
       <style jsx global>{numericInputStyles}</style>
       
       <div className="max-w-6xl mx-auto p-3">
-        <div className="mb-3">
-          <PageTitle title="Novo Pedido" description="Crie um novo pedido para o cliente." />
-        </div>
-
         {isLoadingProducts || isLoadingCustomers ? (
           <div className="flex justify-center items-center h-64">
             <div className="flex flex-col items-center">
@@ -1001,18 +1001,21 @@ export default function NewOrderPage() {
           </div>
         ) : (
           <Card className="shadow-sm">
-            <CardHeader className="border-b bg-gray-50 p-3">
-              <div className="flex items-center">
-                <Users className="h-5 w-5 text-primary mr-2" />
+            <CardHeader className="border-b bg-gray-50 p-4 flex flex-row items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <File className="h-5 w-5 text-[var(--secondary-red)]" />
+                </div>
                 <div>
-                  <CardTitle className="text-base">Formulário de Pedido</CardTitle>
-                  {loggedEmployee && (
-                    <p className="text-xs text-muted-foreground">
-                      Vendedor: {loggedEmployee.name}
-                    </p>
-                  )}
+                  <CardTitle className="text-xl text-[var(--secondary-red)]">Novo Pedido</CardTitle>
+                  <CardDescription>Cadastre um novo pedido</CardDescription>
                 </div>
               </div>
+              {loggedEmployee && (
+                <p className="text-sm text-muted-foreground flex items-center gap-1">
+                  <User className="h-4 w-4" /> Vendedor: {loggedEmployee.name}
+                </p>
+              )}
             </CardHeader>
 
             {!showPdfDownload ? (

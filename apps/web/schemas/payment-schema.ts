@@ -4,7 +4,7 @@ export const paymentFormSchema = z.object({
   amount: z.preprocess(
     (value) =>
       value === ""
-        ? 0 // Retorna 0 se o valor for uma string vazia
+        ? 0
         : Number.parseFloat(String(value).replace(",", ".")),
     z.number().positive("O valor deve ser positivo")
   ),
