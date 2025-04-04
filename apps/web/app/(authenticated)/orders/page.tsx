@@ -1,13 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, FileX, RefreshCw, Download, Plus, Filter, Search, X } from "lucide-react";
+import { Loader2, FileX, RefreshCw, Plus, Filter, Search, X } from "lucide-react";
 import { useOrders } from "@/hooks/useOrders";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/useToast";
-import { exportToPDF } from "@/app/utils/exportToPdf";
 import { OrderExportButton } from "@/components/Orders/exports/OrderExportButton";
 import { OrderFilters } from "@/components/Orders/OrderFilters";
 import { OrderTable } from "@/components/Orders/OrderTable";
@@ -26,7 +25,6 @@ import {
 export default function OrdersPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
   
   const { toast } = useToast();
 
@@ -38,6 +36,7 @@ export default function OrdersPage() {
     totalPages,
     totalOrders,
     search,
+    filters,
     setSearch,
     clearFilters,
     setCurrentPage,
@@ -47,7 +46,8 @@ export default function OrdersPage() {
     refreshOrdersList,
     getClientName,
     getEmployeeName,
-    getLaboratoryName
+    getLaboratoryName,
+    getStatusBadge,
   } = useOrders();
   
   const handleManualRefresh = async () => {
@@ -70,70 +70,14 @@ export default function OrdersPage() {
     }
   };
 
-  const handleExportToPDF = async () => {
-    setIsExporting(true);
-    try {
-      const exportData = orders.map(order => ({
-        cliente: getClientName(order.clientId.toString()),
-        data: formatDate(order.createdAt),
-        status: getStatusBadge(order.status).label,
-        vendedor: getEmployeeName(order.employeeId.toString()),
-        laboratório: order.laboratoryId ? getLaboratoryName(order.laboratoryId.toString()) : "N/A",
-        total: formatCurrency(order.finalPrice || order.totalPrice)
-      }));
-
-      await exportToPDF(exportData, 'pedidos-filtrados.pdf', 'Pedidos Filtrados');
-      
-      toast({
-        title: "Exportação concluída",
-        description: "Os pedidos foram exportados com sucesso.",
-      });
-    } catch (error) {
-      console.error("Erro ao exportar dados:", error);
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Falha ao exportar os pedidos.",
-      });
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
-  const getStatusBadge = (status: string) => {
-    const statusMap: Record<string, { label: string; className: string }> = {
-      pending: {
-        label: "Pendente",
-        className: "bg-yellow-100 text-yellow-800",
-      },
-      in_production: {
-        label: "Em Produção",
-        className: "bg-blue-100 text-blue-800",
-      },
-      ready: { 
-        label: "Pronto", 
-        className: "bg-green-100 text-green-800" 
-      },
-      delivered: {
-        label: "Entregue",
-        className: "bg-purple-100 text-purple-800",
-      },
-      cancelled: {
-        label: "Cancelado",
-        className: "bg-red-100 text-red-800",
-      },
-    };
-
-    return statusMap[status] || {
-      label: status,
-      className: "bg-gray-100 text-gray-800",
-    };
-  };
-
   const getActiveFiltersCount = () => {
     let count = 0;
     if (search) count++;
     return count;
+  };
+
+  const handleClearSearch = () => {
+    setSearch('');
   };
 
   const showEmptyState = !isLoading && !error && orders.length === 0;
@@ -185,10 +129,6 @@ export default function OrdersPage() {
     },
   ];
 
-  const handleClearSearch = () => {
-    setSearch('');
-  };
-
   return (
     <>
       <style jsx global>{customBadgeStyles}</style>
@@ -231,7 +171,7 @@ export default function OrdersPage() {
                     <p>Você pode buscar por:</p>
                     <ul className="list-disc pl-4 text-xs mt-1">
                       <li>Nome do cliente</li>
-                      <li>CPF do cliente (formato: 12345678900)</li>
+                      <li>CPF do cliente (11 dígitos)</li>
                       <li>Número da O.S. (4 a 7 dígitos)</li>
                     </ul>
                   </TooltipContent>
@@ -266,14 +206,18 @@ export default function OrdersPage() {
               Atualizar
             </Button>
             <OrderExportButton 
-              filters={updateFilters}
+              filters={filters}
               buttonText="Exportar"
               variant="outline"
-              // disabled={isLoading || orders.length === 0}
-              // size="sm"
+              disabled={isLoading || orders.length === 0}
+              size="sm"
             />
-            <Button onClick={navigateToCreateOrder}>
-              <Plus className="h-4 w-4 mr-1" />
+            <Button
+              className="bg-[var(--primary-blue)] text-primary-foreground"
+              onClick={navigateToCreateOrder}
+              size="sm"
+            >
+                <Plus className="h-4 w-4 mr-1" />
               Novo Pedido
             </Button>
           </div>
@@ -282,7 +226,6 @@ export default function OrdersPage() {
         {showFilters && (
           <OrderFilters 
             onUpdateFilters={(newFilters: Record<string, any>) => {
-              // Importante: não sobrescrever a busca atual ao aplicar filtros
               updateFilters(newFilters);
             }} 
           />

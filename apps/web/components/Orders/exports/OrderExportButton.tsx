@@ -9,7 +9,7 @@ import {
 import { Download, FileDown, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/useToast";
 import { useOrders } from "@/hooks/useOrders";
-import { getAllOrdersForExport } from "@/app/services/orderService"; // Importar o novo serviço
+import { getAllOrdersForExport } from "@/app/services/orderService";
 import { 
   exportOrdersToExcel, 
   exportOrdersToPDF, 
@@ -35,15 +35,14 @@ export function OrderExportButton({
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   
-  // Obter funções do hook useOrders
   const { 
     getClientName, 
     getEmployeeName, 
     getOrderStatusClass, 
-    translateOrderStatus 
+    translateOrderStatus,
+    filters: currentFilters
   } = useOrders();
 
-  // Função auxiliar para obter informações de status
   const getOrderStatus = (status: string) => {
     return {
       label: translateOrderStatus(status),
@@ -53,17 +52,21 @@ export function OrderExportButton({
 
   const handleExport = async (format: "excel" | "pdf" | "csv" | "json") => {
     setIsLoading(true);
-    
     try {
       toast({
         title: "Iniciando exportação",
         description: `Buscando dados para exportação em formato ${format.toUpperCase()}...`,
       });
 
-      // Buscar todos os pedidos com os filtros aplicados
-      const allOrders = await getAllOrdersForExport(filters);
+      const exportFilters = {
+        ...currentFilters,
+        ...filters,
+        page: undefined,
+        limit: 9999
+      };
+
+      const allOrders = await getAllOrdersForExport(exportFilters);
       
-      // Verificar se há dados para exportar
       if (!allOrders || allOrders.length === 0) {
         toast({
           variant: "warning",
@@ -80,7 +83,6 @@ export function OrderExportButton({
       
       const title = `Relatório de Pedidos (${allOrders.length} itens)`;
       
-      // Chamar função de exportação específica baseada no formato
       switch (format) {
         case "excel":
           exportOrdersToExcel(allOrders, title, getClientName, getEmployeeName, getOrderStatus);

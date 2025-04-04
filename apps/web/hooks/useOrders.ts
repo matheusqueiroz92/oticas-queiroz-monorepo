@@ -339,6 +339,36 @@ export function useOrders(options: UseOrdersOptions = {}) {
         return "text-gray-600 bg-gray-100 px-2 py-1 rounded";
     }
   }, []);
+
+  const getStatusBadge = useCallback((status: string) => {
+    const statusMap: Record<string, { label: string; className: string }> = {
+      pending: {
+        label: "Pendente",
+        className: "bg-yellow-100 text-yellow-800",
+      },
+      in_production: {
+        label: "Em Produção",
+        className: "bg-blue-100 text-blue-800",
+      },
+      ready: { 
+        label: "Pronto", 
+        className: "bg-green-100 text-green-800" 
+      },
+      delivered: {
+        label: "Entregue",
+        className: "bg-purple-100 text-purple-800",
+      },
+      cancelled: {
+        label: "Cancelado",
+        className: "bg-red-100 text-red-800",
+      },
+    };
+
+    return statusMap[status] || {
+      label: status,
+      className: "bg-gray-100 text-gray-800",
+    };
+  }, []);
    
   const getClientName = useCallback((clientId: string) => {
     if (!clientId) return "N/A";
@@ -417,6 +447,7 @@ export function useOrders(options: UseOrdersOptions = {}) {
     navigateToCreateOrder,
     translateOrderStatus,
     getOrderStatusClass,
+    getStatusBadge,
     getClientName,
     getEmployeeName,
     getLaboratoryName,

@@ -55,6 +55,7 @@ import { useProducts } from "@/hooks/useProducts";
 import { normalizeProduct, getCorrectPrice, checkForLenses } from "@/app/utils/product-utils";
 import { useCustomers } from "@/hooks/useCustomers";
 import { createOrderform } from "@/schemas/order-schema";
+import { PageTitle } from "@/components/PageTitle";
 
 const numericInputStyles = `
   /* Remove as setas para todos os navegadores */
@@ -274,7 +275,6 @@ export default function NewOrderPage() {
     }
   }, [form, toast]);
 
-  // Define a data de hoje como padrão para a data do pedido
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0];
     form.setValue("orderDate", today);
@@ -431,7 +431,6 @@ export default function NewOrderPage() {
     }
   };
 
-  // Renderiza o progresso dos steps
   const renderStepProgress = () => {
     return (
       <div className="w-full mb-6">
@@ -480,7 +479,6 @@ export default function NewOrderPage() {
     );
   };
 
-  // Renderiza o resumo do pedido
   const renderOrderSummary = () => {
     if (!form) return null;
     
@@ -548,7 +546,6 @@ export default function NewOrderPage() {
     );
   };
 
-  // Renderiza a seção de pagamento
   const renderPaymentSection = () => {
     return (
       <div className="space-y-3 mt-4">
@@ -718,7 +715,6 @@ export default function NewOrderPage() {
     );
   };
 
-  // Renderizar o conteúdo baseado no step atual
   const renderStepContent = () => {
     switch (currentStep) {
       case 0: // Cliente e Produtos
@@ -993,8 +989,7 @@ export default function NewOrderPage() {
       
       <div className="max-w-6xl mx-auto p-3">
         <div className="mb-3">
-          <h1 className="text-xl font-bold text-primary">Novo Pedido</h1>
-          <p className="text-muted-foreground text-sm">Preencha os dados para criar um novo pedido</p>
+          <PageTitle title="Novo Pedido" description="Crie um novo pedido para o cliente." />
         </div>
 
         {isLoadingProducts || isLoadingCustomers ? (
