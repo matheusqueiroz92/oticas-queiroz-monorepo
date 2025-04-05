@@ -819,52 +819,6 @@ docker-compose up --build
 
 A documentação da API está disponível no Swagger UI: https://app.oticasqueiroz.com.br/api-docs.
 
-
-## 🔄 Melhorias Sugeridas
-
-### Performance
-
-- [ ] Implementar Redis para cache distribuído
-  - Cache de produtos mais acessados
-  - Cache de resultados de queries frequentes
-  - Cache de sessões de usuário
-
-### Segurança
-
-- [ ] Implementar rate limiting
-- [ ] Adicionar helmet para headers de segurança
-- [ ] Melhorar validação de senhas
-- [ ] Configurar CORS por ambiente
-- [ ] Implementar refresh tokens
-
-### Monitoramento e Logs
-
-- [ ] Implementar Winston para logs estruturados
-- [ ] Adicionar Sentry para monitoramento de erros
-- [ ] Criar middleware de log para requisições
-- [ ] Implementar métricas de performance
-
-### Otimizações de Banco
-
-- [ ] Implementar paginação com cursor
-- [ ] Adicionar índices compostos
-- [ ] Otimizar queries de agregação
-- [ ] Implementar soft delete para outras entidades
-
-### Testes
-
-- [ ] Adicionar testes de carga com k6
-- [ ] Implementar testes no frontend
-- [ ] Implementar testes E2E
-- [ ] Aumentar cobertura de testes
-- [ ] Adicionar testes de regressão
-
-### Documentação
-
-- [ ] Adicionar exemplos de uso
-- [ ] Documentar erros possíveis
-- [ ] Criar guia de contribuição
-
 ## 📈 Próximos Passos
 
 - [ ] Gestão de fornecedores
