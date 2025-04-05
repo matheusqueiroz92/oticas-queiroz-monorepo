@@ -32,7 +32,7 @@ import { useOrders } from "@/hooks/useOrders";
 import { usePayments } from "@/hooks/usePayments";
 import { useCashRegister } from "@/hooks/useCashRegister";
 import { useEmployees } from "@/hooks/useEmployees";
-import { useLegacyClient } from "@/hooks/useLegacyClient";
+import { useLegacyClients } from "@/hooks/useLegacyClients";
 import { Employee } from "@/app/types/employee";
 import { formatDate } from "../../../app/utils/formatters"
 import { PageTitle } from "@/components/PageTitle";
@@ -78,7 +78,7 @@ export default function DashboardPage() {
 
   const { isLoading: isLoadingEmployees, employees } = useEmployees();
 
-  const { useSearchLegacyClient } = useLegacyClient();
+  const { useSearchLegacyClient } = useLegacyClients();
   
   const {
     data: legacyClient,
@@ -674,8 +674,8 @@ export default function DashboardPage() {
                           <span>Último Pagamento</span>
                         </div>
                         <span className="font-medium">
-                          {legacyClient?.lastPaymentDate 
-                            ? formatDate(legacyClient.lastPaymentDate) 
+                          {legacyClient?.lastPayment 
+                            ? formatDate(legacyClient.lastPayment.date) 
                             : "Sem pagamentos"}
                         </span>
                       </div>

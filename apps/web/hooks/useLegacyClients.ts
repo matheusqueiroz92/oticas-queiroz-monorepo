@@ -22,7 +22,7 @@ interface UseLegacyClientOptions {
 
 // Adicionando os query keys necessários que podem estar faltando na constante
 
-export function useLegacyClient(options: UseLegacyClientOptions = {}) {
+export function useLegacyClients(options: UseLegacyClientOptions = {}) {
   const { enableQueries = true } = options;
   const { toast } = useToast();
   const queryClient = useQueryClient();

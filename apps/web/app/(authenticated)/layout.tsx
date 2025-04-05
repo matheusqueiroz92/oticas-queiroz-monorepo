@@ -15,6 +15,7 @@ import {
   FlaskConical,
   type LucideIcon,
   Menu,
+  Timer,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -116,6 +117,12 @@ const menuItems: MenuItem[] = [
     title: "Relatórios",
     icon: BarChart,
     href: "/reports",
+    roles: ["admin", "employee"],
+  },
+  {
+    title: "Clientes Legados",
+    icon: Timer,
+    href: "/legacy-client",
     roles: ["admin", "employee"],
   },
 ];

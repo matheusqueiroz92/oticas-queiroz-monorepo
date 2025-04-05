@@ -59,6 +59,17 @@ export const API_ROUTES = {
     BY_ID: (id: string) => `/api/reports/${id}`,
     DOWNLOAD: (id: string) => `/api/reports/${id}/download`,
   },
+  LEGACY_CLIENTS: {
+    BASE: "/api/legacy-clients",
+    LIST: '/api/legacy-clients',
+    CREATE: '/api/legacy-clients',
+    BY_ID: (id: string) => `/api/legacy-clients/${id}`,
+    UPDATE: (id: string) => `/api/legacy-clients/${id}`,
+    SEARCH: (document: string) => `/api/legacy-clients/search?document=${document}`,
+    DEBTORS: "/api/legacy-clients/debtors",
+    PAYMENT_HISTORY: (id: string) => `/api/legacy-clients/${id}/payment-history`,
+    TOGGLE_STATUS: (id: string) => `/api/legacy-clients/${id}/toggle-status`,
+  },
   AUTH: {
     LOGIN: "/api/auth/login",
     REGISTER: "/api/auth/register",
