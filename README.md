@@ -2,7 +2,7 @@
 
 Este é um sistema completo de gestão para a Óticas Queiroz, desenvolvido para facilitar a organização e o planejamento da empresa. O sistema permite o gerenciamento detalhado de vendas, pagamentos, controle de caixa, gestão de usuários (funcionários e clientes), controle de produtos (lentes, armações de grau e solares) e laboratórios óticos, além de fornecer relatórios detalhados para análise estatística e tomada de decisões.
 
-## 🧩 Principais Funcionalidades
+## 🧩 Principais Funcionalidades do sistema
 
 ### Autenticação e Gestão de Usuários
 - **Perfis de Acesso**: Implementação de diferentes níveis de acesso:
@@ -36,8 +36,8 @@ Este é um sistema completo de gestão para a Óticas Queiroz, desenvolvido para
 - **Dados de Prescrição**: Registro detalhado da receita médica:
   - Dados do médico e clínica;
   - Data da consulta;
-  - Informações de dioptria para olho direito e esquerdo (SPH, CYL, AXIS, PD);
-  - Valores de adição, ND e OC;
+  - Informações de dioptria para olho direito e esquerdo (Esf., Cil., Eixo, D.P.);
+  - Valores de Adição, D.N.P e C.O.;
 - **Gerenciamento de Status**:
   - Pendente: Pedido registrado, aguardando produção;
   - Em Produção: Enviado para laboratório;
@@ -48,7 +48,7 @@ Este é um sistema completo de gestão para a Óticas Queiroz, desenvolvido para
 - **Cálculos Financeiros**: Automatização de cálculos de total, desconto e valor final;
 - **Histórico de Alterações**: Registro de todas as modificações em pedidos;
 - **Exportação de Documentos**: Geração de ordens de serviço em múltiplos formatos;
-- **Busca Avançada**: Filtros por cliente, status, data, laboratório e método de pagamento;
+- **Busca Avançada**: Filtros por cliente, vendedor, status, data, laboratório e método de pagamento;
 - **Exportação de Dados**: Geração de relatórios diários e customizados.
 
 ### Gestão de Pagamentos
@@ -74,7 +74,7 @@ Este é um sistema completo de gestão para a Óticas Queiroz, desenvolvido para
 - **Resumo por Período**: Visualização de pagamentos diários, mensais e customizados.
 
 ### Gestão de Registros de Caixa
-- **Controle de Abertura e Fechamento**: Registro de início e fim de operações diárias;
+- **Controle de Abertura e Fechamento**: Registro de início e fim de operações diárias do caixa da empresa;
 - **Saldo Inicial e Final**: Registro de valores de abertura e conferência no fechamento;
 - **Resumo de Operações**:
   - Total de vendas por método de pagamento;
@@ -146,20 +146,19 @@ Este é um sistema completo de gestão para a Óticas Queiroz, desenvolvido para
 ### Frontend (Web)
 - **NextJS**: Framework para construção das páginas e interfaces;
 - **TypeScript**: Tipagem estática para desenvolvimento seguro;
-- **React Router**: Gerenciamento de rotas da aplicação
+- **Tailwind CSS**: Framework CSS para estilização;
 - **Axios**: Cliente HTTP para comunicação com a API;
 - **React Query**: Gerenciamento de estado e cache de dados;
 - **React Hook Form**: Biblioteca para gerenciamento de formulários;
 - **Zod**: Validação de dados no frontend;
 - **React-PDF/Excel.js**: Visualização e geração de documentos;
-- **Tailwind CSS**: Framework CSS para estilização;
 - **Recharts/D3.js**: Visualização gráfica de dados.
 
-### Mobile
+### Mobile (falta desenvolver)
 
 - React Native (Expo)
 
-### Desktop
+### Desktop (falta desenvolver)
 
 - Electron
 
@@ -361,16 +360,13 @@ Schemas do Typescript de cada entidade da aplicação
   stock: number;
   
   // Campos específicos baseados em productType
-  
   // Para lentes (lenses):
   lensType?: string;
-  
   // Para armações (prescription_frame e sunglasses_frame):
   typeFrame?: string;
   color?: string;
   shape?: string;
   reference?: string;
-  
   // Apenas para armações solares:
   modelSunglasses?: string;
   
@@ -386,7 +382,8 @@ Schemas do Typescript de cada entidade da aplicação
   _id?: string;
   clientId: string;
   employeeId: string;
-  products: Product[]; // Array de produtos
+  // Array de produtos
+  products: Product[];
   serviceOrder?: string;
   paymentMethod: string;
   paymentEntry?: number;
@@ -395,7 +392,8 @@ Schemas do Typescript de cada entidade da aplicação
   deliveryDate?: Date;
   status: "pending" | "in_production" | "ready" | "delivered" | "cancelled";
   laboratoryId?: string | null;
-  prescriptionData?: { // Dados da prescrição dos óculos
+  // Dados da prescrição dos óculos
+  prescriptionData?: {
     doctorName: string;
     clinicName: string;
     appointmentDate: Date;
@@ -584,11 +582,6 @@ Schemas do Typescript de cada entidade da aplicação
 }
 ```
 
-
-
-
-
-
 ## 🛠️ Setup
 
 ### Pré-requisitos
@@ -627,15 +620,15 @@ cd apps/web
 npm install
 ```
 
-6. Configure as variáveis de ambiente:
+6. Crie os arquivos de configuração das variáveis de ambiente:
 ```bash
-cp apps/backend/.env.example apps/backend/.env
-cp apps/web/.env.example apps/web/.env
+touch apps/backend/.env
+touch apps/web/.env
 ```
 
 ### Configuração das Variáveis de Ambiente
 
-1. Adicione o arquivo (.env) na pasta raiz do backend para as variáveis de ambiente da API
+1. Adicione o conteúdo ao arquivo (.env) na pasta raiz do backend para as variáveis de ambiente da API
 
 ```bash
 PORT=3333 # porta de conexão utilizada
@@ -658,7 +651,7 @@ EMAIL_USER=e-mail_do_usuario
 EMAIL_PASSWORD=senha_do_usuario
 ```
 
-2. Adicione o arquivo (.env) na pasta raiz do frontend (web) para as variáveis de ambiente do Next
+2. Adicione o conteúdo ao arquivo (.env) na pasta raiz do frontend (web) para as variáveis de ambiente do Next.js
 
 ```bash
 NEXT_PUBLIC_API_URL=http://localhost:3333 # URL da API
@@ -666,16 +659,27 @@ NEXT_PUBLIC_API_URL=http://localhost:3333 # URL da API
 
 ### Iniciando Servidor em Desenvolvimento
 
+1. Entre na pasta raiz do projeto para executar o Turborepo
+
 ```bash
 # Roda todos os apps
+cd oticas-queiroz-monorepo
 npx turbo run dev
+```
 
+2. Entre na pasta do backend para iniciar a API da aplicação
+
+```bash
 # Roda apenas o backend
 cd apps/backend
 npm run dev
+```
 
+3. Entre na pasta do frontend web para executar o Next.js
+
+```bash
 # Roda apenas o frontend
-cd apps/frontend
+cd apps/web
 npm run dev
 ```
 
@@ -764,7 +768,11 @@ pm2 save
   - Register Cash Controller
   - Legacy Client Controller
 
-- Ferramentas e práticas
+- ✅ Testes de integração do Middlewares
+  - Auth Middleware
+  - Error Middleware
+
+- 🛠️ Ferramentas e práticas utilizdas nos testes
   - Jest para execução dos testes
   - Supertest para testes de API
   - MongoDB Memory Server para banco de dados em memória
@@ -867,51 +875,31 @@ A documentação da API está disponível no Swagger UI: https://app.oticasqueir
 
 - [ ] Sistema de pagamentos
 
-  - [ ] Integração com gateway
+  - [ ] Integração com gateway e sistema bancário
   - [ ] Parcelamentos e boletos
   - [ ] Emissão de NF
   - [ ] Geração de QR Code para Pix
 
-- [ ] Dashboard
+- [ ] Sistema de Logs e Monitoramento
 
-  - [ ] Métricas de vendas
-  - [ ] Controle de estoque
-  - [ ] Relatórios avançados
+  - [ ] Implementação do Winston
+  - [ ] Configuração do Sentry
+  - [ ] Dashboard de monitoramento
 
-- [ ] Melhorias técnicas
+- [ ] Sistema de notificações
 
-  - [ ] Implementação de Cache
+  - [ ] Alerta de produtos com estoque baixo
+  - [ ] Alerta para clientes com exame de vista vencido
+  - [ ] Alerta para clientes com débitos vencidos
 
-    - [ ] Configuração do Redis
-    - [ ] Cache de produtos
-    - [ ] Cache de autenticação
+- [ ] Modo offline para operação sem internet
 
-  - [ ] Sistema de Logs e Monitoramento
+- [ ] Testes de integração da interface
 
-    - [ ] Implementação do Winston
-    - [ ] Configuração do Sentry
-    - [ ] Dashboard de monitoramento
+- [ ] Desenvolvimento da parte Mobile do sistema
 
-  - [ ] Melhorias de Performance
+- [ ] Desenvolvimento da parte Desktop do sistema
 
-    - [ ] Otimização de queries
-    - [ ] Implementação de índices
-    - [ ] Compressão de respostas
-
-  - [ ] CI/CD
-  - [ ] Monitoramento
-  - [ ] Logs
-  - [ ] Cache
-
-  - [ ] Relatórios interativos
-  - [ ] Integração com impressoras para receitas
-  - [ ] Sistema de notificações
-  - [ ] Modo offline para operação sem internet
-  - [ ] Testes de integração da interface
-
-  - [ ] Atualização da interface do usuário para melhor visualização e gestão de pedidos com múltiplos produtos
-  - [ ] Dashboard com análises específicas por tipo de produto
-  - [ ] Funcionalidades avançadas de gestão de estoque para diferentes tipos de produtos
 
 ## 📝 Licença
 
