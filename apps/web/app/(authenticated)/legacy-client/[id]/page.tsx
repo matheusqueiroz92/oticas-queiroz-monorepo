@@ -1,43 +1,198 @@
 "use client";
 
-import { useParams } from "next/navigation";
-import { Loader2 } from "lucide-react";
-import { LegacyClientDetailsCard } from "@/components/LegacyClients/LegacyClientDetailsCard";
+import { useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { useLegacyClients } from "@/hooks/useLegacyClients";
+import { Button } from "@/components/ui/button";
+import { PageTitle } from "@/components/PageTitle";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { formatCurrency, formatDate } from "@/app/utils/formatters";
+import { LegacyClientInfo } from "@/components/LegacyClients/LegacyClientInfo";
+import { PaymentHistoryTable } from "@/components/LegacyClients/PaymentHistoryTable";
+import { ArrowLeft, Edit, ToggleLeft, AlertTriangle } from "lucide-react";
 import { ErrorAlert } from "@/components/ErrorAlert";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import Link from "next/link";
 
-export default function LegacyClientDetailsPage() {
-  const { id } = useParams<{ id: string }>();
+export default function LegacyClientDetails() {
+  const router = useRouter();
+  const { id } = useParams();
+  const clientId = Array.isArray(id) ? id[0] : id;
+  const [activeTab, setActiveTab] = useState("details");
+
+  const { fetchLegacyClientById, usePaymentHistory, handleToggleStatus, isTogglingStatus } = useLegacyClients();
+  
   const { 
-    fetchLegacyClientById, 
-    handleToggleClientStatus,
-    isTogglingStatus
-  } = useLegacyClients();
+    data: client, 
+    isLoading, 
+    isError, 
+    error 
+  } = fetchLegacyClientById(clientId);
+  
+  const { 
+    data: paymentHistory, 
+    isLoading: isLoadingHistory 
+  } = usePaymentHistory(clientId);
 
-  const { data: client, isLoading, error } = fetchLegacyClientById(id as string);
-
-  if (isLoading) {
+  if (isError) {
     return (
-      <div className="flex flex-col justify-center items-center min-h-[50vh]">
-        <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-        <p className="text-muted-foreground">Carregando dados do cliente...</p>
+      <div className="space-y-6">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" onClick={() => router.back()}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Voltar
+          </Button>
+        </div>
+        <ErrorAlert message={error?.message || "Erro ao carregar os dados do cliente"} />
       </div>
     );
   }
 
-  if (error || !client) {
-    return (
-      <ErrorAlert
-        message={(error as Error)?.message || "Erro ao carregar dados do cliente legado"}
-      />
-    );
-  }
+  const onToggleStatus = async () => {
+    try {
+      await handleToggleStatus(clientId ?? "");
+    } catch (error) {
+      console.error("Erro ao alterar status:", error);
+    }
+  };
+
+  const canDeactivate = client?.totalDebt === 0 || client?.status === "inactive";
 
   return (
-    <LegacyClientDetailsCard
-      client={client}
-      onToggleStatus={handleToggleClientStatus}
-      isTogglingStatus={isTogglingStatus}
-    />
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" onClick={() => router.back()}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Voltar
+          </Button>
+          <PageTitle 
+            title={isLoading ? "Carregando..." : client?.name || "Cliente"}
+          />
+          {!isLoading && client && (
+            <Badge
+              variant={client.status === "active" ? "default" : "secondary"}
+              className={`ml-2 ${
+                client.status === "active" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"
+              }`}
+            >
+              {client.status === "active" ? "Ativo" : "Inativo"}
+            </Badge>
+          )}
+        </div>
+        <div className="flex gap-2">
+          <Link href={`/dashboard/legacy-clients/${clientId}/edit`}>
+            <Button variant="outline">
+              <Edit className="h-4 w-4 mr-2" />
+              Editar
+            </Button>
+          </Link>
+          
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button 
+                variant="outline" 
+                disabled={!canDeactivate || isTogglingStatus}
+                className={!canDeactivate ? "cursor-not-allowed opacity-50" : ""}
+              >
+                <ToggleLeft className="h-4 w-4 mr-2" />
+                {client?.status === "active" ? "Desativar" : "Ativar"}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  {client?.status === "active" ? "Desativar" : "Ativar"} cliente?
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  {client?.status === "active"
+                    ? "Esta ação irá desativar o cliente. Clientes inativos não aparecem nas buscas padrão."
+                    : "Esta ação irá ativar o cliente novamente."
+                  }
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={onToggleStatus}>
+                  Confirmar
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      </div>
+
+      {!canDeactivate && client?.status === "active" && (
+        <div className="flex items-center p-3 bg-yellow-50 border border-yellow-200 text-yellow-700 rounded-md text-sm">
+          <AlertTriangle className="h-5 w-5 mr-2" />
+          <span>Não é possível desativar este cliente pois ele possui uma dívida pendente.</span>
+        </div>
+      )}
+
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="details">Detalhes</TabsTrigger>
+          <TabsTrigger value="payments">Histórico de Pagamentos</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="details" className="mt-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle>Informações do Cliente</CardTitle>
+              <CardDescription>Dados cadastrais e financeiros</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="space-y-4">
+                  <Skeleton className="h-6 w-[250px]" />
+                  <Skeleton className="h-6 w-[200px]" />
+                  <Skeleton className="h-6 w-[300px]" />
+                  <Skeleton className="h-6 w-[250px]" />
+                </div>
+              ) : (
+                <LegacyClientInfo client={client ?? null} />
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="payments" className="mt-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle>Histórico de Pagamentos</CardTitle>
+              <CardDescription>
+                Registro de todos os pagamentos realizados por este cliente
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <PaymentHistoryTable 
+                paymentHistory={paymentHistory || []} 
+                isLoading={isLoadingHistory} 
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }

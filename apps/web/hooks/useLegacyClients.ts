@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/useToast";
-import { useCallback } from "react";
+import { useCallback, useState, useEffect } from "react";
 import {
   getAllLegacyClients,
   getLegacyClientById,
@@ -14,18 +14,70 @@ import {
   createLegacyClient
 } from "@/app/services/legacyClientService";
 import { QUERY_KEYS } from "../app/constants/query-keys";
+import { API_ROUTES } from "../app/constants/api-routes";
+import { api } from "../app/services/authService";
 import type { LegacyClient } from "../app/types/legacy-client";
 
 interface UseLegacyClientOptions {
   enableQueries?: boolean;
 }
 
-// Adicionando os query keys necessários que podem estar faltando na constante
+// Função useDebounce integrada ao hook useLegacyClients
+function useDebounce<T>(value: T, delay: number = 500): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+
+// Interface para os filtros da lista de clientes
+interface LegacyClientsListParams {
+  page: number;
+  limit?: number;
+  search?: string;
+  status?: "active" | "inactive" | "all";
+}
 
 export function useLegacyClients(options: UseLegacyClientOptions = {}) {
   const { enableQueries = true } = options;
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Nova função para buscar lista de clientes com paginação e filtros
+  const useLegacyClientsList = (params: LegacyClientsListParams) => {
+    const { page, limit = 10, search, status } = params;
+    const debouncedSearch = useDebounce(search || "", 500);
+
+    return useQuery({
+      queryKey: [QUERY_KEYS.LEGACY_CLIENT.ALL, page, debouncedSearch, status],
+      queryFn: async () => {
+        const queryParams = new URLSearchParams();
+        queryParams.append("page", page.toString());
+        queryParams.append("limit", limit.toString());
+
+        if (debouncedSearch) {
+          queryParams.append("search", debouncedSearch);
+        }
+
+        if (status && status !== "all") {
+          queryParams.append("status", status);
+        }
+
+        const response = await api.get(`${API_ROUTES.LEGACY_CLIENTS.LIST}?${queryParams.toString()}`);
+        return response.data;
+      },
+      enabled: enableQueries,
+    });
+  };
 
   // Buscar cliente legado pelo documento (CPF/CNPJ)
   const useSearchLegacyClient = (identifier?: string) => {
@@ -150,7 +202,11 @@ export function useLegacyClients(options: UseLegacyClientOptions = {}) {
   );
 
   return {
+    // Função de debounce exportada para ser usada em componentes
+    useDebounce,
+    
     // Queries
+    useLegacyClientsList, // Nova função para listar clientes com filtros
     useSearchLegacyClient,
     fetchLegacyClientById,
     useDebtors,

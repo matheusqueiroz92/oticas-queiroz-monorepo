@@ -1,66 +1,128 @@
 "use client";
 
-import { useParams } from "next/navigation";
-import { Loader2 } from "lucide-react";
-import { LegacyClientForm } from "@/components/LegacyClients/LegacyClientForm";
+import { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { useLegacyClients } from "@/hooks/useLegacyClients";
+import { updateLegacyClientForm, UpdateLegacyClientFormData } from "@/schemas/legacy-client-schema";
+import { Button } from "@/components/ui/button";
+import { PageTitle } from "@/components/PageTitle";
+import { Form } from "@/components/ui/form";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { LegacyClientForm } from "@/components/LegacyClients/LegacyClientForm";
+import { ArrowLeft, Save } from "lucide-react";
 import { ErrorAlert } from "@/components/ErrorAlert";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/useToast";
 
-export default function EditLegacyClientPage() {
-  const { id } = useParams<{ id: string }>();
+export default function EditLegacyClient() {
+  const router = useRouter();
+  const { id } = useParams();
+  const clientId = Array.isArray(id) ? id[0] : id;
   const { toast } = useToast();
-  
-  const { 
-    fetchLegacyClientById, 
-    handleUpdateLegacyClient,
-    isUpdating
-  } = useLegacyClients();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { data: client, isLoading, error } = fetchLegacyClientById(id as string);
+  const { fetchLegacyClientById, handleUpdateLegacyClient } = useLegacyClients();
+  const { data: client, isLoading, isError, error } = fetchLegacyClientById(clientId);
 
-  const onSubmit = async (formData: any) => {
+  const form = updateLegacyClientForm(client);
+
+  useEffect(() => {
+    if (client) {
+      form.reset({
+        name: client.name,
+        cpf: client.cpf,
+        email: client.email || "",
+        phone: client.phone || "",
+        address: client.address,
+        totalDebt: client.totalDebt,
+        status: client.status,
+        observations: client.observations || "",
+      });
+    }
+  }, [client, form]);
+
+  const onSubmit = async (data: UpdateLegacyClientFormData) => {
+    setIsSubmitting(true);
     try {
-      await handleUpdateLegacyClient(id as string, formData);
-      
+      if (!clientId) {
+        throw new Error("Client ID is undefined");
+      }
+      await handleUpdateLegacyClient(clientId, data);
       toast({
         title: "Cliente atualizado",
-        description: "As informações do cliente foram atualizadas com sucesso.",
+        description: "Os dados do cliente foram atualizados com sucesso.",
       });
-    } catch (error) {
-      console.error("Erro ao atualizar cliente:", error);
-      
+      router.push(`/dashboard/legacy-clients/${clientId}`);
+    } catch (err) {
+      console.error("Erro ao atualizar cliente:", err);
       toast({
         variant: "destructive",
         title: "Erro ao atualizar",
-        description: "Não foi possível atualizar as informações do cliente.",
+        description: "Ocorreu um erro ao atualizar os dados do cliente.",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  if (isLoading) {
+  if (isError) {
     return (
-      <div className="flex flex-col justify-center items-center min-h-[50vh]">
-        <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-        <p className="text-muted-foreground">Carregando dados do cliente...</p>
+      <div className="space-y-6">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" onClick={() => router.back()}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Voltar
+          </Button>
+        </div>
+        <ErrorAlert message={error?.message || "Erro ao carregar os dados do cliente"} />
       </div>
     );
   }
 
-  if (error || !client) {
-    return (
-      <ErrorAlert
-        message={(error as Error)?.message || "Erro ao carregar dados do cliente legado"}
-      />
-    );
-  }
-
   return (
-    <LegacyClientForm
-      mode="edit"
-      initialData={client}
-      onSubmit={onSubmit}
-      isSubmitting={isUpdating}
-    />
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" onClick={() => router.back()}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Voltar
+          </Button>
+          <PageTitle 
+            title={isLoading ? "Carregando..." : `Editar Cliente: ${client?.name}`} 
+          />
+        </div>
+        <Button 
+          type="submit"
+          form="edit-legacy-client-form"
+          disabled={isLoading || isSubmitting}
+          className="bg-[var(--secondary-red)]"
+        >
+          <Save className="h-4 w-4 mr-2" />
+          Salvar Alterações
+        </Button>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Dados do Cliente</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="space-y-4">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          ) : (
+            <Form {...form}>
+              <form id="edit-legacy-client-form" onSubmit={form.handleSubmit(onSubmit)}>
+                <LegacyClientForm form={form} isEdit={true} />
+              </form>
+            </Form>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }

@@ -1,5 +1,7 @@
 # Óticas Queiroz Monorepo
 
+Sistema completo de gestão para Óticas Queiroz, desenvolvido para otimizar processos de vendas, controle de estoque, gestão financeira e atendimento ao cliente.
+
 Este é um sistema completo de gestão para a Óticas Queiroz, desenvolvido para facilitar a organização e o planejamento da empresa. O sistema permite o gerenciamento detalhado de vendas, pagamentos, controle de caixa, gestão de usuários (funcionários e clientes), controle de produtos (lentes, armações de grau e solares) e laboratórios óticos, além de fornecer relatórios detalhados para análise estatística e tomada de decisões.
 
 ## 🧩 Principais Funcionalidades do sistema
@@ -128,7 +130,7 @@ Este é um sistema completo de gestão para a Óticas Queiroz, desenvolvido para
 
 ## 🚀 Tecnologias utilizadas
 
-### Backend
+### 🖥️ Backend
 - **Node.js**: Ambiente de execução JavaScript do lado do servidor;
 - **Express**: Framework web para criação de APIs;
 - **TypeScript**: Superset tipado de JavaScript para maior segurança e produtividade;
@@ -143,7 +145,7 @@ Este é um sistema completo de gestão para a Óticas Queiroz, desenvolvido para
 - **Jest**: Framework para testes automatizados;
 - **ExcelJS/PDFKit**: Bibliotecas para geração de relatórios.
 
-### Frontend (Web)
+### 🌐 Frontend (Web)
 - **NextJS**: Framework para construção das páginas e interfaces;
 - **TypeScript**: Tipagem estática para desenvolvimento seguro;
 - **Tailwind CSS**: Framework CSS para estilização;
@@ -316,6 +318,77 @@ A API expõe diversos endpoints organizados por domínio:
 - `GET /api/reports`: Lista relatórios do usuário
 - `GET /api/reports/:id`: Obtém detalhes de um relatório
 - `GET /api/reports/:id/download`: Faz download de um relatório
+
+## 🏗️ Arquitetura do Backend
+
+### Arquitetura da API (RESTful)
+
+A API segue os princípios REST com:
+
+- Recursos bem definidos (users, products, orders)
+- Verbos HTTP semânticos (GET, POST, PUT, DELETE)
+- Status codes apropriados (200, 201, 400, 404, 500)
+- JSON como formato padrão para requests/responses
+- Autenticação via JWT (Bearer tokens)
+
+### Padrão MSC (Model-Service-Controller)
+
+Organização em camadas para separação de responsabilidades:
+
+1. Models (/models)
+- Definem esquemas do MongoDB (Mongoose)
+- Validações de dados com Zod
+
+Exemplo:
+```typescript
+// UserModel.ts
+const userSchema = new Schema({
+  name: { type: String, required: true },
+  email: { type: String, unique: true },
+  role: { type: String, enum: ['admin', 'employee', 'customer'] }
+});
+```
+
+2. Services (/services)
+- Contêm a lógica de negócios
+- Isolam complexidade dos controllers
+Exemplo:
+```typescript
+// UserCervice.ts
+export class UserService {
+  async createUser(userData: IUser) {
+    const hashedPassword = await bcrypt.hash(userData.password, 10);
+    return UserModel.create({ ...userData, password: hashedPassword });
+  }
+}
+```
+
+3. Controllers (/controllers)
+- Gerenciam requests/responses HTTP
+- Chamam services apropriados
+Exemplo:
+```typescript
+// UserController.ts
+export const createUser = async (req: Request, res: Response) => {
+  try {
+    const user = await UserService.createUser(req.body);
+    res.status(201).json(user);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+```
+
+🔹 Fluxo de Requisição
+```bash
+sequenceDiagram
+  Client->>+Controller: HTTP Request
+  Controller->>+Service: Chama método
+  Service->>+Model: Interage com DB
+  Model-->>-Service: Retorna dados
+  Service-->>-Controller: Retorna resultado
+  Controller-->>-Client: HTTP Response
+```
 
 ## 📐 Schemas da Aplicação
 
@@ -803,16 +876,16 @@ npm test
 
 ## 🤖 Docker, Kubernetes e CI/CD
 
-🐳 Para rodar o projeto com Docker:
+### 🐳 Para rodar o projeto com Docker:
 
 ```bash
 docker-compose up --build
 ```
 
-- Kubernetes (opcional)
+### Kubernetes (opcional)
   Os arquivos de configuração do Kubernetes estão na pasta kubernetes/.
 
-- CI/CD
+### CI/CD
   O projeto utiliza GitHub Actions para CI/CD. O workflow está configurado em .github/workflows/ci.yml.
 
 ## 📚 Documentação da API
