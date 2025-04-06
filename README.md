@@ -1,182 +1,185 @@
-# Óticas Queiroz Monorepo
+# 🕶️ Óticas Queiroz Monorepo  
+![Status](https://img.shields.io/badge/Status-Em_Desenvolvimento-yellow) ![Licença](https://img.shields.io/badge/Licença-Proprietária-red)
 
 Sistema completo de gestão para Óticas Queiroz, desenvolvido para otimizar processos de vendas, controle de estoque, gestão financeira e atendimento ao cliente.
 
-Este é um sistema completo de gestão para a Óticas Queiroz, desenvolvido para facilitar a organização e o planejamento da empresa. O sistema permite o gerenciamento detalhado de vendas, pagamentos, controle de caixa, gestão de usuários (funcionários e clientes), controle de produtos (lentes, armações de grau e solares) e laboratórios óticos, além de fornecer relatórios detalhados para análise estatística e tomada de decisões.
-
 ## 🧩 Principais Funcionalidades do sistema
 
-### Autenticação e Gestão de Usuários
-- **Perfis de Acesso**: Implementação de diferentes níveis de acesso:
+### 🔐 Autenticação e Gestão de Usuários
+- 👮‍♂️ **Perfis de Acesso**: Implementação de diferentes níveis de acesso:
   - Administradores: Acesso completo ao sistema;
   - Funcionários: Podem registrar vendas, gerenciar clientes e produtos;
   - Clientes: Acesso limitado aos seus pedidos e perfil;
-- **Autenticação Segura**: Login com email ou CPF, protegido por JWT (JSON Web Tokens);
-- **Recuperação de Senha**: Sistema de reset de senha via tokens enviados por email;
+- 🔑 **Autenticação Segura**: Login com email ou CPF, protegido por JWT (JSON Web Tokens);
+- 🔄 **Recuperação de Senha**: Sistema de reset de senha via tokens enviados por email;
 - **Gerenciamento de Perfil**: Upload de foto, atualização de dados pessoais e senha;
-- **Validação de CPF**: Verificação automática da validade do CPF para evitar cadastros fraudulentos;
-- **Controle de Sessão**: Verificação e renovação automática de tokens de autenticação.
+- ✅ **Validação de CPF**: Verificação automática da validade do CPF para evitar cadastros fraudulentos;
+- 📊 **Controle de Sessão**: Verificação e renovação automática de tokens de autenticação.
 
-### Gestão de Produtos
-- **Categorização de Produtos**: Suporte a diferentes tipos de produtos óticos:
+### 📦 Gestão de Produtos
+- 🗂️ **Categorização de Produtos**: Suporte a diferentes tipos de produtos óticos:
   - Lentes oftálmicas (lentes de grau);
   - Armações para óculos de grau;
   - Armações para óculos de sol;
   - Limpadores de lentes;
-- **Controle de Estoque**: Registro de entradas e saídas com histórico completo
-- **Gestão de Imagens**: Upload e gerenciamento de imagens para produtos
-- **Configurações Específicas por Tipo**:
+- 📊 **Controle de Estoque**: Registro de entradas e saídas com histórico completo
+- 🖼️ **Gestão de Imagens**: Upload e gerenciamento de imagens para produtos
+- ⚙️ **Configurações Específicas por Tipo**:
   - Lentes: Associação com tipos de lentes;
   - Armações: Registro de características como tipo de armação, cor, formato, referência;
   - Óculos de Sol: Detalhes específicos como modelo e características especiais;
-- **Busca Avançada**: Filtros por tipo, marca, preço, cor e outros atributos;
-- **Exportação de Catálogo**: Geração de relatórios detalhados de produtos.
+- 🔍 **Busca Avançada**: Filtros por tipo, marca, preço, cor e outros atributos;
+- 📤 **Exportação de Catálogo**: Geração de relatórios detalhados de produtos.
 
-### Gestão de Pedidos
-- **Criação Intuitiva**: Interface amigável para registro de novos pedidos;
-- **Seleção de Produtos**: Adição de múltiplos produtos em um mesmo pedido;
-- **Dados de Prescrição**: Registro detalhado da receita médica:
+### 🛍️ Gestão de Pedidos
+- ✨ **Criação Intuitiva**: Interface amigável para registro de novos pedidos;
+- 📝 **Seleção de Produtos**: Adição de múltiplos produtos em um mesmo pedido;
+- 📅 **Dados de Prescrição**: Registro detalhado da receita médica:
   - Dados do médico e clínica;
   - Data da consulta;
   - Informações de dioptria para olho direito e esquerdo (Esf., Cil., Eixo, D.P.);
   - Valores de Adição, D.N.P e C.O.;
-- **Gerenciamento de Status**:
+- 🔄 **Gerenciamento de Status**:
   - Pendente: Pedido registrado, aguardando produção;
   - Em Produção: Enviado para laboratório;
   - Pronto: Produto finalizado, aguardando retirada;
   - Entregue: Produto entregue ao cliente;
   - Cancelado: Pedido cancelado;
-- **Integração com Laboratórios**: Envio automático para laboratórios óticos parceiros;
-- **Cálculos Financeiros**: Automatização de cálculos de total, desconto e valor final;
-- **Histórico de Alterações**: Registro de todas as modificações em pedidos;
-- **Exportação de Documentos**: Geração de ordens de serviço em múltiplos formatos;
-- **Busca Avançada**: Filtros por cliente, vendedor, status, data, laboratório e método de pagamento;
-- **Exportação de Dados**: Geração de relatórios diários e customizados.
+- 🔗 **Integração com Laboratórios**: Envio automático para laboratórios óticos parceiros;
+- 🧮 **Cálculos Financeiros**: Automatização de cálculos de total, desconto e valor final;
+- 📜 **Histórico de Alterações**: Registro de todas as modificações em pedidos;
+- 📄 **Exportação de Documentos**: Geração de ordens de serviço em múltiplos formatos;
+- 🔎 **Busca Avançada**: Filtros por cliente, vendedor, status, data, laboratório e método de pagamento;
+- 📊 **Exportação de Dados**: Geração de relatórios diários e customizados.
 
-### Gestão de Pagamentos
-- **Múltiplos Tipos de Transação**:
+### 💵 Gestão de Pagamentos
+- 🔄 **Múltiplos Tipos de Transação**:
   - Venda: Pagamentos relacionados a pedidos;
   - Pagamento de Dívida: Para clientes com débitos pendentes;
   - Despesa: Registro de gastos da empresa;
-- **Métodos de Pagamento Diversificados**:
+- 💳 **Métodos de Pagamento Diversificados**:
   - Cartão de Crédito: Com suporte a parcelamento;
   - Cartão de Débito;
   - Dinheiro;
   - PIX;
   - Boleto Bancário: Com registro de código e banco;
   - Promissória: Com registro de número e controle;
-- **Parcelamento Inteligente**: Cálculo automático de valores parcelados;
-- **Gerenciamento de Dívidas**: Controle de débitos de clientes;
+- 🧩 **Parcelamento Inteligente**: Cálculo automático de valores parcelados;
+- 📉 **Gerenciamento de Dívidas**: Controle de débitos de clientes;
   - Geração automática de planos de pagamento;
   - Registro de datas de vencimento;
   - Histórico de pagamentos realizados;
-- **Cancelamento e Estorno**: Processo seguro para cancelamento de pagamentos;
-- **Exclusão Lógica**: Marcação de pagamentos excluídos sem remoção física do banco;
-- **Relatórios Financeiros**: Exportação detalhada de transações;
-- **Resumo por Período**: Visualização de pagamentos diários, mensais e customizados.
+- ❌ **Cancelamento e Estorno**: Processo seguro para cancelamento de pagamentos;
+- 🗑️ **Exclusão Lógica**: Marcação de pagamentos excluídos sem remoção física do banco;
+- 📈 **Relatórios Financeiros**: Exportação detalhada de transações;
+- 📅 **Resumo por Período**: Visualização de pagamentos diários, mensais e customizados.
 
-### Gestão de Registros de Caixa
-- **Controle de Abertura e Fechamento**: Registro de início e fim de operações diárias do caixa da empresa;
-- **Saldo Inicial e Final**: Registro de valores de abertura e conferência no fechamento;
-- **Resumo de Operações**:
+### 📊 Gestão de Registros de Caixa
+- 🔓 **Controle de Abertura e Fechamento**: Registro de início e fim de operações diárias do caixa da empresa;
+- 💰 **Saldo Inicial e Final**: Registro de valores de abertura e conferência no fechamento;
+- 📝 **Resumo de Operações**:
   - Total de vendas por método de pagamento;
   - Total de pagamentos recebidos;
   - Total de despesas realizadas;
-- **Diferença de Caixa**: Cálculo automático de sobras ou faltas no fechamento;
-- **Exportação de Movimentações**: Geração de relatórios em diferentes formatos;
-- **Histórico Detalhado**: Registro de todas as operações realizadas no caixa;
-- **Exclusão Lógica**: Mecanismo de segurança para operações canceladas;
-- **Visualização por Período**: Resumos diários, mensais e customizados.
+- ⚖️ **Diferença de Caixa**: Cálculo automático de sobras ou faltas no fechamento;
+- 📤 **Exportação de Movimentações**: Geração de relatórios em diferentes formatos;
+- 📜 **Histórico Detalhado**: Registro de todas as operações realizadas no caixa;
+- 🗑️ **Exclusão Lógica**: Mecanismo de segurança para operações canceladas;
+- 📅 **Visualização por Período**: Resumos diários, mensais e customizados.
 
-### Gestão de Laboratórios
-- **Cadastro Completo**: Registro de laboratórios óticos parceiros;
-- **Dados de Contato**: Informações detalhadas para comunicação;
-- **Endereço Estruturado**: Registro completo de localização;
-- **Controle de Status**: Ativação/desativação de laboratórios;
-- **Associação com Pedidos**: Vinculação entre laboratórios e serviços;
-- **Histórico de Envios**: Registro de pedidos enviados para cada laboratório;
-- **Busca e Filtragem**: Localização rápida por nome, cidade ou status.
+### 🔬 Gestão de Laboratórios
+- 📝 **Cadastro Completo**: Registro de laboratórios óticos parceiros;
+- 📞 **Dados de Contato**: Informações detalhadas para comunicação;
+- 📌 **Endereço Estruturado**: Registro completo de localização;
+- 🔄 **Controle de Status**: Ativação/desativação de laboratórios;
+- 🔗 **Associação com Pedidos**: Vinculação entre laboratórios e serviços;
+- 📜 **Histórico de Envios**: Registro de pedidos enviados para cada laboratório;
+- 🔍 **Busca e Filtragem**: Localização rápida por nome, cidade ou status.
 
-### Gestão de Clientes Legados
-- **Cadastro de Clientes Antigos**: Registro de clientes com histórico anterior ao sistema;
-- **Controle de Dívidas**: Gerenciamento de débitos pendentes;
-- **Histórico de Pagamentos**: Registro de todas as transações realizadas;
-- **Planos de Pagamento**: Criação de acordos de quitação parcelada;
-- **Notificações**: Alertas sobre vencimentos e pagamentos;
-- **Busca Avançada**: Filtros por nome, documento, valor de dívida;
-- **Exportação de Dados**: Geração de relatórios personalizados;
-- **Controle de Status**: Ativação/inativação de clientes.
+### 🕰️ Gestão de Clientes Legados
+- 📝 **Cadastro de Clientes Antigos**: Registro de clientes com histórico anterior ao sistema;
+- 💸 **Controle de Dívidas**: Gerenciamento de débitos pendentes;
+- 📜 **Histórico de Pagamentos**: Registro de todas as transações realizadas;
+- 📅 **Planos de Pagamento**: Criação de acordos de quitação parcelada;
+- 🔔 **Notificações**: Alertas sobre vencimentos e pagamentos;
+- 🔎 **Busca Avançada**: Filtros por nome, documento, valor de dívida;
+- 📤 **Exportação de Dados**: Geração de relatórios personalizados;
+- 🔄 **Controle de Status**: Ativação/inativação de clientes.
 
-### Geração de Relatórios
-- **Relatórios de Vendas**: Análise detalhada de vendas por período;
-- **Relatórios de Estoque**: Controle de produtos disponíveis e movimentações;
-- **Relatórios de Clientes**: Análise de base de clientes e comportamento;
-- **Relatórios de Pedidos**: Visualização de status, laboratórios e valores;
-- **Relatórios Financeiros**: Análise completa de receitas e despesas;
-- **Múltiplos Formatos**: Exportação em Excel, PDF, CSV e JSON;
-- **Filtros Avançados**: Customização de relatórios por diversos parâmetros;
-- **Agendamento**: Possibilidade de configurar geração periódica;
-- **Visualização Gráfica**: Apresentação visual de dados relevantes.
+### 📊 Geração de Relatórios
+- 🛒 **Relatórios de Vendas**: Análise detalhada de vendas por período;
+- 📦 **Relatórios de Estoque**: Controle de produtos disponíveis e movimentações;
+- 👥 **Relatórios de Clientes**: Análise de base de clientes e comportamento;
+- 📝 **Relatórios de Pedidos**: Visualização de status, laboratórios e valores;
+- 💰 **Relatórios Financeiros**: Análise completa de receitas e despesas;
+- 📁 **Múltiplos Formatos**: Exportação em Excel, PDF, CSV e JSON;
+- 🔍 **Filtros Avançados**: Customização de relatórios por diversos parâmetros;
+- ⏰ **Agendamento**: Possibilidade de configurar geração periódica;
+- 📊 **Visualização Gráfica**: Apresentação visual de dados relevantes.
 
-### Controle de Estoque
-- **Gestão de Inventário**: Controle preciso de produtos disponíveis;
-- **Movimentação Automática**: Redução de estoque em vendas e reposição em cancelamentos;
-- **Histórico de Alterações**: Registro detalhado de todas as movimentações;
-- **Alertas de Estoque Baixo**: Notificações para produtos com quantidade crítica;
-- **Registro de Motivos**: Documentação de razões para alterações no estoque;
-- **Identificação de Responsáveis**: Registro de quem realizou cada operação;
-- **Vinculação com Pedidos**: Associação entre movimentações e vendas;
-- **Exportação de Dados**: Geração de relatórios de inventário.
+### 📦 Controle de Estoque
+- 📊 **Gestão de Inventário**: Controle preciso de produtos disponíveis;
+- 🔄 **Movimentação Automática**: Redução de estoque em vendas e reposição em cancelamentos;
+- 📜 **Histórico de Alterações**: Registro detalhado de todas as movimentações;
+- ⚠️ **Alertas de Estoque Baixo**: Notificações para produtos com quantidade crítica;
+- 📝 **Registro de Motivos**: Documentação de razões para alterações no estoque;
+- 👤 **Identificação de Responsáveis**: Registro de quem realizou cada operação;
+- 🔗 **Vinculação com Pedidos**: Associação entre movimentações e vendas;
+- 📤 **Exportação de Dados**: Geração de relatórios de inventário.
 
 ## 🚀 Tecnologias utilizadas
 
 ### 🖥️ Backend
-- **Node.js**: Ambiente de execução JavaScript do lado do servidor;
-- **Express**: Framework web para criação de APIs;
-- **TypeScript**: Superset tipado de JavaScript para maior segurança e produtividade;
-- **MongoDB**: Banco de dados NoSQL para armazenamento flexível de dados;
-- **Mongoose**: ODM (Object Document Mapper) para modelagem de dados;
-- **JWT**: JSON Web Tokens para autenticação segura;
-- **Bcrypt**: Biblioteca para hash seguro de senhas;
-- **Multer**: Middleware para upload de arquivos;
-- **Nodemailer**: Biblioteca para envio de emails;
-- **Zod**: Sistema de validação de dados com tipagem;
-- **Swagger**: Documentação interativa da API;
-- **Jest**: Framework para testes automatizados;
-- **ExcelJS/PDFKit**: Bibliotecas para geração de relatórios.
+[![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![Express](https://img.shields.io/badge/Express-000000?style=for-the-badge&logo=express&logoColor=white)](https://expressjs.com/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
+[![Mongoose](https://img.shields.io/badge/Mongoose-880000?style=for-the-badge&logo=mongoose&logoColor=white)](https://mongoosejs.com/)
+[![JWT](https://img.shields.io/badge/JWT-000000?style=for-the-badge&logo=jsonwebtokens&logoColor=white)](https://jwt.io/)
+[![Bcrypt](https://img.shields.io/badge/Bcrypt-525252?style=for-the-badge&logo=bcrypt&logoColor=white)](https://www.npmjs.com/package/bcrypt)
+[![Multer](https://img.shields.io/badge/Multer-FF6C37?style=for-the-badge&logo=multer&logoColor=white)](https://www.npmjs.com/package/multer)
+[![Nodemailer](https://img.shields.io/badge/Nodemailer-339933?style=for-the-badge&logo=nodemailer&logoColor=white)](https://nodemailer.com/)
+[![Zod](https://img.shields.io/badge/Zod-3E67B1?style=for-the-badge&logo=zod&logoColor=white)](https://zod.dev/)
+[![Swagger](https://img.shields.io/badge/Swagger-85EA2D?style=for-the-badge&logo=swagger&logoColor=black)](https://swagger.io/)
+[![Jest](https://img.shields.io/badge/Jest-C21325?style=for-the-badge&logo=jest&logoColor=white)](https://jestjs.io/)
+[![ExcelJS](https://img.shields.io/badge/ExcelJS-217346?style=for-the-badge&logo=microsoftexcel&logoColor=white)](https://exceljs.org/)
+[![PDFKit](https://img.shields.io/badge/PDFKit-FF0000?style=for-the-badge&logo=adobeacrobatreader&logoColor=white)](https://pdfkit.org/)
 
 ### 🌐 Frontend (Web)
-- **NextJS**: Framework para construção das páginas e interfaces;
-- **TypeScript**: Tipagem estática para desenvolvimento seguro;
-- **Tailwind CSS**: Framework CSS para estilização;
-- **Axios**: Cliente HTTP para comunicação com a API;
-- **React Query**: Gerenciamento de estado e cache de dados;
-- **React Hook Form**: Biblioteca para gerenciamento de formulários;
-- **Zod**: Validação de dados no frontend;
-- **React-PDF/Excel.js**: Visualização e geração de documentos;
-- **Recharts/D3.js**: Visualização gráfica de dados.
+[![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+[![Axios](https://img.shields.io/badge/Axios-5A29E4?style=for-the-badge&logo=axios&logoColor=white)](https://axios-http.com/)
+[![React Query](https://img.shields.io/badge/React_Query-FF4154?style=for-the-badge&logo=reactquery&logoColor=white)](https://tanstack.com/query)
+[![React Hook Form](https://img.shields.io/badge/React_Hook_Form-EC5990?style=for-the-badge&logo=reacthookform&logoColor=white)](https://react-hook-form.com/)
+[![Zod](https://img.shields.io/badge/Zod-3E67B1?style=for-the-badge&logo=zod&logoColor=white)](https://zod.dev/)
+[![React PDF](https://img.shields.io/badge/React_PDF-FF0000?style=for-the-badge&logo=adobeacrobatreader&logoColor=white)](https://react-pdf.org/)
+[![Excel.js](https://img.shields.io/badge/Excel.js-217346?style=for-the-badge&logo=microsoftexcel&logoColor=white)](https://www.npmjs.com/package/exceljs)
+[![Recharts](https://img.shields.io/badge/Recharts-FF6384?style=for-the-badge&logo=recharts&logoColor=white)](https://recharts.org/)
+[![D3.js](https://img.shields.io/badge/D3.js-F9A03C?style=for-the-badge&logo=d3dotjs&logoColor=white)](https://d3js.org/)
 
 ### Mobile (falta desenvolver)
 
-- React Native (Expo)
+- React Native
 
 ### Desktop (falta desenvolver)
 
 - Electron
 
-### Infraestrutura
-- **Turborepo**: Gerenciamento de monorepo para frontend e backend;
-- **Git/GitHub**: Controle de versão e colaboração;
-- **Docker**: Containerização para desenvolvimento e produção;
-- **GitHub Actions/Jenkins**: CI/CD para integração e deploy contínuos;
-- **Nginx**: Servidor web para produção;
-- **PM2**: Gerenciador de processos para Node.js;
-- **MongoDB Atlas/Self-hosted**: Opções de hospedagem do banco de dados;
-- **Sentry**: Monitoramento de erros;
-- **Hostinger VPS**: Servidor virtual para hospedagem;
-- **AlmaLinux 8**: Sistema operacional do servidor;
-- **Webmin**: Interface de administração do servidor.
-
+### 🛠️ Infraestrutura
+[![Turborepo](https://img.shields.io/badge/Turborepo-EF4444?style=for-the-badge&logo=turborepo&logoColor=white)](https://turbo.build/)
+[![Git](https://img.shields.io/badge/Git-F05032?style=for-the-badge&logo=git&logoColor=white)](https://git-scm.com/)
+[![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/)
+[![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
+[![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com/features/actions)
+[![Jenkins](https://img.shields.io/badge/Jenkins-D24939?style=for-the-badge&logo=jenkins&logoColor=white)](https://www.jenkins.io/)
+[![NGINX](https://img.shields.io/badge/NGINX-009639?style=for-the-badge&logo=nginx&logoColor=white)](https://www.nginx.com/)
+[![PM2](https://img.shields.io/badge/PM2-2B037A?style=for-the-badge&logo=pm2&logoColor=white)](https://pm2.keymetrics.io/)
+[![MongoDB Atlas](https://img.shields.io/badge/MongoDB_Atlas-47A248?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/atlas)
+[![Sentry](https://img.shields.io/badge/Sentry-362D59?style=for-the-badge&logo=sentry&logoColor=white)](https://sentry.io/)
+[![Hostinger](https://img.shields.io/badge/Hostinger-2F6FDE?style=for-the-badge&logo=hostinger&logoColor=white)](https://www.hostinger.com/)
+[![AlmaLinux](https://img.shields.io/badge/AlmaLinux-1F5F9F?style=for-the-badge&logo=almalinux&logoColor=white)](https://almalinux.org/)
+[![Webmin](https://img.shields.io/badge/Webmin-7DA0D0?style=for-the-badge&logo=webmin&logoColor=white)](https://www.webmin.com/)
 
 ## 📂 Estrutura de pastas do projeto
 
