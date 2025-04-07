@@ -41,7 +41,7 @@ export default function LegacyClients() {
           title="Clientes Legados"
           description="Gerencie os clientes que possuem registros financeiros anteriores"
         />
-        <Link href="/dashboard/legacy-clients/new">
+        <Link href="/legacy-clients/new">
           <Button className="bg-[var(--secondary-red)]">
             <Plus className="mr-2 h-4 w-4" />
             Novo Cliente
@@ -109,7 +109,7 @@ export default function LegacyClients() {
             <LegacyClientsTable
               clients={clients}
               isLoading={isLoading}
-              onViewDetails={(id) => router.push(`/dashboard/legacy-clients/${id}`)}
+              onViewDetails={(id) => router.push(`/legacy-clients/${id}`)}
             />
 
             <div className="flex justify-center">

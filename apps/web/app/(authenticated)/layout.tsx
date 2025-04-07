@@ -122,7 +122,7 @@ const menuItems: MenuItem[] = [
   {
     title: "Clientes Legados",
     icon: Timer,
-    href: "/legacy-client",
+    href: "/legacy-clients",
     roles: ["admin", "employee"],
   },
 ];
@@ -281,7 +281,7 @@ export default function AuthenticatedLayout({
           })}
         </nav>
 
-        <div className="pt-6 border-t border-white/10 px-2 md:px-6 pb-4">
+        <div className="pt-2 border-t border-white/10 px-2 md:px-6 pb-2">
           <Button
             variant="ghost"
             className={cn(
@@ -310,7 +310,7 @@ export default function AuthenticatedLayout({
       )}>
         <div className="flex-1 p-4 md:p-8">{children}</div>
         
-        <footer className="mt-auto py-[30] px-6 border-t text-center text-sm text-muted-foreground">
+        <footer className="mt-auto pt-4 pb-4 px-2 border-t md:px-6 text-center text-sm text-muted-foreground">
           <p>
             © {new Date().getFullYear()} Óticas Queiroz. Todos os direitos
             reservados. Desenvolvido por{" "}

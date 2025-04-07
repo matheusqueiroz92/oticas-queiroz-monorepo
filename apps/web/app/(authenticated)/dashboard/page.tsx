@@ -187,21 +187,37 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Bem-vindo ao Sistema</CardTitle>
-          <CardDescription>
-            {userName ? `Olá, ${userName}! ` : ""}
-            Acesse as funções do sistema através do menu lateral.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="mb-4">
-            O sistema de gerenciamento das Óticas Queiroz oferece diversas
-            funcionalidades para facilitar o seu trabalho diário.
-          </p>
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Bem-vindo ao Sistema</CardTitle>
+            <CardDescription>
+              {userName ? `Olá, ${userName}! ` : ""}
+              Acesse as funções do sistema através do menu lateral.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="mb-4">
+              O sistema de gerenciamento das Óticas Queiroz oferece diversas
+              funcionalidades para facilitar o seu trabalho diário.
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Notificações</CardTitle>
+            <CardDescription>
+              Você possui {allOrders ? allOrders.length : 0} pedidos pendentes.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="mb-4">
+              Verifique os pedidos pendentes e atualize o status conforme necessário.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
 
       {isAdmin && (
         <>
@@ -414,11 +430,10 @@ export default function DashboardPage() {
         </>
       )}
 
-      {/* Conteúdo específico para Funcionários */}
       {isEmployee && (
         <>
           <h2 className="text-xl font-semibold mt-8">Acesso Rápido</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
             <Link href="/customers/new">
               <Card className="hover:bg-accent transition-colors cursor-pointer h-full">
                 <CardContent className="pt-6 pb-4 flex flex-col items-center justify-center">
@@ -433,6 +448,15 @@ export default function DashboardPage() {
                 <CardContent className="pt-6 pb-4 flex flex-col items-center justify-center">
                   <FileText className="h-12 w-12 text-primary mb-4" />
                   <h3 className="font-medium text-center">Novo Pedido</h3>
+                </CardContent>
+              </Card>
+            </Link>
+
+            <Link href="/products/new">
+              <Card className="hover:bg-accent transition-colors cursor-pointer h-full">
+                <CardContent className="pt-6 pb-4 flex flex-col items-center justify-center">
+                  <Package className="h-12 w-12 text-primary mb-4" />
+                  <h3 className="font-medium text-center">Novo Produto</h3>
                 </CardContent>
               </Card>
             </Link>
