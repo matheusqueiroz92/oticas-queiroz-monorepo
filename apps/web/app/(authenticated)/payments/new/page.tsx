@@ -649,7 +649,7 @@ export default function NewPaymentPage() {
                           <div>
                             <p className="font-medium">{client.name}</p>
                             <p className="text-sm text-muted-foreground">
-                              Documento: {client.identifier}
+                              CPF: {client.cpf}
                               {client.totalDebt > 0 && (
                                 <span className="ml-2 text-red-500">
                                   Débito: R$ {client.totalDebt.toFixed(2)}
