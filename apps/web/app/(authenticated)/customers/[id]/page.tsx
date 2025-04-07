@@ -2,45 +2,67 @@
 
 import UserDetailsPage from "@/components/Users/UserDetailsPage";
 import type { Customer } from "@/app/types/customer";
-import { Mail, Phone, MapPin, CreditCard, ShoppingBag } from "lucide-react";
+import { Mail, Phone, MapPin, CreditCard, ShoppingBag, Info, Activity } from "lucide-react";
 
 export default function CustomerDetailsPage() {
   const getCustomerFields = (customer: Customer) => [
     { 
       key: "email", 
       label: "Email", 
-      icon: <Mail className="h-4 w-4" /> 
+      icon: <Mail /> 
     },
     { 
       key: "phone", 
       label: "Telefone", 
-      icon: <Phone className="h-4 w-4" /> 
+      icon: <Phone /> 
     },
     { 
       key: "address", 
       label: "Endereço", 
-      icon: <MapPin className="h-4 w-4" /> 
+      icon: <MapPin /> 
+    },
+    { 
+      key: "cpf", 
+      label: "CPF", 
+      icon: <CreditCard /> 
+    }
+  ];
+  
+  const getCustomerSections = (customer: Customer) => [
+    {
+      title: "Informações Pessoais",
+      icon: <Info />,
+      fields: getCustomerFields(customer)
     },
     {
-      key: "debts",
-      label: "Débitos",
-      icon: <CreditCard className="h-4 w-4" />,
-      render: (customer: Customer) =>
-        `R$ ${customer.debts?.toFixed(2) || "0.00"}`,
-    },
-    {
-      key: "purchases",
-      label: "Compras",
-      icon: <ShoppingBag className="h-4 w-4" />,
-      render: (customer: Customer) => customer.purchases?.length || 0,
-    },
+      title: "Atividade da Conta",
+      icon: <Activity />,
+      fields: [
+        {
+          key: "debts",
+          label: "Débitos",
+          icon: <CreditCard />,
+          render: (customer: Customer) =>
+            `R$ ${(customer.debts || 0).toFixed(2)}`,
+        },
+        {
+          key: "purchases",
+          label: "Compras",
+          icon: <ShoppingBag />,
+          render: (customer: Customer) => 
+            `${customer.purchases?.length || 0} compras realizadas`,
+        }
+      ]
+    }
   ];
 
   return (
     <UserDetailsPage
       userType="customer"
       title="Detalhes do Cliente"
+      description="Visualize todas as informações do cliente"
       getFields={getCustomerFields}
+      getSections={getCustomerSections}
       errorMessage="Erro ao carregar dados do cliente"
     />
   );

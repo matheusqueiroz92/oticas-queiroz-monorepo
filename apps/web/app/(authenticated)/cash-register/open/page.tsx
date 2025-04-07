@@ -37,7 +37,6 @@ import { checkOpenCashRegister } from "@/app/services/cashRegisterService";
 import { QUERY_KEYS } from "@/app/constants/query-keys";
 import type { OpenCashRegisterDTO } from "@/app/types/cash-register";
 
-// Esquema de validação para o formulário
 const openCashRegisterSchema = z.object({
   openingBalance: z.preprocess(
     (value) =>
@@ -55,7 +54,6 @@ export default function OpenCashRegisterPage() {
   const { toast } = useToast();
   const { handleOpenCashRegister } = useCashRegister();
 
-  // Inicializar o formulário
   const form = useForm<OpenCashRegisterFormValues>({
     resolver: zodResolver(openCashRegisterSchema),
     defaultValues: {
@@ -64,7 +62,6 @@ export default function OpenCashRegisterPage() {
     },
   });
 
-  // Verificar se já existe um caixa aberto usando React Query
   const {
     data: cashRegisterData,
     isLoading: isChecking,
@@ -72,14 +69,12 @@ export default function OpenCashRegisterPage() {
   } = useQuery({
     queryKey: QUERY_KEYS.CASH_REGISTERS.CURRENT,
     queryFn: checkOpenCashRegister,
-    retry: false, // Não tentar novamente em caso de erro, pois 404 é esperado
+    retry: false,
     refetchOnWindowFocus: false,
   });
 
-  // Efeito para verificar se há um caixa aberto após o carregamento dos dados
   useEffect(() => {
     if (cashRegisterData) {
-      // Se houver dados e isOpen for true, então há um caixa aberto
       if (cashRegisterData.isOpen) {
         setHasCashRegisterOpen(true);
 
@@ -98,12 +93,10 @@ export default function OpenCashRegisterPage() {
         setHasCashRegisterOpen(false);
       }
     } else {
-      // Se não houver dados, assumimos que não há caixa aberto
       setHasCashRegisterOpen(false);
     }
   }, [cashRegisterData, form, toast]);
 
-  // Mutation para abrir o caixa
   const openCashRegisterMutation = useMutation({
     mutationFn: (data: OpenCashRegisterDTO) => handleOpenCashRegister(data),
     onSuccess: () => {
@@ -123,7 +116,6 @@ export default function OpenCashRegisterPage() {
     },
   });
 
-  // Função para lidar com envio do formulário
   const onSubmit = async (data: OpenCashRegisterFormValues) => {
     if (hasCashRegisterOpen) {
       toast({
@@ -225,7 +217,6 @@ export default function OpenCashRegisterPage() {
                                 : ""
                             }
                             onChange={(e) => {
-                              // Permitir apenas números e vírgula
                               const value = e.target.value.replace(
                                 /[^0-9,.]/g,
                                 ""

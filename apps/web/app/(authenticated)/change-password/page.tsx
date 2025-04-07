@@ -30,7 +30,6 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ArrowLeft, Loader2, KeyRound, ShieldCheck } from "lucide-react";
 
-// Esquema de validação para o formulário
 const changePasswordSchema = z
   .object({
     currentPassword: z.string().min(1, "A senha atual é obrigatória"),
@@ -53,7 +52,6 @@ export default function ChangePasswordPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Inicializar o formulário
   const form = useForm<ChangePasswordFormValues>({
     resolver: zodResolver(changePasswordSchema),
     defaultValues: {
@@ -63,7 +61,6 @@ export default function ChangePasswordPage() {
     },
   });
 
-  // Função para lidar com envio do formulário
   const onSubmit = async (data: ChangePasswordFormValues) => {
     try {
       setError(null);

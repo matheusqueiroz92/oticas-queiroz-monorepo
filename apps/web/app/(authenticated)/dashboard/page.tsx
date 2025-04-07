@@ -25,6 +25,7 @@ import {
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency, getOrderStatusClass, translateOrderStatus } from "@/app/utils/formatters";
+import { QuickOrderSearch } from "@/components/Orders/QuickOrderSearch";
 
 import type { Order } from "@/app/types/order";
 import type { IPayment } from "@/app/types/payment";
@@ -204,19 +205,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
         
-        <Card>
-          <CardHeader>
-            <CardTitle>Notificações</CardTitle>
-            <CardDescription>
-              Você possui {allOrders ? allOrders.length : 0} pedidos pendentes.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="mb-4">
-              Verifique os pedidos pendentes e atualize o status conforme necessário.
-            </p>
-          </CardContent>
-        </Card>
+        <QuickOrderSearch />
       </div>
 
       {isAdmin && (

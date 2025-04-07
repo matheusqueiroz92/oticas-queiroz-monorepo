@@ -1,12 +1,13 @@
 "use client";
 
-import { useParams } from "next/navigation";
-import { Loader2, Mail, Phone, MapPin, CreditCard, ShoppingBag, Briefcase, User as UserIcon } from "lucide-react";
-import { UserDetailsCard } from "@/components/Users/UserDetailsCard";
+import { useParams, useRouter } from "next/navigation";
+import { Loader2, Info } from "lucide-react";
 import { useUsers } from "@/hooks/useUsers";
 import { ErrorAlert } from "@/components/ErrorAlert";
-import type { Customer } from "@/app/types/customer";
-import type { Employee } from "@/app/types/employee";
+import { PageTitle } from "@/components/PageTitle";
+import { UserInfoCard } from "@/components/Users/UserInfoCard";
+import { InfoSection } from "@/components/Users/InfoSection";
+import { InfoField } from "@/components/Users/InfoField";
 import { ReactNode } from "react";
 
 interface FieldDefinition {
@@ -19,17 +20,26 @@ interface FieldDefinition {
 interface UserDetailsPageProps {
   userType: "customer" | "employee";
   title: string;
-  getFields: (user: Customer | Employee) => FieldDefinition[];
+  description?: string;
+  getFields: (user: any) => FieldDefinition[];
+  getSections?: (user: any) => {
+    title: string;
+    icon: ReactNode;
+    fields: FieldDefinition[];
+  }[];
   errorMessage: string;
 }
 
 export default function UserDetailsPage({
   userType,
   title,
+  description,
   getFields,
+  getSections,
   errorMessage,
 }: UserDetailsPageProps) {
   const { id } = useParams();
+  const router = useRouter();
   const { useUserQuery, getUserImageUrl } = useUsers();
 
   const { data: user, isLoading, error } = useUserQuery(id as string);
@@ -68,12 +78,58 @@ export default function UserDetailsPage({
   }
 
   const fields = getFields(user);
+  const sections = getSections ? getSections(user) : [
+    {
+      title: "Informações Pessoais",
+      icon: <Info />,
+      fields: fields
+    }
+  ];
+  
+  const handleEditClick = () => {
+    router.push(`/users/${user._id}/edit`);
+  };
 
   return (
-    <UserDetailsCard
-      user={{ ...user, image: getUserImageUrl(user.image) }}
-      title={title}
-      fields={fields}
-    />
+    <div className="max-w-4xl mx-auto p-4">
+      <PageTitle
+        title={title}
+        description={description || `Visualizando dados ${userType === "customer" ? "do cliente" : "do funcionário"}`}
+      />
+
+      <div className="mt-6">
+        <UserInfoCard
+          user={{ 
+            ...user, 
+            image: getUserImageUrl(user.image)
+          }}
+          title={title}
+          description={description}
+          showEditButton={true}
+          onEditClick={handleEditClick}
+        >
+          <div className="space-y-8 mt-4">
+            {sections.map((section, index) => (
+              <InfoSection
+                key={index}
+                title={section.title}
+                icon={section.icon}
+              >
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 bg-gray-50 p-4 rounded-md border">
+                  {section.fields.map((field) => (
+                    <InfoField
+                      key={field.key}
+                      label={field.label}
+                      value={field.render ? field.render(user) : user[field.key as keyof typeof user]?.toString()}
+                      icon={field.icon}
+                    />
+                  ))}
+                </div>
+              </InfoSection>
+            ))}
+          </div>
+        </UserInfoCard>
+      </div>
+    </div>
   );
 }

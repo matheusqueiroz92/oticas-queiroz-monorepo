@@ -8,7 +8,7 @@ import { PaginationItems } from "@/components/PaginationItems";
 import { useRouter } from "next/navigation";
 import { useLegacyClients } from "@/hooks/useLegacyClients";
 import { LegacyClientsTable } from "@/components/LegacyClients/LegacyClientsTable";
-import { Search, Plus, Filter } from "lucide-react";
+import { Search, Plus } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/card";
 import Link from "next/link";
 
-export default function LegacyClients() {
+export default function LegacyClientsPage() {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);

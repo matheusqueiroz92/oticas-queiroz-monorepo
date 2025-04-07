@@ -25,7 +25,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ArrowLeft,
   Loader2,
-  CreditCard,
   DollarSign,
   Printer,
   User,
@@ -60,7 +59,6 @@ export default function CashRegisterDetailsPage() {
 
   const { navigateToCloseRegister } = useCashRegister();
 
-  // Buscar detalhes do caixa
   const {
     data: currentRegister,
     isLoading: isLoadingRegister,
@@ -71,7 +69,6 @@ export default function CashRegisterDetailsPage() {
     enabled: !!id,
   });
 
-  // Buscar resumo do caixa
   const {
     data: summary,
     isLoading: isLoadingSummary,
@@ -82,7 +79,6 @@ export default function CashRegisterDetailsPage() {
     enabled: !!id,
   });
 
-  // Buscar pagamentos relacionados
   const {
     data: paymentsData,
     isLoading: isLoadingPayments,
@@ -101,7 +97,7 @@ export default function CashRegisterDetailsPage() {
 
   const isLoading = isLoadingRegister || isLoadingSummary || isLoadingPayments;
   const error = registerError || summaryError || paymentsError;
-  // Função para imprimir relatório
+
   const handlePrint = () => {
     window.print();
   };
@@ -136,7 +132,6 @@ export default function CashRegisterDetailsPage() {
     );
   }
 
-  // Calcular diferença para caixas fechados
   const calculateDifference = () => {
     if (currentRegister.status !== "closed" || !currentRegister.closingBalance)
       return null;
@@ -181,7 +176,6 @@ export default function CashRegisterDetailsPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Informações Básicas */}
         <Card className="md:col-span-2">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center">
@@ -298,7 +292,6 @@ export default function CashRegisterDetailsPage() {
           </CardContent>
         </Card>
 
-        {/* Resumo Financeiro */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center text-base">
@@ -341,7 +334,6 @@ export default function CashRegisterDetailsPage() {
         </Card>
       </div>
 
-      {/* Abas de Pagamentos */}
       <Tabs defaultValue="all" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="all">Todos</TabsTrigger>

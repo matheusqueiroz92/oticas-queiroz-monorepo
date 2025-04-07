@@ -57,7 +57,6 @@ import type {
   CloseCashRegisterDTO,
 } from "@/app/types/cash-register";
 
-// Esquema de validação para o formulário
 const closeCashRegisterSchema = z.object({
   closingBalance: z.preprocess(
     (value) =>
@@ -80,7 +79,6 @@ export default function CloseCashRegisterPage() {
   const { toast } = useToast();
   const { handleCloseCashRegister } = useCashRegister();
 
-  // Consulta para obter os dados do caixa
   const {
     data: cashRegister,
     isLoading,
@@ -91,7 +89,6 @@ export default function CloseCashRegisterPage() {
     enabled: !!id,
   });
 
-  // Mutation para fechar o caixa
   const closeCashRegisterMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: CloseCashRegisterDTO }) =>
       handleCloseCashRegister(id, data),
@@ -113,7 +110,6 @@ export default function CloseCashRegisterPage() {
     },
   });
 
-  // Inicializar o formulário
   const form = useForm<CloseCashRegisterFormValues>({
     resolver: zodResolver(closeCashRegisterSchema),
     defaultValues: {
@@ -125,23 +121,19 @@ export default function CloseCashRegisterPage() {
   useEffect(() => {
     if (cashRegister && cashRegister.status === "open") {
       form.setValue("closingBalance", cashRegister.currentBalance);
-      setDifference(0); // Inicialmente não há diferença
+      setDifference(0);
     }
   }, [cashRegister, form]);
 
-  // Observa mudanças no valor de fechamento para calcular a diferença
   const closingBalance = form.watch("closingBalance");
 
-  // Atualizar a diferença quando o valor de fechamento mudar
   useEffect(() => {
     if (cashRegister && typeof closingBalance === "number") {
       setDifference(closingBalance - cashRegister.currentBalance);
     }
   }, [closingBalance, cashRegister]);
 
-  // Função para lidar com envio do formulário
   const onSubmit = (data: CloseCashRegisterFormValues) => {
-    // Verificar se o caixa existe e está aberto
     if (!cashRegister || cashRegister.status !== "open") {
       toast({
         variant: "destructive",
@@ -151,11 +143,9 @@ export default function CloseCashRegisterPage() {
       return;
     }
 
-    // Mostrar diálogo de confirmação
     setShowConfirmDialog(true);
   };
 
-  // Função para confirmar fechamento
   const confirmClose = () => {
     if (!cashRegister || !id) return;
 
@@ -170,7 +160,6 @@ export default function CloseCashRegisterPage() {
     });
   };
 
-  // Tratar caso de erro ou caixa não existente
   if (cashRegisterError) {
     const errorMessage =
       cashRegisterError instanceof Error
@@ -196,7 +185,6 @@ export default function CloseCashRegisterPage() {
     );
   }
 
-  // Tratar caso de caixa já fechado
   if (cashRegister && cashRegister.status !== "open") {
     return (
       <div className="max-w-3xl mx-auto p-4">
@@ -217,7 +205,6 @@ export default function CloseCashRegisterPage() {
     );
   }
 
-  // Mostrar loading
   if (isLoading || !cashRegister) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -243,7 +230,6 @@ export default function CloseCashRegisterPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Informações do caixa */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center text-lg">
@@ -298,7 +284,6 @@ export default function CloseCashRegisterPage() {
           </CardContent>
         </Card>
 
-        {/* Resumo financeiro */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-lg">Resumo Financeiro</CardTitle>
@@ -458,7 +443,6 @@ export default function CloseCashRegisterPage() {
         </CardContent>
       </Card>
 
-      {/* Diálogo de confirmação */}
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>

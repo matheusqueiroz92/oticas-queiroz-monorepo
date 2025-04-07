@@ -2,43 +2,67 @@
 
 import UserDetailsPage from "@/components/Users/UserDetailsPage";
 import type { Employee } from "@/app/types/employee";
-import { Mail, Phone, MapPin, Briefcase, ShoppingCart } from "lucide-react";
+import { Mail, Phone, MapPin, Briefcase, ShoppingCart, Info, Activity } from "lucide-react";
 
 export default function EmployeeDetailsPage() {
   const getEmployeeFields = (employee: Employee) => [
     { 
       key: "email", 
       label: "Email", 
-      icon: <Mail className="h-4 w-4" /> 
+      icon: <Mail /> 
     },
     { 
       key: "phone", 
       label: "Telefone", 
-      icon: <Phone className="h-4 w-4" /> 
+      icon: <Phone /> 
     },
     { 
       key: "address", 
       label: "Endereço", 
-      icon: <MapPin className="h-4 w-4" /> 
+      icon: <MapPin /> 
     },
     { 
-      key: "role", 
-      label: "Função", 
-      icon: <Briefcase className="h-4 w-4" /> 
+      key: "cpf", 
+      label: "CPF", 
+      icon: <Briefcase /> 
+    }
+  ];
+  
+  const getEmployeeSections = (employee: Employee) => [
+    {
+      title: "Informações Pessoais",
+      icon: <Info />,
+      fields: getEmployeeFields(employee)
     },
     {
-      key: "sales",
-      label: "Vendas Realizadas",
-      icon: <ShoppingCart className="h-4 w-4" />,
-      render: (employee: Employee) => employee.sales?.length || 0,
-    },
+      title: "Desempenho Profissional",
+      icon: <Activity />,
+      fields: [
+        {
+          key: "role",
+          label: "Função",
+          icon: <Briefcase />,
+          render: (employee: Employee) =>
+            employee.role === "admin" ? "Administrador" : "Vendedor",
+        },
+        {
+          key: "sales",
+          label: "Vendas Realizadas",
+          icon: <ShoppingCart />,
+          render: (employee: Employee) => 
+            `${employee.sales?.length || 0} vendas finalizadas`,
+        }
+      ]
+    }
   ];
 
   return (
     <UserDetailsPage
       userType="employee"
       title="Detalhes do Funcionário"
+      description="Visualize todas as informações do funcionário"
       getFields={getEmployeeFields}
+      getSections={getEmployeeSections}
       errorMessage="Erro ao carregar dados do funcionário"
     />
   );
