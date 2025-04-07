@@ -111,50 +111,65 @@ export class UserService {
     }
   }
 
-
-  async getAllUsers(): Promise<IUser[]> {
-    const users = await this.userModel.findAll();
-    if (!users.length) {
+  async getAllUsers(
+    page = 1,
+    limit = 10,
+    filters: Record<string, any> = {}
+  ): Promise<{ users: IUser[]; total: number }> {
+    const result = await this.userModel.findAll(page, limit, filters);
+    
+    if (!result.users.length) {
       throw new NotFoundError(
         "Nenhum usuário encontrado",
         ErrorCode.USER_NOT_FOUND
       );
     }
-    return users;
+    
+    return result;
   }
 
-  async searchUsers(searchTerm: string): Promise<IUser[]> {
+  async searchUsers(
+    searchTerm: string,
+    page = 1,
+    limit = 10
+  ): Promise<{ users: IUser[]; total: number }> {
     const sanitizedSearch = searchTerm.trim().toLowerCase();
-
+  
     if (!sanitizedSearch) {
-      return this.getAllUsers();
+      return this.getAllUsers(page, limit);
     }
-
-    const users = await this.userModel.search(sanitizedSearch);
-    if (!users.length) {
+  
+    const result = await this.userModel.findAll(page, limit, { search: sanitizedSearch });
+    
+    if (!result.users.length) {
       throw new NotFoundError(
         "Nenhum usuário encontrado com os critérios de busca",
         ErrorCode.USER_NOT_FOUND
       );
     }
-
-    return users;
+  
+    return result;
   }
 
-  async getUsersByRole(role: string): Promise<IUser[]> {
+  async getUsersByRole(
+    role: string,
+    page = 1,
+    limit = 10
+  ): Promise<{ users: IUser[]; total: number }> {
     if (!["admin", "employee", "customer"].includes(role)) {
       throw new ValidationError("Role inválida", ErrorCode.INVALID_ROLE);
     }
-
-    const users = await this.userModel.findByRole(role);
-    if (!users.length) {
+  
+    const result = await this.userModel.findAll(page, limit, { role });
+    
+    if (!result.users.length) {
       throw new NotFoundError(
         `Nenhum usuário com role '${role}' encontrado`,
         ErrorCode.USER_NOT_FOUND
       );
     }
-
-    return users;
+  
+    return result;
   }
 
   async getUserById(id: string): Promise<IUser> {

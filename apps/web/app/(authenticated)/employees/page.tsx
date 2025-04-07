@@ -3,22 +3,39 @@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { UserTable } from "@/components/Users/UserTable";
-import { Loader2, UserX } from "lucide-react";
-import { useEmployees } from "@/hooks/useEmployees";
+import { Loader2, UserX, Search, X, RefreshCw } from "lucide-react";
+import { useUsers } from "@/hooks/useUsers";
 import type { Column } from "@/app/types/user";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { PageTitle } from "@/components/PageTitle";
+import { PaginationItems } from "@/components/PaginationItems";
+import { useState } from "react";
+import { useToast } from "@/hooks/useToast";
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export default function EmployeesPage() {
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const { toast } = useToast();
+  
   const {
     employees,
     isLoading,
     error,
     search,
     setSearch,
+    currentPage,
+    totalPages,
+    totalUsers,
+    setCurrentPage,
     navigateToEmployeeDetails,
     navigateToNewEmployee,
-  } = useEmployees();
+    refreshUsersList
+  } = useUsers({ role: 'employee' });
 
   const employeeColumns: Column[] = [
     { key: "name", header: "Nome" },
@@ -32,11 +49,35 @@ export default function EmployeesPage() {
       key: "totalSales",
       header: "Valor Total",
       render: (employee) =>
-        employee.sales?.reduce((total, _sale) => total, 0).toFixed(2),
+        employee.sales?.reduce((total, _sale) => total, 0).toFixed(2) || "0.00",
     },
   ];
 
   const showEmptyState = !isLoading && !error && employees.length === 0;
+
+  const handleClearSearch = () => {
+    setSearch("");
+  };
+  
+  const handleManualRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await refreshUsersList();
+      toast({
+        title: "Atualizado",
+        description: "Lista de funcionários atualizada com sucesso.",
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar lista:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Falha ao atualizar lista de funcionários.",
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   return (
     <div className="space-y-2 max-w-auto mx-auto p-1 md:p-2">
@@ -44,14 +85,58 @@ export default function EmployeesPage() {
         title="Funcionários"
         description="Lista de funcionários da loja"
       />
-      <div className="flex justify-between">
-        <Input
-          placeholder="Buscar funcionário..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="max-w-sm"
-        />
-        <Button onClick={navigateToNewEmployee}>Novo Funcionário</Button>
+      
+      <div className="flex justify-between items-center">
+        <div className="relative w-full max-w-md">
+          <Input
+            placeholder="Buscar funcionário..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9 pr-8 w-full"
+          />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          
+          {search && (
+            <button 
+              onClick={handleClearSearch}
+              className="absolute right-10 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+          
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer">
+                  <div className="w-4 h-4 rounded-full bg-muted-foreground/20 flex items-center justify-center text-xs">?</div>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                <p>Você pode buscar por:</p>
+                <ul className="list-disc pl-4 text-xs mt-1">
+                  <li>Nome do funcionário</li>
+                  <li>Email do funcionário</li>
+                </ul>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+        
+        <div className="flex space-x-2">
+          <Button
+            variant="outline"
+            onClick={handleManualRefresh}
+            disabled={isRefreshing || isLoading}
+            size="sm"
+            className="h-10"
+          >
+            <RefreshCw className={`h-4 w-4 mr-1 ${isRefreshing ? 'animate-spin' : ''}`} />
+            Atualizar
+          </Button>
+          
+          <Button onClick={navigateToNewEmployee}>Novo Funcionário</Button>
+        </div>
       </div>
 
       {isLoading && (
@@ -76,11 +161,21 @@ export default function EmployeesPage() {
       )}
 
       {!isLoading && !error && employees.length > 0 && (
-        <UserTable
-          data={employees}
-          columns={employeeColumns}
-          onDetailsClick={navigateToEmployeeDetails}
-        />
+        <>
+          <UserTable
+            data={employees}
+            columns={employeeColumns}
+            onDetailsClick={navigateToEmployeeDetails}
+          />
+          
+          <PaginationItems
+            currentPage={currentPage}
+            totalPages={totalPages}
+            setCurrentPage={setCurrentPage}
+            totalItems={totalUsers}
+            pageSize={employees.length}
+          />
+        </>
       )}
     </div>
   );

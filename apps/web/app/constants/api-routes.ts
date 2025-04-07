@@ -50,9 +50,20 @@ export const API_ROUTES = {
   },
   USERS: {
     BASE: "/api/users",
+    LIST: "/api/users",
     BY_ID: (id: string) => `/api/users/${id}`,
+    UPDATE: (id: string) => `/api/users/${id}`,
+    DELETE: (id: string) => `/api/users/${id}`,
+    SEARCH: (query: string) => `/api/users/search?q=${query}`,
+    PROFILE: "/api/users/profile",
     CUSTOMERS: "/api/users?role=customer",
     EMPLOYEES: "/api/users?role=employee",
+    CUSTOMERS_PAGINATED: (page: number, limit: number = 10) => 
+      `/api/users?role=customer&page=${page}&limit=${limit}`,
+    EMPLOYEES_PAGINATED: (page: number, limit: number = 10) => 
+      `/api/users?role=employee&page=${page}&limit=${limit}`,
+    EXPORT: "/api/users/export",
+    PARAMS: (params: string) => `/api/users?${params}`
   },
   REPORTS: {
     BASE: "/api/reports",

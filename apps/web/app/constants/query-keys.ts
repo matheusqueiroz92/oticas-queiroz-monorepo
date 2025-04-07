@@ -7,10 +7,30 @@ export const QUERY_KEYS = {
   USERS: {
     ALL: ["users"],
     DETAIL: (id: string) => ["users", "detail", id],
-    CUSTOMERS: (search?: string) => ["users", "customers", search],
-    EMPLOYEES: (search?: string) => ["users", "employees", search],
+    CUSTOMERS: (filterKey?: string) => ["users", "customers", filterKey],
+    EMPLOYEES: (filterKey?: string) => ["users", "employees", filterKey],
     ADMINS: (search?: string) => ["users", "admins", search],
     VENDORS: (search?: string) => ["users", "vendors", search],
+    PAGINATED: (page = 1, filters = {}) => [
+      "users",
+      "paginated",
+      page,
+      filters,
+    ],
+    CUSTOMERS_PAGINATED: (page = 1, filters = {}) => [
+      "users",
+      "customers",
+      "paginated",
+      page,
+      filters,
+    ],
+    EMPLOYEES_PAGINATED: (page = 1, filters = {}) => [
+      "users",
+      "employees",
+      "paginated",
+      page,
+      filters,
+    ],
   },
 
   LABORATORIES: {

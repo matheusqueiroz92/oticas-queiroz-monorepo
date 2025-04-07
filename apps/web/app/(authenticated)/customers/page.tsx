@@ -3,11 +3,14 @@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { UserTable } from "@/components/Users/UserTable";
-import { Loader2, UserX, Search } from "lucide-react";
-import { useCustomers } from "@/hooks/useCustomers";
+import { Loader2, UserX, Search, X, RefreshCw } from "lucide-react";
+import { useUsers } from "@/hooks/useUsers";
 import type { Column } from "@/app/types/user";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { PageTitle } from "@/components/PageTitle";
+import { PaginationItems } from "@/components/PaginationItems";
+import { useState } from "react";
+import { useToast } from "@/hooks/useToast";
 import { 
   Tooltip,
   TooltipContent,
@@ -16,15 +19,23 @@ import {
 } from "@/components/ui/tooltip";
 
 export default function CustomersPage() {
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const { toast } = useToast();
+  
   const {
     customers,
     isLoading,
     error,
     search,
     setSearch,
+    currentPage,
+    totalPages,
+    totalUsers,
+    setCurrentPage,
     navigateToCustomerDetails,
     navigateToNewCustomer,
-  } = useCustomers();
+    refreshUsersList
+  } = useUsers({ role: 'customer' });
 
   const customerColumns: Column[] = [
     { key: "name", header: "Nome" },
@@ -43,22 +54,56 @@ export default function CustomersPage() {
 
   const showEmptyState = !isLoading && !error && customers.length === 0;
 
+  const handleClearSearch = () => {
+    setSearch("");
+  };
+  
+  const handleManualRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await refreshUsersList();
+      toast({
+        title: "Atualizado",
+        description: "Lista de clientes atualizada com sucesso.",
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar lista:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Falha ao atualizar lista de clientes.",
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   return (
     <div className="space-y-2 max-w-auto mx-auto p-1 md:p-2">
       <PageTitle
         title="Clientes"
         description="Lista de clientes da loja"
       />
+      
       <div className="flex justify-between items-center">
         <div className="relative w-full max-w-md">
           <Input
-            placeholder="Buscar por nome, CPF ou O.S."
+            placeholder="Buscar por nome ou CPF"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9 pr-8 w-full"
             size={50}
           />
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          
+          {search && (
+            <button 
+              onClick={handleClearSearch}
+              className="absolute right-10 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
           
           <TooltipProvider>
             <Tooltip>
@@ -72,13 +117,26 @@ export default function CustomersPage() {
                 <ul className="list-disc pl-4 text-xs mt-1">
                   <li>Nome do cliente</li>
                   <li>CPF (formato: 12345678900)</li>
-                  <li>Número da O.S. (4 a 7 dígitos)</li>
                 </ul>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
         </div>
-        <Button onClick={navigateToNewCustomer} className="ml-4">Novo Cliente</Button>
+        
+        <div className="flex space-x-2">
+          <Button
+            variant="outline"
+            onClick={handleManualRefresh}
+            disabled={isRefreshing || isLoading}
+            size="sm"
+            className="h-10"
+          >
+            <RefreshCw className={`h-4 w-4 mr-1 ${isRefreshing ? 'animate-spin' : ''}`} />
+            Atualizar
+          </Button>
+          
+          <Button onClick={navigateToNewCustomer}>Novo Cliente</Button>
+        </div>
       </div>
 
       {isLoading && (
@@ -100,11 +158,21 @@ export default function CustomersPage() {
       )}
 
       {!isLoading && !error && customers.length > 0 && (
-        <UserTable
-          data={customers}
-          columns={customerColumns}
-          onDetailsClick={navigateToCustomerDetails}
-        />
+        <>
+          <UserTable
+            data={customers}
+            columns={customerColumns}
+            onDetailsClick={navigateToCustomerDetails}
+          />
+        
+          <PaginationItems
+            currentPage={currentPage}
+            totalPages={totalPages}
+            setCurrentPage={setCurrentPage}
+            totalItems={totalUsers}
+            pageSize={customers.length}
+          />
+        </>
       )}
     </div>
   );

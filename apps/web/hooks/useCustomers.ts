@@ -44,6 +44,7 @@ export function useCustomers() {
     };
   }, [debouncedSearch]);
 
+
   const {
     data: customersData = [],
     isLoading,

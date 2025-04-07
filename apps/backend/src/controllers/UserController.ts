@@ -30,8 +30,12 @@ export class UserController {
   async getAllUsers(req: Request, res: Response): Promise<void> {
     try {
       const { role, search, cpf, serviceOrder } = req.query;
+      
+      const page = Number(req.query.page) || 1;
+      const limit = Number(req.query.limit) || 10;
   
-      let users: IUser[] = [];
+      // Corrigir a tipagem aqui para evitar problemas
+      let result: { users: IUser[]; total: number } = { users: [], total: 0 };
   
       if (serviceOrder) {
         const cleanServiceOrder = (serviceOrder as string).replace(/\D/g, '');
@@ -40,7 +44,8 @@ export class UserController {
           
           if (clientIds.length > 0) {
             const userPromises = clientIds.map(id => this.userService.getUserById(id));
-            users = await Promise.all(userPromises);
+            const users = await Promise.all(userPromises);
+            result = { users, total: users.length };
           }
         } else {
           throw new ValidationError(
@@ -49,40 +54,47 @@ export class UserController {
           );
         }
       }
-
       else if (cpf) {
         try {
           const user = await this.userService.getUserByCpf(cpf as string);
-          users = user ? [user] : [];
+          result = { users: user ? [user] : [], total: user ? 1 : 0 };
         } catch (error) {
           if (error instanceof NotFoundError) {
-            users = [];
+            result = { users: [], total: 0 };
           } else {
             throw error;
           }
         }
       }
-
       else if (search) {
-        users = await this.userService.searchUsers(search as string);
+        result = await this.userService.searchUsers(search as string, page, limit);
+        
         if (role) {
-          users = users.filter(user => user.role === role);
+          const filteredUsers = result.users.filter(user => user.role === role);
+          result = { users: filteredUsers, total: filteredUsers.length };
         }
       }
-      
       else if (role) {
-        users = await this.userService.getUsersByRole(role as string);
+        result = await this.userService.getUsersByRole(role as string, page, limit);
       }
-      
       else {
-        users = await this.userService.getAllUsers();
+        result = await this.userService.getAllUsers(page, limit);
       }
-  
+    
       if (serviceOrder && role === 'customer') {
-        users = users.filter(user => user.role === 'customer');
+        const filteredUsers = result.users.filter(user => user.role === 'customer');
+        result = { users: filteredUsers, total: filteredUsers.length };
       }
-  
-      res.status(200).json(users);
+    
+      res.status(200).json({
+        users: result.users,
+        pagination: {
+          page,
+          limit,
+          total: result.total,
+          totalPages: Math.ceil(result.total / limit),
+        }
+      });
     } catch (error) {
       if (error instanceof ValidationError) {
         res.status(400).json({ message: error.message });

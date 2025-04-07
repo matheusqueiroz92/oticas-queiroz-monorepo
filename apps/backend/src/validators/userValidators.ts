@@ -36,3 +36,21 @@ export const userSchema = z.object({
 });
 
 export type UserType = z.infer<typeof userSchema>;
+
+export const userQuerySchema = z.object({
+  page: z
+    .union([z.string(), z.number()])
+    .transform(val => Number(val))
+    .default(1),
+  limit: z
+    .union([z.string(), z.number()])
+    .transform(val => Number(val))
+    .default(10),
+  role: z.enum(["admin", "employee", "customer"]).optional(),
+  search: z.string().optional(),
+  cpf: z.string().optional(),
+  serviceOrder: z.string().optional(),
+  sort: z.string().optional().default("name") // Ordenação padrão por nome
+});
+
+export type UserQueryParams = z.infer<typeof userQuerySchema>;
