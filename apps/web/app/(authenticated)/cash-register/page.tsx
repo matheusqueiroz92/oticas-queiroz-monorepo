@@ -63,17 +63,9 @@ export default function CashRegisterPage() {
   } = useCashRegister();
 
   const {
-    getAllUsers,
+    users,
     usersMap,
   } = useUsers();
-
-  useEffect(() => {
-    const loadAllUsers = async () => {
-      await getAllUsers();
-    };
-    
-    loadAllUsers();
-  }, [getAllUsers]);
  
   const applyDateFilter = () => {
     if (date) {

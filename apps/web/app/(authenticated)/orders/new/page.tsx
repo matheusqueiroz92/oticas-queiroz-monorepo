@@ -11,8 +11,8 @@ import { getTomorrowDate } from "@/app/utils/formatters";
 import { OrderFormValues } from "@/app/types/form-types";
 import { useOrders } from "@/hooks/useOrders";
 import { useProducts } from "@/hooks/useProducts";
+import { useUsers } from "@/hooks/useUsers";
 import { normalizeProduct, getCorrectPrice, checkForLenses } from "@/app/utils/product-utils";
-import { useCustomers } from "@/hooks/useCustomers";
 import { createOrderform } from "@/schemas/order-schema";
 import OrderForm from "@/components/Orders/OrderForm";
 
@@ -41,7 +41,7 @@ export default function NewOrderPage() {
   const { 
     customers: customersData,
     isLoading: isLoadingCustomers
-  } = useCustomers();
+  } = useUsers();
 
   const form = createOrderform();
 
