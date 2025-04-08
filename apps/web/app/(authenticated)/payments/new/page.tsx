@@ -10,7 +10,7 @@ import { ptBR } from "date-fns/locale";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/app/services/authService";
 import { usePayments } from "@/hooks/usePayments";
-import { useUsers } from "@/hooks/useUsers";
+import { useCustomers } from "@/hooks/useCustomers";
 import ClientSearch from "@/components/Orders/ClientSearch";
 import { formatCurrency } from "@/app/utils/formatters";
 
@@ -87,7 +87,7 @@ export default function NewPaymentPage() {
     isLoadingCashRegister
   } = usePayments();
 
-  const { customers, isLoading: isLoadingCustomers } = useUsers();
+  const { customers, isLoading: isLoadingCustomers } = useCustomers();
 
   const { orders, isLoading: isLoadingOrders } = useOrders();
 

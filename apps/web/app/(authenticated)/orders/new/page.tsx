@@ -45,7 +45,6 @@ export default function NewOrderPage() {
 
   const form = createOrderform();
 
-  // Função para criar um novo pedido
   const submitOrderForm = async (formData: OrderFormValues) => {
     if (selectedProducts.length === 0) {
       toast({
@@ -132,7 +131,6 @@ export default function NewOrderPage() {
     }
   };
   
-  // Função para submeter o formulário
   const onSubmit = (data: OrderFormValues) => {
     const productsWithoutStock = selectedProducts.filter(product => {
       if (product.productType === 'prescription_frame' || product.productType === 'sunglasses_frame') {
@@ -159,7 +157,6 @@ export default function NewOrderPage() {
     submitOrderForm(data);
   };
 
-  // Efeito para carregar os dados do funcionário logado
   useEffect(() => {
     const userId = Cookies.get("userId");
     const name = Cookies.get("name");
@@ -179,7 +176,6 @@ export default function NewOrderPage() {
     }
   }, [form]);
 
-  // Efeito para restaurar dados do formulário do LocalStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const savedFormData = window.localStorage.getItem('pendingOrderFormData');
@@ -204,14 +200,12 @@ export default function NewOrderPage() {
     }
   }, [form, toast]);
 
-  // Efeito para inicializar datas
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0];
     form.setValue("orderDate", today);
     form.setValue("deliveryDate", today);
   }, [form]);
 
-  // Função para adicionar produto
   const handleAddProduct = async (product: Product) => {
     if (selectedProducts.some(p => p._id === product._id)) {
       toast({
@@ -257,7 +251,6 @@ export default function NewOrderPage() {
     }
   };
 
-  // Função para remover produto
   const handleRemoveProduct = (productId: string) => {
     const newProducts = selectedProducts.filter(p => p._id !== productId);
     setSelectedProducts(newProducts);
@@ -277,7 +270,6 @@ export default function NewOrderPage() {
     updateFinalPrice(newTotal, form.getValues("discount") || 0);
   };
 
-  // Função para atualizar preço do produto
   const handleUpdateProductPrice = (productId: string, newPrice: number) => {
     const numericPrice = typeof newPrice === 'string' 
       ? parseFloat(newPrice) 
@@ -302,20 +294,17 @@ export default function NewOrderPage() {
     updateFinalPrice(newTotal, form.getValues("discount") || 0);
   };
 
-  // Função para atualizar preço final
   const updateFinalPrice = (total: number, discount: number) => {
     const finalPrice = Math.max(0, total - discount);
     form.setValue("finalPrice", finalPrice);
   };
 
-  // Função para selecionar cliente
   const handleClientSelect = (clientId: string, name: string) => {
     form.setValue("clientId", clientId);
     const customer = customersData?.find((c: Customer) => c._id === clientId);
     setSelectedCustomer(customer || null);
   };
 
-  // Função para calcular valor das parcelas
   const calculateInstallmentValue = () => {
     if (!form) return 0;
     
@@ -329,7 +318,6 @@ export default function NewOrderPage() {
     return remainingAmount <= 0 ? 0 : remainingAmount / installments;
   };
 
-  // Funções para navegação
   const handleCancel = () => {
     router.back();
   };

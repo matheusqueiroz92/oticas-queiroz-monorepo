@@ -21,7 +21,6 @@ export default function NewReportPage() {
   const { toast } = useToast();
   const { handleCreateReport, isCreating } = useReports();
 
-  // Função para lidar com a criação do relatório
   const handleSubmit = async (data: CreateReportDTO) => {
     try {
       const createdReport = await handleCreateReport(data);
@@ -32,7 +31,6 @@ export default function NewReportPage() {
           "O relatório está sendo gerado e ficará disponível em breve.",
       });
 
-      // Redirecionar para a página de detalhes do novo relatório
       if (createdReport && createdReport._id) {
         router.push(`/reports/${createdReport._id}`);
       } else {
@@ -49,7 +47,6 @@ export default function NewReportPage() {
     }
   };
 
-  // Função para cancelar e voltar à listagem
   const handleCancel = () => {
     router.push("/reports");
   };
