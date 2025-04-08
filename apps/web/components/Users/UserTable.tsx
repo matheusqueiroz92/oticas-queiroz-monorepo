@@ -89,13 +89,15 @@ export const UserTable: React.FC<UserTableProps> = ({
         </TableBody>
       </Table>
 
-      <PaginationItems
-        currentPage={currentPage}
-        totalPages={totalPages}
-        setCurrentPage={setCurrentPage}
-        totalItems={totalItems}
-        pageSize={pageSize}
-      />
+      {(totalItems ?? 0) > 10 && (
+        <PaginationItems
+          currentPage={currentPage}
+          totalPages={totalPages}
+          setCurrentPage={setCurrentPage}
+          totalItems={totalItems}
+          pageSize={pageSize}
+        />
+      )}
     </div>
   );
 };

@@ -8,8 +8,12 @@ import { useEmployees } from "@/hooks/useEmployees";
 import type { Column } from "@/app/types/user";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { PageTitle } from "@/components/PageTitle";
+import { useSearchParams } from "next/navigation";
+import { useEffect } from "react";
 
 export default function EmployeesPage() {
+  const searchParams = useSearchParams();
+  
   const {
     employees,
     isLoading,
@@ -22,8 +26,16 @@ export default function EmployeesPage() {
     totalPages,
     setCurrentPage,
     totalItems,
-    pageSize
+    limit,
   } = useEmployees();
+
+  // Sincronizar o campo de busca com o parâmetro da URL
+  useEffect(() => {
+    const searchFromUrl = searchParams.get("q");
+    if (searchFromUrl !== null && searchFromUrl !== search) {
+      setSearch(searchFromUrl);
+    }
+  }, [searchParams, search, setSearch]);
 
   const employeeColumns: Column[] = [
     { key: "name", header: "Nome" },
@@ -89,7 +101,7 @@ export default function EmployeesPage() {
           totalPages={totalPages}
           setCurrentPage={setCurrentPage}
           totalItems={totalItems}
-          pageSize={pageSize}
+          pageSize={limit}
         />
       )}
     </div>

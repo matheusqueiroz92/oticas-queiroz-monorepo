@@ -14,8 +14,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useSearchParams } from "next/navigation";
+import { useEffect } from "react";
 
 export default function CustomersPage() {
+  const searchParams = useSearchParams();
+  
   const {
     customers,
     isLoading,
@@ -30,6 +34,14 @@ export default function CustomersPage() {
     totalItems,
     limit,
   } = useCustomers();
+
+  // Sincronizar o campo de busca com o parâmetro da URL
+  useEffect(() => {
+    const searchFromUrl = searchParams.get("q");
+    if (searchFromUrl !== null && searchFromUrl !== search) {
+      setSearch(searchFromUrl);
+    }
+  }, [searchParams, search, setSearch]);
 
   const customerColumns: Column[] = [
     { key: "name", header: "Nome" },

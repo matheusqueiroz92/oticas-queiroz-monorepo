@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 import type { Order } from "@/app/types/order";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,23 +9,21 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { PaginationItems } from "@/components/PaginationItems";
-
-interface OrderColumn {
-  key: string;
-  header: string;
-  render?: (data: Order) => React.ReactNode;
-}
+import { PaginationItems } from "../PaginationItems";
 
 interface OrderTableProps {
   data: Order[];
-  columns: OrderColumn[];
+  columns: {
+    key: string;
+    header: string;
+    render?: (item: Order) => React.ReactNode;
+  }[];
   onDetailsClick: (id: string) => void;
   currentPage: number;
   totalPages: number;
   setCurrentPage: (page: number) => void;
   totalItems?: number;
-  sortField?: keyof Order;
+  sortField?: string;
   sortDirection?: "asc" | "desc";
 }
 
@@ -37,39 +35,47 @@ export const OrderTable: React.FC<OrderTableProps> = ({
   totalPages,
   setCurrentPage,
   totalItems,
-  sortField = "orderDate",
+  sortField = "createdAt",
   sortDirection = "desc",
 }) => {
   const sortedData = useMemo(() => {
-    if (!data || data.length === 0) return [];
-    
     const dataToSort = [...data];
     
     return dataToSort.sort((a, b) => {
-      if (sortField === "orderDate" || sortField === "deliveryDate" || sortField === "createdAt") {
-        const dateA = a[sortField] ? new Date(a[sortField] as string).getTime() : 0;
-        const dateB = b[sortField] ? new Date(b[sortField] as string).getTime() : 0;
+      // Obter valores considerando nested objects (com dot notation)
+      const getNestedValue = (obj: any, path: string) => {
+        return path.split('.').reduce((prev, curr) => {
+          return prev ? prev[curr] : null;
+        }, obj);
+      };
+
+      const valueA = getNestedValue(a, sortField) || "";
+      const valueB = getNestedValue(b, sortField) || "";
+      
+      // Comparar datas
+      if (sortField === "createdAt" || sortField === "updatedAt") {
+        const dateA = new Date(valueA).getTime();
+        const dateB = new Date(valueB).getTime();
         
-        return sortDirection === "desc" ? dateB - dateA : dateA - dateB;
+        return sortDirection === "asc" ? dateA - dateB : dateB - dateA;
       }
       
-      const valueA = String(a[sortField as keyof Order] || "").toLowerCase();
-      const valueB = String(b[sortField as keyof Order] || "").toLowerCase();
-      
-      if (sortDirection === "desc") {
-        return valueB.localeCompare(valueA);
-      } else {
-        return valueA.localeCompare(valueB);
+      // Comparar strings
+      if (typeof valueA === "string" && typeof valueB === "string") {
+        return sortDirection === "asc"
+          ? valueA.localeCompare(valueB)
+          : valueB.localeCompare(valueA);
       }
+      
+      // Comparar números
+      return sortDirection === "asc"
+        ? Number(valueA) - Number(valueB)
+        : Number(valueB) - Number(valueA);
     });
   }, [data, sortField, sortDirection]);
 
   if (sortedData.length === 0) {
-    return (
-      <div className="text-center py-8">
-        <p className="text-muted-foreground">Nenhum pedido encontrado.</p>
-      </div>
-    );
+    return <div className="text-center py-4">Nenhum pedido encontrado.</div>;
   }
 
   return (
@@ -104,13 +110,15 @@ export const OrderTable: React.FC<OrderTableProps> = ({
         </TableBody>
       </Table>
 
-      <PaginationItems
-        currentPage={currentPage}
-        totalPages={totalPages}
-        setCurrentPage={setCurrentPage}
-        totalItems={totalItems}
-        pageSize={sortedData.length}
-      />
+      {(totalItems ?? 0) > 10 && (
+        <PaginationItems
+          currentPage={currentPage}
+          totalPages={totalPages}
+          setCurrentPage={setCurrentPage}
+          totalItems={totalItems}
+          pageSize={10}
+        />
+      )}
     </div>
   );
 };

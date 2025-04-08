@@ -2,7 +2,7 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useCallback, useMemo, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { api } from "@/app/services/authService";
 import { API_ROUTES } from "@/app/constants/api-routes";
 import { QUERY_KEYS } from "@/app/constants/query-keys";
@@ -11,15 +11,30 @@ import debounce from 'lodash/debounce';
 import { User } from "@/app/types/user";
 
 export function useEmployees() {
-  const [search, setSearchValue] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
   const router = useRouter();
   const queryClient = useQueryClient();
   const { getUserImageUrl } = useUsers();
+  
+  // Obter o valor da página da URL, padrão é 1 se não existir
+  const pageFromUrl = searchParams.get("page") ? parseInt(searchParams.get("page") as string, 10) : 1;
+  
+  const [search, setSearchValue] = useState("");
+  const [currentPage, setCurrentPageState] = useState(pageFromUrl);
+  const [pageSize] = useState(10);
+
+  // Sincronizar o estado com o parâmetro de URL quando a URL mudar
+  useEffect(() => {
+    if (pageFromUrl !== currentPage) {
+      setCurrentPageState(pageFromUrl);
+    }
+  }, [pageFromUrl]);
 
   const debouncedSearch = useMemo(
     () => debounce((value: string) => {
-      setCurrentPage(1);
+      // Reseta para a primeira página e atualiza a URL ao pesquisar
+      updateUrl(1, value);
       queryClient.invalidateQueries({ 
         queryKey: QUERY_KEYS.USERS.EMPLOYEES() 
       });
@@ -29,11 +44,42 @@ export function useEmployees() {
 
   const setSearch = useCallback((value: string) => {
     setSearchValue(value);
+    
     if (debouncedSearch.cancel) {
       debouncedSearch.cancel();
     }
+
     debouncedSearch(value);
   }, [debouncedSearch]);
+  
+  // Função para atualizar a URL com os parâmetros de página e busca
+  const updateUrl = useCallback((page: number, searchValue: string = search) => {
+    const params = new URLSearchParams(searchParams.toString());
+    
+    // Atualizar parâmetro de página
+    if (page === 1) {
+      params.delete("page"); // Remove o parâmetro se for página 1 (padrão)
+    } else {
+      params.set("page", page.toString());
+    }
+    
+    // Atualizar parâmetro de busca
+    if (!searchValue) {
+      params.delete("q"); // Remove o parâmetro se a busca estiver vazia
+    } else {
+      params.set("q", searchValue);
+    }
+    
+    // Construir a nova URL e navegar
+    const newUrl = `${pathname}?${params.toString()}`;
+    router.push(newUrl);
+    
+    // Atualizar o estado local
+    setCurrentPageState(page);
+    if (searchValue !== search) {
+      setSearchValue(searchValue);
+    }
+  }, [pathname, router, searchParams, search]);
   
   useEffect(() => {
     return () => {
@@ -42,6 +88,14 @@ export function useEmployees() {
       }
     };
   }, [debouncedSearch]);
+
+  // Efeito para atualizar a busca a partir da URL
+  useEffect(() => {
+    const searchFromUrl = searchParams.get("q") || "";
+    if (searchFromUrl !== search) {
+      setSearchValue(searchFromUrl);
+    }
+  }, [searchParams]);
 
   const {
     data: employeesData = { users: [], pagination: {} },
@@ -82,15 +136,14 @@ export function useEmployees() {
     return []; // Retorna um array vazio se não for um array
   }, [employeesData.users]);
 
-  // Dados de paginação
   const pagination = useMemo(() => {
     return {
       limit: employeesData.pagination?.limit,
-      currentPage: employeesData.pagination?.page,
-      totalPages: employeesData.pagination?.totaPages,
-      totalItems: employeesData.pagination?.total
+      currentPage: employeesData.pagination?.page || currentPage,
+      totalPages: employeesData.pagination?.totalPages || 1,
+      totalItems: employeesData.pagination?.total || 0
     };
-  }, [employeesData.pagination]);
+  }, [employeesData.pagination, currentPage]);
 
   const navigateToEmployeeDetails = useCallback((id: string) => {
     router.push(`/employees/${id}`);
@@ -105,10 +158,10 @@ export function useEmployees() {
     await refetch();
   }, [queryClient, refetch]);
 
-  // Função para lidar com a mudança de página
+  // Função para lidar com a mudança de página, agora atualizando a URL
   const handlePageChange = useCallback((newPage: number) => {
-    setCurrentPage(newPage);
-  }, []);
+    updateUrl(newPage);
+  }, [updateUrl]);
 
   return {
     employees,
@@ -121,12 +174,10 @@ export function useEmployees() {
     navigateToEmployeeDetails,
     navigateToNewEmployee,
     getUserImageUrl,
-    // Exportando dados de paginação
     limit: pagination.limit,
     currentPage: pagination.currentPage,
     totalPages: pagination.totalPages,
     totalItems: pagination.totalItems,
     setCurrentPage: handlePageChange,
-    pageSize
   };
 }

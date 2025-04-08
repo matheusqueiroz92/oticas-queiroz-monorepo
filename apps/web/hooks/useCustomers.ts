@@ -2,7 +2,7 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useCallback, useMemo, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { api } from "@/app/services/authService";
 import { API_ROUTES } from "@/app/constants/api-routes";
 import { QUERY_KEYS } from "@/app/constants/query-keys";
@@ -11,16 +11,30 @@ import debounce from 'lodash/debounce';
 import { User } from "@/app/types/user";
 
 export function useCustomers() {
-  const [search, setSearchValue] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize] = useState(10);
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
   const router = useRouter();
   const queryClient = useQueryClient();
   const { getUserImageUrl } = useUsers();
+  
+  // Obter o valor da página da URL, padrão é 1 se não existir
+  const pageFromUrl = searchParams.get("page") ? parseInt(searchParams.get("page") as string, 10) : 1;
+  
+  const [search, setSearchValue] = useState("");
+  const [currentPage, setCurrentPageState] = useState(pageFromUrl);
+  const [pageSize] = useState(10);
+
+  // Sincronizar o estado com o parâmetro de URL quando a URL mudar
+  useEffect(() => {
+    if (pageFromUrl !== currentPage) {
+      setCurrentPageState(pageFromUrl);
+    }
+  }, [pageFromUrl]);
 
   const debouncedSearch = useMemo(
     () => debounce((value: string) => {
-      setCurrentPage(1);
+      // Reseta para a primeira página e atualiza a URL ao pesquisar
+      updateUrl(1, value);
       queryClient.invalidateQueries({ 
         queryKey: QUERY_KEYS.USERS.CUSTOMERS() 
       });
@@ -38,6 +52,35 @@ export function useCustomers() {
     debouncedSearch(value);
   }, [debouncedSearch]);
   
+  // Função para atualizar a URL com os parâmetros de página e busca
+  const updateUrl = useCallback((page: number, searchValue: string = search) => {
+    const params = new URLSearchParams(searchParams.toString());
+    
+    // Atualizar parâmetro de página
+    if (page === 1) {
+      params.delete("page"); // Remove o parâmetro se for página 1 (padrão)
+    } else {
+      params.set("page", page.toString());
+    }
+    
+    // Atualizar parâmetro de busca
+    if (!searchValue) {
+      params.delete("q"); // Remove o parâmetro se a busca estiver vazia
+    } else {
+      params.set("q", searchValue);
+    }
+    
+    // Construir a nova URL e navegar
+    const newUrl = `${pathname}?${params.toString()}`;
+    router.push(newUrl);
+    
+    // Atualizar o estado local
+    setCurrentPageState(page);
+    if (searchValue !== search) {
+      setSearchValue(searchValue);
+    }
+  }, [pathname, router, searchParams, search]);
+  
   useEffect(() => {
     return () => {
       if (debouncedSearch.cancel) {
@@ -46,6 +89,13 @@ export function useCustomers() {
     };
   }, [debouncedSearch]);
 
+  // Efeito para atualizar a busca a partir da URL
+  useEffect(() => {
+    const searchFromUrl = searchParams.get("q") || "";
+    if (searchFromUrl !== search) {
+      setSearchValue(searchFromUrl);
+    }
+  }, [searchParams]);
 
   const {
     data: customersData = { users: [], pagination: {} },
@@ -96,7 +146,7 @@ export function useCustomers() {
           error.response?.data?.message ===
             "Nenhum usuário com role 'customer' encontrado"
         ) {
-          return { users: [], pagination: {} };
+          return { users: [], pagination: { page: 1, totalPages: 1, total: 0 } };
         }
         throw error;
       }
@@ -117,11 +167,11 @@ export function useCustomers() {
   const pagination = useMemo(() => {
     return {
       limit: customersData.pagination?.limit,
-      currentPage: customersData.pagination?.page,
-      totalPages: customersData.pagination?.totalPages,
-      totalItems: customersData.pagination?.total
+      currentPage: customersData.pagination?.page || currentPage,
+      totalPages: customersData.pagination?.totalPages || 1,
+      totalItems: customersData.pagination?.total || 0
     };
-  }, [customersData.pagination]);
+  }, [customersData.pagination, currentPage]);
 
   const navigateToCustomerDetails = useCallback((id: string) => {
     router.push(`/customers/${id}`);
@@ -136,9 +186,10 @@ export function useCustomers() {
     await refetch();
   }, [queryClient, refetch]);
 
+  // Função para lidar com a mudança de página, agora atualizando a URL
   const handlePageChange = useCallback((newPage: number) => {
-    setCurrentPage(newPage);
-  }, []);
+    updateUrl(newPage);
+  }, [updateUrl]);
 
   return {
     customers,
