@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Cookies from "js-cookie";
 import {
   DollarSign,
@@ -32,7 +32,7 @@ import type { IPayment } from "@/app/types/payment";
 import { useOrders } from "@/hooks/useOrders";
 import { usePayments } from "@/hooks/usePayments";
 import { useCashRegister } from "@/hooks/useCashRegister";
-import { useUsers } from "@/hooks/useUsers";
+import { useEmployees } from "@/hooks/useEmployees";
 import { useLegacyClients } from "@/hooks/useLegacyClients";
 import { Employee } from "@/app/types/employee";
 import { formatDate } from "../../../app/utils/formatters"
@@ -77,7 +77,7 @@ export default function DashboardPage() {
 
   const { isLoading: isLoadingCashRegister, currentCashRegister, refetch: refetchCashRegister } = useCashRegister();
 
-  const { isLoading: isLoadingEmployees, employees } = useUsers();
+  const { isLoading: isLoadingEmployees, employees } = useEmployees();
 
   const { useSearchLegacyClient } = useLegacyClients();
   

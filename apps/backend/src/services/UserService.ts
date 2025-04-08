@@ -110,7 +110,7 @@ export class UserService {
       throw error;
     }
   }
-
+  
   async getAllUsers(
     page = 1,
     limit = 10,
@@ -150,6 +150,7 @@ export class UserService {
   
     return result;
   }
+  
 
   async getUsersByRole(
     role: string,
@@ -174,12 +175,14 @@ export class UserService {
 
   async getUserById(id: string): Promise<IUser> {
     const user = await this.userModel.findById(id);
+
     if (!user) {
       throw new NotFoundError(
         "Usuário não encontrado",
         ErrorCode.USER_NOT_FOUND
       );
     }
+
     return user;
   }
 
@@ -201,6 +204,17 @@ export class UserService {
       );
     }
 
+    return user;
+  }
+
+  async getUserByEmail(email: string): Promise<IUser> {
+    const user = await this.userModel.findByEmail(email);
+    if (!user) {
+      throw new NotFoundError(
+        "Usuário não encontrado",
+        ErrorCode.USER_NOT_FOUND
+      );
+    }
     return user;
   }
 
@@ -304,16 +318,5 @@ export class UserService {
     }
 
     await this.userModel.update(userId, { password: newPassword });
-  }
-
-  async getUserByEmail(email: string): Promise<IUser> {
-    const user = await this.userModel.findByEmail(email);
-    if (!user) {
-      throw new NotFoundError(
-        "Usuário não encontrado",
-        ErrorCode.USER_NOT_FOUND
-      );
-    }
-    return user;
   }
 }

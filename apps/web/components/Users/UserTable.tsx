@@ -9,11 +9,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { PaginationItems } from "../PaginationItems";
 
 interface UserTableProps {
   data: User[];
   columns: Column[];
   onDetailsClick: (id: string) => void;
+  currentPage: number;
+  totalPages: number;
+  setCurrentPage: (page: number) => void;
+  totalItems?: number;
+  pageSize?: number;
   sortField?: keyof User;
   sortDirection?: "asc" | "desc";
 }
@@ -22,6 +28,11 @@ export const UserTable: React.FC<UserTableProps> = ({
   data,
   columns,
   onDetailsClick,
+  currentPage,
+  totalPages,
+  setCurrentPage,
+  totalItems,
+  pageSize,
   sortField = "name",
   sortDirection = "asc",
 }) => {
@@ -45,36 +56,46 @@ export const UserTable: React.FC<UserTableProps> = ({
   }
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          {columns.map((column) => (
-            <TableHead key={column.key}>{column.header}</TableHead>
-          ))}
-          <TableHead>Ações</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {sortedData.map((item) => (
-          <TableRow key={item._id}>
+    <div className="space-y-4">
+      <Table>
+        <TableHeader>
+          <TableRow>
             {columns.map((column) => (
-              <TableCell key={column.key}>
-                {column.render
-                  ? column.render(item)
-                  : item[column.key as keyof User]}
-              </TableCell>
+              <TableHead key={column.key}>{column.header}</TableHead>
             ))}
-            <TableCell>
-              <Button
-                variant="outline"
-                onClick={() => onDetailsClick(item._id)}
-              >
-                Detalhes
-              </Button>
-            </TableCell>
+            <TableHead>Ações</TableHead>
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {sortedData.map((item) => (
+            <TableRow key={item._id}>
+              {columns.map((column) => (
+                <TableCell key={column.key}>
+                  {column.render
+                    ? column.render(item)
+                    : item[column.key as keyof User]}
+                </TableCell>
+              ))}
+              <TableCell>
+                <Button
+                  variant="outline"
+                  onClick={() => onDetailsClick(item._id)}
+                >
+                  Detalhes
+                </Button>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+
+      <PaginationItems
+        currentPage={currentPage}
+        totalPages={totalPages}
+        setCurrentPage={setCurrentPage}
+        totalItems={totalItems}
+        pageSize={pageSize}
+      />
+    </div>
   );
 };

@@ -34,7 +34,6 @@ export class UserController {
       const page = Number(req.query.page) || 1;
       const limit = Number(req.query.limit) || 10;
   
-      // Corrigir a tipagem aqui para evitar problemas
       let result: { users: IUser[]; total: number } = { users: [], total: 0 };
   
       if (serviceOrder) {

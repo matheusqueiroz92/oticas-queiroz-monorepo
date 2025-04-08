@@ -47,49 +47,6 @@ export class UserModel {
     return this.convertToIUser(savedUser);
   }
 
-  async findAll(
-    page = 1,
-    limit = 10,
-    filters: Record<string, any> = {}
-  ): Promise<{ users: IUser[]; total: number }> {
-    const skip = (page - 1) * limit;
-    
-    let query: any = {};
-    
-    if (filters.role) {
-      query.role = filters.role;
-    }
-    
-    if (filters.search) {
-      const searchRegex = new RegExp(filters.search, "i");
-      query.$or = [
-        { name: searchRegex },
-        { email: searchRegex },
-        { phone: searchRegex },
-        { address: searchRegex }
-      ];
-      
-      // Adicionar busca por CPF se o termo parece ser um CPF (só números)
-      if (/^\d+$/.test(filters.search)) {
-        query.$or.push({ cpf: { $regex: filters.search } });
-      }
-    }
-    
-    const [users, total] = await Promise.all([
-      User.find(query)
-        .skip(skip)
-        .limit(limit)
-        .sort({ createdAt: -1 })
-        .exec(),
-      User.countDocuments(query)
-    ]);
-    
-    return {
-      users: users.map(user => this.convertToIUser(user as unknown as UserDocument)),
-      total
-    };
-  }
-
   async update(
     id: string,
     updateData: Partial<IUser>,
@@ -150,74 +107,82 @@ export class UserModel {
     return user ? this.convertToIUser(user) : null;
   }
 
-  async search(searchTerm: string, page = 1, limit = 10): Promise<{ users: IUser[]; total: number }> {
-    if (!searchTerm || searchTerm.trim() === "") {
-      return this.findAll(page, limit);
+  async findAll(
+    page = 1,
+    limit = 10,
+    filters: Record<string, any> = {}
+  ): Promise<{ users: IUser[]; total: number }> {
+    const skip = (page - 1) * limit;
+    
+    let query: any = {};
+    
+    if (filters.role) {
+      query.role = filters.role;
     }
-  
-    const sanitizedTerm = searchTerm.trim().toLowerCase();
-    console.log(`Executando busca de usuários com termo: "${sanitizedTerm}"`);
-  
-    // Construir uma expressão regular para busca case-insensitive
-    const searchRegex = new RegExp(sanitizedTerm, "i");
     
-    // Verificar se o termo de busca é um CPF
-    const isCpfSearch = /^\d+$/.test(sanitizedTerm);
-    
-    // Construir a query
-    const query: any = {
-      $or: [
+    if (filters.search) {
+      const searchRegex = new RegExp(filters.search, "i");
+      query.$or = [
         { name: searchRegex },
         { email: searchRegex },
-      ]
-    };
-    
-    // Adicionar busca por CPF se o termo parece ser um CPF (só números)
-    if (isCpfSearch) {
-      query.$or.push({ cpf: { $regex: sanitizedTerm } });
+        { phone: searchRegex },
+        { address: searchRegex }
+      ];
+      
+      // Adicionar busca por CPF se o termo parece ser um CPF (só números)
+      if (/^\d+$/.test(filters.search)) {
+        query.$or.push({ cpf: { $regex: filters.search } });
+      }
     }
     
-    // Adicionar busca por outros campos relevantes
-    query.$or.push({ address: searchRegex });
-    query.$or.push({ phone: searchRegex });
-  
-    console.log("Query de busca construída:", JSON.stringify(query));
-  
-    const skip = (page - 1) * limit;
-  
     const [users, total] = await Promise.all([
       User.find(query)
         .skip(skip)
         .limit(limit)
-        .sort({ name: 1 })
+        .sort({ createdAt: -1 })
         .exec(),
       User.countDocuments(query)
-    ]);
-  
-    console.log(`Busca retornou ${users.length} usuários`);
-  
-    return {
-      users: users.map((user) => this.convertToIUser(user as unknown as UserDocument)),
-      total
-    };
-  }
-
-  async findByRole(role: string, page = 1, limit = 10): Promise<{ users: IUser[]; total: number }> {
-    const skip = (page - 1) * limit;
-    
-    const [users, total] = await Promise.all([
-      User.find({ role })
-        .skip(skip)
-        .limit(limit)
-        .sort({ name: 1 })
-        .exec(),
-      User.countDocuments({ role })
     ]);
     
     return {
       users: users.map(user => this.convertToIUser(user as unknown as UserDocument)),
       total
     };
+  }
+
+  async search(searchTerm: string, paginationOptions: { page: number, limit: number }): Promise<IUser[]> {
+    const sanitizedTerm = searchTerm.trim().toLowerCase();
+    
+    const searchRegex = new RegExp(sanitizedTerm, "i");
+  
+    const query: any = {
+      $or: [
+        { name: searchRegex },
+        { email: searchRegex },
+        { cpf: { $regex: sanitizedTerm } },
+        { address: searchRegex },
+        { phone: searchRegex }
+      ]
+    };
+  
+    const users = await User.find(query)
+      .skip((paginationOptions.page - 1) * paginationOptions.limit)
+      .limit(paginationOptions.limit)
+      .exec() as unknown as UserDocument[];
+  
+    return users.map((user) => this.convertToIUser(user));
+  }
+
+  async findByRole(role: string, paginationOptions: { page: number, limit: number }): Promise<IUser[]> {
+    const skip = (paginationOptions.page - 1) * paginationOptions.limit;
+    const limit = paginationOptions.limit;
+  
+    const users = await User.find({ role })
+      .skip(skip)
+      .limit(limit)
+      .exec() as unknown as UserDocument[];
+  
+    return users.map((user) => this.convertToIUser(user));
   }
 
   async delete(id: string): Promise<IUser | null> {

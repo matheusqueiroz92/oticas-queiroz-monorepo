@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/select";
 import { X, Calendar, Users, CreditCard, Beaker, AlertCircle } from "lucide-react";
 import { useLaboratories } from "@/hooks/useLaboratories";
-import { useUsers } from "@/hooks/useUsers";
+import { useEmployees } from "@/hooks/useEmployees";
 import { Employee } from "@/app/types/employee";
 
 export const OrderFilters = ({ onUpdateFilters }: any) => {
@@ -27,7 +27,7 @@ export const OrderFilters = ({ onUpdateFilters }: any) => {
   const [dateError, setDateError] = useState<string | null>(null);
   
   const { laboratories, isLoading: isLoadingLabs } = useLaboratories();
-  const { employees, isLoading: isLoadingEmployees } = useUsers();
+  const { employees, isLoading: isLoadingEmployees } = useEmployees();
 
   const getCurrentFilters = () => {
     const filters: Record<string, string> = {
@@ -78,6 +78,14 @@ export const OrderFilters = ({ onUpdateFilters }: any) => {
 
   useEffect(() => {
     if (validateDates()) {
+      // console.log('Aplicando filtros via OrderFilters:', { 
+      //   sort: "-createdAt",
+      //   status: selectedStatus,
+      //   employeeId: selectedEmployeeId,
+      //   paymentMethod: selectedPaymentMethod,
+      //   laboratoryId: selectedLaboratoryId,
+      //   dateRange 
+      // });
       
       const newFilters = getCurrentFilters();
       onUpdateFilters(newFilters);

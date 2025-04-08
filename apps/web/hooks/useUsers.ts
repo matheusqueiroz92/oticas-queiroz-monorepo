@@ -1,262 +1,69 @@
 "use client";
 
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/useToast";
+import { api } from "@/app/services/authService";
+import { API_ROUTES } from "@/app/constants/api-routes";
 import { QUERY_KEYS } from "@/app/constants/query-keys";
-import { 
-  getAllUsers, 
-  getUserById, 
-  getCustomers, 
-  getEmployees, 
-  createUser, 
-  updateUser, 
-  deleteUser, 
-  type UserFilters 
-} from "@/app/services/userService";
-import debounce from 'lodash/debounce';
 
-interface UseUsersOptions {
-  role?: 'customer' | 'employee' | 'all';
-  enableQueries?: boolean;
-}
-
-export function useUsers(options: UseUsersOptions = {}) {
-  const { role = 'all', enableQueries = true } = options;
-  const [filters, setFilters] = useState<UserFilters>({ sort: "name" });
-  const [currentPage, setCurrentPage] = useState(1);
-  const [search, setSearchValue] = useState("");
-  const [usersMap, setUsersMap] = useState<Record<string, any>>({});
-
+export function useUsers() {
   const router = useRouter();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [usersMap, setUsersMap] = useState<Record<string, any>>({});
+  const [isLoading, setIsLoading] = useState(false);
 
-  const filterKey = JSON.stringify(filters);
-
-  // Processamento de busca com debounce
-  const processSearch = useCallback((value: string) => {
-    const newFilters: UserFilters = { 
-      ...filters,
-      search: undefined,
-      cpf: undefined,
-      sort: "name" 
-    };
-    
-    if (value.trim()) {
-      const cleanSearch = value.trim().replace(/\D/g, '');
-      
-      if (/^\d{11}$/.test(cleanSearch)) {
-        newFilters.cpf = cleanSearch;
-        newFilters.search = undefined;
-      } else {
-        newFilters.search = value.trim();
-        newFilters.cpf = undefined;
-      }
-    }
-  
-    setCurrentPage(1);
-    setFilters(newFilters);
-  
-    const queryKey = role === 'customer' 
-      ? QUERY_KEYS.USERS.CUSTOMERS(JSON.stringify(newFilters))
-      : role === 'employee'
-      ? QUERY_KEYS.USERS.EMPLOYEES(JSON.stringify(newFilters))
-      : QUERY_KEYS.USERS.ALL;
-    
-    queryClient.invalidateQueries({ queryKey });
-  }, [filters, queryClient, role]);
-
-  const debouncedSearch = useMemo(
-    () => debounce(processSearch, 300),
-    [processSearch]
-  );
-
-  const setSearch = useCallback((value: string) => {
-    setSearchValue(value);
-    
-    if (debouncedSearch.cancel) {
-      debouncedSearch.cancel();
-    }
-    
-    debouncedSearch(value);
-  }, [debouncedSearch]);
-
-  useEffect(() => {
-    return () => {
-      if (debouncedSearch.cancel) {
-        debouncedSearch.cancel();
-      }
-    };
-  }, [debouncedSearch]);
-
-  // Função principal para buscar usuários com base no role
-  const getUsersQuery = useCallback(async () => {
+  const getAllUsers = useCallback(async () => {
+    setIsLoading(true);
     try {
-      const queryParams: UserFilters = {
-        ...filters,
-        page: currentPage,
-        limit: 10,
-      };
-
-      let response;
+      const response = await api.get(API_ROUTES.USERS.BASE);
       
-      if (role === 'customer') {
-        response = await getCustomers(queryParams);
-      } else if (role === 'employee') {
-        response = await getEmployees(queryParams);
-      } else {
-        response = await getAllUsers(queryParams);
-      }
-
-      // Garantir que o número de usuários retornados não exceda o limite por página
-      if (response.users && response.pagination) {
-        const limit = response.pagination.limit || 10;
-        if (response.users.length > limit) {
-          response.users = response.users.slice(0, limit);
-        }
-      }
-
-      // Atualizar mapa de usuários para consulta rápida
-      if (response.users && response.users.length > 0) {
-        const updatedUsersMap = response.users.reduce((acc, user) => {
-          acc[user._id] = user;
-          return acc;
-        }, {} as Record<string, any>);
-
-        setUsersMap(prevState => ({
-          ...prevState,
-          ...updatedUsersMap
-        }));
-      }
-
-      return response;
-    } catch (error) {
-      console.error('Erro ao buscar usuários:', error);
-      throw error;
+      const updatedUsersMap = response.data.reduce((acc: Record<string, any>, user: any) => {
+        acc[user._id] = user;
+        return acc;
+      }, {});
+      
+      setUsersMap(prevState => ({
+        ...prevState,
+        ...updatedUsersMap
+      }));
+      
+      queryClient.setQueryData(QUERY_KEYS.USERS.ALL, response.data);
+      
+      response.data.forEach((user: any) => {
+        queryClient.setQueryData(QUERY_KEYS.USERS.DETAIL(user._id), user);
+      });
+      
+      return response.data;
+    } catch (error: any) {
+      console.error('Erro ao buscar todos os usuários:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao buscar usuários",
+        description: error.response?.data?.message || "Ocorreu um erro ao buscar a lista de usuários",
+      });
+      return [];
+    } finally {
+      setIsLoading(false);
     }
-  }, [currentPage, filters, role]);
+  }, [queryClient, toast]);
 
-  // Query principal para buscar os usuários
-  const {
-    data, 
-    isLoading, 
-    error, 
-    refetch 
-  } = useQuery({
-    queryKey: role === 'customer' 
-      ? QUERY_KEYS.USERS.CUSTOMERS(filterKey) 
-      : role === 'employee'
-      ? QUERY_KEYS.USERS.EMPLOYEES(filterKey)
-      : QUERY_KEYS.USERS.ALL,
-    queryFn: getUsersQuery,
-    enabled: enableQueries,
-    staleTime: 0,
-    gcTime: 0,
-    refetchOnMount: true,
-    refetchOnWindowFocus: false,
-  });
-
-  const users = data?.users || [];
-  const totalPages = data?.pagination?.totalPages || 1;
-  const totalUsers = data?.pagination?.total || 0;
-
-  const customers = useMemo(() => {
-    if (role !== 'customer' && role !== 'all') return [];
-    return users.filter(user => user.role === 'customer');
-  }, [users, role]);
-
-  const employees = useMemo(() => {
-    if (role !== 'employee' && role !== 'all') return [];
-    return users.filter(user => user.role === 'employee');
-  }, [users, role]);
-
-  // Atualizar página e refazer a busca
-  const handlePageChange = useCallback((page: number) => {
-    setCurrentPage(page);
-    
-    setTimeout(() => {
-      refetch();
-    }, 0);
-  }, [refetch]);
-
-  // Atualizar filtros
-  const updateFilters = useCallback((newFilters: UserFilters) => {
-    const updatedFilters = {
-      ...newFilters,
-      sort: newFilters.sort || "name",
-      search: newFilters.search !== undefined ? newFilters.search : filters.search,
-      cpf: newFilters.cpf !== undefined ? newFilters.cpf : filters.cpf,
-    };
-    
-    setFilters(updatedFilters);
-    setCurrentPage(1);
-    
-    const queryKey = role === 'customer' 
-      ? QUERY_KEYS.USERS.CUSTOMERS(JSON.stringify(updatedFilters)) 
-      : role === 'employee'
-      ? QUERY_KEYS.USERS.EMPLOYEES(JSON.stringify(updatedFilters))
-      : QUERY_KEYS.USERS.ALL;
-    
-    queryClient.invalidateQueries({ queryKey });
-    
-    setTimeout(() => {
-      refetch();
-    }, 10);
-  }, [filters, queryClient, refetch, role]);
-
-  // Limpar filtros
-  const clearFilters = useCallback(() => {
-    const baseFilters = { sort: "name" };
-    setFilters(baseFilters);
-    setCurrentPage(1);
-    setSearchValue("");
-    
-    const queryKey = role === 'customer' 
-      ? QUERY_KEYS.USERS.CUSTOMERS() 
-      : role === 'employee'
-      ? QUERY_KEYS.USERS.EMPLOYEES()
-      : QUERY_KEYS.USERS.ALL;
-    
-    queryClient.invalidateQueries({ queryKey });
-    
-    setTimeout(() => {
-      refetch();
-    }, 10);
-  }, [queryClient, refetch, role]);
-
-  // Recarregar a lista de usuários
-  const refreshUsersList = useCallback(async () => {
-    const queryKey = role === 'customer' 
-      ? QUERY_KEYS.USERS.CUSTOMERS() 
-      : role === 'employee'
-      ? QUERY_KEYS.USERS.EMPLOYEES()
-      : QUERY_KEYS.USERS.ALL;
-    
-    await queryClient.invalidateQueries({ 
-      queryKey,
-      refetchType: 'all'
-    });
-    
-    await queryClient.resetQueries({ 
-      queryKey
-    });
-    
-    await refetch();
-  }, [queryClient, refetch, role]);
-
-  // Query específica para dados de um usuário
-  const useUserQuery = (id: string) => {
+  const useAllUsersQuery = (options = {}) => {
     return useQuery({
-      queryKey: QUERY_KEYS.USERS.DETAIL(id),
-      queryFn: () => getUserById(id),
-      enabled: enableQueries && !!id,
+      queryKey: QUERY_KEYS.USERS.ALL,
+      queryFn: getAllUsers,
+      ...options
     });
   };
 
-  // Buscar um usuário específico pelo ID
-  const fetchUserById = useCallback(async (id: string) => {
+  const fetchUserById = async (id: string) => {
+    const response = await api.get(API_ROUTES.USERS.BY_ID(id));
+    return response.data;
+  };
+
+  const getUserById = async (id: string) => {
     try {
       if (usersMap[id]) {
         return usersMap[id];
@@ -267,36 +74,31 @@ export function useUsers(options: UseUsersOptions = {}) {
         return cachedUser;
       }
       
-      const userData = await getUserById(id);
+      const response = await api.get(API_ROUTES.USERS.BY_ID(id));
       
-      if (userData) {
-        setUsersMap(prev => ({
-          ...prev,
-          [id]: userData
-        }));
-      }
+      setUsersMap(prev => ({
+        ...prev,
+        [id]: response.data
+      }));
       
-      return userData;
-    } catch (error) {
-      console.error(`Erro ao buscar usuário com ID ${id}:`, error);
-      throw error;
+      return response.data;
+    } catch (error: any) {
+      throw new Error(
+        error.response?.data?.message || "Erro ao buscar usuário"
+      );
     }
-  }, [queryClient, usersMap]);
+  };
 
-  // Buscar múltiplos usuários por ID
+  // Função para buscar múltiplos usuários por IDs
   const fetchUsers = useCallback(async (userIds: string[]) => {
     if (!userIds.length) return;
 
     try {
-      const users = await Promise.all(
-        userIds.map(id => fetchUserById(id).catch(() => null))
-      );
-      
-      // Atualizar o mapa de usuários com os resultados
+      // Usando Promise.all para carregar todos os usuários simultaneamente
+      const users = await Promise.all(userIds.map(id => fetchUserById(id)));
+      // Atualiza o mapa de usuários
       const updatedUsersMap = users.reduce((acc, user) => {
-        if (user && user._id) {
-          acc[user._id] = user;
-        }
+        acc[user._id] = user;
         return acc;
       }, {} as Record<string, any>);
 
@@ -305,46 +107,69 @@ export function useUsers(options: UseUsersOptions = {}) {
         ...updatedUsersMap
       }));
 
-      // Atualizar o cache do React Query
+      // Opcional: Atualizar o cache do React Query
       users.forEach(user => {
-        if (user && user._id) {
-          queryClient.setQueryData(QUERY_KEYS.USERS.DETAIL(user._id), user);
-        }
+        queryClient.setQueryData(['users', 'detail', user._id], user);
       });
     } catch (error) {
       console.error('Erro ao buscar usuários:', error);
     }
-  }, [fetchUserById, queryClient]);
+  }, [queryClient]);
 
-  // Obter o nome do usuário a partir do mapa de usuários
+  // Query para buscar um usuário específico
+  const useUserQuery = (id: string) => {
+    return useQuery({
+      queryKey: QUERY_KEYS.USERS.DETAIL(id),
+      queryFn: () => getUserById(id),
+      enabled: !!id,
+    });
+  };
+
+  // Função para obter o nome do usuário
   const getUserName = useCallback((userId: string | null | undefined): string => {
     if (!userId) return "Usuário não disponível";
     const user = usersMap[userId];
     return user?.name || "Carregando...";
+     // Retorna "Carregando..." até o nome ser carregado
   }, [usersMap]);
 
   // Mutation para criar usuário
   const createUserMutation = useMutation({
-    mutationFn: createUser,
-    onSuccess: (data) => {
+    mutationFn: async (formData: FormData) => {
+      const response = await api.post(API_ROUTES.AUTH.REGISTER, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      return response.data;
+    },
+    onSuccess: (data, variables) => {
+      const role = variables.get("role") as string;
       toast({
-        title: "Usuário cadastrado",
-        description: "O usuário foi cadastrado com sucesso."
+        title:
+          role === "customer" ? "Cliente cadastrado" : "Funcionário cadastrado",
+        description:
+          role === "customer"
+            ? "O cliente foi cadastrado com sucesso."
+            : "O funcionário foi cadastrado com sucesso.",
       });
 
       // Invalidar queries relevantes
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.USERS.ALL });
-      
-      // Invalidar queries específicas baseadas no papel do usuário
-      if (data && data.role === "customer") {
+      if (role === "customer") {
         queryClient.invalidateQueries({
           queryKey: QUERY_KEYS.USERS.CUSTOMERS(),
         });
-      } else if (data && data.role === "employee") {
+        router.push("/customers");
+      } else {
         queryClient.invalidateQueries({
           queryKey: QUERY_KEYS.USERS.EMPLOYEES(),
         });
+        router.push("/employees");
       }
+      
+      // Limpar cache de usuários para forçar recarregamento
+      setUsersMap({});
     },
     onError: (error: any) => {
       toast({
@@ -357,100 +182,8 @@ export function useUsers(options: UseUsersOptions = {}) {
     },
   });
 
-  // Mutation para atualizar usuário
-  const updateUserMutation = useMutation({
-    mutationFn: ({ id, userData }: { id: string; userData: FormData }) => 
-      updateUser(id, userData),
-    onSuccess: (data) => {
-      toast({
-        title: "Usuário atualizado",
-        description: "Os dados do usuário foram atualizados com sucesso."
-      });
-
-      // Invalidar queries relevantes
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.USERS.ALL });
-      queryClient.invalidateQueries({ 
-        queryKey: QUERY_KEYS.USERS.DETAIL(data?._id || "") 
-      });
-      
-      // Invalidar queries específicas baseadas no papel do usuário
-      if (data && data.role === "customer") {
-        queryClient.invalidateQueries({
-          queryKey: QUERY_KEYS.USERS.CUSTOMERS(),
-        });
-      } else if (data && data.role === "employee") {
-        queryClient.invalidateQueries({
-          queryKey: QUERY_KEYS.USERS.EMPLOYEES(),
-        });
-      }
-    },
-    onError: (error: any) => {
-      toast({
-        variant: "destructive",
-        title: "Erro ao atualizar usuário",
-        description:
-          error.response?.data?.message ||
-          "Ocorreu um erro ao atualizar os dados do usuário",
-      });
-    },
-  });
-
-  // Mutation para deletar usuário
-  const deleteUserMutation = useMutation({
-    mutationFn: deleteUser,
-    onSuccess: () => {
-      toast({
-        title: "Usuário removido",
-        description: "O usuário foi removido com sucesso."
-      });
-
-      // Invalidar queries relevantes
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.USERS.ALL });
-      
-      if (role === 'customer') {
-        queryClient.invalidateQueries({
-          queryKey: QUERY_KEYS.USERS.CUSTOMERS(),
-        });
-      } else if (role === 'employee') {
-        queryClient.invalidateQueries({
-          queryKey: QUERY_KEYS.USERS.EMPLOYEES(),
-        });
-      }
-    },
-    onError: (error: any) => {
-      toast({
-        variant: "destructive",
-        title: "Erro ao remover usuário",
-        description:
-          error.response?.data?.message ||
-          "Ocorreu um erro ao remover o usuário",
-      });
-    },
-  });
-
-  // Funções de navegação
-  const navigateToUserDetails = useCallback((id: string) => {
-    const route = role === 'customer' 
-      ? `/customers/${id}` 
-      : role === 'employee'
-      ? `/employees/${id}`
-      : `/users/${id}`;
-    
-    router.push(route);
-  }, [router, role]);
-
-  const navigateToNewUser = useCallback(() => {
-    const route = role === 'customer' 
-      ? '/customers/new' 
-      : role === 'employee'
-      ? '/employees/new'
-      : '/users/new';
-    
-    router.push(route);
-  }, [router, role]);
-
   // Função para obter URL da imagem do usuário
-  const getUserImageUrl = useCallback((imagePath?: string): string => {
+  const getUserImageUrl = (imagePath?: string): string => {
     if (!imagePath) return "";
 
     if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
@@ -464,55 +197,28 @@ export function useUsers(options: UseUsersOptions = {}) {
     }
 
     return `${baseUrl}/images/users/${imagePath}`;
-  }, []);
+  };
 
-  // Limpar o cache de usuários
+  // Função para limpar o cache
   const clearCache = useCallback(() => {
     setUsersMap({});
   }, []);
 
   return {
-    // Dados
-    users,
-    customers,
-    employees,
-    totalPages,
-    totalUsers,
-    currentPage,
-    filters,
-    search,
-    isLoading,
-    error: error ? String(error) : null,
-    usersMap,
-    
-    // Ações
-    setSearch,
-    setCurrentPage: handlePageChange,
-    updateFilters,
-    clearFilters,
-    refreshUsersList,
-    
-    // Funções para usuarios específicos
-    getUserById: fetchUserById,
+    getUserById,
     useUserQuery,
+    createUserMutation,
+    getUserImageUrl,
+    
+    // Novas funções
+    getAllUsers,
+    useAllUsersQuery,
+    
+    // Funções existentes para gerenciamento de cache
+    usersMap,
+    isLoading,
     fetchUsers,
     getUserName,
-    getUserImageUrl,
-    clearCache,
-    
-    // Navegação
-    navigateToUserDetails,
-    navigateToNewUser,
-    
-    // Mutações
-    createUserMutation,
-    updateUserMutation,
-    deleteUserMutation,
-    
-    // Aliases específicos para compatibilidade retroativa
-    navigateToCustomerDetails: (id: string) => navigateToUserDetails(id),
-    navigateToEmployeeDetails: (id: string) => navigateToUserDetails(id),
-    navigateToNewCustomer: () => navigateToNewUser(),
-    navigateToNewEmployee: () => navigateToNewUser(),
+    clearCache
   };
 }
