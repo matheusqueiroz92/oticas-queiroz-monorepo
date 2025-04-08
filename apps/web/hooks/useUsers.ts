@@ -20,7 +20,7 @@ export function useUsers() {
     try {
       const response = await api.get(API_ROUTES.USERS.BASE);
       
-      const updatedUsersMap = response.data.reduce((acc: Record<string, any>, user: any) => {
+      const updatedUsersMap = response.data.users.reduce((acc: Record<string, any>, user: any) => {
         acc[user._id] = user;
         return acc;
       }, {});
@@ -32,7 +32,7 @@ export function useUsers() {
       
       queryClient.setQueryData(QUERY_KEYS.USERS.ALL, response.data);
       
-      response.data.forEach((user: any) => {
+      response.data.users.forEach((user: any) => {
         queryClient.setQueryData(QUERY_KEYS.USERS.DETAIL(user._id), user);
       });
       
@@ -89,7 +89,6 @@ export function useUsers() {
     }
   };
 
-  // Função para buscar múltiplos usuários por IDs
   const fetchUsers = useCallback(async (userIds: string[]) => {
     if (!userIds.length) return;
 
@@ -116,7 +115,6 @@ export function useUsers() {
     }
   }, [queryClient]);
 
-  // Query para buscar um usuário específico
   const useUserQuery = (id: string) => {
     return useQuery({
       queryKey: QUERY_KEYS.USERS.DETAIL(id),
@@ -125,15 +123,19 @@ export function useUsers() {
     });
   };
 
-  // Função para obter o nome do usuário
   const getUserName = useCallback((userId: string | null | undefined): string => {
     if (!userId) return "Usuário não disponível";
+    
     const user = usersMap[userId];
-    return user?.name || "Carregando...";
-     // Retorna "Carregando..." até o nome ser carregado
-  }, [usersMap]);
+    if (user && user.name) {
+      return user.name;
+    }
+    
+    fetchUsers([userId]);
+    
+    return "Carregando...";
+  }, [usersMap, fetchUsers]);
 
-  // Mutation para criar usuário
   const createUserMutation = useMutation({
     mutationFn: async (formData: FormData) => {
       const response = await api.post(API_ROUTES.AUTH.REGISTER, formData, {
@@ -182,7 +184,6 @@ export function useUsers() {
     },
   });
 
-  // Função para obter URL da imagem do usuário
   const getUserImageUrl = (imagePath?: string): string => {
     if (!imagePath) return "";
 
@@ -199,7 +200,6 @@ export function useUsers() {
     return `${baseUrl}/images/users/${imagePath}`;
   };
 
-  // Função para limpar o cache
   const clearCache = useCallback(() => {
     setUsersMap({});
   }, []);
@@ -209,12 +209,8 @@ export function useUsers() {
     useUserQuery,
     createUserMutation,
     getUserImageUrl,
-    
-    // Novas funções
     getAllUsers,
     useAllUsersQuery,
-    
-    // Funções existentes para gerenciamento de cache
     usersMap,
     isLoading,
     fetchUsers,
