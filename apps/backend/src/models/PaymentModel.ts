@@ -191,18 +191,33 @@ export class PaymentModel {
     cashRegisterId: string,
     type?: IPayment["type"]
   ): Promise<IPayment[]> {
-    if (!this.isValidId(cashRegisterId)) return [];
-
-    const query: FilterQuery<PaymentDocument> = { cashRegisterId };
-    if (type) query.type = type;
-
-    const payments = (await Payment.find(query)
-      .populate("orderId")
-      .populate("userId", "name email")
-      .populate("legacyClientId")
-      .exec()) as PaymentDocument[];
-
-    return payments.map((payment) => this.convertToIPayment(payment));
+    try {
+      if (!this.isValidId(cashRegisterId)) return [];
+  
+      const query: FilterQuery<PaymentDocument> = { 
+        cashRegisterId,
+        isDeleted: { $ne: true } // Ignorar registros excluídos
+      };
+      
+      if (type) query.type = type;
+  
+      const payments = (await Payment.find(query)
+        .populate("orderId")
+        .populate("createdBy", "name email")
+        .populate("customerId", "name email")
+        .populate("legacyClientId")
+        .exec()) as PaymentDocument[];
+  
+      // Filtra documentos nulos ou inválidos antes de convertê-los
+      const validPayments = payments
+        .filter(payment => payment && payment._id)
+        .map(payment => this.convertToIPayment(payment));
+        
+      return validPayments;
+    } catch (error) {
+      console.error(`Erro ao buscar pagamentos para o caixa ${cashRegisterId}:`, error);
+      return []; // Retorna array vazio em caso de erro ao invés de propagar
+    }
   }
 
   async updateStatus(

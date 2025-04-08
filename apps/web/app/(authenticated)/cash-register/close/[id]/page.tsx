@@ -61,7 +61,7 @@ export default function CloseCashRegisterPage() {
       setShowConfirmDialog(false);
     },
   });
-
+  
   useEffect(() => {
     if (cashRegister && cashRegister.status === "open") {
       form.setValue("closingBalance", cashRegister.currentBalance);

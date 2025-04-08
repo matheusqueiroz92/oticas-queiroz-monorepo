@@ -4,7 +4,6 @@ import type mongoose from "mongoose";
 import { type Document, Types } from "mongoose";
 import type { IPayment } from "../interfaces/IPayment";
 
-// Corrigir a interface para representar o documento do Mongoose
 interface CashRegisterDocument extends Document {
   _id: Types.ObjectId;
   openingDate: Date;
@@ -61,7 +60,6 @@ interface UpdateOperation {
   };
 }
 
-// Para a atualização com sessão, usamos um tipo diferente
 interface UpdateData {
   currentBalance: number;
   "sales.total"?: number;
@@ -109,10 +107,8 @@ export class CashRegisterModel {
   ): Promise<{ registers: ICashRegister[]; total: number }> {
     const skip = (page - 1) * limit;
 
-    // Criar objeto de consulta
     const query: Record<string, unknown> = { isDeleted: { $ne: true } };
 
-    // Adicionar filtros extras se fornecidos
     if (filters.status) {
       query.status = filters.status;
     }
@@ -174,7 +170,7 @@ export class CashRegisterModel {
     }
   ): Promise<ICashRegister | null> {
     if (!this.isValidId(id)) return null;
-
+  
     const register = (await CashRegister.findByIdAndUpdate(
       id,
       {
@@ -194,9 +190,9 @@ export class CashRegisterModel {
       .populate("openedBy", "name email")
       .populate("closedBy", "name email")
       .exec()) as CashRegisterDocument | null;
-
+  
     if (!register) return null;
-
+  
     const result = this.convertToICashRegister(register);
     return {
       ...result,
@@ -221,7 +217,6 @@ export class CashRegisterModel {
 
     let query = CashRegister.findById(id);
 
-    // Se não devemos incluir registros excluídos, adicionar a condição
     if (!includeDeleted) {
       query = query.where({ isDeleted: { $ne: true } });
     }

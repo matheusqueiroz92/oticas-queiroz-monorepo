@@ -48,7 +48,7 @@ export class PaymentService {
     this.userModel = new UserModel();
     this.legacyClientModel = new LegacyClientModel();
     this.exportUtils = new ExportUtils();
-    this.cache = new NodeCache({ stdTTL: 300 }); // Cache com expiração de 5 minutos
+    this.cache = new NodeCache({ stdTTL: 300 });
   }
 
   /**
@@ -389,12 +389,12 @@ export class PaymentService {
     await this.updateCashRegister(cashRegisterId, payment);
 
     // Atualizar o caixa
-    await this.cashRegisterModel.updateSalesAndPayments(
-      cashRegisterId,
-      payment.type,
-      payment.amount,
-      registerMethod
-    );
+    // await this.cashRegisterModel.updateSalesAndPayments(
+    //   cashRegisterId,
+    //   payment.type,
+    //   payment.amount,
+    //   registerMethod
+    // );
 
     // Se for pagamento de dívida, atualizar a dívida do cliente
     if (payment.type === "debt_payment") {

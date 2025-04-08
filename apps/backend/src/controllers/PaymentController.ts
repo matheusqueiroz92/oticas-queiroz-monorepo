@@ -195,38 +195,42 @@ export class PaymentController {
     try {
       const page = Number(req.query.page) || 1;
       const limit = Number(req.query.limit) || 10;
-
+  
       const filters: Partial<IPayment> = {};
-
+  
       if (req.query.type) {
         const type = String(req.query.type);
         if (["sale", "debt_payment", "expense"].includes(type)) {
           filters.type = type as IPayment["type"];
         }
       }
-
+  
       if (req.query.paymentMethod) {
         const method = String(req.query.paymentMethod);
         if (
-          ["credit", "debit", "cash", "pix", "installment"].includes(method)
+          ["credit", "debit", "cash", "pix", "bank_slip", "promissory_note"].includes(method)
         ) {
           filters.paymentMethod = method as IPayment["paymentMethod"];
         }
       }
-
+  
       if (req.query.status) {
         const status = String(req.query.status);
         if (["pending", "completed", "cancelled"].includes(status)) {
           filters.status = status as IPayment["status"];
         }
       }
-
+  
+      if (req.query.cashRegisterId) {
+        filters.cashRegisterId = String(req.query.cashRegisterId);
+      }
+  
       const result = await this.paymentService.getAllPayments(
         page,
         limit,
         filters
       );
-
+  
       res.status(200).json({
         payments: result.payments,
         pagination: {

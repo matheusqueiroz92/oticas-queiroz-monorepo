@@ -136,11 +136,11 @@ export class CashRegisterService {
   async closeRegister(data: CloseRegisterInput): Promise<ICashRegister> {
     const openRegister = await this.validateOpenRegister();
     this.validateBalance(data.closingBalance);
-
+  
     if (!openRegister || !openRegister._id) {
       throw new CashRegisterError("Não há caixa aberto");
     }
-
+  
     const difference = data.closingBalance - openRegister.currentBalance;
     const observations = [
       data.observations,
@@ -151,7 +151,9 @@ export class CashRegisterService {
     ]
       .filter(Boolean)
       .join("\n");
-
+  
+    // IMPORTANTE: Não atualize o currentBalance no fechamento, 
+    // apenas defina o closingBalance como o valor informado
     const closedRegister = await this.cashRegisterModel.closeRegister(
       openRegister._id,
       {
@@ -160,11 +162,11 @@ export class CashRegisterService {
         observations,
       }
     );
-
+  
     if (!closedRegister) {
       throw new CashRegisterError("Erro ao fechar o caixa");
     }
-
+  
     return closedRegister;
   }
 
@@ -189,48 +191,85 @@ export class CashRegisterService {
   }
 
   async getRegisterSummary(id: string): Promise<RegisterSummary> {
-    const register = await this.cashRegisterModel.findById(id);
-    if (!register) {
-      throw new CashRegisterError("Caixa não encontrado");
-    }
-
-    const payments = await this.paymentModel.findByCashRegister(id);
-
-    const summary: RegisterSummary = {
-      register,
-      payments: {
-        sales: {
-          total: 0,
-          byMethod: {},
-        },
-        debts: {
-          received: 0,
-          byMethod: {},
-        },
-        expenses: {
-          total: 0,
-          byCategory: {},
-        },
-      },
-    };
-
-    for (const payment of payments) {
-      if (payment.type === "sale") {
-        summary.payments.sales.total += payment.amount;
-        summary.payments.sales.byMethod[payment.paymentMethod] =
-          (summary.payments.sales.byMethod[payment.paymentMethod] || 0) +
-          payment.amount;
-      } else if (payment.type === "debt_payment") {
-        summary.payments.debts.received += payment.amount;
-        summary.payments.debts.byMethod[payment.paymentMethod] =
-          (summary.payments.debts.byMethod[payment.paymentMethod] || 0) +
-          payment.amount;
-      } else if (payment.type === "expense") {
-        summary.payments.expenses.total += payment.amount;
+    try {
+      const register = await this.cashRegisterModel.findById(id);
+      if (!register) {
+        throw new CashRegisterError("Caixa não encontrado");
       }
+  
+      const payments = await this.paymentModel.findByCashRegister(id);
+  
+      const summary: RegisterSummary = {
+        register,
+        payments: {
+          sales: {
+            total: 0,
+            byMethod: {},
+          },
+          debts: {
+            received: 0,
+            byMethod: {},
+          },
+          expenses: {
+            total: 0,
+            byCategory: {},
+          },
+        },
+      };
+  
+      // Verificar se payments é um array válido
+      if (Array.isArray(payments)) {
+        for (const payment of payments) {
+          // Verificar se payment é um objeto válido antes de processá-lo
+          if (!payment || typeof payment !== 'object') continue;
+          
+          // Garantir que payment.amount seja um número válido
+          const amount = Number(payment.amount) || 0;
+          
+          if (payment.type === "sale") {
+            summary.payments.sales.total += amount;
+            
+            // Garantir que payment.paymentMethod exista e seja uma string
+            const method = payment.paymentMethod ? String(payment.paymentMethod) : 'unknown';
+            
+            // Inicializar o método de pagamento se necessário
+            if (!summary.payments.sales.byMethod[method]) {
+              summary.payments.sales.byMethod[method] = 0;
+            }
+            
+            summary.payments.sales.byMethod[method] += amount;
+          } else if (payment.type === "debt_payment") {
+            summary.payments.debts.received += amount;
+            
+            // Garantir que payment.paymentMethod exista e seja uma string
+            const method = payment.paymentMethod ? String(payment.paymentMethod) : 'unknown';
+            
+            // Inicializar o método de pagamento se necessário
+            if (!summary.payments.debts.byMethod[method]) {
+              summary.payments.debts.byMethod[method] = 0;
+            }
+            
+            summary.payments.debts.byMethod[method] += amount;
+          } else if (payment.type === "expense") {
+            summary.payments.expenses.total += amount;
+            
+            // // Processar categoria se existir
+            // const category = payment.category ? String(payment.category) : 'uncategorized';
+            
+            // if (!summary.payments.expenses.byCategory[category]) {
+            //   summary.payments.expenses.byCategory[category] = 0;
+            // }
+            
+            // summary.payments.expenses.byCategory[category] += amount;
+          }
+        }
+      }
+  
+      return summary;
+    } catch (error) {
+      console.error("Erro ao gerar resumo do caixa:", error);
+      throw error; // Repassar o erro para ser tratado pelo controller
     }
-
-    return summary;
   }
 
   async getDailySummary(date: Date): Promise<{

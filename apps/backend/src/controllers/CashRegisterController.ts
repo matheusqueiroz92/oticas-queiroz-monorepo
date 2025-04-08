@@ -33,7 +33,6 @@ export class CashRegisterController {
       const page = Number(req.query.page) || 1;
       const limit = Number(req.query.limit) || 10;
 
-      // Extrair filtros da query
       const filters: Record<string, unknown> = {};
       if (req.query.status) filters.status = req.query.status;
       if (req.query.startDate) filters.startDate = req.query.startDate;
@@ -171,16 +170,25 @@ export class CashRegisterController {
 
   async getRegisterSummary(req: Request, res: Response): Promise<void> {
     try {
+      console.log(`Buscando resumo do caixa: ${req.params.id}`);
       const summary = await this.cashRegisterService.getRegisterSummary(
         req.params.id
       );
       res.status(200).json(summary);
     } catch (error) {
+      console.error("Erro ao buscar resumo do caixa:", error);
+      
       if (error instanceof CashRegisterError) {
         res.status(404).json({ message: error.message });
         return;
       }
-      res.status(500).json({ message: "Erro interno do servidor" });
+      
+      res.status(500).json({ 
+        message: "Erro interno do servidor",
+        details: process.env.NODE_ENV !== "production" 
+          ? error instanceof Error ? error.message : String(error) 
+          : undefined
+      });
     }
   }
 

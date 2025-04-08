@@ -134,7 +134,10 @@ export async function getPaymentsByCashRegister(
 ): Promise<IPayment[]> {
   try {
     const response = await api.get("/api/payments", {
-      params: { cashRegisterId },
+      params: { 
+        cashRegisterId, 
+        limit: 1000
+      },
     });
 
     let payments: IPayment[] = [];

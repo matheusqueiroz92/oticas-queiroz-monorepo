@@ -109,8 +109,10 @@ export function useCustomers() {
   const customers = useMemo(() => {
     if (Array.isArray(customersData.users)) {
       const onlyCustomers = customersData.users.filter((user: User) => user.role === 'customer');
+      console.log(onlyCustomers);
       return [...onlyCustomers].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     }
+    
     return [];
   }, [customersData.users]);
 
