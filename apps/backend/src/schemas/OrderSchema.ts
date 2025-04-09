@@ -22,7 +22,7 @@ const orderSchema = new Schema<IOrder>({
   paymentMethod: {
     type: String, 
     required: true,
-    enum: ["credit", "debit", "cash", "pix", "installment"],
+    enum: ["credit", "debit", "cash", "pix", "installment", "bank_slip", "promissory_note"],
   },
   paymentEntry: Number,
   installments: Number,
