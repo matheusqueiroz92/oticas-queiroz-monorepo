@@ -7,40 +7,85 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Loader2 } from "lucide-react";
 import type { Customer } from "@/app/types/customer";
 import type { UseFormReturn } from "react-hook-form";
 import type { OrderFormValues } from "@/app/types/form-types";
+import { useToast } from "@/hooks/useToast";
 
 interface ClientSearchProps {
   customers: Customer[];
   form: UseFormReturn<OrderFormValues, any, undefined>;
   onClientSelect: (clientId: string, name: string) => void;
+  fetchAllCustomers: (searchQuery?: string) => Promise<Customer[]>;
 }
 
 export default function ClientSearch({
   customers,
   form,
   onClientSelect,
+  fetchAllCustomers,
 }: ClientSearchProps) {
   const [customerSearch, setCustomerSearch] = useState("");
   const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const suggestionsRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
+  // Efeito para buscar clientes quando o usuário digita
   useEffect(() => {
-    if (!customerSearch.trim()) {
-      setFilteredCustomers([]);
-      return;
-    }
+    // Função para buscar clientes usando o método fornecido
+    const searchCustomers = async (query: string) => {
+      if (!query.trim()) {
+        setFilteredCustomers([]);
+        return;
+      }
 
-    const searchLower = customerSearch.toLowerCase();
-    const filtered = customers.filter((customer) =>
-      customer.name?.toLowerCase().includes(searchLower)
-    );
-    setFilteredCustomers(filtered);
+      setIsSearching(true);
+      try {
+        // Buscar clientes usando o método otimizado
+        const searchResults = await fetchAllCustomers(query);
+        
+        // Ordenar os resultados por nome
+        const sortedCustomers = [...searchResults].sort((a, b) => 
+          (a.name || '').localeCompare(b.name || '')
+        );
+        
+        setFilteredCustomers(sortedCustomers);
+      } catch (error) {
+        console.error("Erro ao buscar clientes:", error);
+        toast({
+          variant: "destructive",
+          title: "Erro na busca",
+          description: "Não foi possível buscar clientes. Tente novamente."
+        });
+        setFilteredCustomers([]);
+      } finally {
+        setIsSearching(false);
+      }
+    };
 
-    setShowSuggestions(customerSearch.trim().length > 0);
-  }, [customerSearch, customers]);
+    // Debounce para não fazer muitas requisições
+    const delayDebounceFn = setTimeout(() => {
+      if (customerSearch.trim().length >= 2) {
+        searchCustomers(customerSearch);
+        setShowSuggestions(true);
+      } else if (customerSearch.trim()) {
+        // Para buscas com 1 caractere, filtra apenas localmente
+        const localFiltered = customers.filter((customer) =>
+          customer.name?.toLowerCase().includes(customerSearch.toLowerCase())
+        );
+        setFilteredCustomers(localFiltered);
+        setShowSuggestions(true);
+      } else {
+        setFilteredCustomers([]);
+        setShowSuggestions(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [customerSearch, customers, toast]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -97,7 +142,12 @@ export default function ClientSearch({
                 ref={suggestionsRef}
                 className="absolute z-10 w-full bg-white border rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto"
               >
-                {filteredCustomers.length > 0 ? (
+                {isSearching ? (
+                  <div className="p-3 text-center">
+                    <Loader2 className="animate-spin h-5 w-5 mx-auto mb-2" />
+                    <p className="text-sm text-gray-500">Buscando clientes...</p>
+                  </div>
+                ) : filteredCustomers.length > 0 ? (
                   <ul className="py-1">
                     {filteredCustomers.map((customer) => (
                       <li key={customer._id} className="p-0">
@@ -111,6 +161,11 @@ export default function ClientSearch({
                           {customer.phone && (
                             <span className="block text-xs text-gray-500">
                               {customer.phone}
+                            </span>
+                          )}
+                          {customer.cpf && (
+                            <span className="block text-xs text-gray-500">
+                              CPF: {customer.cpf}
                             </span>
                           )}
                         </button>

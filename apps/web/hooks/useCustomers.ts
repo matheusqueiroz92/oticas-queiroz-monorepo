@@ -9,11 +9,23 @@ import { QUERY_KEYS } from "@/app/constants/query-keys";
 import { useUsers } from "@/hooks/useUsers";
 import debounce from 'lodash/debounce';
 import { User } from "@/app/types/user";
+import { Customer } from "@/app/types/customer";
 
-export function useCustomers() {
-  const [search, setSearchValue] = useState("");
+interface UseCustomersOptions {
+  pageSize?: number;
+  initialSearch?: string;
+  enablePagination?: boolean;
+}
+
+export function useCustomers(options: UseCustomersOptions = {}) {
+  const {
+    pageSize = 10,
+    initialSearch = "",
+    enablePagination = true
+  } = options;
+  
+  const [search, setSearchValue] = useState(initialSearch);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize] = useState(10);
   const router = useRouter();
   const queryClient = useQueryClient();
   const { getUserImageUrl } = useUsers();
@@ -46,6 +58,51 @@ export function useCustomers() {
     };
   }, [debouncedSearch]);
 
+  // Nova função para buscar todos os clientes (sem paginação)
+  const fetchAllCustomers = useCallback(async (searchQuery: string = "") => {
+    try {
+      const timestamp = new Date().getTime();
+      
+      const searchParams: Record<string, any> = { 
+        role: "customer",
+        _t: timestamp,
+        limit: 1000 // Um limite alto para buscar praticamente todos
+      };
+      
+      if (searchQuery) {
+        const cleanSearch = searchQuery.trim().replace(/\D/g, '');
+        
+        if (/^\d{11}$/.test(cleanSearch)) {
+          searchParams.cpf = cleanSearch;
+        } else {
+          searchParams.search = searchQuery;
+        }
+      }
+      
+      const response = await api.get(API_ROUTES.USERS.BASE, {
+        params: searchParams,
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+          'X-Timestamp': timestamp.toString()
+        }
+      });
+
+      let customers: Customer[] = [];
+      
+      if (Array.isArray(response.data)) {
+        customers = response.data.filter((user: any) => user.role === 'customer');
+      } else if (response.data?.users && Array.isArray(response.data.users)) {
+        customers = response.data.users.filter((user: any) => user.role === 'customer');
+      }
+      
+      return customers;
+    } catch (error) {
+      console.error("Erro ao buscar todos os clientes:", error);
+      return [];
+    }
+  }, []);
 
   const {
     data: customersData = { users: [], pagination: {} },
@@ -60,10 +117,13 @@ export function useCustomers() {
         
         const searchParams: Record<string, any> = { 
           role: "customer",
-          _t: timestamp,
-          page: currentPage,
-          limit: pageSize
+          _t: timestamp
         };
+        
+        if (enablePagination) {
+          searchParams.page = currentPage;
+          searchParams.limit = pageSize;
+        }
         
         if (search) {
           const cleanSearch = search.trim().replace(/\D/g, '');
@@ -109,7 +169,6 @@ export function useCustomers() {
   const customers = useMemo(() => {
     if (Array.isArray(customersData.users)) {
       const onlyCustomers = customersData.users.filter((user: User) => user.role === 'customer');
-      console.log(onlyCustomers);
       return [...onlyCustomers].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     }
     
@@ -118,12 +177,12 @@ export function useCustomers() {
 
   const pagination = useMemo(() => {
     return {
-      limit: customersData.pagination?.limit,
-      currentPage: customersData.pagination?.page,
-      totalPages: customersData.pagination?.totalPages,
-      totalItems: customersData.pagination?.total
+      limit: customersData.pagination?.limit || pageSize,
+      currentPage: customersData.pagination?.page || currentPage,
+      totalPages: customersData.pagination?.totalPages || 1,
+      totalItems: customersData.pagination?.total || 0
     };
-  }, [customersData.pagination]);
+  }, [customersData.pagination, currentPage, pageSize]);
 
   const navigateToCustomerDetails = useCallback((id: string) => {
     router.push(`/customers/${id}`);
@@ -153,6 +212,7 @@ export function useCustomers() {
     navigateToCustomerDetails,
     navigateToNewCustomer,
     getUserImageUrl,
+    fetchAllCustomers,
     limit: pagination.limit,
     currentPage: pagination.currentPage,
     totalPages: pagination.totalPages,

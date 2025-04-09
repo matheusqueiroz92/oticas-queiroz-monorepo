@@ -26,6 +26,7 @@ import { useRef, useState, useEffect } from "react";
 import { useProducts } from "@/hooks/useProducts";
 import { Product } from "@/app/types/product";
 import { getProductTypeName } from "@/app/utils/product-utils";
+import { toast } from "@/hooks/useToast";
 
 export default function EditProductPage() {
   const { id } = useParams<{ id: string }>();
@@ -82,7 +83,9 @@ export default function EditProductPage() {
         form.setValue("color", (currentProduct as any).color || "");
         form.setValue("shape", (currentProduct as any).shape || "");
         form.setValue("reference", (currentProduct as any).reference || "");
-        form.setValue("stock", Number((currentProduct as any).stock) || 0);
+        
+        const stockValue = Number((currentProduct as any).stock);
+        form.setValue("stock", isNaN(stockValue) ? 0 : stockValue);
         
         if (currentProduct.productType === "sunglasses_frame") {
           form.setValue("modelSunglasses", (currentProduct as any).modelSunglasses || "");
@@ -266,14 +269,14 @@ export default function EditProductPage() {
     setIsSubmitting(true);
     try {
       const formData = new FormData();
-
+  
       formData.append("name", data.name);
       formData.append("description", data.description || "");
       formData.append("sellPrice", String(data.sellPrice));
       
       if (data.brand) formData.append("brand", data.brand);
       if (data.costPrice !== undefined) formData.append("costPrice", String(data.costPrice));
-
+  
       if (currentProduct.productType === "lenses") {
         formData.append("lensType", data.lensType);
       } else if (currentProduct.productType === "prescription_frame" || currentProduct.productType === "sunglasses_frame") {
@@ -281,22 +284,43 @@ export default function EditProductPage() {
         formData.append("color", data.color);
         formData.append("shape", data.shape);
         formData.append("reference", data.reference);
+        
+        // Modificação importante: Certifique-se de que o estoque seja enviado como string
+        // E seja incluído mesmo que seja zero
         formData.append("stock", String(data.stock || 0));
         
         if (currentProduct.productType === "sunglasses_frame") {
           formData.append("modelSunglasses", data.modelSunglasses);
         }
       }
-
+  
       const file = fileInputRef.current?.files?.[0];
       if (file) {
         formData.append("productImage", file);
       }
-
+  
+      // Depuração: verificar os valores sendo enviados
+      console.log("Enviando atualização para o produto:", id);
+      
+      for (let [key, value] of formData.entries()) {
+        console.log(`${key}: ${value instanceof File ? 'File: ' + value.name : value}`);
+      }
+  
       const updatedProduct = await handleUpdateProduct(id as string, formData);
       if (updatedProduct) {
+        toast({
+          title: "Produto atualizado com sucesso",
+          description: "As alterações foram salvas."
+        });
         router.push(`/products/${id}`);
       }
+    } catch (error) {
+      console.error("Erro ao atualizar produto:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao atualizar produto",
+        description: error instanceof Error ? error.message : "Ocorreu um erro ao salvar as alterações."
+      });
     } finally {
       setIsSubmitting(false);
     }

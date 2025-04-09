@@ -20,6 +20,7 @@ import OrderPrescription from "@/components/Orders/OrderPrescription";
 import OrderConfirmation from "@/components/Orders/OrderConfirmation";
 import OrderSuccessScreen from "@/components/Orders/OrderSuccessScreen";
 import { useToast } from "@/hooks/useToast";
+import { useCustomers } from "@/hooks/useCustomers";
 
 const numericInputStyles = `
   /* Remove as setas para todos os navegadores */
@@ -69,7 +70,7 @@ interface OrderFormProps {
   calculateInstallmentValue: () => number;
 }
 
-export default function OrderForm({
+export function OrderForm({
   form,
   selectedProducts,
   setSelectedProducts,
@@ -111,6 +112,15 @@ export default function OrderForm({
     form.setValue("discount", discount as number);
     updateFinalPrice(form.getValues("totalPrice") || 0, discount || 0);
   };
+
+  const { 
+    customers: initialCustomers,
+    isLoading: isLoadingCustomers,
+    fetchAllCustomers
+  } = useCustomers({
+    pageSize: 100, // Aumentar o tamanho da página inicial
+    enablePagination: false // Desabilitar paginação para este caso
+  });
 
   const checkCanContinue = () => {
     let canContinue = true;
@@ -166,6 +176,7 @@ export default function OrderForm({
             selectedCustomer={selectedCustomer}
             hasLenses={hasLenses}
             showInstallments={showInstallments}
+            fetchAllCustomers={fetchAllCustomers}
             setShowInstallments={setShowInstallments}
             handleClientSelect={handleClientSelect}
             handleAddProduct={handleAddProduct}

@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { StockManagement } from "@/components/Products/StockManagement";
 import { Input } from "@/components/ui/input";
 import { 
   Loader2, 
@@ -609,6 +608,10 @@ export default function ProductDetailsPage() {
             </TabsContent>
           </Tabs>
         </div>
+        <Button
+          onClick={() => navigateToEditProduct(currentProduct._id)}
+          className="bg-[var(--primary-blue)]"
+        >Editar</Button>
       </div>
     </div>
   );

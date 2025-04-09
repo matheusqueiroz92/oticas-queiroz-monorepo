@@ -165,7 +165,6 @@ export default function ProductRegisterForm({ title, description }: ProductRegis
   };
 
   const handleButtonClick = () => {
-    // Aciona o evento de submit do formulário
     if (formRef.current) {
       formRef.current.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
     } else {
