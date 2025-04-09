@@ -204,8 +204,90 @@ export default function DashboardPage() {
             </p>
           </CardContent>
         </Card>
+
+        {isCustomer && (
+          <>
+            {isLoadingLegacyClient ? (
+              <Card>
+                <CardHeader className="pb-2">
+                  <Skeleton className="h-5 w-32 mb-2" />
+                  <Skeleton className="h-4 w-48" />
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-col gap-4">
+                    {Array(3).fill(0).map((_, index) => (
+                      <div key={index} className="flex justify-between items-center">
+                        <div className="flex items-center">
+                          <Skeleton className="h-5 w-5 mr-2" />
+                          <Skeleton className="h-4 w-24" />
+                        </div>
+                        <Skeleton className="h-4 w-16" />
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+                <CardFooter className="border-t px-6 py-3">
+                  <Skeleton className="h-9 w-full" />
+                </CardFooter>
+              </Card>
+            ) : (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle>Seu Saldo</CardTitle>
+                  <CardDescription>
+                    Resumo de suas pendências financeiras
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-col gap-4">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center">
+                        <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
+                        <span>Débito Atual</span>
+                      </div>
+                      <span className="font-bold text-red-500">
+                        {legacyClient ? formatCurrency(legacyClient.totalDebt) : "R$ 0,00"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center">
+                        <CalendarCheck className="h-5 w-5 text-yellow-500 mr-2" />
+                        <span>Último Pagamento</span>
+                      </div>
+                      <span className="font-medium">
+                        {legacyClient?.lastPayment 
+                          ? formatDate(legacyClient.lastPayment.date) 
+                          : "Sem pagamentos"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center">
+                        <ShoppingBag className="h-5 w-5 text-green-500 mr-2" />
+                        <span>Status da Conta</span>
+                      </div>
+                      <span className={`font-medium ${
+                        legacyClient?.status === 'active' 
+                          ? 'text-green-600' 
+                          : 'text-red-600'
+                      }`}>
+                        {legacyClient?.status === 'active' ? 'Ativa' : 'Inativa'}
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+                <CardFooter className="border-t px-6 py-3">
+                  <Button variant="ghost" size="sm" asChild className="w-full">
+                    <Link href="/my-debts">Ver Extrato Completo</Link>
+                  </Button>
+                </CardFooter>
+              </Card>
+            )}
+          </>
+        )}
         
-        <QuickOrderSearch />
+        {isAdmin || isEmployee && (
+          <QuickOrderSearch />
+        )}
       </div>
 
       {isAdmin && (
@@ -582,139 +664,112 @@ export default function DashboardPage() {
         </>
       )}
 
-      {/* Conteúdo específico para Clientes */}
       {isCustomer && (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-            <div>
-              <h2 className="text-xl font-semibold mb-4">Seus Pedidos</h2>
-              {isLoadingCustomerOrders ? (
-                renderListSkeleton(3)
-              ) : (
-                <Card>
-                  <CardContent className="p-0">
-                    <div className="divide-y">
-                      {customerOrders && customerOrders.length > 0 ? (
-                        customerOrders.slice(0, 5).map((order: Order) => (
-                          <div
-                            key={order._id}
-                            className="flex items-center justify-between p-4"
-                          >
-                            <div>
-                              <div className="font-medium">
-                                {order.products && order.products.length > 0
-                                  ? (typeof order.products[0] === 'object' && 'name' in order.products[0]
-                                    ? order.products[0].name
-                                    : "Pedido")
-                                  : "Pedido"}
-                              </div>
-                              <div className="text-sm text-muted-foreground">
-                                {order.deliveryDate
-                                  ? `Entrega prevista: ${formatDate(order.deliveryDate)}`
-                                  : `Pedido em: ${formatDate(order.orderDate)}`}
-                              </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            {isLoadingCustomerOrders ? (
+              renderListSkeleton(3)
+            ) : (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle>Seus Pedidos</CardTitle>
+                  <CardDescription>
+                    Todos os seus pedidos realizados na loja
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="divide-y">
+                    {customerOrders && customerOrders.length > 0 ? (
+                      customerOrders.slice(0, 5).map((order: Order) => (
+                        <div
+                          key={order._id}
+                          className="flex items-center justify-between p-4"
+                        >
+                          <div>
+                            <div className="font-medium">
+                              {order.products && order.products.length > 0
+                                ? (typeof order.products[0] === 'object' && 'name' in order.products[0]
+                                  ? order.products[0].name
+                                  : "Pedido")
+                                : "Pedido"}
                             </div>
-                            <div className="flex items-center">
-                              <div className={`px-2 py-1 rounded-full text-xs font-medium ${getOrderStatusClass(order.status as OrderStatus)}`}>
-                                {translateOrderStatus(order.status as OrderStatus)}
-                              </div>
+                            <div className="text-sm text-muted-foreground">
+                              {order.deliveryDate
+                                ? `Entrega prevista: ${formatDate(order.deliveryDate)}`
+                                : `Pedido em: ${formatDate(order.orderDate)}`}
                             </div>
                           </div>
-                        ))
-                      ) : (
-                        <div className="p-4 text-center text-muted-foreground">
-                          Você não possui pedidos recentes.
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                  <CardFooter className="border-t px-6 py-3">
-                    <Button variant="ghost" size="sm" asChild className="w-full">
-                      <Link href="/my-orders">Ver Todos os Pedidos</Link>
-                    </Button>
-                  </CardFooter>
-                </Card>
-              )}
-            </div>
-
-            <div>
-              <h2 className="text-xl font-semibold mb-4">Situação Financeira</h2>
-              {isLoadingLegacyClient ? (
-                <Card>
-                  <CardHeader className="pb-2">
-                    <Skeleton className="h-5 w-32 mb-2" />
-                    <Skeleton className="h-4 w-48" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-col gap-4">
-                      {Array(3).fill(0).map((_, index) => (
-                        <div key={index} className="flex justify-between items-center">
                           <div className="flex items-center">
-                            <Skeleton className="h-5 w-5 mr-2" />
-                            <Skeleton className="h-4 w-24" />
+                            <div className={`px-2 py-1 rounded-full text-xs font-medium ${getOrderStatusClass(order.status as OrderStatus)}`}>
+                              {translateOrderStatus(order.status as OrderStatus)}
+                            </div>
                           </div>
-                          <Skeleton className="h-4 w-16" />
                         </div>
-                      ))}
+                      ))
+                    ) : (
+                      <div className="p-4 text-center text-muted-foreground">
+                        Você não possui pedidos recentes.
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+                <CardFooter className="border-t px-6 py-3">
+                  <Button variant="ghost" size="sm" asChild className="w-full">
+                    <Link href="/my-orders">Ver Todos os Pedidos</Link>
+                  </Button>
+                </CardFooter>
+              </Card>
+            )}
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle>Consultar Status do pedido</CardTitle>
+                <CardDescription>
+                  Consulte o status dos seus pedidos realizados na loja
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="divide-y">
+                  {customerOrders && customerOrders.length > 0 ? (
+                    customerOrders.slice(0, 5).map((order: Order) => (
+                      <div
+                        key={order._id}
+                        className="flex items-center justify-between p-4"
+                      >
+                        <div>
+                          <div className="font-medium">
+                            {order.products && order.products.length > 0
+                              ? (typeof order.products[0] === 'object' && 'name' in order.products[0]
+                                ? order.products[0].name
+                                : "Pedido")
+                              : "Pedido"}
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            {order.deliveryDate
+                              ? `Entrega prevista: ${formatDate(order.deliveryDate)}`
+                              : `Pedido em: ${formatDate(order.orderDate)}`}
+                          </div>
+                        </div>
+                        <div className="flex items-center">
+                          <div className={`px-2 py-1 rounded-full text-xs font-medium ${getOrderStatusClass(order.status as OrderStatus)}`}>
+                            {translateOrderStatus(order.status as OrderStatus)}
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-4 text-center text-muted-foreground">
+                      Você não possui pedidos recentes.
                     </div>
-                  </CardContent>
-                  <CardFooter className="border-t px-6 py-3">
-                    <Skeleton className="h-9 w-full" />
-                  </CardFooter>
-                </Card>
-              ) : (
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle>Seu Saldo</CardTitle>
-                    <CardDescription>
-                      Resumo de suas pendências financeiras
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-col gap-4">
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center">
-                          <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
-                          <span>Débito Atual</span>
-                        </div>
-                        <span className="font-bold text-red-500">
-                          {legacyClient ? formatCurrency(legacyClient.totalDebt) : "R$ 0,00"}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center">
-                          <CalendarCheck className="h-5 w-5 text-yellow-500 mr-2" />
-                          <span>Último Pagamento</span>
-                        </div>
-                        <span className="font-medium">
-                          {legacyClient?.lastPayment 
-                            ? formatDate(legacyClient.lastPayment.date) 
-                            : "Sem pagamentos"}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center">
-                          <ShoppingBag className="h-5 w-5 text-green-500 mr-2" />
-                          <span>Status da Conta</span>
-                        </div>
-                        <span className={`font-medium ${
-                          legacyClient?.status === 'active' 
-                            ? 'text-green-600' 
-                            : 'text-red-600'
-                        }`}>
-                          {legacyClient?.status === 'active' ? 'Ativa' : 'Inativa'}
-                        </span>
-                      </div>
-                    </div>
-                  </CardContent>
-                  <CardFooter className="border-t px-6 py-3">
-                    <Button variant="ghost" size="sm" asChild className="w-full">
-                      <Link href="/my-debts">Ver Extrato Completo</Link>
-                    </Button>
-                  </CardFooter>
-                </Card>
-              )}
-            </div>
+                  )}
+                </div>
+              </CardContent>
+              <CardFooter className="border-t px-6 py-3">
+                <Button variant="ghost" size="sm" asChild className="w-full">
+                  <Link href="/my-orders">Ver Todos os Pedidos</Link>
+                </Button>
+              </CardFooter>
+            </Card>
           </div>
 
           <div className="mt-8">
