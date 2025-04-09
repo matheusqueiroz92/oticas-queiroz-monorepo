@@ -75,6 +75,33 @@ export class ProductModel {
     }
   }
 
+   /**
+   * Atualiza diretamente o valor de estoque no MongoDB, contornando o Mongoose.
+   * Esta abordagem é necessária porque o Mongoose com discriminators pode ter
+   * problemas ao atualizar o campo stock em alguns cenários.
+   */
+   private async updateStockDirectly(id: string, stockValue: number): Promise<boolean> {
+    try {
+      console.log(`Tentando atualizar estoque para ${stockValue} usando operação direta no MongoDB`);
+      
+      // Obter a conexão direta com o MongoDB
+      const db = mongoose.connection.db;
+      const collection = db?.collection('products');
+      
+      // Executar uma operação direta
+      const result = await collection?.updateOne(
+        { _id: new mongoose.Types.ObjectId(id) },
+        { $set: { stock: stockValue } }
+      );
+      
+      console.log(`Resultado da operação direta MongoDB: ${JSON.stringify(result)}`);
+      return (result?.modifiedCount ?? 0) > 0;
+    } catch (error) {
+      console.error(`Erro ao atualizar estoque diretamente: ${error}`);
+      return false;
+    }
+  }
+
   async create(productData: Omit<IProduct, "_id">): Promise<IProduct> {
     let savedProduct;
     
@@ -136,30 +163,45 @@ export class ProductModel {
     };
   }
 
+  /**
+   * Atualiza um produto pelo seu ID.
+   * Usa acesso direto ao MongoDB para garantir que o campo stock seja atualizado corretamente
+   * para resolver problemas com discriminators do Mongoose.
+   */
   async update(
     id: string,
     productData: Partial<IProduct>
   ): Promise<IProduct | null> {
     if (!this.isValidId(id)) return null;
     
-    // Adicione logs para debug
-    console.log(`Atualizando produto ${id} com dados:`, JSON.stringify(productData));
-    
     try {
-      // Usar findOneAndUpdate com opção { new: true } para garantir que retorne o documento atualizado
-      const product = await Product.findOneAndUpdate(
-        { _id: id },
-        { $set: productData },
-        { new: true, runValidators: true }
+      // Tratar o estoque separadamente
+      const stockValue = productData.stock !== undefined ? Number(productData.stock) : undefined;
+      delete productData.stock; // Remover do objeto principal
+      
+      console.log(`Atualizando produto ${id} com dados:`, JSON.stringify(productData));
+      
+      // 1. Primeiro atualize os outros campos
+      await Product.findByIdAndUpdate(
+        id,
+        { $set: productData }
       );
       
-      if (!product) {
-        console.log(`Produto não encontrado para atualização: ${id}`);
-        return null;
+      // 2. Se temos um valor de estoque, atualizá-lo usando a função auxiliar
+      if (stockValue !== undefined) {
+        await this.updateStockDirectly(id, stockValue);
       }
       
-      console.log(`Produto atualizado com sucesso: ${id}, novo estoque: ${(product as any).stock}`);
-      return this.convertToIProduct(product);
+      // 3. Buscar o produto atualizado para confirmar
+      const updatedProduct = await Product.findById(id);
+      
+      // 4. Log com todos os detalhes do produto atualizado
+      if (updatedProduct) {
+        console.log(`PRODUTO ATUALIZADO [ID: ${id}]:`, JSON.stringify(updatedProduct));
+        console.log(`STOCK FINAL: ${(updatedProduct as any).stock}`);
+      }
+      
+      return updatedProduct ? this.convertToIProduct(updatedProduct) : null;
     } catch (error) {
       console.error(`Erro ao atualizar produto ${id}:`, error);
       return null;

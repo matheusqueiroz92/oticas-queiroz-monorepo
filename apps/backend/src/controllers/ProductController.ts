@@ -146,22 +146,41 @@ export class ProductController {
     }
   }
 
-  async updateProduct(req: Request, res: Response): Promise<void> {
+  async updateProduct(req: AuthRequest, res: Response): Promise<void> {
     try {
       const updateData: any = {};
       const data = req.body;
 
-      console.log(data);
-      
-
+      console.log(data, "Req. body");
+  
       if (data.name !== undefined) updateData.name = data.name;
       if (data.description !== undefined) updateData.description = data.description;
       if (data.brand !== undefined) updateData.brand = data.brand;
       if (data.sellPrice !== undefined) updateData.sellPrice = Number(data.sellPrice);
       if (data.costPrice !== undefined) updateData.costPrice = Number(data.costPrice);
       
+      // Importante: buscar o produto original antes de qualquer atualização
       const originalProduct = await this.productService.getProductById(req.params.id);
+      if (!originalProduct) {
+        res.status(404).json({ message: "Produto não encontrado" });
+        return;
+      }
       
+      // Verificar se há atualização de estoque
+      let newStock;
+      const originalStock = originalProduct.productType === 'prescription_frame' || 
+                           originalProduct.productType === 'sunglasses_frame' ? 
+                           (originalProduct as any).stock || 0 : 0;
+      
+      if (data.stock !== undefined) {
+        newStock = Number(data.stock);
+        updateData.stock = newStock;
+        
+        // Log para debug
+        console.log(`Atualizando estoque do produto ${req.params.id} de ${originalStock} para ${newStock}`);
+      }
+      
+      // Atualizar campos específicos de cada tipo de produto
       switch (originalProduct.productType) {
         case 'lenses':
           if (data.lensType !== undefined) updateData.lensType = data.lensType;
@@ -172,25 +191,58 @@ export class ProductController {
           if (data.color !== undefined) updateData.color = data.color;
           if (data.shape !== undefined) updateData.shape = data.shape;
           if (data.reference !== undefined) updateData.reference = data.reference;
-          if (data.stock !== undefined) {
-            updateData.stock = Number(data.stock);
-          }
           
           if (originalProduct.productType === 'sunglasses_frame' && data.modelSunglasses !== undefined) {
             updateData.modelSunglasses = data.modelSunglasses;
           }
           break;
       }
-
+  
       if (req.file) {
         updateData.image = `/images/products/${req.file.filename}`;
       }
-
+  
+      // Aplicar a atualização do produto
       const product = await this.productService.updateProduct(
         req.params.id,
         updateData
       );
-
+  
+      if (!product) {
+        res.status(404).json({ message: "Falha ao atualizar o produto" });
+        return;
+      }
+  
+      // Se houve alteração no estoque e o produto é do tipo que tem estoque,
+      // registrar no histórico de estoque
+      if (
+        newStock !== undefined &&
+        newStock !== originalStock &&
+        (originalProduct.productType === 'prescription_frame' || 
+         originalProduct.productType === 'sunglasses_frame')
+      ) {
+        try {
+          const operation = newStock > originalStock ? 'increase' : 'decrease';
+          const difference = Math.abs(newStock - originalStock);
+          const reason = `Ajuste de estoque via edição de produto: ${originalStock} → ${newStock}`;
+          
+          await this.stockService.createStockLog(
+            req.params.id,
+            originalStock,
+            newStock,
+            difference,
+            operation,
+            reason,
+            req.user?.id || 'system',
+          );
+          
+          console.log(`Log de estoque criado para produto ${req.params.id}: ${originalStock} → ${newStock}`);
+        } catch (stockError) {
+          console.error('Erro ao registrar log de estoque:', stockError);
+          // Não impedir a atualização do produto se o log falhar
+        }
+      }
+  
       res.status(200).json(product);
     } catch (error) {
       if (error instanceof z.ZodError) {

@@ -87,7 +87,12 @@ const frameSchema = {
     type: Number,
     required: false,
     default: 0,
-    min: 0
+    min: 0,
+    set: (value: any) => {
+      // Garantir que o valor seja um número
+      const numValue = Number(value);
+      return isNaN(numValue) ? 0 : numValue;
+    }
   }
 };
 
