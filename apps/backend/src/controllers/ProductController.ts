@@ -151,14 +151,14 @@ export class ProductController {
       const updateData: any = {};
       const data = req.body;
 
+      console.log(data);
+      
+
       if (data.name !== undefined) updateData.name = data.name;
       if (data.description !== undefined) updateData.description = data.description;
       if (data.brand !== undefined) updateData.brand = data.brand;
       if (data.sellPrice !== undefined) updateData.sellPrice = Number(data.sellPrice);
       if (data.costPrice !== undefined) updateData.costPrice = Number(data.costPrice);
-      if (data.stock !== undefined) {
-        updateData.stock = Number(data.stock);
-      }
       
       const originalProduct = await this.productService.getProductById(req.params.id);
       
@@ -172,6 +172,9 @@ export class ProductController {
           if (data.color !== undefined) updateData.color = data.color;
           if (data.shape !== undefined) updateData.shape = data.shape;
           if (data.reference !== undefined) updateData.reference = data.reference;
+          if (data.stock !== undefined) {
+            updateData.stock = Number(data.stock);
+          }
           
           if (originalProduct.productType === 'sunglasses_frame' && data.modelSunglasses !== undefined) {
             updateData.modelSunglasses = data.modelSunglasses;
