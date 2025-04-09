@@ -2,6 +2,7 @@ import express from "express";
 import { OrderController } from "../controllers/OrderController";
 import { authenticate, authorize } from "../middlewares/authMiddleware";
 import { asyncHandler } from "../utils/asyncHandler";
+import { validateAndUpdateRelationships } from "../middlewares/relationshipMiddleware";
 
 const router = express.Router();
 
@@ -313,6 +314,7 @@ router.post(
   "/orders",
   authenticate,
   authorize(["admin", "employee"]),
+  validateAndUpdateRelationships,
   asyncHandler(orderController.createOrder.bind(orderController))
 );
 
@@ -752,6 +754,7 @@ router.put(
   "/orders/:id/status",
   authenticate,
   authorize(["admin", "employee"]),
+  validateAndUpdateRelationships,
   asyncHandler(orderController.updateOrderStatus.bind(orderController))
 );
 
@@ -807,6 +810,7 @@ router.put(
   "/orders/:id/laboratory",
   authenticate,
   authorize(["admin", "employee"]),
+  validateAndUpdateRelationships,
   asyncHandler(orderController.updateOrderLaboratory.bind(orderController))
 );
 
@@ -887,6 +891,7 @@ router.get(
 router.post(
   "/orders/:id/cancel",
   authenticate,
+  validateAndUpdateRelationships,
   asyncHandler(orderController.cancelOrder.bind(orderController))
 );
 
@@ -929,6 +934,7 @@ router.post(
   "/orders/:id/delete",
   authenticate,
   authorize(["admin", "employee"]),
+  validateAndUpdateRelationships,
   asyncHandler(orderController.softDeleteOrder.bind(orderController))
 );
 

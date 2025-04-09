@@ -203,6 +203,14 @@ export class PaymentService {
   private async validatePayment(
     paymentData: CreatePaymentDTO
   ): Promise<string> {
+    console.log(`Validando pagamento: ${JSON.stringify({
+      type: paymentData.type,
+      method: paymentData.paymentMethod,
+      amount: paymentData.amount,
+      orderId: paymentData.orderId,
+      customerId: paymentData.customerId
+    })}`);
+    
     this.validateAmount(paymentData.amount);
 
     const cashRegisterId = await this.validateAndGetOpenRegister();
@@ -210,6 +218,14 @@ export class PaymentService {
     // Validações específicas por tipo de pagamento
     if (paymentData.type === "sale") {
       await this.validateOrder(paymentData.orderId);
+      
+      // Se for venda e método for parcelado, verificar se é necessário registrar débito
+      if (paymentData.orderId && (
+          paymentData.paymentMethod === "bank_slip" || 
+          paymentData.paymentMethod === "promissory_note"
+        )) {
+        console.log(`Detectado pagamento parcelado para venda. Método: ${paymentData.paymentMethod}, Pedido: ${paymentData.orderId}`);
+      }
     }
 
     await this.validateCustomer(paymentData.customerId);
@@ -232,6 +248,7 @@ export class PaymentService {
         break;
 
       case "bank_slip":
+        console.log("Validando pagamento com boleto bancário");
         // Validar dados de boleto
         if (!paymentData.bank_slip || !paymentData.bank_slip.code) {
           throw new PaymentError("Código do boleto é obrigatório");
@@ -239,11 +256,13 @@ export class PaymentService {
 
         // Se gerar débito, validar parcelamento
         if (paymentData.clientDebt?.generateDebt) {
+          console.log("Boleto com geração de débito para o cliente");
           this.validateClientDebtData(paymentData.clientDebt);
         }
         break;
 
       case "promissory_note":
+        console.log("Validando pagamento com nota promissória");
         // Validar dados de promissória
         if (!paymentData.promissoryNote || !paymentData.promissoryNote.number) {
           throw new PaymentError("Número da promissória é obrigatório");
@@ -251,6 +270,7 @@ export class PaymentService {
 
         // Se gerar débito, validar parcelamento
         if (paymentData.clientDebt?.generateDebt) {
+          console.log("Nota promissória com geração de débito para o cliente");
           this.validateClientDebtData(paymentData.clientDebt);
         }
         break;
@@ -259,7 +279,7 @@ export class PaymentService {
     return cashRegisterId;
   }
 
-    /**
+  /**
    * Normaliza o método de pagamento para compatibilidade com o frontend
    * @param paymentMethod Método de pagamento do backend
    * @returns Método de pagamento normalizado
@@ -294,8 +314,12 @@ export class PaymentService {
       const user = await this.userModel.findById(customerId);
       if (user) {
         const currentDebt = user.debts || 0;
+        const newDebt = currentDebt + debtAmount;
+        
+        console.log(`Atualizando débito do cliente ${customerId}: ${currentDebt} → ${newDebt} (${debtAmount > 0 ? '+' : ''}${debtAmount})`);
+        
         await this.userModel.update(customerId, {
-          debts: currentDebt + debtAmount,
+          debts: newDebt,
         });
       }
     } else if (legacyClientId) {
@@ -379,26 +403,45 @@ export class PaymentService {
         break;
     }
 
+    // Se o pagamento está relacionado a um pedido, verificar se precisamos atualizar compras/vendas
+    if (paymentData.orderId) {
+      try {
+        const order = await this.orderModel.findById(paymentData.orderId);
+        if (order) {
+          // Se o método de pagamento for parcelado (bank_slip ou promissory_note), 
+          // e não for um pagamento de dívida (já existente), atualizar as dívidas do cliente
+          const isInstallmentMethod = paymentData.paymentMethod === "bank_slip" || 
+                                      paymentData.paymentMethod === "promissory_note";
+          
+          if (isInstallmentMethod && paymentData.type !== "debt_payment" && order.clientId) {
+            const debtAmount = order.finalPrice - (order.paymentEntry || 0);
+            if (debtAmount > 0) {
+              console.log(`Pagamento parcelado detectado para o pedido ${order._id}. Adicionando débito ao cliente ${order.clientId}`);
+              await this.updateClientDebt(
+                order.clientId.toString(),
+                undefined,
+                debtAmount
+              );
+            }
+          }
+        }
+      } catch (error) {
+        console.error(`Erro ao processar pedido relacionado: ${error}`);
+      }
+    }
+
     const payment = await this.paymentModel.create({
       ...paymentData,
       cashRegisterId: cashRegisterId,
       status: "completed",
     });
 
-    // Usar a função auxiliar
+    // Usar a função auxiliar para atualizar o caixa
     await this.updateCashRegister(cashRegisterId, payment);
 
-    // Atualizar o caixa
-    // await this.cashRegisterModel.updateSalesAndPayments(
-    //   cashRegisterId,
-    //   payment.type,
-    //   payment.amount,
-    //   registerMethod
-    // );
-
-    // Se for pagamento de dívida, atualizar a dívida do cliente
+    // Se for pagamento de dívida, atualizar a dívida do cliente (REDUZIR O VALOR)
     if (payment.type === "debt_payment") {
-      const debtAmount = -payment.amount;
+      const debtAmount = -payment.amount; // Valor negativo para reduzir a dívida
       await this.updateClientDebt(
         payment.customerId,
         payment.legacyClientId,
@@ -467,7 +510,7 @@ export class PaymentService {
     return payment;
   }
 
-    /**
+  /**
    * Obtém todos os pagamentos com filtros e paginação
    * @param page Número da página
    * @param limit Limite de itens por página
@@ -576,6 +619,33 @@ export class PaymentService {
       );
     }
 
+    // Se o pagamento está relacionado a um pedido, verificar se precisamos reverter débitos
+    if (payment.orderId) {
+      try {
+        const order = await this.orderModel.findById(payment.orderId);
+        if (order) {
+          // Se o método de pagamento for parcelado (bank_slip ou promissory_note)
+          // e não for um pagamento de dívida (já existente), reverter o débito do cliente
+          const isInstallmentMethod = payment.paymentMethod === "bank_slip" || 
+                                     payment.paymentMethod === "promissory_note";
+          
+          if (isInstallmentMethod && payment.type !== "debt_payment" && order.clientId) {
+            const debtAmount = -(order.finalPrice - (order.paymentEntry || 0)); // Valor negativo para reverter o débito
+            if (debtAmount < 0) {
+              console.log(`Cancelando pagamento parcelado para o pedido ${order._id}. Removendo débito do cliente ${order.clientId}`);
+              await this.updateClientDebt(
+                order.clientId.toString(),
+                undefined,
+                debtAmount
+              );
+            }
+          }
+        }
+      } catch (error) {
+        console.error(`Erro ao processar pedido relacionado ao cancelar pagamento: ${error}`);
+      }
+    }
+
     // Atualizar caixa usando a função auxiliar (com valor negativo para cancelamento)
     await this.updateCashRegister(payment.cashRegisterId, {
       ...payment,
@@ -584,7 +654,8 @@ export class PaymentService {
 
     // Atualizar dívida se necessário
     if (payment.type === "debt_payment") {
-      const debtAmount = payment.amount;
+      const debtAmount = payment.amount; // Valor positivo para reverter a redução da dívida
+      console.log(`Revertendo pagamento de dívida. Adicionando ${debtAmount} à dívida do cliente.`);
       await this.updateClientDebt(
         payment.customerId,
         payment.legacyClientId,
@@ -608,6 +679,7 @@ export class PaymentService {
             )
           : -payment.amount;
 
+      console.log(`Revertendo débito parcelado. Reduzindo ${Math.abs(totalDebt)} da dívida do cliente.`);
       await this.updateClientDebt(
         payment.customerId,
         payment.legacyClientId,

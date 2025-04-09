@@ -158,6 +158,102 @@ export class OrderService {
     }
   }
 
+  /**
+   * Atualiza o campo sales do funcionário (employee) após criar um pedido
+   * @param employeeId ID do funcionário
+   * @param orderId ID do pedido
+   */
+  private async updateEmployeeSales(employeeId: string, orderId: string): Promise<void> {
+    try {
+      const employee = await this.userModel.findById(employeeId);
+      if (!employee) {
+        console.error(`Funcionário com ID ${employeeId} não encontrado para atualizar vendas`);
+        return;
+      }
+
+      // Garantir que o array sales existe
+      const sales = employee.sales || [];
+      
+      // Adicionar o ID do pedido se ainda não estiver presente
+      if (!sales.includes(orderId)) {
+        await this.userModel.update(employeeId, {
+          sales: [...sales, orderId]
+        });
+        console.log(`Venda ${orderId} adicionada ao funcionário ${employeeId}`);
+      }
+    } catch (error) {
+      console.error(`Erro ao atualizar vendas do funcionário ${employeeId}:`, error);
+    }
+  }
+
+  /**
+   * Atualiza o campo purchases do cliente (customer) após criar um pedido
+   * @param clientId ID do cliente
+   * @param orderId ID do pedido
+   */
+  private async updateCustomerPurchases(clientId: string, orderId: string): Promise<void> {
+    try {
+      const customer = await this.userModel.findById(clientId);
+      if (!customer) {
+        console.error(`Cliente com ID ${clientId} não encontrado para atualizar compras`);
+        return;
+      }
+
+      // Garantir que o array purchases existe
+      const purchases = customer.purchases || [];
+      
+      // Adicionar o ID do pedido se ainda não estiver presente
+      if (!purchases.includes(orderId)) {
+        await this.userModel.update(clientId, {
+          purchases: [...purchases, orderId]
+        });
+        console.log(`Compra ${orderId} adicionada ao cliente ${clientId}`);
+      }
+    } catch (error) {
+      console.error(`Erro ao atualizar compras do cliente ${clientId}:`, error);
+    }
+  }
+
+  /**
+   * Atualiza o campo debts do cliente quando o pagamento é parcelado
+   * @param clientId ID do cliente
+   * @param orderData Dados do pedido
+   */
+  private async updateCustomerDebts(clientId: string, orderData: Omit<IOrder, "_id">): Promise<void> {
+    try {
+      // Verificar se o método de pagamento é parcelado
+      const isInstallment = orderData.paymentMethod === "bank_slip" || 
+                           orderData.paymentMethod === "promissory_note";
+      
+      if (!isInstallment) {
+        return; // Não é necessário atualizar dívidas para outros métodos
+      }
+
+      const customer = await this.userModel.findById(clientId);
+      if (!customer) {
+        console.error(`Cliente com ID ${clientId} não encontrado para atualizar dívidas`);
+        return;
+      }
+
+      // Calcular o valor da dívida (preço final - entrada se houver)
+      const debtAmount = orderData.finalPrice - (orderData.paymentEntry || 0);
+      
+      if (debtAmount <= 0) {
+        return; // Não há dívida a ser adicionada
+      }
+
+      // Atualizar a dívida do cliente
+      const currentDebt = customer.debts || 0;
+      await this.userModel.update(clientId, {
+        debts: currentDebt + debtAmount
+      });
+      
+      console.log(`Dívida de ${debtAmount} adicionada ao cliente ${clientId}`);
+    } catch (error) {
+      console.error(`Erro ao atualizar dívidas do cliente ${clientId}:`, error);
+    }
+  }
+
   async createOrder(orderData: Omit<IOrder, "_id">): Promise<IOrder> {
     try {
       if (orderData.laboratoryId?.toString() === "") {
@@ -214,6 +310,23 @@ export class OrderService {
           console.error('Erro ao processar estoque para o pedido:', stockError);
         }
       }
+
+      // INÍCIO DAS MODIFICAÇÕES: Atualizar relacionamentos
+      if (order._id) {
+        const orderId = order._id.toString();
+        const clientId = orderData.clientId.toString();
+        const employeeId = orderData.employeeId.toString();
+
+        // 1. Atualizar vendas do funcionário
+        await this.updateEmployeeSales(employeeId, orderId);
+        
+        // 2. Atualizar compras do cliente
+        await this.updateCustomerPurchases(clientId, orderId);
+        
+        // 3. Atualizar dívidas do cliente se necessário
+        await this.updateCustomerDebts(clientId, orderData);
+      }
+      // FIM DAS MODIFICAÇÕES
   
       return order;
     } catch (error) {

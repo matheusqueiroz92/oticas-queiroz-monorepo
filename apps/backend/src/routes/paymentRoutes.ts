@@ -2,6 +2,7 @@ import express from "express";
 import { PaymentController } from "../controllers/PaymentController";
 import { authenticate, authorize } from "../middlewares/authMiddleware";
 import { asyncHandler } from "../utils/asyncHandler";
+import { validateAndUpdateRelationships } from "../middlewares/relationshipMiddleware";
 
 const router = express.Router();
 const paymentController = new PaymentController();
@@ -179,6 +180,7 @@ router.post(
   "/payments",
   authenticate,
   authorize(["admin", "employee"]),
+  validateAndUpdateRelationships,
   asyncHandler(paymentController.createPayment.bind(paymentController))
 );
 
@@ -515,6 +517,7 @@ router.post(
   "/payments/:id/cancel",
   authenticate,
   authorize(["admin"]),
+  validateAndUpdateRelationships,
   asyncHandler(paymentController.cancelPayment.bind(paymentController))
 );
 
@@ -554,6 +557,7 @@ router.post(
   "/payments/:id/delete",
   authenticate,
   authorize(["admin"]),
+  validateAndUpdateRelationships,
   asyncHandler(paymentController.softDeletePayment.bind(paymentController))
 );
 

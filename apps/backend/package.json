@@ -19,7 +19,8 @@
     "test:watch": "jest --watch",
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix",
-    "create-admin": "ts-node src/scripts/createAdmin.ts"
+    "create-admin": "ts-node src/scripts/createAdmin.ts",
+    "fix-relationships": "ts-node -r tsconfig-paths/register src/scripts/fixRelationships.ts"
   },
   "keywords": [],
   "author": "",
