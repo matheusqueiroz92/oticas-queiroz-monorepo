@@ -5,7 +5,7 @@ import {
     CardTitle,
   } from "@/components/ui/card";
   import { Badge } from "@/components/ui/badge";
-  import { Calendar, DollarSign, User } from "lucide-react";
+  import { Calendar, DollarSign } from "lucide-react";
   import type { ICashRegister } from "@/app/types/cash-register";
   import { formatCurrency, formatDate } from "@/app/utils/formatters";
   

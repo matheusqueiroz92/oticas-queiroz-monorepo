@@ -35,7 +35,7 @@ import { useCashRegister } from "@/hooks/useCashRegister";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useLegacyClients } from "@/hooks/useLegacyClients";
 import { Employee } from "@/app/types/employee";
-import { formatDate } from "../../../app/utils/formatters"
+import { formatDate } from "@/app/utils/formatters"
 import { PageTitle } from "@/components/PageTitle";
 
 type OrderStatus = "pending" | "in_production" | "ready" | "delivered" | "cancelled";

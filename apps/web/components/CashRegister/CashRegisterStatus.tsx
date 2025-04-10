@@ -27,14 +27,12 @@ export function CashRegisterStatus({
 }: CashRegisterStatusProps) {
   const router = useRouter();
 
-  // Usar React Query para verificar o status do caixa
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: QUERY_KEYS.CASH_REGISTERS.CURRENT,
     queryFn: checkOpenCashRegister,
-    refetchOnWindowFocus: true, // Recarregar quando a janela ganhar foco
+    refetchOnWindowFocus: true, 
   });
 
-  // Notificar o componente pai sobre a mudança de status
   useEffect(() => {
     if (onStatusChange && data) {
       onStatusChange({

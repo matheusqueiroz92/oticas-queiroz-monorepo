@@ -2,15 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { ArrowLeft, Loader2 } from "lucide-react";
-
 import { useToast } from "@/hooks/useToast";
 import { useCashRegister } from "@/hooks/useCashRegister";
-import { getCashRegisterById } from "@/app/services/cashRegisterService";
-import { QUERY_KEYS } from "@/app/constants/query-keys";
 import { CashRegisterCloseForm } from "@/components/CashRegister/CashRegisterCloseForm";
 import { CashRegisterInfoCard } from "@/components/CashRegister/CashRegisterInfoCard";
 import { CashRegisterSummary } from "@/components/CashRegister/CashRegisterSummary";
@@ -18,7 +14,6 @@ import {
   createCloseCashRegisterForm, 
   type CloseCashRegisterFormValues 
 } from "@/schemas/cash-register-schema";
-import { CloseCashRegisterDTO } from "@/app/types/cash-register";
 
 export default function CloseCashRegisterPage() {
   const { id } = useParams<{ id: string }>();
@@ -27,40 +22,16 @@ export default function CloseCashRegisterPage() {
   const [difference, setDifference] = useState<number | null>(null);
 
   const { toast } = useToast();
-  const { handleCloseCashRegister } = useCashRegister();
+  
+  const { 
+    register: cashRegister, 
+    isLoading, 
+    error: cashRegisterError,
+    isClosing,
+    closeRegister
+  } = useCashRegister().useCloseCashRegister(id as string);
 
   const form = createCloseCashRegisterForm();
-
-  const {
-    data: cashRegister,
-    isLoading,
-    error: cashRegisterError,
-  } = useQuery({
-    queryKey: QUERY_KEYS.CASH_REGISTERS.DETAIL(id as string),
-    queryFn: () => getCashRegisterById(id as string),
-    enabled: !!id,
-  });
-
-  const closeCashRegisterMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: CloseCashRegisterDTO }) =>
-      handleCloseCashRegister(id, data),
-    onSuccess: () => {
-      toast({
-        title: "Caixa fechado",
-        description: "O caixa foi fechado com sucesso.",
-      });
-      router.push("/cash-register");
-    },
-    onError: (error) => {
-      console.error("Erro ao fechar caixa:", error);
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Não foi possível fechar o caixa. Tente novamente.",
-      });
-      setShowConfirmDialog(false);
-    },
-  });
   
   useEffect(() => {
     if (cashRegister && cashRegister.status === "open") {
@@ -95,12 +66,9 @@ export default function CloseCashRegisterPage() {
 
     const data = form.getValues();
 
-    closeCashRegisterMutation.mutate({
-      id: id as string,
-      data: {
-        closingBalance: data.closingBalance,
-        observations: data.observations,
-      },
+    closeRegister({
+      closingBalance: data.closingBalance,
+      observations: data.observations,
     });
   };
 
@@ -183,7 +151,7 @@ export default function CloseCashRegisterPage() {
       <CashRegisterCloseForm
         form={form}
         cashRegister={cashRegister}
-        isSubmitting={closeCashRegisterMutation.isPending}
+        isSubmitting={isClosing}
         difference={difference}
         showConfirmDialog={showConfirmDialog}
         setShowConfirmDialog={setShowConfirmDialog}

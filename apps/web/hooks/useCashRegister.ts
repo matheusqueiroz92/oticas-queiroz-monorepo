@@ -3,7 +3,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/useToast";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { format } from "date-fns";
 import {
   getAllCashRegisters,
   checkOpenCashRegister,
@@ -13,19 +14,14 @@ import {
   getCashRegisterSummary,
   getCurrentCashRegister,
 } from "@/app/services/cashRegisterService";
-import { QUERY_KEYS } from "../app/constants/query-keys";
+import { getPaymentsByCashRegister } from "@/app/services/paymentService";
+import { QUERY_KEYS } from "@/app/constants/query-keys";
+import { useUsers } from "@/hooks/useUsers";
 import type {
   OpenCashRegisterDTO,
   CloseCashRegisterDTO,
+  CashRegisterFilters,
 } from "@/app/types/cash-register";
-
-interface CashRegisterFilters {
-  search?: string;
-  page?: number;
-  startDate?: string;
-  endDate?: string;
-  status?: string;
-}
 
 export function useCashRegister() {
   const [filters, setFilters] = useState<CashRegisterFilters>({});
@@ -35,14 +31,12 @@ export function useCashRegister() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Query para buscar todos os registros de caixa
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: QUERY_KEYS.CASH_REGISTERS.PAGINATED(currentPage, filters),
     queryFn: () => getAllCashRegisters({ ...filters, page: currentPage }),
-    placeholderData: (prevData) => prevData, // Substitui keepPreviousData
+    placeholderData: (prevData) => prevData,
   });
 
-  // Query para verificar a abertura do caixa atual
   const {
     data: openCurrentCashRegister,
     isLoading: isLoadingOpenCurrentRegister,
@@ -53,7 +47,6 @@ export function useCashRegister() {
     refetchOnWindowFocus: true,
   });
 
-  // Query para buscar o caixa atual
   const {
     data: currentCashRegister,
     isLoading: isLoadingCurrentCashRegister,
@@ -63,7 +56,6 @@ export function useCashRegister() {
     queryFn: getCurrentCashRegister,
   });
 
-  // Dados normalizados das queries
   const cashRegisters = data?.registers || [];
   const totalPages = data?.pagination?.totalPages || 1;
   const totalRegisters = data?.pagination?.total || 0;
@@ -72,7 +64,6 @@ export function useCashRegister() {
       ? openCurrentCashRegister.data
       : null;
 
-  // Mutation para abrir caixa
   const openCashRegisterMutation = useMutation({
     mutationFn: openCashRegister,
     onSuccess: (result) => {
@@ -81,7 +72,6 @@ export function useCashRegister() {
         description: "O caixa foi aberto com sucesso.",
       });
 
-      // Invalidar queries
       queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.CASH_REGISTERS.CURRENT,
       });
@@ -103,7 +93,6 @@ export function useCashRegister() {
     },
   });
 
-  // Mutation para fechar caixa
   const closeCashRegisterMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: CloseCashRegisterDTO }) =>
       closeCashRegister(id, data),
@@ -113,7 +102,6 @@ export function useCashRegister() {
         description: "O caixa foi fechado com sucesso.",
       });
 
-      // Invalidar queries
       queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.CASH_REGISTERS.CURRENT,
       });
@@ -135,7 +123,6 @@ export function useCashRegister() {
     },
   });
 
-  // Custom query para buscar um caixa específico
   const fetchCashRegisterById = (id: string) => {
     return useQuery({
       queryKey: QUERY_KEYS.CASH_REGISTERS.DETAIL(id),
@@ -144,15 +131,6 @@ export function useCashRegister() {
     });
   };
 
-  // Custom query para buscar um caixa específico
-  const fetchCurrentCashRegister = () => {
-    return useQuery({
-      queryKey: QUERY_KEYS.CASH_REGISTERS.CURRENT,
-      queryFn: () => getCurrentCashRegister(),
-    });
-  };
-
-  // Custom query para buscar o resumo de um caixa
   const fetchCashRegisterSummary = (id: string) => {
     return useQuery({
       queryKey: QUERY_KEYS.CASH_REGISTERS.SUMMARY(id),
@@ -161,19 +139,64 @@ export function useCashRegister() {
     });
   };
 
-  // Função para atualizar filtros
-  const updateFilters = (newFilters: CashRegisterFilters) => {
-    setFilters(newFilters);
-    setCurrentPage(1); // Voltar para a primeira página ao filtrar
+  const fetchPaymentsByCashRegister = (id: string) => {
+    return useQuery({
+      queryKey: QUERY_KEYS.PAYMENTS.BY_CASH_REGISTER(id),
+      queryFn: () => getPaymentsByCashRegister(id),
+      enabled: !!id,
+    });
   };
 
-  // Função para verificar se há um caixa aberto
+  const useCashRegisterDetails = (id: string | null) => {
+    const registerQuery = useQuery({
+      queryKey: QUERY_KEYS.CASH_REGISTERS.DETAIL(id as string),
+      queryFn: () => getCashRegisterById(id as string),
+      enabled: !!id,
+    });
+
+    const summaryQuery = useQuery({
+      queryKey: QUERY_KEYS.CASH_REGISTERS.SUMMARY(id as string),
+      queryFn: () => getCashRegisterSummary(id as string),
+      enabled: !!id,
+    });
+
+    const paymentsQuery = useQuery({
+      queryKey: QUERY_KEYS.PAYMENTS.BY_CASH_REGISTER(id as string),
+      queryFn: () => getPaymentsByCashRegister(id as string),
+      enabled: !!id,
+    });
+
+    return {
+      register: registerQuery.data,
+      summary: summaryQuery.data,
+      payments: paymentsQuery.data || [],
+      isLoading: registerQuery.isLoading || summaryQuery.isLoading || paymentsQuery.isLoading,
+      error: registerQuery.error || summaryQuery.error || paymentsQuery.error,
+      refetch: () => {
+        registerQuery.refetch();
+        summaryQuery.refetch();
+        paymentsQuery.refetch();
+      }
+    };
+  };
+
+  const fetchCurrentCashRegister = () => {
+    return useQuery({
+      queryKey: QUERY_KEYS.CASH_REGISTERS.CURRENT,
+      queryFn: () => getCurrentCashRegister(),
+    });
+  };
+
+  const updateFilters = (newFilters: CashRegisterFilters) => {
+    setFilters(newFilters);
+    setCurrentPage(1);
+  };
+
   const checkForOpenRegister = async (): Promise<boolean> => {
     await refetchOpenCurrentCashRegister();
     return !!activeRegister;
   };
 
-  // Funções que utilizam as mutations
   const handleOpenCashRegister = (data: OpenCashRegisterDTO) => {
     return openCashRegisterMutation.mutateAsync(data);
   };
@@ -181,8 +204,232 @@ export function useCashRegister() {
   const handleCloseCashRegister = (id: string, data: CloseCashRegisterDTO) => {
     return closeCashRegisterMutation.mutateAsync({ id, data });
   };
+  
+  const useCloseCashRegister = (id: string | null, onSuccess?: () => void) => {
+    const router = useRouter();
+    const { toast } = useToast();
+    
+    const registerQuery = useQuery({
+      queryKey: QUERY_KEYS.CASH_REGISTERS.DETAIL(id as string),
+      queryFn: () => getCashRegisterById(id as string),
+      enabled: !!id,
+    });
+    
+    const closeCashRegisterMut = useMutation({
+      mutationFn: ({ id, data }: { id: string; data: CloseCashRegisterDTO }) =>
+        closeCashRegister(id, data),
+      onSuccess: (result) => {
+        toast({
+          title: "Caixa fechado",
+          description: "O caixa foi fechado com sucesso.",
+        });
+        
+        queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.CASH_REGISTERS.CURRENT,
+        });
+        queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.CASH_REGISTERS.ALL,
+        });
+        
+        if (onSuccess) {
+          onSuccess();
+        } else {
+          router.push("/cash-register");
+        }
+        
+        return result;
+      },
+      onError: (error) => {
+        console.error("Erro ao fechar caixa:", error);
+        toast({
+          variant: "destructive",
+          title: "Erro",
+          description: "Não foi possível fechar o caixa. Tente novamente.",
+        });
+        throw error;
+      },
+    });
+    
+    return {
+      register: registerQuery.data,
+      isLoading: registerQuery.isLoading,
+      error: registerQuery.error,
+      isClosing: closeCashRegisterMut.isPending,
+      closeRegister: (data: CloseCashRegisterDTO) => {
+        if (!id) return Promise.reject(new Error("ID do caixa não fornecido"));
+        return closeCashRegisterMut.mutateAsync({ id, data });
+      }
+    };
+  };
+  
+  const useOpenCashRegister = (onSuccess?: () => void) => {
+    const router = useRouter();
+    const { toast } = useToast();
+    const [hasCashRegisterOpen, setHasCashRegisterOpen] = useState(false);
+    
+    const checkCashRegisterQuery = useQuery({
+      queryKey: QUERY_KEYS.CASH_REGISTERS.CURRENT,
+      queryFn: checkOpenCashRegister,
+      retry: false,
+      refetchOnWindowFocus: false,
+    });
+    
+    useEffect(() => {
+      const cashRegisterData = checkCashRegisterQuery.data;
+      if (cashRegisterData) {
+        setHasCashRegisterOpen(cashRegisterData.isOpen);
+        
+        if (cashRegisterData.isOpen) {
+          toast({
+            variant: "destructive",
+            title: "Caixa já aberto",
+            description: "Já existe um caixa aberto. Feche-o antes de abrir um novo.",
+          });
+        }
+      } else {
+        setHasCashRegisterOpen(false);
+      }
+    }, [checkCashRegisterQuery.data, toast]);
+    
+    const openCashRegisterMut = useMutation({
+      mutationFn: openCashRegister,
+      onSuccess: (result) => {
+        toast({
+          title: "Caixa aberto",
+          description: "O caixa foi aberto com sucesso.",
+        });
+        
+        queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.CASH_REGISTERS.CURRENT,
+        });
+        queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.CASH_REGISTERS.ALL,
+        });
+        
+        if (onSuccess) {
+          onSuccess();
+        } else {
+          router.push("/cash-register");
+        }
+        
+        return result;
+      },
+      onError: (error) => {
+        console.error("Erro ao abrir caixa:", error);
+        toast({
+          variant: "destructive",
+          title: "Erro",
+          description: "Não foi possível abrir o caixa. Tente novamente.",
+        });
+        throw error;
+      },
+    });
+    
+    return {
+      isChecking: checkCashRegisterQuery.isLoading,
+      checkError: checkCashRegisterQuery.error,
+      hasCashRegisterOpen,
+      isOpening: openCashRegisterMut.isPending,
+      openCashRegister: (data: OpenCashRegisterDTO) => {
+        if (hasCashRegisterOpen) {
+          toast({
+            variant: "destructive",
+            title: "Caixa já aberto",
+            description: "Já existe um caixa aberto. Feche-o antes de abrir um novo.",
+          });
+          return Promise.reject(new Error("Já existe um caixa aberto"));
+        }
+        return openCashRegisterMut.mutateAsync(data);
+      },
+      refetchStatus: checkCashRegisterQuery.refetch
+    };
+  };
+  
+  const useCashRegisterList = () => {
+    const [search, setSearch] = useState("");
+    const [date, setDate] = useState<Date | undefined>(undefined);
+    
+    const {
+      cashRegisters,
+      activeRegister,
+      isLoading,
+      error,
+      currentPage,
+      totalPages,
+      totalRegisters,
+      setCurrentPage,
+      updateFilters,
+      navigateToOpenRegister,
+      navigateToRegisterDetails,
+      navigateToCloseRegister,
+      refetch
+    } = useCashRegister();
+    
+    const { getAllUsers, usersMap } = useUsers();
+    
+    useEffect(() => {
+      const loadAllUsers = async () => {
+        await getAllUsers();
+      };
+      
+      loadAllUsers();
+    }, [getAllUsers]);
+    
+    useEffect(() => {
+      if (cashRegisters.length > 0 && !isLoading) {
+        const userIds = cashRegisters
+          .map(register => register.openedBy)
+          .filter((id, index, self) => id && self.indexOf(id) === index);
+        
+        if (userIds.length > 0) {
+          getAllUsers();
+        }
+      }
+    }, [cashRegisters, isLoading, getAllUsers]);
+    
+    const applyDateFilter = () => {
+      if (date) {
+        updateFilters({
+          startDate: format(date, "yyyy-MM-dd"),
+          endDate: format(date, "yyyy-MM-dd"),
+        });
+      }
+    };
+    
+    const clearFilters = () => {
+      updateFilters({});
+      setDate(undefined);
+      setSearch("");
+    };
+    
+    const applySearchFilter = (searchTerm: string) => {
+      setSearch(searchTerm);
+      updateFilters({ search: searchTerm });
+    };
+    
+    return {
+      cashRegisters,
+      activeRegister,
+      usersMap,
+      isLoading,
+      error,
+      currentPage,
+      totalPages,
+      totalRegisters,
+      search,
+      date,
+      setSearch: applySearchFilter,
+      setDate,
+      setCurrentPage,
+      applyDateFilter,
+      clearFilters,
+      navigateToOpenRegister,
+      navigateToRegisterDetails,
+      navigateToCloseRegister,
+      refetch
+    };
+  };
 
-  // Funções de navegação
   const navigateToRegisterDetails = (id: string) => {
     router.push(`/cash-register/${id}`);
   };
@@ -196,7 +443,6 @@ export function useCashRegister() {
   };
 
   return {
-    // Dados e estado
     cashRegisters,
     currentCashRegister,
     activeRegister,
@@ -206,17 +452,18 @@ export function useCashRegister() {
     totalPages,
     totalRegisters,
     filters,
-
-    // Mutações e seus estados
     isOpening: openCashRegisterMutation.isPending,
     isClosing: closeCashRegisterMutation.isPending,
-
-    // Ações
     setCurrentPage,
     updateFilters,
     fetchCashRegisterById,
     fetchCurrentCashRegister,
     fetchCashRegisterSummary,
+    fetchPaymentsByCashRegister,
+    useCashRegisterDetails,
+    useCloseCashRegister,
+    useOpenCashRegister,
+    useCashRegisterList,
     handleOpenCashRegister,
     handleCloseCashRegister,
     navigateToRegisterDetails,

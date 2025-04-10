@@ -25,6 +25,7 @@ import { formatCurrency, formatDate } from "@/app/utils/formatters";
 import type { ICashRegister } from "@/app/types/cash-register";
 import type { IPayment } from "@/app/types/payment";
 import { CashRegisterPaymentsTable } from "./CashRegisterPaymentsTable";
+import { useUsers } from "@/hooks/useUsers";
 
 interface CashRegisterDetailsProps {
   register: ICashRegister;
@@ -53,6 +54,8 @@ export function CashRegisterDetails({
   translatePaymentMethod,
   getPaymentTypeClass,
 }: CashRegisterDetailsProps) {
+  const { getUserName } = useUsers();
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -162,7 +165,7 @@ export function CashRegisterDetails({
                   <div>
                     <div className="text-sm text-gray-500">Aberto por</div>
                     <div className="font-medium">
-                      {register.openedBy}
+                      {getUserName(register.openedBy)}
                     </div>
                   </div>
                 </div>

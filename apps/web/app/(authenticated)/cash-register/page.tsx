@@ -1,21 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2, PlusCircle } from "lucide-react";
-import { format } from "date-fns";
-import { useCashRegister } from "../../../hooks/useCashRegister";
+import { useCashRegister } from "@/hooks/useCashRegister";
 import { PageTitle } from "@/components/PageTitle";
-import { useUsers } from "@/hooks/useUsers";
 import { ActiveCashRegisterCard } from "@/components/CashRegister/ActiveCashRegisterCard";
 import { CashRegisterFilters } from "@/components/CashRegister/CashRegisterFilters";
 import { CashRegisterList } from "@/components/CashRegister/CashRegisterList";
 import { CashRegisterEmptyState } from "@/components/CashRegister/CashRegisterEmptyState";
 
 export default function CashRegisterPage() {
-  const [search, setSearch] = useState("");
-  const [date, setDate] = useState<Date | undefined>(undefined);
-
   const {
     cashRegisters,
     activeRegister,
@@ -24,52 +18,17 @@ export default function CashRegisterPage() {
     currentPage,
     totalPages,
     totalRegisters,
+    search,
+    date,
+    setSearch,
+    setDate,
     setCurrentPage,
-    updateFilters,
+    applyDateFilter,
+    clearFilters,
     navigateToOpenRegister,
     navigateToRegisterDetails,
     navigateToCloseRegister,
-  } = useCashRegister();
-
-  const {
-    getAllUsers,
-    usersMap,
-  } = useUsers();
-
-  useEffect(() => {
-    const loadAllUsers = async () => {
-      await getAllUsers();
-    };
-    
-    loadAllUsers();
-  }, [getAllUsers]);
-
-  useEffect(() => {
-    if (cashRegisters.length > 0 && !isLoading) {
-      const userIds = cashRegisters
-        .map(register => register.openedBy)
-        .filter((id, index, self) => id && self.indexOf(id) === index);
-      
-      if (userIds.length > 0) {
-        getAllUsers();
-      }
-    }
-  }, [cashRegisters, isLoading, getAllUsers]);
- 
-  const applyDateFilter = () => {
-        if (date) {
-          updateFilters({
-            startDate: format(date, "yyyy-MM-dd"),
-            endDate: format(date, "yyyy-MM-dd"),
-          });
-        }
-      };
-
-  const clearFilters = () => {
-    updateFilters({});
-    setDate(undefined);
-    setSearch("");
-  };
+  } = useCashRegister().useCashRegisterList();
 
   const showEmptyState = !isLoading && !error && cashRegisters.length === 0;
 

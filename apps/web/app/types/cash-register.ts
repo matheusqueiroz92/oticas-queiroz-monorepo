@@ -22,7 +22,6 @@ export interface ICashRegister {
   observations?: string;
   createdAt?: Date;
   updatedAt?: Date;
-  // Campos para soft delete
   isDeleted?: boolean;
   deletedAt?: Date;
   deletedBy?: string;
@@ -53,4 +52,37 @@ export interface OpenCashRegisterDTO {
 export interface CloseCashRegisterDTO {
   closingBalance: number;
   observations?: string;
+}
+
+export interface CashRegisterFilters {
+  search?: string;
+  page?: number;
+  limit?: number;
+  startDate?: string;
+  endDate?: string;
+  status?: string;
+}
+
+export interface CashRegisterCheckResult {
+  isOpen: boolean;
+  data: ICashRegister | null;
+  error?: string;
+}
+
+export interface CashRegisterSummary {
+  register: ICashRegister;
+  payments: {
+    sales: {
+      total: number;
+      byMethod: Record<string, number>;
+    };
+    debts: {
+      received: number;
+      byMethod: Record<string, number>;
+    };
+    expenses: {
+      total: number;
+      byCategory: Record<string, number>;
+    };
+  };
 }

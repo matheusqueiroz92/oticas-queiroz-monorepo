@@ -3,57 +3,18 @@ import type {
   ICashRegister,
   OpenCashRegisterDTO,
   CloseCashRegisterDTO,
-} from "../types/cash-register";
-import { API_ROUTES } from "../constants/api-routes";
-
-interface CashRegisterFilters {
-  page?: number;
-  limit?: number;
-  startDate?: string;
-  endDate?: string;
-  status?: string;
-  search?: string;
-}
-
-interface CashRegisterCheckResult {
-  isOpen: boolean;
-  data: ICashRegister | null;
-  error?: string;
-}
-
-interface CashRegisterSummary {
-  register: ICashRegister;
-  payments: {
-    sales: {
-      total: number;
-      byMethod: Record<string, number>;
-    };
-    debts: {
-      received: number;
-      byMethod: Record<string, number>;
-    };
-    expenses: {
-      total: number;
-      byCategory: Record<string, number>;
-    };
-  };
-}
-
-interface PaginationInfo {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-}
+  CashRegisterCheckResult,
+  CashRegisterSummary,
+  CashRegisterFilters,
+} from "@/app/types/cash-register";
+import { PaginationInfo } from "@/app/types/api-response";
+import { API_ROUTES } from "@/app/constants/api-routes";
 
 /**
  * Verifica se existe um caixa aberto no sistema
  */
 export async function checkOpenCashRegister(): Promise<CashRegisterCheckResult> {
   try {
-    console.log("Verificando caixas abertos...");
-
-    // Usar a rota /api/cash-registers/current que retorna apenas o caixa aberto
     const response = await api.get(API_ROUTES.CASH_REGISTERS.CURRENT);
 
     return {
@@ -63,11 +24,9 @@ export async function checkOpenCashRegister(): Promise<CashRegisterCheckResult> 
   } catch (error: unknown) {
     console.error("Erro ao verificar caixa aberto:", error);
 
-    // Verificar se o erro é uma instância de Error com a propriedade response
     if (error && typeof error === "object" && "response" in error) {
       const apiError = error as { response?: { status?: number } };
 
-      // Se receber um erro 404, significa que não há caixa aberto (comportamento esperado da API)
       if (apiError.response && apiError.response.status === 404) {
         return {
           isOpen: false,
@@ -91,7 +50,6 @@ export async function checkOpenCashRegister(): Promise<CashRegisterCheckResult> 
 export async function openCashRegister(
   data: OpenCashRegisterDTO
 ): Promise<ICashRegister> {
-  console.log("Abrindo caixa com dados:", data);
   const response = await api.post(API_ROUTES.CASH_REGISTERS.OPEN, data);
   return response.data;
 }
@@ -104,8 +62,6 @@ export async function closeCashRegister(
   id: string,
   data: CloseCashRegisterDTO
 ): Promise<ICashRegister> {
-  console.log(`Fechando caixa ${id} com dados:`, data);
-  // O backend espera os dados no corpo da requisição, sem o ID
   const response = await api.post(API_ROUTES.CASH_REGISTERS.CLOSE, data);
   return response.data;
 }
@@ -120,12 +76,10 @@ export async function getAllCashRegisters(
   pagination?: PaginationInfo;
 }> {
   try {
-    console.log("Buscando registros de caixa com filtros:", filters);
     const response = await api.get(API_ROUTES.CASH_REGISTERS.BASE, {
       params: filters,
     });
 
-    // Normalizar a resposta para garantir consistência
     let registers: ICashRegister[] = [];
     let pagination: PaginationInfo | undefined = undefined;
 
@@ -142,7 +96,6 @@ export async function getAllCashRegisters(
     return { registers, pagination };
   } catch (error: unknown) {
     console.error("Erro ao buscar registros de caixa:", error);
-    // Em caso de erro, retornar lista vazia
     return { registers: [] };
   }
 }
@@ -152,7 +105,6 @@ export async function getAllCashRegisters(
  */
 export async function getCurrentCashRegister(): Promise<ICashRegister | null> {
   try {
-    console.log(`Buscando caixa atual`);
     const response = await api.get(API_ROUTES.CASH_REGISTERS.CURRENT);
     return response.data;
   } catch (error) {
@@ -168,7 +120,6 @@ export async function getCashRegisterById(
   id: string
 ): Promise<ICashRegister | null> {
   try {
-    console.log(`Buscando caixa com ID ${id}`);
     const response = await api.get(API_ROUTES.CASH_REGISTERS.BY_ID(id));
     return response.data;
   } catch (error) {
@@ -185,7 +136,6 @@ export async function getCashRegisterSummary(
   id: string
 ): Promise<CashRegisterSummary | null> {
   try {
-    console.log(`Buscando resumo do caixa com ID ${id}`);
     const response = await api.get(API_ROUTES.CASH_REGISTERS.SUMMARY(id));
     return response.data;
   } catch (error) {

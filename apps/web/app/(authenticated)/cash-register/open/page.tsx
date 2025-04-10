@@ -1,15 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-
-import { useToast } from "@/hooks/useToast";
-import { useCashRegister } from "../../../../hooks/useCashRegister";
-import { checkOpenCashRegister } from "@/app/services/cashRegisterService";
-import { QUERY_KEYS } from "@/app/constants/query-keys";
+import { useCashRegister } from "@/hooks/useCashRegister";
 import { CashRegisterOpenForm } from "@/components/CashRegister/CashRegisterOpenForm";
 import { 
   createOpenCashRegisterForm, 
@@ -18,81 +12,27 @@ import {
 
 export default function OpenCashRegisterPage() {
   const router = useRouter();
-  const [hasCashRegisterOpen, setHasCashRegisterOpen] = useState(false);
-  const { toast } = useToast();
-  const { handleOpenCashRegister } = useCashRegister();
+  
+  const { 
+    hasCashRegisterOpen,
+    isOpening,
+    openCashRegister,
+  } = useCashRegister().useOpenCashRegister();
 
   const form = createOpenCashRegisterForm();
 
-  const {
-    data: cashRegisterData,
-    isLoading: isChecking,
-    error: checkError,
-  } = useQuery({
-    queryKey: QUERY_KEYS.CASH_REGISTERS.CURRENT,
-    queryFn: checkOpenCashRegister,
-    retry: false,
-    refetchOnWindowFocus: false,
-  });
-
-  useEffect(() => {
-    if (cashRegisterData) {
-      if (cashRegisterData.isOpen) {
-        setHasCashRegisterOpen(true);
-
-        toast({
-          variant: "destructive",
-          title: "Caixa já aberto",
-          description:
-            "Já existe um caixa aberto. Feche-o antes de abrir um novo.",
-        });
-
+  const onSubmit = async (data: OpenCashRegisterFormValues) => {
+    openCashRegister({
+      openingBalance: data.openingBalance,
+      observations: data.observations,
+      openingDate: new Date(),
+    }).catch(error => {
+      if (hasCashRegisterOpen) {
         form.setError("openingBalance", {
           type: "manual",
           message: "Já existe um caixa aberto. Feche-o antes de abrir um novo.",
         });
-      } else {
-        setHasCashRegisterOpen(false);
       }
-    } else {
-      setHasCashRegisterOpen(false);
-    }
-  }, [cashRegisterData, form, toast]);
-
-  const openCashRegisterMutation = useMutation({
-    mutationFn: handleOpenCashRegister,
-    onSuccess: () => {
-      toast({
-        title: "Caixa aberto",
-        description: "O caixa foi aberto com sucesso.",
-      });
-      router.push("/cash-register");
-    },
-    onError: (error) => {
-      console.error("Erro ao abrir caixa:", error);
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Não foi possível abrir o caixa. Tente novamente.",
-      });
-    },
-  });
-
-  const onSubmit = async (data: OpenCashRegisterFormValues) => {
-    if (hasCashRegisterOpen) {
-      toast({
-        variant: "destructive",
-        title: "Caixa já aberto",
-        description:
-          "Já existe um caixa aberto. Feche-o antes de abrir um novo.",
-      });
-      return;
-    }
-
-    openCashRegisterMutation.mutate({
-      openingBalance: data.openingBalance,
-      observations: data.observations,
-      openingDate: new Date(),
     });
   };
 
@@ -116,7 +56,7 @@ export default function OpenCashRegisterPage() {
 
       <CashRegisterOpenForm
         form={form}
-        isSubmitting={openCashRegisterMutation.isPending}
+        isSubmitting={isOpening}
         onSubmit={onSubmit}
         onCancel={handleCancel}
         hasCashRegisterOpen={hasCashRegisterOpen}
