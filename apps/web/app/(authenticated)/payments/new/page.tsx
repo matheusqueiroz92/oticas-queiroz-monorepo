@@ -87,7 +87,7 @@ export default function NewPaymentPage() {
     isLoadingCashRegister
   } = usePayments();
 
-  const { customers, isLoading: isLoadingCustomers } = useCustomers();
+  const { customers, isLoading: isLoadingCustomers, fetchAllCustomers } = useCustomers();
 
   const { orders, isLoading: isLoadingOrders } = useOrders();
 
@@ -599,6 +599,7 @@ export default function NewPaymentPage() {
                   setValue("customerId", clientId);
                   setCustomerSearch(name);
                 }}
+                fetchAllCustomers={fetchAllCustomers}
               />
 
               {watch("customerId") && (
