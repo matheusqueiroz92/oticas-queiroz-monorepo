@@ -1,4 +1,5 @@
 import { OrderModel } from "../models/OrderModel";
+import { PaymentModel } from "../models/PaymentModel";
 import { UserModel } from "../models/UserModel";
 import { ProductModel } from "../models/ProductModel";
 import { StockService } from "./StockService";
@@ -6,6 +7,7 @@ import type { CreateOrderDTO, IOrder, OrderProduct } from "../interfaces/IOrder"
 import type { IProduct, ILens, ICleanLens } from "../interfaces/IProduct";
 import { ExportUtils, type ExportOptions } from "../utils/exportUtils";
 import mongoose from "mongoose";
+import { IPayment } from "src/interfaces/IPayment";
 
 export class OrderError extends Error {
   constructor(message: string) {
@@ -16,6 +18,7 @@ export class OrderError extends Error {
 
 export class OrderService {
   private orderModel: OrderModel;
+  private paymentModel: PaymentModel;
   private userModel: UserModel;
   private productModel: ProductModel;
   private exportUtils: ExportUtils;
@@ -23,6 +26,7 @@ export class OrderService {
 
   constructor() {
     this.orderModel = new OrderModel();
+    this.paymentModel = new PaymentModel();
     this.userModel = new UserModel();
     this.productModel = new ProductModel();
     this.exportUtils = new ExportUtils();
@@ -283,6 +287,7 @@ export class OrderService {
         products: orderData.products,
         serviceOrder: orderData.serviceOrder,
         paymentMethod: orderData.paymentMethod,
+        paymentStatus: orderData.paymentStatus,
         paymentEntry: orderData.paymentEntry,
         installments: orderData.installments,
         orderDate: new Date(),
@@ -744,5 +749,44 @@ export class OrderService {
     const clientIds = [...new Set(orders.map(order => order.clientId.toString()))];
     
     return clientIds;
+  }
+
+  async getOrderPayments(orderId: string): Promise<Array<IPayment>> {
+    const order = await this.orderModel.findById(orderId);
+    if (!order || !order.paymentHistory || order.paymentHistory.length === 0) {
+      return [];
+    }
+    
+    const paymentIds = order.paymentHistory.map(entry => entry.paymentId.toString());
+    const payments = await this.paymentModel.findByIds(paymentIds);
+    
+    return payments;
+  }
+  
+  async getPaymentStatusSummary(orderId: string): Promise<{
+    totalPrice: number;
+    totalPaid: number;
+    remainingAmount: number;
+    paymentStatus: string;
+    lastPaymentDate?: Date;
+  }> {
+    const order = await this.orderModel.findById(orderId);
+    if (!order) {
+      throw new OrderError("Pedido não encontrado");
+    }
+    
+    const totalPaid = order.paymentHistory?.reduce((sum, entry) => sum + entry.amount, 0) || 0;
+    
+    const sortedHistory = [...(order.paymentHistory || [])].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+    
+    return {
+      totalPrice: order.finalPrice,
+      totalPaid,
+      remainingAmount: Math.max(0, order.finalPrice - totalPaid),
+      paymentStatus: order.paymentStatus,
+      lastPaymentDate: sortedHistory.length > 0 ? sortedHistory[0].date : undefined
+    };
   }
 }

@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema, Model } from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 import { IOrder } from '../interfaces/IOrder';
 
 const orderSchema = new Schema<IOrder>({
@@ -13,7 +13,7 @@ const orderSchema = new Schema<IOrder>({
     required: true 
   },
   products: [{
-    type: Schema.Types.Mixed, // Usando Mixed para permitir referencias e objetos embutidos
+    type: Schema.Types.Mixed,
     required: true
   }],
   serviceOrder: {
@@ -24,6 +24,24 @@ const orderSchema = new Schema<IOrder>({
     required: true,
     enum: ["credit", "debit", "cash", "pix", "installment", "bank_slip", "promissory_note"],
   },
+  paymentStatus: {
+    type: String,
+    enum: ["pending", "partially_paid", "paid"],
+    default: "pending",
+    required: true
+  },
+  paymentHistory: [{
+    paymentId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Payment'
+    },
+    amount: Number,
+    date: {
+      type: Date,
+      default: Date.now
+    },
+    method: String
+  }],
   paymentEntry: Number,
   installments: Number,
   orderDate: { 

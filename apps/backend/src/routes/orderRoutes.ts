@@ -997,4 +997,70 @@ router.get(
   asyncHandler(orderController.exportOrderDetails.bind(orderController))
 );
 
+/**
+ * @swagger
+ * /api/orders/{id}/payments:
+ *   get:
+ *     summary: Obtém os pagamentos associados a um pedido
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Orders]
+ *     description: Retorna todos os pagamentos associados a um pedido específico
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID do pedido
+ *     responses:
+ *       200:
+ *         description: Lista de pagamentos do pedido
+ *       404:
+ *         description: Pedido não encontrado
+ *       401:
+ *         description: Não autorizado
+ *       500:
+ *         description: Erro interno do servidor
+ */
+router.get(
+  "/orders/:id/payments",
+  authenticate,
+  authorize(["admin", "employee"]),
+  asyncHandler(orderController.getOrderPayments.bind(orderController))
+);
+
+/**
+ * @swagger
+ * /api/orders/{id}/payment-status:
+ *   get:
+ *     summary: Obtém o resumo de pagamento de um pedido
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Orders]
+ *     description: Retorna um resumo do status de pagamento de um pedido específico
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID do pedido
+ *     responses:
+ *       200:
+ *         description: Resumo do status de pagamento
+ *       404:
+ *         description: Pedido não encontrado
+ *       401:
+ *         description: Não autorizado
+ *       500:
+ *         description: Erro interno do servidor
+ */
+router.get(
+  "/orders/:id/payment-status",
+  authenticate,
+  authorize(["admin", "employee"]),
+  asyncHandler(orderController.getPaymentStatusSummary.bind(orderController))
+);
+
 export default router;

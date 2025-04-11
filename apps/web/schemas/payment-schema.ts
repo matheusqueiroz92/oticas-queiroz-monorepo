@@ -1,3 +1,5 @@
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 export const paymentFormSchema = z.object({
@@ -33,3 +35,21 @@ export const paymentFormSchema = z.object({
     required_error: "Selecione o status",
   }),
 });
+
+export type PaymentFormValues = z.infer<typeof paymentFormSchema>;
+
+export const createPaymentform = () => {
+  return useForm<PaymentFormValues>({
+    resolver: zodResolver(paymentFormSchema),
+    defaultValues: {
+      amount: 0,
+      type: "sale",
+      paymentMethod: "cash",
+      paymentDate: new Date(),
+      description: "",
+      category: "",
+      installments: 1,
+      status: "completed",
+    },
+  });
+}

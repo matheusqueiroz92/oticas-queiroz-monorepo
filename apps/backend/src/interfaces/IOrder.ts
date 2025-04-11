@@ -12,6 +12,13 @@ export interface IOrder {
   products: OrderProduct[];
   serviceOrder?: string;
   paymentMethod: string;
+  paymentStatus: "pending" | "partially_paid" | "paid";
+  paymentHistory?: Array<{
+    paymentId: string | Types.ObjectId;
+    amount: number;
+    date: Date;
+    method: string;
+  }>;
   paymentEntry?: number;
   installments?: number;
   orderDate: Date;
@@ -49,4 +56,4 @@ export interface IOrder {
   updatedAt?: Date;
 }
 
-export type CreateOrderDTO = Omit<IOrder, "_id" | "createdAt" | "updatedAt">;
+export type CreateOrderDTO = Omit<IOrder, "_id" | "createdAt" | "updatedAt" | "paymentHistory">;

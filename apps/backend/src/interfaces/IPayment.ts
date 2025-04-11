@@ -17,25 +17,21 @@ export interface IPayment {
     | "promissory_note";
   status: "pending" | "completed" | "cancelled";
 
-  // Campos para cartão de crédito
   creditCardInstallments?: {
     current?: number;
     total: number;
     value?: number;
   };
 
-  // Campos para boleto
   bank_slip?: {
     code: string;
     bank: string;
   };
 
-  // Campos para promissória
   promissoryNote?: {
     number: string;
   };
 
-  // Campos para débito ao cliente
   clientDebt?: {
     generateDebt: boolean;
     installments?: {

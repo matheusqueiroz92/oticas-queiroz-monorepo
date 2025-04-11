@@ -371,117 +371,161 @@ export class PaymentService {
     );
   }
 
-  /**
-   * Cria um novo pagamento
-   * @param paymentData Dados do pagamento
-   * @returns Pagamento criado
-   */
-  async createPayment(paymentData: CreatePaymentDTO): Promise<IPayment> {
-    // Validar os dados do pagamento e obter o ID do caixa
-    const cashRegisterId = await this.validatePayment(paymentData);
+ /**
+ * Cria um novo pagamento
+ * @param paymentData Dados do pagamento
+ * @returns Pagamento criado
+ */
+async createPayment(paymentData: CreatePaymentDTO): Promise<IPayment> {
+  // Validar os dados do pagamento e obter o ID do caixa
+  const cashRegisterId = await this.validatePayment(paymentData);
 
-    // Mapeamento para o método de caixa
-    let registerMethod: "credit" | "debit" | "cash" | "pix";
+  // Mapeamento para o método de caixa
+  let registerMethod: "credit" | "debit" | "cash" | "pix";
 
-    switch (paymentData.paymentMethod) {
-      case "credit":
-        registerMethod = "credit";
-        break;
-      case "debit":
-        registerMethod = "debit";
-        break;
-      case "cash":
-        registerMethod = "cash";
-        break;
-      case "pix":
-        registerMethod = "pix";
-        break;
-      case "bank_slip":
-      case "promissory_note":
-        // Para boleto e promissória, registramos como "cash" no caixa
-        registerMethod = "cash";
-        break;
-    }
+  switch (paymentData.paymentMethod) {
+    case "credit":
+      registerMethod = "credit";
+      break;
+    case "debit":
+      registerMethod = "debit";
+      break;
+    case "cash":
+      registerMethod = "cash";
+      break;
+    case "pix":
+      registerMethod = "pix";
+      break;
+    case "bank_slip":
+    case "promissory_note":
+      // Para boleto e promissória, registramos como "cash" no caixa
+      registerMethod = "cash";
+      break;
+  }
 
-    // Se o pagamento está relacionado a um pedido, verificar se precisamos atualizar compras/vendas
-    if (paymentData.orderId) {
-      try {
-        const order = await this.orderModel.findById(paymentData.orderId);
-        if (order) {
-          // Se o método de pagamento for parcelado (bank_slip ou promissory_note), 
-          // e não for um pagamento de dívida (já existente), atualizar as dívidas do cliente
-          const isInstallmentMethod = paymentData.paymentMethod === "bank_slip" || 
-                                      paymentData.paymentMethod === "promissory_note";
-          
-          if (isInstallmentMethod && paymentData.type !== "debt_payment" && order.clientId) {
-            const debtAmount = order.finalPrice - (order.paymentEntry || 0);
-            if (debtAmount > 0) {
-              console.log(`Pagamento parcelado detectado para o pedido ${order._id}. Adicionando débito ao cliente ${order.clientId}`);
-              await this.updateClientDebt(
-                order.clientId.toString(),
-                undefined,
-                debtAmount
-              );
-            }
+  // Se o pagamento está relacionado a um pedido, verificar se precisamos atualizar compras/vendas
+  if (paymentData.orderId) {
+    try {
+      const order = await this.orderModel.findById(paymentData.orderId);
+      if (order) {
+        // Se o método de pagamento for parcelado (bank_slip ou promissory_note), 
+        // e não for um pagamento de dívida (já existente), atualizar as dívidas do cliente
+        const isInstallmentMethod = paymentData.paymentMethod === "bank_slip" || 
+                                    paymentData.paymentMethod === "promissory_note";
+        
+        if (isInstallmentMethod && paymentData.type !== "debt_payment" && order.clientId) {
+          const debtAmount = order.finalPrice - (order.paymentEntry || 0);
+          if (debtAmount > 0) {
+            console.log(`Pagamento parcelado detectado para o pedido ${order._id}. Adicionando débito ao cliente ${order.clientId}`);
+            await this.updateClientDebt(
+              order.clientId.toString(),
+              undefined,
+              debtAmount
+            );
           }
         }
-      } catch (error) {
-        console.error(`Erro ao processar pedido relacionado: ${error}`);
       }
+    } catch (error) {
+      console.error(`Erro ao processar pedido relacionado: ${error}`);
     }
-
-    const payment = await this.paymentModel.create({
-      ...paymentData,
-      cashRegisterId: cashRegisterId,
-      status: "completed",
-    });
-
-    // Usar a função auxiliar para atualizar o caixa
-    await this.updateCashRegister(cashRegisterId, payment);
-
-    // Se for pagamento de dívida, atualizar a dívida do cliente (REDUZIR O VALOR)
-    if (payment.type === "debt_payment") {
-      const debtAmount = -payment.amount; // Valor negativo para reduzir a dívida
-      await this.updateClientDebt(
-        payment.customerId,
-        payment.legacyClientId,
-        debtAmount,
-        payment._id
-      );
-    }
-
-    // Se for boleto ou promissória com geração de débito, atualizar débito do cliente
-    if (
-      (payment.paymentMethod === "bank_slip" ||
-        payment.paymentMethod === "promissory_note") &&
-      payment.clientDebt?.generateDebt
-    ) {
-      // Calcular o valor total do débito (total do parcelamento)
-      const totalDebt =
-        payment.clientDebt.installments?.total &&
-        payment.clientDebt.installments.value
-          ? payment.clientDebt.installments.total *
-            payment.clientDebt.installments.value
-          : payment.amount;
-
-      await this.updateClientDebt(
-        payment.customerId,
-        payment.legacyClientId,
-        totalDebt,
-        payment._id
-      );
-    }
-
-    // Invalidar cache
-    const date = new Date(payment.date);
-    const dateString = date.toISOString().split("T")[0];
-    this.invalidateCache([
-      `daily_payments_${dateString}_all`,
-      `daily_payments_${dateString}_${payment.type}`,
-    ]);
-
-    return payment;
   }
+
+  const payment = await this.paymentModel.create({
+    ...paymentData,
+    cashRegisterId: cashRegisterId,
+    status: "completed",
+  });
+
+  // Usar a função auxiliar para atualizar o caixa
+  await this.updateCashRegister(cashRegisterId, payment);
+
+  // Se o pagamento está relacionado a um pedido, atualizar o status de pagamento
+  if (payment.orderId) {
+    try {
+      const order = await this.orderModel.findById(payment.orderId);
+      if (order) {
+        // Adicionar o pagamento ao histórico do pedido
+        const paymentHistoryEntry = {
+          paymentId: payment._id,
+          amount: payment.amount,
+          date: payment.date,
+          method: payment.paymentMethod
+        };
+        
+        // Obter o histórico existente ou inicializar se não existir
+        const currentHistory = order.paymentHistory || [];
+        const updatedHistory = [...currentHistory, paymentHistoryEntry];
+        
+        // Calcular o total pago
+        const totalPaid = updatedHistory.reduce((sum, entry) => sum + entry.amount, 0);
+        
+        // Determinar o novo status de pagamento
+        let newPaymentStatus: "pending" | "partially_paid" | "paid" = "pending";
+        if (totalPaid >= order.finalPrice) {
+          newPaymentStatus = "paid";
+        } else if (totalPaid > 0) {
+          newPaymentStatus = "partially_paid";
+        }
+        
+        // Atualizar o pedido
+        await this.orderModel.update(payment.orderId.toString(), {
+          paymentStatus: newPaymentStatus,
+          paymentHistory: updatedHistory.map(entry => ({
+            ...entry,
+            paymentId: entry.paymentId || "", // Garanta que paymentId esteja sempre definido
+          }))
+        });
+        
+        console.log(`Status de pagamento do pedido ${payment.orderId} atualizado para ${newPaymentStatus}`);
+      }
+    } catch (error) {
+      console.error(`Erro ao atualizar status de pagamento do pedido: ${error}`);
+    }
+  }
+
+  // Se for pagamento de dívida, atualizar a dívida do cliente (REDUZIR O VALOR)
+  if (payment.type === "debt_payment") {
+    const debtAmount = -payment.amount; // Valor negativo para reduzir a dívida
+    await this.updateClientDebt(
+      payment.customerId,
+      payment.legacyClientId,
+      debtAmount,
+      payment._id
+    );
+  }
+
+  // Se for boleto ou promissória com geração de débito, atualizar débito do cliente
+  if (
+    (payment.paymentMethod === "bank_slip" ||
+      payment.paymentMethod === "promissory_note") &&
+    payment.clientDebt?.generateDebt
+  ) {
+    // Calcular o valor total do débito (total do parcelamento)
+    const totalDebt =
+      payment.clientDebt.installments?.total &&
+      payment.clientDebt.installments.value
+        ? payment.clientDebt.installments.total *
+          payment.clientDebt.installments.value
+        : payment.amount;
+
+    await this.updateClientDebt(
+      payment.customerId,
+      payment.legacyClientId,
+      totalDebt,
+      payment._id
+    );
+  }
+
+  // Invalidar cache
+  const date = new Date(payment.date);
+  const dateString = date.toISOString().split("T")[0];
+  this.invalidateCache([
+    `daily_payments_${dateString}_all`,
+    `daily_payments_${dateString}_${payment.type}`,
+  ]);
+
+  return payment;
+}
 
   /**
    * Obtém um pagamento pelo ID
@@ -589,125 +633,152 @@ export class PaymentService {
     return result.payments;
   }
 
-  /**
-   * Cancela um pagamento
-   * @param id ID do pagamento
-   * @param userId ID do usuário que está cancelando
-   * @returns Pagamento cancelado
-   * @throws PaymentError se o cancelamento falhar
-   */
-  async cancelPayment(id: string, userId: string): Promise<IPayment> {
-    const payment = await this.paymentModel.findById(id);
-    if (!payment) {
-      throw new PaymentError("Pagamento não encontrado");
-    }
+ /**
+ * Cancela um pagamento
+ * @param id ID do pagamento
+ * @param userId ID do usuário que está cancelando
+ * @returns Pagamento cancelado
+ * @throws PaymentError se o cancelamento falhar
+ */
+async cancelPayment(id: string, userId: string): Promise<IPayment> {
+  const payment = await this.paymentModel.findById(id);
+  if (!payment) {
+    throw new PaymentError("Pagamento não encontrado");
+  }
 
-    if (payment.status === "cancelled") {
-      throw new PaymentError("Pagamento já está cancelado");
-    }
+  if (payment.status === "cancelled") {
+    throw new PaymentError("Pagamento já está cancelado");
+  }
 
-    const register = await this.cashRegisterModel.findById(
-      payment.cashRegisterId
+  const register = await this.cashRegisterModel.findById(
+    payment.cashRegisterId
+  );
+  if (!register) {
+    throw new PaymentError("Caixa não encontrado");
+  }
+
+  if (register.status === "closed") {
+    throw new PaymentError(
+      "Não é possível cancelar pagamento de um caixa fechado"
     );
-    if (!register) {
-      throw new PaymentError("Caixa não encontrado");
-    }
+  }
 
-    if (register.status === "closed") {
-      throw new PaymentError(
-        "Não é possível cancelar pagamento de um caixa fechado"
-      );
-    }
-
-    // Se o pagamento está relacionado a um pedido, verificar se precisamos reverter débitos
-    if (payment.orderId) {
-      try {
-        const order = await this.orderModel.findById(payment.orderId);
-        if (order) {
-          // Se o método de pagamento for parcelado (bank_slip ou promissory_note)
-          // e não for um pagamento de dívida (já existente), reverter o débito do cliente
-          const isInstallmentMethod = payment.paymentMethod === "bank_slip" || 
-                                     payment.paymentMethod === "promissory_note";
-          
-          if (isInstallmentMethod && payment.type !== "debt_payment" && order.clientId) {
-            const debtAmount = -(order.finalPrice - (order.paymentEntry || 0)); // Valor negativo para reverter o débito
-            if (debtAmount < 0) {
-              console.log(`Cancelando pagamento parcelado para o pedido ${order._id}. Removendo débito do cliente ${order.clientId}`);
-              await this.updateClientDebt(
-                order.clientId.toString(),
-                undefined,
-                debtAmount
-              );
-            }
+  // Se o pagamento está relacionado a um pedido, verificar se precisamos reverter débitos
+  if (payment.orderId) {
+    try {
+      const order = await this.orderModel.findById(payment.orderId);
+      if (order) {
+        // Se o método de pagamento for parcelado (bank_slip ou promissory_note)
+        // e não for um pagamento de dívida (já existente), reverter o débito do cliente
+        const isInstallmentMethod = payment.paymentMethod === "bank_slip" || 
+                                   payment.paymentMethod === "promissory_note";
+        
+        if (isInstallmentMethod && payment.type !== "debt_payment" && order.clientId) {
+          const debtAmount = -(order.finalPrice - (order.paymentEntry || 0)); // Valor negativo para reverter o débito
+          if (debtAmount < 0) {
+            console.log(`Cancelando pagamento parcelado para o pedido ${order._id}. Removendo débito do cliente ${order.clientId}`);
+            await this.updateClientDebt(
+              order.clientId.toString(),
+              undefined,
+              debtAmount
+            );
           }
         }
-      } catch (error) {
-        console.error(`Erro ao processar pedido relacionado ao cancelar pagamento: ${error}`);
+        
+        // Atualizar o status de pagamento do pedido se ele tiver o histórico de pagamentos
+        if (order.paymentHistory) {
+          // Remover o pagamento do histórico
+          const updatedHistory = order.paymentHistory.filter(
+            entry => entry.paymentId.toString() !== payment._id
+          );
+          
+          // Recalcular o total pago
+          const totalPaid = updatedHistory.reduce((sum, entry) => sum + entry.amount, 0);
+          
+          // Determinar o novo status
+          let newStatus: "pending" | "partially_paid" | "paid" = "pending";
+          if (totalPaid >= order.finalPrice) {
+            newStatus = "paid";
+          } else if (totalPaid > 0) {
+            newStatus = "partially_paid";
+          }
+          
+          // Atualizar o pedido
+          await this.orderModel.update(payment.orderId.toString(), {
+            paymentStatus: newStatus,
+            paymentHistory: updatedHistory
+          });
+          
+          console.log(`Status de pagamento do pedido ${order._id} atualizado para ${newStatus} após cancelamento`);
+        }
       }
+    } catch (error) {
+      console.error(`Erro ao processar pedido relacionado ao cancelar pagamento: ${error}`);
     }
-
-    // Atualizar caixa usando a função auxiliar (com valor negativo para cancelamento)
-    await this.updateCashRegister(payment.cashRegisterId, {
-      ...payment,
-      amount: -payment.amount,
-    });
-
-    // Atualizar dívida se necessário
-    if (payment.type === "debt_payment") {
-      const debtAmount = payment.amount; // Valor positivo para reverter a redução da dívida
-      console.log(`Revertendo pagamento de dívida. Adicionando ${debtAmount} à dívida do cliente.`);
-      await this.updateClientDebt(
-        payment.customerId,
-        payment.legacyClientId,
-        debtAmount
-      );
-    }
-
-    // Se for boleto ou promissória com geração de débito, reverter débito do cliente
-    if (
-      (payment.paymentMethod === "bank_slip" ||
-        payment.paymentMethod === "promissory_note") &&
-      payment.clientDebt?.generateDebt
-    ) {
-      // Calcular o valor total do débito (total do parcelamento)
-      const totalDebt =
-        payment.clientDebt.installments?.total &&
-        payment.clientDebt.installments.value
-          ? -(
-              payment.clientDebt.installments.total *
-              payment.clientDebt.installments.value
-            )
-          : -payment.amount;
-
-      console.log(`Revertendo débito parcelado. Reduzindo ${Math.abs(totalDebt)} da dívida do cliente.`);
-      await this.updateClientDebt(
-        payment.customerId,
-        payment.legacyClientId,
-        totalDebt
-      );
-    }
-
-    // Atualizar status do pagamento
-    const updatedPayment = await this.paymentModel.updateStatus(
-      id,
-      "cancelled"
-    );
-
-    if (!updatedPayment) {
-      throw new PaymentError("Erro ao cancelar pagamento");
-    }
-
-    // Invalidar cache
-    this.invalidateCache(`payment_${id}`);
-    const date = new Date(payment.date);
-    const dateString = date.toISOString().split("T")[0];
-    this.invalidateCache([
-      `daily_payments_${dateString}_all`,
-      `daily_payments_${dateString}_${payment.type}`,
-    ]);
-
-    return updatedPayment;
   }
+
+  // Atualizar caixa usando a função auxiliar (com valor negativo para cancelamento)
+  await this.updateCashRegister(payment.cashRegisterId, {
+    ...payment,
+    amount: -payment.amount,
+  });
+
+  // Atualizar dívida se necessário
+  if (payment.type === "debt_payment") {
+    const debtAmount = payment.amount; // Valor positivo para reverter a redução da dívida
+    console.log(`Revertendo pagamento de dívida. Adicionando ${debtAmount} à dívida do cliente.`);
+    await this.updateClientDebt(
+      payment.customerId,
+      payment.legacyClientId,
+      debtAmount
+    );
+  }
+
+  // Se for boleto ou promissória com geração de débito, reverter débito do cliente
+  if (
+    (payment.paymentMethod === "bank_slip" ||
+      payment.paymentMethod === "promissory_note") &&
+    payment.clientDebt?.generateDebt
+  ) {
+    // Calcular o valor total do débito (total do parcelamento)
+    const totalDebt =
+      payment.clientDebt.installments?.total &&
+      payment.clientDebt.installments.value
+        ? -(
+            payment.clientDebt.installments.total *
+            payment.clientDebt.installments.value
+          )
+        : -payment.amount;
+
+    console.log(`Revertendo débito parcelado. Reduzindo ${Math.abs(totalDebt)} da dívida do cliente.`);
+    await this.updateClientDebt(
+      payment.customerId,
+      payment.legacyClientId,
+      totalDebt
+    );
+  }
+
+  // Atualizar status do pagamento
+  const updatedPayment = await this.paymentModel.updateStatus(
+    id,
+    "cancelled"
+  );
+
+  if (!updatedPayment) {
+    throw new PaymentError("Erro ao cancelar pagamento");
+  }
+
+  // Invalidar cache
+  this.invalidateCache(`payment_${id}`);
+  const date = new Date(payment.date);
+  const dateString = date.toISOString().split("T")[0];
+  this.invalidateCache([
+    `daily_payments_${dateString}_all`,
+    `daily_payments_${dateString}_${payment.type}`,
+  ]);
+
+  return updatedPayment;
+}
 
   /**
    * Realiza exclusão lógica (soft delete) de um pagamento
@@ -825,5 +896,57 @@ export class PaymentService {
   ): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
     // Utilizamos o ExportUtils para exportar o relatório financeiro
     return this.exportUtils.exportFinancialReport(reportData, options);
+  }
+
+  /**
+   * Atualiza o status do pagamento de um pedido
+   * @param orderId ID do pedido
+   * @param amount Valor do pagamento realizado
+   * @param method Método de pagamento realizado
+   * @param paymentId ID do pagamento
+   */
+  async updateOrderPaymentStatus(orderId: string, amount: number, paymentId: string, method: string): Promise<void> {
+    if (!orderId) return;
+  
+    try {
+      // Buscar o pedido atual
+      const order = await this.orderModel.findById(orderId);
+      if (!order) {
+        console.error(`Pedido ${orderId} não encontrado ao atualizar status de pagamento`);
+        return;
+      }
+  
+      // Adicionar o pagamento ao histórico
+      const paymentHistoryEntry = {
+        paymentId,
+        amount,
+        date: new Date(),
+        method
+      };
+  
+      // Calcular o total pago até agora
+      const existingTotal = order.paymentHistory ? 
+        order.paymentHistory.reduce((sum, entry) => sum + entry.amount, 0) : 0;
+      const newTotal = existingTotal + amount;
+  
+      // Determinar o novo status de pagamento
+      let newStatus: "pending" | "partially_paid" | "paid" = "pending";
+      
+      if (newTotal >= order.finalPrice) {
+        newStatus = "paid";
+      } else if (newTotal > 0) {
+        newStatus = "partially_paid";
+      }
+  
+      // Atualizar o pedido
+      await this.orderModel.update(orderId, {
+        paymentStatus: newStatus,
+        paymentHistory: [...(order.paymentHistory || []), paymentHistoryEntry]
+      });
+  
+      console.log(`Status de pagamento do pedido ${orderId} atualizado para ${newStatus}`);
+    } catch (error) {
+      console.error(`Erro ao atualizar status de pagamento do pedido ${orderId}:`, error);
+    }
   }
 }

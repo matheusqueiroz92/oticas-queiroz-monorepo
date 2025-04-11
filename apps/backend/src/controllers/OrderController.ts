@@ -67,7 +67,7 @@ export class OrderController {
         clientId: new Types.ObjectId(validatedData.clientId),
         employeeId: new Types.ObjectId(validatedData.employeeId),
         laboratoryId: validatedData.laboratoryId ? new Types.ObjectId(validatedData.laboratoryId) : null,
-        products: validProducts as IProduct[]
+        products: validProducts as IProduct[],
       };
 
       const order = await this.orderService.createOrder(orderData);
@@ -650,6 +650,32 @@ export class OrderController {
               : String(error)
             : undefined,
       });
+    }
+  }
+
+  async getOrderPayments(req: Request, res: Response): Promise<void> {
+    try {
+      const payments = await this.orderService.getOrderPayments(req.params.id);
+      res.status(200).json(payments);
+    } catch (error) {
+      if (error instanceof OrderError) {
+        res.status(404).json({ message: error.message });
+        return;
+      }
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  }
+  
+  async getPaymentStatusSummary(req: Request, res: Response): Promise<void> {
+    try {
+      const summary = await this.orderService.getPaymentStatusSummary(req.params.id);
+      res.status(200).json(summary);
+    } catch (error) {
+      if (error instanceof OrderError) {
+        res.status(404).json({ message: error.message });
+        return;
+      }
+      res.status(500).json({ message: "Erro interno do servidor" });
     }
   }
 }

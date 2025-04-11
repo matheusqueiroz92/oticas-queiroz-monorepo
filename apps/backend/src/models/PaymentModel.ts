@@ -1,3 +1,4 @@
+
 import { Payment } from "../schemas/PaymentSchema";
 import type { IPayment } from "../interfaces/IPayment";
 import { type Document, Types, type FilterQuery } from "mongoose";
@@ -185,6 +186,38 @@ export class PaymentModel {
 
     const payment = (await query.exec()) as PaymentDocument | null;
     return payment ? this.convertToIPayment(payment) : null;
+  }
+
+  async findByIds(ids: string[]): Promise<IPayment[]> {
+    if (!ids || ids.length === 0) return [];
+    
+    const objectIds = ids
+      .filter(id => this.isValidId(id))
+      .map(id => new Types.ObjectId(id));
+    
+    if (objectIds.length === 0) return [];
+    
+    try {
+      const payments = await Payment.find({
+        _id: { $in: objectIds },
+        isDeleted: { $ne: true }
+      })
+        .populate("orderId")
+        .populate("customerId", "name email")
+        .populate("legacyClientId")
+        .populate("cashRegisterId")
+        .populate("createdBy", "name email")
+        .exec();
+      
+      const validPayments = payments
+        .filter(payment => payment && payment._id)
+        .map(payment => this.convertToIPayment(payment as PaymentDocument));
+        
+      return validPayments;
+    } catch (error) {
+      console.error(`Erro ao buscar pagamentos por IDs: ${error}`);
+      return [];
+    }
   }
 
   async findByCashRegister(
