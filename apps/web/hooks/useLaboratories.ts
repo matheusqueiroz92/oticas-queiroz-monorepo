@@ -241,7 +241,7 @@ export function useLaboratories() {
     };
   };
 
-const useCreateLaboratory = () => {
+  const useCreateLaboratory = () => {
   const router = useRouter();
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(0);
@@ -448,7 +448,242 @@ const useCreateLaboratory = () => {
     onSubmit,
     navigateBack
   };
-};
+  };
+
+  const useEditLaboratory = (id: string | null, onSuccess?: () => void) => {
+    const router = useRouter();
+    const { toast } = useToast();
+    const [currentStep, setCurrentStep] = useState(0);
+    const [isUpdating, setIsUpdating] = useState(false);
+    const [loggedEmployee, setLoggedEmployee] = useState<LoggedEmployee | null>(null);
+    
+    const [streetValue, setStreetValue] = useState("");
+    const [numberValue, setNumberValue] = useState("");
+    const [complementValue, setComplementValue] = useState("");
+    const [neighborhoodValue, setNeighborhoodValue] = useState("");
+    const [cityValue, setCityValue] = useState("");
+    const [stateValue, setStateValue] = useState("");
+    const [zipCodeValue, setZipCodeValue] = useState("");
+    
+    const form = createLaboratoryForm();
+    
+    const laboratoryQuery = useQuery({
+      queryKey: QUERY_KEYS.LABORATORIES.DETAIL(id as string),
+      queryFn: () => getLaboratoryById(id as string),
+      enabled: !!id,
+    });
+    
+    // Initialize form with laboratory data when available
+    useEffect(() => {
+      if (laboratoryQuery.data) {
+        const laboratory = laboratoryQuery.data;
+        form.reset({
+          name: laboratory.name,
+          contactName: laboratory.contactName,
+          email: laboratory.email,
+          phone: laboratory.phone,
+          address: laboratory.address,
+          isActive: laboratory.isActive
+        });
+        
+        // Set address values for the form
+        if (laboratory.address) {
+          setStreetValue(laboratory.address.street || "");
+          setNumberValue(laboratory.address.number || "");
+          setComplementValue(laboratory.address.complement || "");
+          setNeighborhoodValue(laboratory.address.neighborhood || "");
+          setCityValue(laboratory.address.city || "");
+          setStateValue(laboratory.address.state || "");
+          setZipCodeValue(laboratory.address.zipCode || "");
+        }
+      }
+    }, [laboratoryQuery.data, form]);
+    
+    // Set logged employee data from cookies on component mount
+    useEffect(() => {
+      const userId = Cookies.get("userId");
+      const name = Cookies.get("name");
+      const email = Cookies.get("email");
+      const role = Cookies.get("role");
+
+      if (userId && name && role) {
+        const userData = {
+          id: userId,
+          name,
+          email: email || "",
+          role,
+        };
+
+        setLoggedEmployee(userData);
+      }
+    }, []);
+    
+    const updateLaboratoryMut = useMutation({
+      mutationFn: async ({ id, data }: { id: string; data: Partial<Laboratory> }) => {
+        return updateLaboratory(id, data);
+      },
+      onSuccess: (result) => {
+        toast({
+          title: "Laboratório atualizado",
+          description: "As informações do laboratório foram atualizadas com sucesso."
+        });
+        
+        queryClient.invalidateQueries({ 
+          queryKey: QUERY_KEYS.LABORATORIES.ALL 
+        });
+        queryClient.invalidateQueries({ 
+          queryKey: QUERY_KEYS.LABORATORIES.DETAIL(id as string) 
+        });
+        
+        if (onSuccess) {
+          onSuccess();
+        } else {
+          router.push(`/laboratories/${id}`);
+        }
+        
+        return result;
+      },
+      onError: (error) => {
+        console.error("Erro ao atualizar laboratório:", error);
+        toast({
+          variant: "destructive",
+          title: "Erro",
+          description: "Não foi possível atualizar o laboratório."
+        });
+      },
+    });
+    
+    const nextStep = () => {
+      if (currentStep === 0) {
+        form.trigger(['name', 'contactName', 'email', 'phone']).then((isValid) => {
+          if (isValid) {
+            setCurrentStep(1);
+            window.scrollTo(0, 0);
+          }
+        });
+      } else if (currentStep === 1) {
+        form.setValue("address.street", streetValue);
+        form.setValue("address.number", numberValue);
+        form.setValue("address.complement", complementValue);
+        form.setValue("address.neighborhood", neighborhoodValue);
+        form.setValue("address.city", cityValue);
+        form.setValue("address.state", stateValue);
+        form.setValue("address.zipCode", zipCodeValue);
+        
+        form.trigger([
+          'address.street', 
+          'address.number', 
+          'address.neighborhood', 
+          'address.city', 
+          'address.state', 
+          'address.zipCode'
+        ]).then((isValid) => {
+          if (isValid) {
+            const formData = form.getValues();
+            onSubmit(formData);
+          }
+        });
+      }
+    };
+    
+    const prevStep = () => {
+      if (currentStep > 0) {
+        setCurrentStep(currentStep - 1);
+        window.scrollTo(0, 0);
+      }
+    };
+    
+    const handleStepClick = (newStep: number) => {
+      if (newStep <= currentStep) {
+        setCurrentStep(newStep);
+        return;
+      }
+      
+      if (newStep > currentStep) {
+        nextStep();
+      }
+    };
+    
+    const checkCanContinue = () => {
+      if (currentStep === 0) {
+        return !!form.getValues("name") && 
+              !!form.getValues("contactName") && 
+              !!form.getValues("email") && 
+              !!form.getValues("phone");
+      } else if (currentStep === 1) {
+        return !!streetValue && 
+              !!numberValue && 
+              !!neighborhoodValue && 
+              !!cityValue && 
+              !!stateValue && 
+              !!zipCodeValue;
+      }
+      return true;
+    };
+    
+    const onSubmit = (data: LaboratoryFormData) => {
+      if (!id) return;
+      
+      setIsUpdating(true);
+      
+      const updatedData: Partial<Laboratory> = {
+        ...data,
+        address: {
+          street: streetValue,
+          number: numberValue,
+          complement: complementValue,
+          neighborhood: neighborhoodValue,
+          city: cityValue,
+          state: stateValue,
+          zipCode: zipCodeValue
+        }
+      };
+      
+      updateLaboratoryMut.mutateAsync({ id, data: updatedData })
+        .finally(() => setIsUpdating(false));
+    };
+    
+    const navigateBack = () => {
+      router.push(`/laboratories/${id}`);
+    };
+    
+    const steps = [
+      { id: "basic", label: "Informações Básicas" },
+      { id: "address", label: "Endereço" },
+    ];
+    
+    return {
+      form,
+      currentStep,
+      loggedEmployee,
+      steps,
+      laboratory: laboratoryQuery.data,
+      isLoading: laboratoryQuery.isLoading,
+      error: laboratoryQuery.error,
+      isUpdating: isUpdating || updateLaboratoryMut.isPending,
+      streetValue,
+      setStreetValue,
+      numberValue,
+      setNumberValue,
+      complementValue,
+      setComplementValue,
+      neighborhoodValue,
+      setNeighborhoodValue,
+      cityValue,
+      setCityValue,
+      stateValue,
+      setStateValue,
+      zipCodeValue,
+      setZipCodeValue,
+      setCurrentStep,
+      nextStep,
+      prevStep,
+      handleStepClick,
+      checkCanContinue,
+      onSubmit,
+      navigateBack
+    };
+  };
 
   const updateFilters = (newFilters: LaboratoryFilters) => {
     setFilters(newFilters);
@@ -522,6 +757,7 @@ const useCreateLaboratory = () => {
     useLaboratoryDetails,
     useCreateLaboratory,
     useLaboratoriesList,
+    useEditLaboratory,
     getLaboratoryName,
     handleCreateLaboratory,
     handleUpdateLaboratory,

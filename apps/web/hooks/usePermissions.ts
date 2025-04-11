@@ -15,11 +15,13 @@ export function usePermissions() {
     return roles.includes(user.role);
   };
 
+  console.log(user);
+
   // Verifica permissões específicas para certas funcionalidades
   const canViewEmployees = isAdmin;
   const canViewReports = isAdmin || isEmployee;
-  const canManageLaboratories = isAdmin || isEmployee; // Apenas admin pode gerenciar (adicionar/editar/excluir)
-  const canViewLaboratories = isAdmin || isEmployee; // Admin e employee podem visualizar
+  const canManageLaboratories = isAdmin || isEmployee;
+  const canViewLaboratories = isAdmin || isEmployee;
 
   // Permissões de cliente
   const canViewDebts = isCustomer;
