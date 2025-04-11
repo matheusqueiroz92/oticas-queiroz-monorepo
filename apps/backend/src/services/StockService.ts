@@ -92,8 +92,11 @@ export class StockService {
     performedBy: string = 'system',
     orderId?: string
   ): Promise<IProduct | null> {
+    const session = await mongoose.connection.startSession();
+    session.startTransaction();
+    
     try {
-      const product = await this.getProductById(productId);
+      const product = await this.productModel.findByIdWithSession(productId, session);
       
       if (!product) {
         throw new StockError(`Produto com ID ${productId} não encontrado`);
@@ -102,6 +105,7 @@ export class StockService {
       // Se não for um produto de armação, não mexer no estoque
       if (!this.isFrameProduct(product)) {
         console.log(`Produto ${productId} (${product.name}) não é uma armação, ignorando atualização de estoque.`);
+        await session.commitTransaction();
         return product;
       }
       
@@ -115,59 +119,43 @@ export class StockService {
       
       console.log(`Atualizando estoque do produto ${productId} (${product.name}) de ${currentStock} para ${newStock}`);
       
-      // Usar diretamente o modelo Mongoose para garantir a atualização
-      // Usamos o modelo correto com base no tipo de produto
-      let result;
-      if (product.productType === 'prescription_frame') {
-        result = await PrescriptionFrame.findByIdAndUpdate(
-          productId,
-          { $set: { stock: newStock } },
-          { new: true }
-        );
-      } else if (product.productType === 'sunglasses_frame') {
-        result = await SunglassesFrame.findByIdAndUpdate(
-          productId,
-          { $set: { stock: newStock } },
-          { new: true }
-        );
-      }
+      // Atualizar o estoque dentro da transação
+      const updatedProduct = await this.productModel.decreaseStockWithSession(productId, quantity, session);
       
-      if (!result) {
+      if (!updatedProduct) {
         throw new StockError(`Falha ao atualizar estoque do produto ${productId}`);
       }
       
-      // Verificar se a atualização realmente aconteceu
-      const updatedProduct = await this.getProductById(productId);
-      const updatedStock = updatedProduct?.stock || 0;
-      
-      if (updatedStock !== newStock) {
-        console.error(`Atenção: O estoque não foi atualizado corretamente. Esperado: ${newStock}, Atual: ${updatedStock}`);
-      } else {
-        console.log(`Estoque atualizado com sucesso para ${newStock}`);
-      }
-      
-      // Registrar log
-      await this.createStockLog(
-        productId,
-        currentStock,
+      // Registrar log dentro da transação
+      await createStockLogWithSession({
+        productId: new mongoose.Types.ObjectId(productId),
+        orderId: orderId ? new mongoose.Types.ObjectId(orderId) : undefined,
+        previousStock: currentStock,
         newStock,
         quantity,
-        'decrease',
+        operation: 'decrease',
         reason,
-        performedBy,
-        orderId
-      );
+        performedBy: new mongoose.Types.ObjectId(performedBy)
+      }, session);
+      
+      // Tudo deu certo, comitar a transação
+      await session.commitTransaction();
       
       return updatedProduct;
     } catch (error) {
+      // Algo deu errado, abortar a transação
+      await session.abortTransaction();
       console.error(`Erro ao reduzir estoque para ${productId}:`, error);
+      
       if (error instanceof StockError) {
         throw error;
       }
       throw new StockError(`Erro desconhecido ao processar estoque: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      session.endSession();
     }
   }
-
+  
   /**
    * Aumenta o estoque de um produto quando um pedido é cancelado
    * @param productId ID do produto
@@ -270,13 +258,16 @@ export class StockService {
   ): Promise<void> {
     console.log(`Processando estoque para ${products.length} produtos. Operação: ${operation}`);
     
-    // Contadores para log
-    let atualizados = 0;
-    let ignorados = 0;
-    let erros = 0;
+    // Iniciar uma sessão de transação
+    const session = await mongoose.connection.startSession();
+    session.startTransaction();
     
-    for (const product of products) {
-      try {
+    try {
+      // Contadores para log
+      let atualizados = 0;
+      let ignorados = 0;
+      
+      for (const product of products) {
         let productId: string;
         
         // Extrair o ID do produto conforme o formato
@@ -288,12 +279,11 @@ export class StockService {
           productId = typeof product._id === 'string' ? product._id : (product._id as mongoose.Types.ObjectId).toString();
         } else {
           console.error(`Formato de produto inválido:`, product);
-          erros++;
-          continue;
+          throw new StockError(`Formato de produto inválido: ${product}`);
         }
         
-        // Buscar o produto completo para verificar o tipo
-        const productDetails = await this.getProductById(productId);
+        // Buscar o produto completo para verificar o tipo (usando a sessão)
+        const productDetails = await this.productModel.findByIdWithSession(productId, session);
         
         // Se não for uma armação, pular
         if (!productDetails || !this.isFrameProduct(productDetails)) {
@@ -305,20 +295,67 @@ export class StockService {
         console.log(`Processando estoque para armação ${productId} (${productDetails.name})`);
         
         // Realizar a operação adequada
+        let updatedProduct;
+        let previousStock: number;
+        let newStock: number;
+        
         if (operation === 'decrease') {
-          await this.decreaseStock(productId, 1, 'Pedido criado', performedBy, orderId);
+          previousStock = productDetails.stock || 0;
+          updatedProduct = await this.productModel.decreaseStockWithSession(productId, 1, session);
+          if (updatedProduct && 'stock' in updatedProduct) {
+            newStock = updatedProduct.stock ?? 0;
+          } else {
+            throw new StockError(`Falha ao atualizar estoque do produto ${productId}`);
+          }
+          
+          // Registrar log dentro da transação
+          await createStockLogWithSession({
+            productId: new mongoose.Types.ObjectId(productId),
+            orderId: orderId ? new mongoose.Types.ObjectId(orderId) : undefined,
+            previousStock,
+            newStock,
+            quantity: 1,
+            operation: 'decrease',
+            reason: 'Pedido criado',
+            performedBy: new mongoose.Types.ObjectId(performedBy)
+          }, session);
         } else {
-          await this.increaseStock(productId, 1, 'Pedido cancelado/revertido', performedBy, orderId);
+          previousStock = productDetails.stock || 0;
+          updatedProduct = await this.productModel.increaseStockWithSession(productId, 1, session);
+          if (updatedProduct && 'stock' in updatedProduct) {
+            newStock = updatedProduct.stock ?? 0;
+          } else {
+            throw new StockError(`Falha ao atualizar estoque do produto ${productId}`);
+          }
+          
+          // Registrar log dentro da transação
+          await createStockLogWithSession({
+            productId: new mongoose.Types.ObjectId(productId),
+            orderId: orderId ? new mongoose.Types.ObjectId(orderId) : undefined,
+            previousStock,
+            newStock,
+            quantity: 1,
+            operation: 'increase',
+            reason: 'Pedido cancelado/revertido',
+            performedBy: new mongoose.Types.ObjectId(performedBy)
+          }, session);
         }
         
         atualizados++;
-      } catch (error) {
-        console.error(`Erro ao processar estoque para produto:`, error);
-        erros++;
       }
+      
+      // Se chegou aqui, tudo ocorreu bem, então comita a transação
+      await session.commitTransaction();
+      console.log(`Processamento de estoque concluído com sucesso. Armações atualizadas: ${atualizados}, Ignorados (não armações): ${ignorados}`);
+    } catch (error) {
+      // Algo deu errado, aborta a transação
+      await session.abortTransaction();
+      console.error(`Erro ao processar estoque para produtos. Transação abortada:`, error);
+      throw new StockError(`Erro ao processar estoque: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      // Sempre finaliza a sessão
+      session.endSession();
     }
-    
-    console.log(`Processamento de estoque concluído. Armações atualizadas: ${atualizados}, Ignorados (não armações): ${ignorados}, Erros: ${erros}`);
   }
 
   /**

@@ -83,4 +83,11 @@ stockLogSchema.statics.getOrderStockMovements = async function(orderId: string) 
 
 const StockLog = mongoose.model<StockLogDocument>('StockLog', stockLogSchema);
 
+export async function createStockLogWithSession(
+  logData: Omit<IStockLog, '_id' | 'createdAt'>,
+  session: mongoose.ClientSession
+): Promise<Document> {
+  return await StockLog.create([logData], { session }).then(docs => docs[0]);
+}
+
 export { StockLog };

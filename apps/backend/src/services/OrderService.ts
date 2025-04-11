@@ -259,6 +259,8 @@ export class OrderService {
   }
 
   async createOrder(orderData: Omit<IOrder, "_id">): Promise<IOrder> {
+    const session = await mongoose.connection.startSession();
+    session.startTransaction();
     try {
       if (orderData.laboratoryId?.toString() === "") {
         orderData.laboratoryId = undefined;
@@ -301,7 +303,7 @@ export class OrderService {
   
       await this.validateOrder(orderData);
       
-      const order = await this.orderModel.create(orderData);
+      const order = await this.orderModel.createWithSession(orderData, session);
   
       if (order.status !== 'cancelled') {
         try {          

@@ -75,11 +75,6 @@ export class ProductModel {
     }
   }
 
-   /**
-   * Atualiza diretamente o valor de estoque no MongoDB, contornando o Mongoose.
-   * Esta abordagem é necessária porque o Mongoose com discriminators pode ter
-   * problemas ao atualizar o campo stock em alguns cenários.
-   */
    private async updateStockDirectly(id: string, stockValue: number): Promise<boolean> {
     try {
       console.log(`Tentando atualizar estoque para ${stockValue} usando operação direta no MongoDB`);
@@ -163,11 +158,6 @@ export class ProductModel {
     };
   }
 
-  /**
-   * Atualiza um produto pelo seu ID.
-   * Usa acesso direto ao MongoDB para garantir que o campo stock seja atualizado corretamente
-   * para resolver problemas com discriminators do Mongoose.
-   */
   async update(
     id: string,
     productData: Partial<IProduct>
@@ -272,5 +262,135 @@ export class ProductModel {
     const product = await Product.findByIdAndDelete(id);
     if (!product) return null;
     return this.convertToIProduct(product);
+  }
+
+  async findByIdWithSession(id: string, session: mongoose.ClientSession): Promise<IProduct | null> {
+    if (!this.isValidId(id)) return null;
+    
+    const product = await Product.findById(id).session(session);
+    return product ? this.convertToIProduct(product) : null;
+  }
+  
+  async updateWithSession(
+    id: string,
+    productData: Partial<IProduct>,
+    session: mongoose.ClientSession
+  ): Promise<IProduct | null> {
+    if (!this.isValidId(id)) return null;
+    
+    try {
+      // Tratar o estoque separadamente, se presente
+      const stockValue = productData.stock !== undefined ? Number(productData.stock) : undefined;
+      const productDataNoStock = {...productData};
+      delete productDataNoStock.stock;
+      
+      // Primeiro atualize os outros campos
+      let updatedProduct = await Product.findByIdAndUpdate(
+        id,
+        { $set: productDataNoStock },
+        { new: true, session }
+      );
+      
+      // Se temos um valor de estoque para atualizar
+      if (stockValue !== undefined && updatedProduct) {
+        // Usar o modelo correto com base no tipo de produto
+        if (updatedProduct.productType === 'prescription_frame') {
+          updatedProduct = await PrescriptionFrame.findByIdAndUpdate(
+            id,
+            { $set: { stock: stockValue } },
+            { new: true, session }
+          );
+        } else if (updatedProduct.productType === 'sunglasses_frame') {
+          updatedProduct = await SunglassesFrame.findByIdAndUpdate(
+            id,
+            { $set: { stock: stockValue } },
+            { new: true, session }
+          );
+        }
+      }
+      
+      return updatedProduct ? this.convertToIProduct(updatedProduct) : null;
+    } catch (error) {
+      console.error(`Erro ao atualizar produto ${id} com sessão:`, error);
+      throw error; // Propagar o erro para permitir o rollback
+    }
+  }
+  
+  async decreaseStockWithSession(
+    id: string, 
+    quantity: number,
+    session: mongoose.ClientSession
+  ): Promise<IProduct | null> {
+    if (!this.isValidId(id)) return null;
+    
+    // Buscar o produto para verificar o estoque atual
+    const product = await Product.findById(id).session(session);
+    if (!product) return null;
+    
+    if (product.productType !== 'prescription_frame' && product.productType !== 'sunglasses_frame') {
+      return this.convertToIProduct(product);
+    }
+    
+    const currentStock = product.stock || 0;
+    if (currentStock < quantity) {
+      throw new Error(`Estoque insuficiente para o produto ${product.name}. Disponível: ${currentStock}, Necessário: ${quantity}`);
+    }
+    
+    const newStock = currentStock - quantity;
+    
+    // Usar o modelo correto com base no tipo de produto
+    let updatedProduct;
+    if (product.productType === 'prescription_frame') {
+      updatedProduct = await PrescriptionFrame.findByIdAndUpdate(
+        id,
+        { $set: { stock: newStock } },
+        { new: true, session }
+      );
+    } else if (product.productType === 'sunglasses_frame') {
+      updatedProduct = await SunglassesFrame.findByIdAndUpdate(
+        id,
+        { $set: { stock: newStock } },
+        { new: true, session }
+      );
+    }
+    
+    return updatedProduct ? this.convertToIProduct(updatedProduct) : null;
+  }
+  
+  async increaseStockWithSession(
+    id: string, 
+    quantity: number,
+    session: mongoose.ClientSession
+  ): Promise<IProduct | null> {
+    if (!this.isValidId(id)) return null;
+    
+    // Buscar o produto para verificar o estoque atual
+    const product = await Product.findById(id).session(session);
+    if (!product) return null;
+    
+    if (product.productType !== 'prescription_frame' && product.productType !== 'sunglasses_frame') {
+      return this.convertToIProduct(product);
+    }
+    
+    const currentStock = product.stock || 0;
+    const newStock = currentStock + quantity;
+    
+    // Usar o modelo correto com base no tipo de produto
+    let updatedProduct;
+    if (product.productType === 'prescription_frame') {
+      updatedProduct = await PrescriptionFrame.findByIdAndUpdate(
+        id,
+        { $set: { stock: newStock } },
+        { new: true, session }
+      );
+    } else if (product.productType === 'sunglasses_frame') {
+      updatedProduct = await SunglassesFrame.findByIdAndUpdate(
+        id,
+        { $set: { stock: newStock } },
+        { new: true, session }
+      );
+    }
+    
+    return updatedProduct ? this.convertToIProduct(updatedProduct) : null;
   }
 }

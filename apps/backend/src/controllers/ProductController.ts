@@ -9,6 +9,7 @@ import {
   prescriptionFrameSchema, 
   sunglassesFrameSchema 
 } from '../validators/productValidators';
+import mongoose from "mongoose";
 
 interface AuthRequest extends Request {
   user?: JwtPayload & { id?: string; role?: string };
@@ -276,6 +277,9 @@ export class ProductController {
   }
 
   async updateProductStock(req: AuthRequest, res: Response): Promise<void> {
+    const session = await mongoose.connection.startSession();
+    session.startTransaction();
+    
     try {
       const productId = req.params.id;
       const { stock } = req.body;
@@ -287,54 +291,63 @@ export class ProductController {
       
       const stockValue = Number(stock);
       
-      // Buscar o produto antes de atualizar para saber o estoque anterior
-      const currentProduct = await this.productService.getProductById(productId);
+      // Buscar o produto dentro da transação
+      const currentProduct = await this.productService.getProductByIdWithSession(productId, session);
       if (!currentProduct) {
+        await session.abortTransaction();
         res.status(404).json({ message: "Produto não encontrado" });
         return;
       }
       
       // Verificar se é um produto com controle de estoque
       if (currentProduct.productType !== 'prescription_frame' && currentProduct.productType !== 'sunglasses_frame') {
+        await session.abortTransaction();
         res.status(400).json({ message: "Este produto não possui controle de estoque" });
         return;
       }
       
       const previousStock = (currentProduct as any).stock || 0;
       
-      // Atualizar o estoque no banco de dados
-      const product = await this.productService.updateProduct(productId, { stock: stockValue });
+      // Atualizar o estoque no banco de dados dentro da transação
+      const product = await this.productService.updateProductWithSession(
+        productId, 
+        { stock: stockValue }, 
+        session
+      );
       
       // Registrar a alteração no log de estoque
-      try {
-        const operation = stockValue > previousStock ? 'increase' : 'decrease';
-        const difference = Math.abs(stockValue - previousStock);
-        const reason = `Ajuste manual de estoque: ${previousStock} → ${stockValue}`;
-        
-        await this.stockService.createStockLog(
-          productId,
-          previousStock,
-          stockValue,
-          difference,
-          operation,
-          reason,
-          req.user?.id || 'system',
-        );
-        
-        console.log(`Estoque do produto ${productId} atualizado de ${previousStock} para ${stockValue}`);
-      } catch (stockError) {
-        console.error('Erro ao registrar log de estoque:', stockError);
-        // Não impedir a atualização do produto se o log falhar
-      }
+      const operation = stockValue > previousStock ? 'increase' : 'decrease';
+      const difference = Math.abs(stockValue - previousStock);
+      const reason = `Ajuste manual de estoque: ${previousStock} → ${stockValue}`;
+      
+      await this.stockService.createStockLogWithSession(
+        productId,
+        previousStock,
+        stockValue,
+        difference,
+        operation,
+        reason,
+        req.user?.id || 'system',
+        undefined,
+        session
+      );
+      
+      // Comitar a transação
+      await session.commitTransaction();
       
       res.status(200).json(product);
     } catch (error) {
+      // Algo deu errado, abortar a transação
+      await session.abortTransaction();
+      
       if (error instanceof ProductError) {
         res.status(400).json({ message: error.message });
         return;
       }
       console.error("Error updating product stock:", error);
       res.status(500).json({ message: "Erro interno do servidor" });
+    } finally {
+      session.endSession();
     }
   }
 
