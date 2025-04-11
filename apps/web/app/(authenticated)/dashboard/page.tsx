@@ -62,7 +62,6 @@ export default function DashboardPage() {
     isLoading: isLoadingOrders,
     orders: allOrders,
     refetch: refetchOrders,
-    getEmployeeName,
     getClientName,
     useClientOrders,
   } = useOrders();
@@ -134,17 +133,6 @@ export default function DashboardPage() {
     refetchCashRegister();
   };
 
-  const getTodayOrders = (orders: Order[] = []): Order[] => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    return orders.filter(order => {
-      const orderDate = new Date(order.orderDate);
-      orderDate.setHours(0, 0, 0, 0);
-      return orderDate.getTime() === today.getTime();
-    });
-  };
-
   const getTodayPayments = (payments: IPayment[] = []): IPayment[] => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -164,14 +152,14 @@ export default function DashboardPage() {
     return orders.filter(o => statuses.includes(o.status as OrderStatus)).length;
   };
 
-  // const todayOrders = allOrders ? getTodayOrders(allOrders as Order[]) : [];
   const todayPayments = allPayments ? getTodayPayments(allPayments as IPayment[]) : [];
+  
   const recentOrders = [...(allOrders || [])].sort((a, b) => 
     new Date(b.createdAt || b.orderDate).getTime() - new Date(a.createdAt || a.orderDate).getTime()
   ).slice(0, 3);
 
   return (
-    <div className="space-y-2 max-w-auto mx-auto p-1 md:p-2">
+    <div className="space-y-4 max-w-auto mx-auto p-1 md:p-2">
       <div className="flex justify-between items-center">
         <PageTitle
           title="Dashboard"
@@ -190,7 +178,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
         <Card>
           <CardHeader>
-            <CardTitle>Bem-vindo ao Sistema</CardTitle>
+            <CardTitle className="text-[var(--primary-blue)]">Bem-vindo ao Sistema</CardTitle>
             <CardDescription>
               {userName ? `Olá, ${userName}! ` : ""}
               Acesse as funções do sistema através do menu lateral.
@@ -502,7 +490,6 @@ export default function DashboardPage() {
 
       {isEmployee && (
         <>
-          <h2 className="text-xl font-semibold mt-8">Acesso Rápido</h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
             <Link href="/customers/new">
               <Card className="hover:bg-accent transition-colors cursor-pointer h-full">
@@ -541,9 +528,9 @@ export default function DashboardPage() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
             <div>
-              <h2 className="text-xl font-semibold mb-4">Pedidos Recentes</h2>
+              <h2 className="text-lg font-semibold mb-4 text-[var(--secondary-red)]">Pedidos Recentes</h2>
               {isLoadingOrders ? (
                 renderListSkeleton(5)
               ) : (
@@ -589,7 +576,7 @@ export default function DashboardPage() {
             </div>
 
             <div>
-              <h2 className="text-xl font-semibold mb-4">Resumo do Caixa</h2>
+            <h2 className="text-lg font-semibold mb-4 text-[var(--secondary-red)]">Resumo do Caixa</h2>
               {isLoadingCashRegister ? (
                 <Card>
                   <CardHeader>

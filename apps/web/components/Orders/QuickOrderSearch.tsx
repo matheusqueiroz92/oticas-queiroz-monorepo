@@ -16,6 +16,12 @@ import { API_ROUTES } from "@/app/constants/api-routes";
 import { formatCurrency, formatDate, getOrderStatusClass, translateOrderStatus } from "@/app/utils/formatters";
 import { useUsers } from "@/hooks/useUsers";
 import type { Order } from "@/app/types/order";
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface OrderSearchResult extends Partial<Order> {
   _id: string;
@@ -41,7 +47,6 @@ export const QuickOrderSearch: React.FC<QuickOrderSearchProps> = ({ className })
   const router = useRouter();
   const { getUserName, fetchUsers } = useUsers();
 
-  // Função para buscar pedidos
   const searchOrders = async (query: string) => {
     if (!query.trim()) {
       setSearchResults([]);
@@ -62,7 +67,6 @@ export const QuickOrderSearch: React.FC<QuickOrderSearchProps> = ({ className })
         searchParams.search = query.trim();
       }
       
-      // Adicionar timestamp para evitar cache
       searchParams._t = Date.now().toString();
       
       const response = await api.get(API_ROUTES.ORDERS.LIST, {
@@ -80,17 +84,15 @@ export const QuickOrderSearch: React.FC<QuickOrderSearchProps> = ({ className })
         results = response.data.orders;
       }
 
-      // Extrair todos os IDs de clientes para pré-carregar
       const clientIds = results.map(order => 
         typeof order.clientId === 'string' ? order.clientId : ''
       ).filter(Boolean);
       
-      // Pré-carregar dados dos clientes
       if (clientIds.length > 0) {
         fetchUsers(clientIds);
       }
 
-      setSearchResults(results.slice(0, 5)); // Limitado a 5 resultados
+      setSearchResults(results.slice(0, 5));
     } catch (error) {
       console.error("Erro ao buscar pedidos:", error);
       setSearchResults([]);
@@ -99,16 +101,13 @@ export const QuickOrderSearch: React.FC<QuickOrderSearchProps> = ({ className })
     }
   };
 
-  // Efeito para debounce da busca
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
       if (searchQuery) {
         searchOrders(searchQuery);
-        // Só mostrar resultados se estiver digitando algo
         setShowResults(true);
       } else {
         setSearchResults([]);
-        // Não mostrar dropdown vazio
         setShowResults(false);
       }
     }, 300);
@@ -116,7 +115,6 @@ export const QuickOrderSearch: React.FC<QuickOrderSearchProps> = ({ className })
     return () => clearTimeout(delayDebounceFn);
   }, [searchQuery]);
 
-  // Efeito para fechar o dropdown quando clicar fora dele
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (resultsRef.current && !resultsRef.current.contains(event.target as Node)) {
@@ -130,15 +128,11 @@ export const QuickOrderSearch: React.FC<QuickOrderSearchProps> = ({ className })
     };
   }, []);
 
-  // Efeito para carregar dados dos clientes quando os resultados mudam
   useEffect(() => {
     if (searchResults.length > 0) {
-      // Extrair todos os IDs de clientes para carregamento
       const clientIds = searchResults
         .map(order => {
-          // Lidar com diferentes formatos possíveis de clientId
           if (typeof order.clientId === 'string') {
-            // Se for uma string com ObjectId, extrair o ID
             if (order.clientId.includes('ObjectId')) {
               try {
                 const matches = order.clientId.match(/ObjectId\('([^']+)'\)/);
@@ -151,7 +145,6 @@ export const QuickOrderSearch: React.FC<QuickOrderSearchProps> = ({ className })
             }
             return order.clientId;
           }
-          // Se for um objeto, extrair o _id se disponível
           else if (
             typeof order.clientId === 'object' &&
             order.clientId !== null &&
@@ -163,35 +156,29 @@ export const QuickOrderSearch: React.FC<QuickOrderSearchProps> = ({ className })
         })
         .filter(Boolean);
 
-      // Carregar dados dos clientes se houver IDs
       if (clientIds.length > 0) {
         fetchUsers(clientIds);
       }
     }
   }, [searchResults, fetchUsers]);
 
-  // Função para visualizar um pedido
   const viewOrder = (orderId: string) => {
     router.push(`/orders/${orderId}`);
   };
 
-  // Função para limpar a busca
   const clearSearch = () => {
     setSearchQuery("");
     setSearchResults([]);
     setShowResults(false);
   };
 
-  // Função para obter o nome do cliente
   const getClientName = (clientId: string | any): string => {
     if (!clientId) return "Cliente";
     
-    // Se for um objeto com propriedade 'name'
     if (typeof clientId === 'object' && clientId !== null && clientId.name) {
       return clientId.name;
     }
     
-    // Se for uma string que representa um ObjectId
     if (typeof clientId === 'string' && clientId.includes('ObjectId')) {
       try {
         const matches = clientId.match(/ObjectId\('([^']+)'\)/);
@@ -203,15 +190,13 @@ export const QuickOrderSearch: React.FC<QuickOrderSearchProps> = ({ className })
       }
     }
     
-    // Caso padrão: tenta obter o nome a partir da string de ID
     return getUserName(clientId);
   };
 
   return (
     <Card className={className}>
       <CardHeader>
-        <CardTitle className="flex items-center">
-          <Search className="h-4 w-4 mr-2 text-primary" />
+        <CardTitle className="text-[var(--primary-blue)]">
           Busca Rápida de Pedidos
         </CardTitle>
         <CardDescription>
@@ -231,6 +216,24 @@ export const QuickOrderSearch: React.FC<QuickOrderSearchProps> = ({ className })
             />
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             
+            <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer">
+                  <div className="w-4 h-4 rounded-full bg-muted-foreground/20 flex items-center justify-center text-xs">?</div>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                <p>Você pode buscar por:</p>
+                <ul className="list-disc pl-4 text-xs mt-1">
+                  <li>Nome do cliente</li>
+                  <li>CPF (formato: 12345678900)</li>
+                  <li>Número da O.S. (4 a 7 dígitos)</li>
+                </ul>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
             {searchQuery && (
               <Button 
                 variant="ghost"
@@ -315,16 +318,6 @@ export const QuickOrderSearch: React.FC<QuickOrderSearchProps> = ({ className })
               )}
             </div>
           )}
-        </div>
-        
-        {/* Dicas de pesquisa */}
-        <div className="mt-3 text-xs text-muted-foreground">
-          <p>Dicas:</p>
-          <ul className="mt-1 list-disc pl-4 space-y-1">
-            <li>Digite o nome do cliente para buscar por cliente</li>
-            <li>Digite 11 dígitos para buscar por CPF</li>
-            <li>Digite 4-7 dígitos para buscar por número de O.S.</li>
-          </ul>
         </div>
       </CardContent>
     </Card>

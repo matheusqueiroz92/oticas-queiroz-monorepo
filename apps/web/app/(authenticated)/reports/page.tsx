@@ -44,30 +44,26 @@ export default function ReportsPage() {
     });
     refetch();
   };
-
-  console.log(reports);
   
   return (
     <div className="space-y-2 max-w-auto mx-auto p-1 md:p-2">
       <div className="flex justify-between items-center">
         <PageTitle
           title="Relatórios"
-          description="Gerencie e visualize relatórios da sua ótica"
+          description="Gerencie, visualize e faça download de relatórios"
         />
         <div className="flex gap-2">
-          <Button onClick={() => setIsCreateModalOpen(true)}>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Novo Relatório
-          </Button>
+
         </div>
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Meus Relatórios</CardTitle>
-          <CardDescription>
-            Gerencie e faça download dos seus relatórios
-          </CardDescription>
+        <CardHeader className="p-4 flex-row items-center justify-between space-y-0">
+          <CardTitle className="text-lg">Meus Relatórios</CardTitle>
+          <Button onClick={() => setIsCreateModalOpen(true)}>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Novo Relatório
+          </Button>
         </CardHeader>
         <CardContent>
           <ReportFilters />

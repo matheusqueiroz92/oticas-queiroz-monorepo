@@ -17,12 +17,12 @@ import { QUERY_KEYS } from "../app/constants/query-keys";
 import { API_ROUTES } from "../app/constants/api-routes";
 import { api } from "../app/services/authService";
 import type { LegacyClient } from "../app/types/legacy-client";
+import { useRouter } from "next/navigation";
 
 interface UseLegacyClientOptions {
   enableQueries?: boolean;
 }
 
-// Função useDebounce integrada ao hook useLegacyClients
 function useDebounce<T>(value: T, delay: number = 500): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
 
@@ -39,7 +39,6 @@ function useDebounce<T>(value: T, delay: number = 500): T {
   return debouncedValue;
 }
 
-// Interface para os filtros da lista de clientes
 interface LegacyClientsListParams {
   page: number;
   limit?: number;
@@ -48,11 +47,11 @@ interface LegacyClientsListParams {
 }
 
 export function useLegacyClients(options: UseLegacyClientOptions = {}) {
+  const router = useRouter();
   const { enableQueries = true } = options;
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Nova função para buscar lista de clientes com paginação e filtros
   const useLegacyClientsList = (params: LegacyClientsListParams) => {
     const { page, limit = 10, search, status } = params;
     const debouncedSearch = useDebounce(search || "", 500);
@@ -79,7 +78,6 @@ export function useLegacyClients(options: UseLegacyClientOptions = {}) {
     });
   };
 
-  // Buscar cliente legado pelo documento (CPF/CNPJ)
   const useSearchLegacyClient = (identifier?: string) => {
     return useQuery({
       queryKey: QUERY_KEYS.LEGACY_CLIENT.SEARCH(identifier || ''),
@@ -88,7 +86,6 @@ export function useLegacyClients(options: UseLegacyClientOptions = {}) {
     });
   };
 
-  // Buscar cliente legado pelo ID
   const fetchLegacyClientById = (id?: string) => {
     return useQuery({
       queryKey: QUERY_KEYS.LEGACY_CLIENT.DETAIL(id || ''),
@@ -97,7 +94,6 @@ export function useLegacyClients(options: UseLegacyClientOptions = {}) {
     });
   };
 
-  // Buscar todos os clientes com dívidas
   const useDebtors = () => {
     return useQuery({
       queryKey: QUERY_KEYS.LEGACY_CLIENT.DEBTORS,
@@ -106,7 +102,6 @@ export function useLegacyClients(options: UseLegacyClientOptions = {}) {
     });
   };
 
-  // Buscar histórico de pagamentos de um cliente
   const usePaymentHistory = (clientId?: string) => {
     return useQuery({
       queryKey: QUERY_KEYS.LEGACY_CLIENT.PAYMENT_HISTORY(clientId || ''),
@@ -115,7 +110,6 @@ export function useLegacyClients(options: UseLegacyClientOptions = {}) {
     });
   };
 
-  // Atualizar um cliente legado
   const updateLegacyClientMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<LegacyClient> }) =>
       updateLegacyClient(id, data),
@@ -138,7 +132,6 @@ export function useLegacyClients(options: UseLegacyClientOptions = {}) {
     },
   });
 
-  // Alternar status do cliente (ativo/inativo)
   const toggleStatusMutation = useMutation({
     mutationFn: (id: string) => toggleLegacyClientStatus(id),
     onSuccess: (_, id) => {
@@ -159,7 +152,6 @@ export function useLegacyClients(options: UseLegacyClientOptions = {}) {
     },
   });
 
-  // Criar um novo cliente legado
   const createLegacyClientMutation = useMutation({
     mutationFn: (data: Omit<LegacyClient, "_id">) => createLegacyClient(data),
     onSuccess: () => {
@@ -179,6 +171,10 @@ export function useLegacyClients(options: UseLegacyClientOptions = {}) {
       });
     },
   });
+
+  const navigateToCreateLegacyClient = () => {
+    router.push("/legacy-clients/new");
+  };
 
   const handleUpdateLegacyClient = useCallback(
     (id: string, data: Partial<LegacyClient>) => {
@@ -202,22 +198,16 @@ export function useLegacyClients(options: UseLegacyClientOptions = {}) {
   );
 
   return {
-    // Função de debounce exportada para ser usada em componentes
     useDebounce,
-    
-    // Queries
-    useLegacyClientsList, // Nova função para listar clientes com filtros
+    useLegacyClientsList,
     useSearchLegacyClient,
     fetchLegacyClientById,
     useDebtors,
     usePaymentHistory,
-    
-    // Mutations
+    navigateToCreateLegacyClient,
     handleUpdateLegacyClient,
     handleToggleStatus,
     handleCreateLegacyClient,
-    
-    // Status
     isUpdating: updateLegacyClientMutation.isPending,
     isTogglingStatus: toggleStatusMutation.isPending,
     isCreating: createLegacyClientMutation.isPending,

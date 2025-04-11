@@ -12,18 +12,16 @@ import { Search, Plus } from "lucide-react";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import Link from "next/link";
 
 export default function LegacyClientsPage() {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [filter, setFilter] = useState<"all" | "active" | "inactive">("all");
-  const { useLegacyClientsList } = useLegacyClients();
+  const { useLegacyClientsList, navigateToCreateLegacyClient } = useLegacyClients();
 
   const { data, isLoading } = useLegacyClientsList({
     page: currentPage,
@@ -35,26 +33,19 @@ export default function LegacyClientsPage() {
   const totalPages = data?.pagination?.totalPages || 1;
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="space-y-2 max-w-auto mx-auto p-1 md:p-2">
         <PageTitle
           title="Clientes Legados"
           description="Gerencie os clientes que possuem registros financeiros anteriores"
         />
-        <Link href="/legacy-clients/new">
-          <Button className="bg-[var(--secondary-red)]">
+
+      <Card>
+        <CardHeader className="p-4 flex-row items-center justify-between space-y-0">
+          <CardTitle className="text-lg">Lista de Clientes</CardTitle>
+          <Button onClick={navigateToCreateLegacyClient}>
             <Plus className="mr-2 h-4 w-4" />
             Novo Cliente
           </Button>
-        </Link>
-      </div>
-
-      <Card>
-        <CardHeader className="p-4">
-          <CardTitle className="text-lg">Lista de Clientes</CardTitle>
-          <CardDescription>
-            Visualize e gerencie todos os clientes legados cadastrados no sistema
-          </CardDescription>
         </CardHeader>
         <CardContent className="p-4 pt-0">
           <div className="flex flex-col gap-4">
