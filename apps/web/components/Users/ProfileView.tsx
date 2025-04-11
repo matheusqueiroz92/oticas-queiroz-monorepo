@@ -17,7 +17,8 @@ import {
   ClipboardList, 
   DollarSign, 
   Key,
-  ChevronRight
+  ChevronRight,
+  ShoppingBag
 } from "lucide-react";
 import { InfoSection } from "@/components/Users/InfoSection";
 import { InfoField } from "@/components/Users/InfoField";
@@ -126,16 +127,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             <InfoSection title="Informações Pessoais" icon={<Info />}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 bg-gray-50 p-4 rounded-md border">
                 <InfoField 
-                  label="Nome" 
-                  value={user.name} 
-                  icon={<User />} 
-                />
-                <InfoField 
-                  label="Email" 
-                  value={user.email} 
-                  icon={<Mail />} 
-                />
-                <InfoField 
                   label="Telefone" 
                   value={user.phone} 
                   icon={<Phone />} 
@@ -148,17 +139,32 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                         user.role} 
                   icon={<ClipboardList />} 
                 />
+                <InfoField 
+                  label="Endereço" 
+                  value={user.address} 
+                  icon={<MapPin />} 
+                />
               </div>
             </InfoSection>
 
-            <InfoSection title="Endereço" icon={<MapPin />}>
+            <InfoSection title="Atividade" icon={<Activity />}>
               <div className="bg-gray-50 p-4 rounded-md border">
-                <p className="font-medium">{user.address || "Endereço não informado"}</p>
-                {!user.address && (
+                {user.sales.length === 0 ? (
                   <p className="text-sm text-muted-foreground mt-1">
-                    Adicione seu endereço para facilitar o cadastro em futuras compras.
+                    Nenhuma venda realizada.
                   </p>
-                )}
+                ) : <div className="grid grid-cols-1 md:grid-cols-2">
+                  <InfoField 
+                    label="Vendas realidas" 
+                    value={user.sales.length} 
+                    icon={<ShoppingBag />} 
+                  />
+                  <InfoField 
+                    label="Valor total em vendas" 
+                    value={user.sales.length} 
+                    icon={<DollarSign />} 
+                  />
+                </div>}
               </div>
             </InfoSection>
 

@@ -2,14 +2,14 @@
 
 import UserDetailsPage from "@/components/Users/UserDetailsPage";
 import type { Customer } from "@/app/types/customer";
-import { Mail, Phone, MapPin, CreditCard, ShoppingBag, Info, Activity } from "lucide-react";
+import { Phone, MapPin, CreditCard, ShoppingBag, Info, Activity } from "lucide-react";
 
 export default function CustomerDetailsPage() {
   const getCustomerFields = (customer: Customer) => [
     { 
-      key: "email", 
-      label: "Email", 
-      icon: <Mail /> 
+      key: "cpf", 
+      label: "CPF", 
+      icon: <CreditCard /> 
     },
     { 
       key: "phone", 
@@ -21,11 +21,6 @@ export default function CustomerDetailsPage() {
       label: "Endereço", 
       icon: <MapPin /> 
     },
-    { 
-      key: "cpf", 
-      label: "CPF", 
-      icon: <CreditCard /> 
-    }
   ];
   
   const getCustomerSections = (customer: Customer) => [
