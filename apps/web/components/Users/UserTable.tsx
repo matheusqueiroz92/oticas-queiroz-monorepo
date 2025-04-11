@@ -9,7 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { PaginationItems } from "../PaginationItems";
+import { PaginationItems } from "@/components/PaginationItems";
 
 interface UserTableProps {
   data: User[];
@@ -24,7 +24,7 @@ interface UserTableProps {
   sortDirection?: "asc" | "desc";
 }
 
-export const UserTable: React.FC<UserTableProps> = ({
+export function UserTable({
   data,
   columns,
   onDetailsClick,
@@ -35,7 +35,7 @@ export const UserTable: React.FC<UserTableProps> = ({
   pageSize,
   sortField = "name",
   sortDirection = "asc",
-}) => {
+}: UserTableProps) {
   const sortedData = useMemo(() => {
     const dataToSort = [...data];
     

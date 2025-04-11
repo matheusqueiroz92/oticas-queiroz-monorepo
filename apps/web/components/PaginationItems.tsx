@@ -18,14 +18,14 @@ interface PaginationComponentProps {
   className?: string;
 }
 
-export const PaginationItems: React.FC<PaginationComponentProps> = ({
+export function PaginationItems({
   currentPage,
   totalPages,
   setCurrentPage,
   totalItems,
   pageSize,
   className = "",
-}) => {
+}: PaginationComponentProps) {
   const generatePaginationItems = () => {
     const items = [];
     const maxVisiblePages = 5;

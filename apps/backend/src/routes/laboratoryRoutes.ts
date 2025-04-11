@@ -167,7 +167,7 @@ const laboratoryController = new LaboratoryController();
 router.post(
   "/laboratories",
   authenticate,
-  authorize(["admin"]),
+  authorize(["admin", "employee"]),
   asyncHandler(laboratoryController.createLaboratory.bind(laboratoryController))
 );
 

@@ -60,7 +60,6 @@ export default function OrderClientProducts({
 }: OrderClientProductsProps) {
   
   const renderPaymentSection = () => {
-    // Obter o método de pagamento atual
     const paymentMethod = form.watch("paymentMethod");
     const isParcelamento = paymentMethod === "bank_slip" || paymentMethod === "promissory_note";
 

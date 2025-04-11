@@ -26,7 +26,6 @@ import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency, getOrderStatusClass, translateOrderStatus } from "@/app/utils/formatters";
 import { QuickOrderSearch } from "@/components/Orders/QuickOrderSearch";
-
 import type { Order } from "@/app/types/order";
 import type { IPayment } from "@/app/types/payment";
 import { useOrders } from "@/hooks/useOrders";
@@ -165,7 +164,7 @@ export default function DashboardPage() {
     return orders.filter(o => statuses.includes(o.status as OrderStatus)).length;
   };
 
-  const todayOrders = allOrders ? getTodayOrders(allOrders as Order[]) : [];
+  // const todayOrders = allOrders ? getTodayOrders(allOrders as Order[]) : [];
   const todayPayments = allPayments ? getTodayPayments(allPayments as IPayment[]) : [];
   const recentOrders = [...(allOrders || [])].sort((a, b) => 
     new Date(b.createdAt || b.orderDate).getTime() - new Date(a.createdAt || a.orderDate).getTime()

@@ -6,11 +6,11 @@ interface InfoSectionProps {
   children: ReactNode;
 }
 
-export const InfoSection: React.FC<InfoSectionProps> = ({
+export function InfoSection({
   title,
   icon,
   children
-}) => {
+}: InfoSectionProps) {
   return (
     <div>
       <h3 className="text-md font-medium mb-4 flex items-center">
@@ -23,7 +23,6 @@ export const InfoSection: React.FC<InfoSectionProps> = ({
         </span>
         {title}
       </h3>
-      
       {children}
     </div>
   );

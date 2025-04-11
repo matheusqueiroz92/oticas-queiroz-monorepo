@@ -118,8 +118,8 @@ export function OrderForm({
     isLoading: isLoadingCustomers,
     fetchAllCustomers
   } = useCustomers({
-    pageSize: 100, // Aumentar o tamanho da página inicial
-    enablePagination: false // Desabilitar paginação para este caso
+    pageSize: 100,
+    enablePagination: false
   });
 
   const checkCanContinue = () => {
@@ -128,13 +128,13 @@ export function OrderForm({
     if (!form) return false;
     
     switch (currentStep) {
-      case 0: // Cliente e Produtos
+      case 0:
         canContinue = !!form.getValues("clientId") && selectedProducts.length > 0 && !!form.getValues("paymentMethod");
         break;
-      case 1: // Receita - sem validação obrigatória
+      case 1:
         canContinue = true;
         break;
-      case 2: // Confirmação
+      case 2:
         canContinue = true;
         break;
     }
@@ -166,7 +166,7 @@ export function OrderForm({
 
   const renderStepContent = () => {
     switch (currentStep) {
-      case 0: // Cliente e Produtos
+      case 0:
         return (
           <OrderClientProducts
             form={form}
@@ -187,7 +187,7 @@ export function OrderForm({
           />
         );
 
-      case 1: // Receita (Prescrição)
+      case 1:
         return (
           <OrderPrescription
             form={form}
@@ -195,7 +195,7 @@ export function OrderForm({
           />
         );
 
-      case 2: // Confirmação
+      case 2:
         return (
           <OrderConfirmation
             form={form}

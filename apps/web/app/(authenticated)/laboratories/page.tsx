@@ -1,39 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useLaboratories } from "@/hooks/useLaboratories";
+import { LaboratoryTable } from "@/components/Laboratories/LaboratoryTable";
+import { PageTitle } from "@/components/PageTitle";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Loader2, Beaker } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { useLaboratories } from "@/hooks/useLaboratories";
-import type { Laboratory } from "@/app/types/laboratory";
-import { PageTitle } from "@/components/PageTitle";
+import { ErrorAlert } from "@/components/ErrorAlert";
 
 export default function LaboratoriesPage() {
-  const [search, setSearch] = useState("");
-
   const {
     laboratories,
     isLoading,
     error,
+    search,
+    showEmptyState,
+    setSearch,
+    handleSearch,
     navigateToLaboratoryDetails,
     navigateToCreateLaboratory,
-    updateFilters,
-  } = useLaboratories();
-
-  const handleSearch = () => {
-    updateFilters({ search });
-  };
-
-  const showEmptyState = !isLoading && !error && laboratories.length === 0;
+  } = useLaboratories().useLaboratoriesList();
 
   return (
     <div className="space-y-2 max-w-auto mx-auto p-1 md:p-2">
@@ -54,6 +40,7 @@ export default function LaboratoriesPage() {
             Buscar
           </Button>
         </div>
+
         <Button onClick={navigateToCreateLaboratory}>Novo Laboratório</Button>
       </div>
 
@@ -63,9 +50,7 @@ export default function LaboratoriesPage() {
         </div>
       )}
 
-      {error && (
-        <div className="p-4 bg-red-50 text-red-600 rounded-md">{error}</div>
-      )}
+      {error && <ErrorAlert message={error} />}
 
       {showEmptyState && (
         <div className="flex flex-col items-center justify-center py-12 text-center border rounded-lg bg-background">
@@ -73,46 +58,20 @@ export default function LaboratoriesPage() {
           <h3 className="text-lg font-semibold">
             Não há laboratórios cadastrados
           </h3>
+          <p className="text-muted-foreground mt-2">
+            Clique em "Novo Laboratório" para adicionar um laboratório ao
+            sistema.
+          </p>
         </div>
       )}
 
       {!isLoading && !error && laboratories.length > 0 && (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nome</TableHead>
-              <TableHead>Contato</TableHead>
-              <TableHead>Telefone</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {laboratories.map((lab: Laboratory) => (
-              <TableRow key={lab._id}>
-                <TableCell className="font-medium">{lab.name}</TableCell>
-                <TableCell>{lab.contactName}</TableCell>
-                <TableCell>{lab.phone}</TableCell>
-                <TableCell>
-                  <Badge
-                    variant={lab.isActive ? "default" : "destructive"}
-                    className="font-medium"
-                  >
-                    {lab.isActive ? "Ativo" : "Inativo"}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <Button
-                    variant="outline"
-                    onClick={() => navigateToLaboratoryDetails(lab._id)}
-                  >
-                    Detalhes
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <LaboratoryTable
+          laboratories={laboratories}
+          isLoading={isLoading}
+          error={error}
+          onViewDetails={navigateToLaboratoryDetails}
+        />
       )}
     </div>
   );

@@ -17,3 +17,21 @@ export interface Laboratory {
   createdAt?: Date;
   updatedAt?: Date;
 }
+
+export interface LaboratoryFilters {
+  search?: string;
+  page?: number;
+  isActive?: boolean;
+}
+
+export interface ApiError {
+  message: string;
+  errors?: Record<string, string[]>;
+}
+
+export interface LoggedEmployee {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+}

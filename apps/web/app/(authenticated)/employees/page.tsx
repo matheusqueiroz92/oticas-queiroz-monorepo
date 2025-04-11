@@ -15,6 +15,7 @@ export default function EmployeesPage() {
     isLoading,
     error,
     search,
+    showEmptyState,
     setSearch,
     navigateToEmployeeDetails,
     navigateToNewEmployee,
@@ -40,8 +41,6 @@ export default function EmployeesPage() {
         employee.sales?.reduce((total, _sale) => total, 0).toFixed(2),
     },
   ];
-
-  const showEmptyState = !isLoading && !error && employees.length === 0;
 
   return (
     <div className="space-y-2 max-w-auto mx-auto p-1 md:p-2">

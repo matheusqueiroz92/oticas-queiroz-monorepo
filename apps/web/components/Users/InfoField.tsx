@@ -6,11 +6,11 @@ interface InfoFieldProps {
   icon?: ReactNode | (() => ReactNode);
 }
 
-export const InfoField: React.FC<InfoFieldProps> = ({
+export function InfoField({
   label,
   value,
   icon
-}) => {
+}: InfoFieldProps) {
   return (
     <div>
       <h4 className="text-sm font-medium text-muted-foreground flex items-center">

@@ -109,11 +109,14 @@ export function useEmployees() {
     setCurrentPage(newPage);
   }, []);
 
+  const showEmptyState = !isLoading && !error && employees.length === 0;
+
   return {
     employees,
     isLoading,
     error: error ? (error as Error).message : null,
     search,
+    showEmptyState,
     setSearch,
     refetch,
     refreshEmployeesList,

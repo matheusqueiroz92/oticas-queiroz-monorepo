@@ -27,16 +27,15 @@ interface UserInfoCardProps {
   children?: React.ReactNode;
 }
 
-export const UserInfoCard: React.FC<UserInfoCardProps> = ({
+export function UserInfoCard({
   user,
-  title,
   description,
   showEditButton = false,
   customAction,
   onEditClick,
   onBackClick,
   children
-}) => {
+}: UserInfoCardProps) {
   const router = useRouter();
 
   const getRoleBadge = (role: string) => {

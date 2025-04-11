@@ -7,8 +7,8 @@ const orderFormSchema = z
   .object({
     clientId: z.string().min(1, "Cliente é obrigatório"),
     employeeId: z.string().min(1, "ID do funcionário é obrigatório"),
-    product: z.array(z.any()).min(1, "Pelo menos um produto é obrigatório"),
-    serviceOerder: z.string().optional(),
+    products: z.array(z.any()).min(1, "Pelo menos um produto é obrigatório"),
+    serviceOerder: z.string().min(4, "Nº da Ordem de Serviço é obrigatório"),
     paymentMethod: z.string().min(1, "Forma de pagamento é obrigatória"),
     paymentEntry: z.number().min(0).optional(),
     installments: z.number().min(1).optional(),

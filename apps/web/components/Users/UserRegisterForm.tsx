@@ -1,5 +1,3 @@
-"use client";
-
 import { useRef, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createUserForm, UserFormData } from "@/schemas/user-schema";
@@ -37,14 +35,13 @@ const steps = [
   { id: "security", label: "Segurança" },
 ];
 
-export default function UserForm({ userType, title, description }: UserFormProps) {
+export function UserRegisterForm({ userType, title, description }: UserFormProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   
-  // Valores de campos controlados manualmente
   const [emailValue, setEmailValue] = useState("");
   const [phoneValue, setPhoneValue] = useState("");
   const [addressValue, setAddressValue] = useState("");
@@ -56,15 +53,12 @@ export default function UserForm({ userType, title, description }: UserFormProps
   
   const form = createUserForm();
   
-  // Efeito para preencher automaticamente a senha quando o CPF for digitado (apenas para clientes)
   useEffect(() => {
     if (userType === "customer") {
       const subscription = form.watch((value, { name }) => {
         if (name === "cpf") {
           const cpf = value.cpf;
-          // Verifica se o CPF tem pelo menos 6 dígitos
           if (cpf && cpf.length >= 6) {
-            // Extrai os 6 primeiros dígitos e define como senha e confirmação
             const defaultPassword = cpf.slice(0, 6);
             form.setValue("password", defaultPassword);
             form.setValue("confirmPassword", defaultPassword);
@@ -76,10 +70,8 @@ export default function UserForm({ userType, title, description }: UserFormProps
     }
   }, [form, userType]);
 
-  // Limpar os campos controlados manualmente quando mudar de passo
   useEffect(() => {
     if (currentStep === 1) {
-      // Limpar os valores ou usar valores iniciais do formulário
       setEmailValue(form.getValues("email") || "");
       setPhoneValue(form.getValues("phone") || "");
       setAddressValue(form.getValues("address") || "");
@@ -89,10 +81,8 @@ export default function UserForm({ userType, title, description }: UserFormProps
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Salvar o arquivo no estado
       setSelectedFile(file);
       
-      // Gerar preview da imagem
       const reader = new FileReader();
       reader.onload = (event) => {
         setPreviewUrl(event.target?.result as string);
@@ -104,9 +94,7 @@ export default function UserForm({ userType, title, description }: UserFormProps
     }
   };
 
-  // Método semelhante ao usado no formulário de produtos
   const handleButtonClick = () => {
-    // Aciona o evento de submit do formulário
     if (formRef.current) {
       formRef.current.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
     } else {
@@ -120,11 +108,8 @@ export default function UserForm({ userType, title, description }: UserFormProps
     
     try {
       setIsSubmitting(true);
-      
-      // Criar um novo FormData para enviar
       const formData = new FormData();
       
-      // Adicionar os campos do formulário ao FormData
       Object.entries(data).forEach(([key, value]) => {
         if (key !== "image" && key !== "confirmPassword" && 
             key !== "email" && key !== "phone" && key !== "address") {
@@ -132,23 +117,15 @@ export default function UserForm({ userType, title, description }: UserFormProps
         }
       });
       
-      // Adicionar os campos controlados manualmente
       formData.set("email", emailValue);
       formData.set("phone", phoneValue);
       formData.set("address", addressValue);
-      
-      // Adicionar o tipo de usuário
       formData.set("role", userType);
-      
-      // Adicionar o arquivo da imagem, se existir
+
       if (selectedFile) {
         formData.set("userImage", selectedFile);
       }
       
-      // Log para depuração
-      console.log("Enviando formulário com dados:", Object.fromEntries(formData));
-      
-      // Enviar a requisição diretamente usando a API
       const response = await api.post("/api/auth/register", formData);
       
       if (response.status === 201 || response.status === 200) {
@@ -176,7 +153,6 @@ export default function UserForm({ userType, title, description }: UserFormProps
 
   const nextStep = () => {
     if (currentStep === 0) {
-      // Validar campos do primeiro passo
       form.trigger(['name', 'cpf', 'rg', 'birthDate']).then((isValid) => {
         if (isValid) {
           setCurrentStep(1);
@@ -184,12 +160,9 @@ export default function UserForm({ userType, title, description }: UserFormProps
         }
       });
     } else if (currentStep === 1) {
-      // Salvar os valores nos campos do formulário para validação
       form.setValue("email", emailValue);
       form.setValue("phone", phoneValue);
       form.setValue("address", addressValue);
-      
-      // Validar campos do segundo passo
       form.trigger(['email', 'phone', 'address']).then((isValid) => {
         if (isValid) {
           setCurrentStep(2);
@@ -283,7 +256,7 @@ export default function UserForm({ userType, title, description }: UserFormProps
 
   const renderStepContent = () => {
     switch (currentStep) {
-      case 0: // Dados Pessoais
+      case 0:
         return (
           <div className="space-y-4">
             <FormField
@@ -356,7 +329,7 @@ export default function UserForm({ userType, title, description }: UserFormProps
           </div>
         );
 
-      case 1: // Contato - Usando inputs independentes do React Hook Form
+      case 1:
         return (
           <div className="space-y-4">
             <div className="space-y-1">
@@ -445,7 +418,7 @@ export default function UserForm({ userType, title, description }: UserFormProps
           </div>
         );
 
-      case 2: // Segurança
+      case 2:
         return (
           <div className="space-y-4">
             <Card className="border shadow-sm bg-gray-50 mb-4">
@@ -527,7 +500,6 @@ export default function UserForm({ userType, title, description }: UserFormProps
     }
   };
 
-  // Modal de sucesso
   const renderSuccessModal = () => {
     if (!isSuccess) return null;
     

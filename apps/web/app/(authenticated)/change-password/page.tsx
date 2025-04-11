@@ -2,10 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { useToast } from "@/hooks/useToast";
 import { useProfile } from "@/hooks/useProfile";
 
 import {
@@ -29,37 +25,15 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ArrowLeft, Loader2, KeyRound, ShieldCheck } from "lucide-react";
-
-const changePasswordSchema = z
-  .object({
-    currentPassword: z.string().min(1, "A senha atual é obrigatória"),
-    newPassword: z
-      .string()
-      .min(6, "A nova senha deve ter pelo menos 6 caracteres"),
-    confirmPassword: z.string().min(6, "Confirme sua senha"),
-  })
-  .refine((data) => data.newPassword === data.confirmPassword, {
-    message: "As senhas não conferem",
-    path: ["confirmPassword"],
-  });
-
-type ChangePasswordFormValues = z.infer<typeof changePasswordSchema>;
+import { changePasswordForm, ChangePasswordFormValues } from "@/schemas/change-password-schema";
 
 export default function ChangePasswordPage() {
   const router = useRouter();
-  const { toast } = useToast();
   const { handleChangePassword, isChangingPassword } = useProfile();
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  const form = useForm<ChangePasswordFormValues>({
-    resolver: zodResolver(changePasswordSchema),
-    defaultValues: {
-      currentPassword: "",
-      newPassword: "",
-      confirmPassword: "",
-    },
-  });
+  const form = changePasswordForm();
 
   const onSubmit = async (data: ChangePasswordFormValues) => {
     try {

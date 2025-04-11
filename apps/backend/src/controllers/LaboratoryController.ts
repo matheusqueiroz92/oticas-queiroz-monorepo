@@ -4,7 +4,6 @@ import {
   LaboratoryError,
 } from "../services/LaboratoryService";
 import { z } from "zod";
-// import type { ILaboratory } from "../interfaces/ILaboratory";
 
 const addressSchema = z.object({
   street: z.string().min(1, "Rua é obrigatória"),
@@ -32,9 +31,6 @@ const createLaboratorySchema = z.object({
 });
 
 const updateLaboratorySchema = createLaboratorySchema.partial();
-
-type CreateLaboratoryInput = z.infer<typeof createLaboratorySchema>;
-type UpdateLaboratoryInput = z.infer<typeof updateLaboratorySchema>;
 
 export class LaboratoryController {
   private laboratoryService: LaboratoryService;
