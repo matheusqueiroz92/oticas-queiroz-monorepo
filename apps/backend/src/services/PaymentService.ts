@@ -222,7 +222,8 @@ export class PaymentService {
       // Se for venda e método for parcelado, verificar se é necessário registrar débito
       if (paymentData.orderId && (
           paymentData.paymentMethod === "bank_slip" || 
-          paymentData.paymentMethod === "promissory_note"
+          paymentData.paymentMethod === "promissory_note" ||
+          paymentData.paymentMethod === "check"
         )) {
         console.log(`Detectado pagamento parcelado para venda. Método: ${paymentData.paymentMethod}, Pedido: ${paymentData.orderId}`);
       }
@@ -273,7 +274,20 @@ export class PaymentService {
           console.log("Nota promissória com geração de débito para o cliente");
           this.validateClientDebtData(paymentData.clientDebt);
         }
-        break;
+        
+      case "check":
+        console.log("Validando pagamento com cheque");
+        // Validar dados do cheque
+        if (!paymentData.check || !paymentData.check.bank || !paymentData.check.checkNumber) {
+          throw new PaymentError("Dados do cheque são obrigatórios (banco e número)");
+        }
+      
+        // Se gerar débito, validar parcelamento
+        if (paymentData.clientDebt?.generateDebt) {
+          console.log("Cheque com geração de débito para o cliente");
+          this.validateClientDebtData(paymentData.clientDebt);
+        }
+      break;
     }
 
     return cashRegisterId;
@@ -290,6 +304,8 @@ export class PaymentService {
       case "bank_slip":
       case "promissory_note":
         return "installment"; // No frontend, boleto e promissória são mapeados como "installment"
+      case "check":
+        return "check"; 
       default:
         return paymentMethod; // Outros métodos mantêm o mesmo nome
     }
@@ -383,7 +399,7 @@ export class PaymentService {
    * @param cashRegisterId ID do registro de caixa
    * @param payment pagamento a ser registrado
    */
-  private async updateCashRegister(
+  private async updateCashRegister( 
     cashRegisterId: string,
     payment: IPayment
   ): Promise<void> {

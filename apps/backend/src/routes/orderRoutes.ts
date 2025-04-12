@@ -80,6 +80,13 @@ const orderController = new OrderController();
  *         employeeId:
  *           type: string
  *           description: ID do funcionário que registrou o pedido
+ *         institutionId:
+ *           type: string
+ *           description: ID da instituição (obrigatório para pedidos institucionais)
+ *         isInstitutionalOrder:
+ *           type: boolean
+ *           description: Indica se o pedido é institucional (ex. APAE)
+ *           default: false
  *         product:
  *           type: array
  *           items:
