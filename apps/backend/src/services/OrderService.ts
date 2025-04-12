@@ -261,6 +261,7 @@ export class OrderService {
   async createOrder(orderData: Omit<IOrder, "_id">): Promise<IOrder> {
     const session = await mongoose.connection.startSession();
     session.startTransaction();
+    
     try {
       if (orderData.laboratoryId?.toString() === "") {
         orderData.laboratoryId = undefined;
@@ -289,24 +290,29 @@ export class OrderService {
         products: orderData.products,
         serviceOrder: orderData.serviceOrder,
         paymentMethod: orderData.paymentMethod,
-        paymentStatus: orderData.paymentStatus,
+        paymentStatus: orderData.paymentStatus || "pending",
         paymentEntry: orderData.paymentEntry,
         installments: orderData.installments,
         orderDate: new Date(),
         deliveryDate: orderData.deliveryDate ? new Date(orderData.deliveryDate) : undefined,
         status: orderData.status,
+        laboratoryId: orderData.laboratoryId ? new mongoose.Types.ObjectId(orderData.laboratoryId.toString()) : undefined,
+        prescriptionData: orderData.prescriptionData,
+        observations: orderData.observations,
         totalPrice: orderData.totalPrice,
         discount: orderData.discount || 0,
-        finalPrice: orderData.finalPrice || (orderData.totalPrice - orderData.discount),
+        finalPrice: orderData.finalPrice || (orderData.totalPrice - (orderData.discount || 0)),
         isDeleted: isDeleted,
       };
   
       await this.validateOrder(orderData);
       
-      const order = await this.orderModel.createWithSession(orderData, session);
+      // Criar o pedido usando a sessão
+      const order = await this.orderModel.createWithSession(orderDTO, session);
   
       if (order.status !== 'cancelled') {
-        try {          
+        try {
+          // Processar o estoque usando a mesma sessão
           await this.stockService.processOrderProducts(
             order.products, 
             'decrease',
@@ -315,28 +321,78 @@ export class OrderService {
           );
         } catch (stockError) {
           console.error('Erro ao processar estoque para o pedido:', stockError);
+          // Ocorreu um erro no processamento do estoque, abortar a transação
+          await session.abortTransaction();
+          throw stockError;
         }
       }
-
+  
       // INÍCIO DAS MODIFICAÇÕES: Atualizar relacionamentos
       if (order._id) {
         const orderId = order._id.toString();
         const clientId = orderData.clientId.toString();
         const employeeId = orderData.employeeId.toString();
-
+  
         // 1. Atualizar vendas do funcionário
-        await this.updateEmployeeSales(employeeId, orderId);
+        try {
+          const employee = await this.userModel.findById(employeeId);
+          if (employee) {
+            const sales = employee.sales || [];
+            if (!sales.includes(orderId)) {
+              await this.userModel.update(employeeId, {
+                sales: [...sales, orderId]
+              });
+              console.log(`Venda ${orderId} adicionada ao funcionário ${employeeId}`);
+            }
+          }
+        } catch (error) {
+          console.error(`Erro ao atualizar vendas do funcionário ${employeeId}:`, error);
+        }
         
         // 2. Atualizar compras do cliente
-        await this.updateCustomerPurchases(clientId, orderId);
+        try {
+          const customer = await this.userModel.findById(clientId);
+          if (customer) {
+            const purchases = customer.purchases || [];
+            if (!purchases.includes(orderId)) {
+              await this.userModel.update(clientId, {
+                purchases: [...purchases, orderId]
+              });
+              console.log(`Compra ${orderId} adicionada ao cliente ${clientId}`);
+            }
+          }
+        } catch (error) {
+          console.error(`Erro ao atualizar compras do cliente ${clientId}:`, error);
+        }
         
         // 3. Atualizar dívidas do cliente se necessário
-        await this.updateCustomerDebts(clientId, orderData);
+        if (orderData.paymentMethod === "bank_slip" || orderData.paymentMethod === "promissory_note") {
+          try {
+            const customer = await this.userModel.findById(clientId);
+            if (customer) {
+              const debtAmount = orderData.finalPrice - (orderData.paymentEntry || 0);
+              if (debtAmount > 0) {
+                const currentDebt = customer.debts || 0;
+                await this.userModel.update(clientId, {
+                  debts: currentDebt + debtAmount
+                });
+                console.log(`Dívida de ${debtAmount} adicionada ao cliente ${clientId}`);
+              }
+            }
+          } catch (error) {
+            console.error(`Erro ao atualizar dívidas do cliente ${clientId}:`, error);
+          }
+        }
       }
       // FIM DAS MODIFICAÇÕES
   
+      // Tudo ocorreu bem, comitar a transação
+      await session.commitTransaction();
       return order;
     } catch (error) {
+      // Ocorreu um erro, abortar a transação
+      await session.abortTransaction();
+      
       if (error instanceof OrderError) {
         throw error;
       }
@@ -346,6 +402,8 @@ export class OrderService {
           ? error.message
           : "Erro desconhecido ao criar pedido"
       );
+    } finally {
+      session.endSession();
     }
   }
 
@@ -608,49 +666,95 @@ export class OrderService {
     userId: string,
     userRole: string
   ): Promise<IOrder> {
-    const order = await this.orderModel.findById(id);
-    if (!order) {
-      throw new OrderError("Pedido não encontrado");
-    }
-  
-    if (
-      userRole !== "admin" &&
-      userRole !== "employee" &&
-      (userRole !== "customer" || userId !== order.clientId.toString())
-    ) {
-      throw new OrderError("Sem permissão para cancelar este pedido");
-    }
-  
-    if (order.status === "delivered") {
-      throw new OrderError("Não é possível cancelar um pedido já entregue");
-    }
-  
-    if (order.status === "cancelled") {
-      throw new OrderError("O pedido já está cancelado");
-    }
-  
-    const updatedOrder = await this.orderModel.updateStatus(
-      id,
-      "cancelled",
-      true
-    );
-  
-    if (!updatedOrder) {
-      throw new OrderError("Erro ao cancelar pedido");
-    }
-  
+    const session = await mongoose.connection.startSession();
+    session.startTransaction();
+    
     try {
-      await this.stockService.processOrderProducts(
-        order.products, 
-        'increase',
-        userId,
-        id
-      );
-    } catch (stockError) {
-      console.error('Erro ao restaurar estoque após cancelamento:', stockError);
-    }
+      const order = await this.orderModel.findById(id);
+      if (!order) {
+        throw new OrderError("Pedido não encontrado");
+      }
   
-    return updatedOrder;
+      if (
+        userRole !== "admin" &&
+        userRole !== "employee" &&
+        (userRole !== "customer" || userId !== order.clientId.toString())
+      ) {
+        throw new OrderError("Sem permissão para cancelar este pedido");
+      }
+  
+      if (order.status === "delivered") {
+        throw new OrderError("Não é possível cancelar um pedido já entregue");
+      }
+  
+      if (order.status === "cancelled") {
+        throw new OrderError("O pedido já está cancelado");
+      }
+  
+      // Atualizar o status com a sessão
+      const updatedOrder = await this.orderModel.updateStatus(
+        id,
+        "cancelled",
+        true
+      );
+  
+      if (!updatedOrder) {
+        throw new OrderError("Erro ao cancelar pedido");
+      }
+  
+      try {
+        // Processar o estoque para restaurar as quantidades
+        await this.stockService.processOrderProducts(
+          order.products, 
+          'increase',
+          userId,
+          id
+        );
+        
+        // Caso o pedido tenha gerado dívida para o cliente, atualizar
+        if (
+          (order.paymentMethod === "bank_slip" || order.paymentMethod === "promissory_note") && 
+          order.clientId
+        ) {
+          const clientId = order.clientId.toString();
+          const customer = await this.userModel.findById(clientId);
+          
+          if (customer && customer.debts) {
+            const debtAmount = -(order.finalPrice - (order.paymentEntry || 0));
+            if (debtAmount < 0) { // É negativo pois estamos removendo a dívida
+              const newDebt = Math.max(0, (customer.debts || 0) + debtAmount); // Evita dívida negativa
+              await this.userModel.update(clientId, {
+                debts: newDebt
+              });
+              console.log(`Dívida reduzida em ${Math.abs(debtAmount)} para o cliente ${clientId} após cancelamento do pedido`);
+            }
+          }
+        }
+      } catch (stockError) {
+        console.error('Erro ao restaurar estoque após cancelamento:', stockError);
+        await session.abortTransaction();
+        throw stockError;
+      }
+  
+      // Tudo ocorreu bem, comitar a transação
+      await session.commitTransaction();
+      return updatedOrder;
+    } catch (error) {
+      // Ocorreu um erro, abortar a transação
+      await session.abortTransaction();
+      
+      if (error instanceof OrderError) {
+        throw error;
+      }
+      console.error("Erro ao cancelar pedido:", error);
+      throw new OrderError(
+        error instanceof Error
+          ? error.message
+          : "Erro desconhecido ao cancelar pedido"
+      );
+    } finally {
+      session.endSession();
+    }
   }
 
   async getDailyOrders(date: Date = new Date()): Promise<IOrder[]> {

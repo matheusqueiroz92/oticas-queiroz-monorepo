@@ -2,6 +2,7 @@ import { ProductModel } from "../models/ProductModel";
 import { IProduct } from "../interfaces/IProduct";
 import { z } from 'zod';
 import { productSchema } from '../validators/productValidators';
+import mongoose from "mongoose";
 
 export class ProductError extends Error {
   constructor(message: string) {
@@ -108,5 +109,20 @@ export class ProductService {
     }
     
     return product;
+  }
+
+  async getProductByIdWithSession(
+    id: string,
+    session: mongoose.ClientSession
+  ): Promise<IProduct | null> {
+    return this.productModel.findByIdWithSession(id, session);
+  }
+  
+  async updateProductWithSession(
+    id: string,
+    productData: Partial<IProduct>,
+    session: mongoose.ClientSession
+  ): Promise<IProduct | null> {
+    return this.productModel.updateWithSession(id, productData, session);
   }
 }

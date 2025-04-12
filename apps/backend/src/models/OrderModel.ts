@@ -101,6 +101,7 @@ export class OrderModel {
       products: convertedProducts,
       serviceOrder: order.serviceOrder,
       paymentMethod: order.paymentMethod,
+      paymentStatus: order.paymentStatus,
       paymentEntry: order.paymentEntry,
       installments: order.installments,
       orderDate: order.orderDate,
@@ -538,5 +539,23 @@ export class OrderModel {
   
     const orders = await orderQuery.exec();
     return orders.map((order) => this.convertToIOrder(order));
+  }
+
+  async createWithSession(
+    orderData: Omit<IOrder, "_id">,
+    session: mongoose.ClientSession
+  ): Promise<IOrder> {
+    // Gerar um número de ordem de serviço se não for fornecido
+    if (!orderData.serviceOrder) {
+      const date = new Date();
+      const year = date.getFullYear().toString().slice(2);
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const randomNum = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+      orderData.serviceOrder = `${year}${month}${randomNum}`;
+    }
+  
+    const order = new Order(orderData);
+    const savedOrder = await order.save({ session });
+    return this.convertToIOrder(savedOrder);
   }
 }
