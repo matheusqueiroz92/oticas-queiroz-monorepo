@@ -21,7 +21,7 @@ const registerSchema = z.object({
   name: z.string().min(3, "Nome deve ter no mínimo 3 caracteres"),
   email: z.string().optional(),
   password: z.string().min(6, "Senha deve ter no mínimo 6 caracteres"),
-  role: z.enum(["admin", "employee", "customer"], {
+  role: z.enum(["admin", "employee", "customer", "institution"], {
     errorMap: () => ({ message: "Tipo de usuário inválido" }),
   }),
   image: z.any().optional(),
@@ -113,9 +113,11 @@ export class AuthController {
       throw new AuthError("Usuário não autenticado", ErrorCode.UNAUTHORIZED);
     }
 
-    if (req.user.role === "employee" && userData.role !== "customer") {
+    if (req.user.role === "employee" && 
+        userData.role !== "customer" && 
+        userData.role !== "institution") {
       throw new PermissionError(
-        "Funcionários só podem cadastrar clientes",
+        "Funcionários só podem cadastrar clientes e instituições",
         ErrorCode.INSUFFICIENT_PERMISSIONS
       );
     }

@@ -40,18 +40,42 @@ export class UserService {
     if (
       "role" in userData &&
       userData.role &&
-      !["admin", "employee", "customer"].includes(userData.role)
+      !["admin", "employee", "customer", "institution"].includes(userData.role)
     ) {
       throw new ValidationError("Role inválida", ErrorCode.INVALID_ROLE);
     }
 
-    if ("cpf" in userData && userData.cpf !== undefined) {
-      const cpfString = userData.cpf.toString();
-      if (!/^\d{11}$/.test(cpfString)) {
+    if (userData.role === "institution") {
+      // CNPJ é obrigatório para instituições
+      if (!userData.cnpj) {
+        throw new ValidationError("CNPJ é obrigatório para instituições", ErrorCode.VALIDATION_ERROR);
+      }
+      
+      // Validar formato do CNPJ
+      if (userData.cnpj && !/^\d{14}$/.test(userData.cnpj.toString())) {
         throw new ValidationError(
-          "CPF inválido. Deve conter 11 dígitos numéricos",
-          ErrorCode.INVALID_CPF
+          "CNPJ inválido. Deve conter 14 dígitos numéricos",
+          ErrorCode.INVALID_CNPJ
         );
+      }
+    } else if (userData.role === "customer" || userData.role === "employee" || userData.role === "admin") {
+      // CPF é obrigatório para clientes, funcionários e administradores
+      if ("cpf" in userData && !userData.cpf) {
+        throw new ValidationError(
+          `CPF é obrigatório para ${userData.role === 'customer' ? 'clientes' : 'funcionários/administradores'}`, 
+          ErrorCode.VALIDATION_ERROR
+        );
+      }
+      
+      // Validar formato do CPF
+      if ("cpf" in userData && userData.cpf !== undefined) {
+        const cpfString = userData.cpf.toString();
+        if (!/^\d{11}$/.test(cpfString)) {
+          throw new ValidationError(
+            "CPF inválido. Deve conter 11 dígitos numéricos",
+            ErrorCode.INVALID_CPF
+          );
+        }
       }
     }
 
@@ -71,16 +95,26 @@ export class UserService {
   async createUser(userData: ICreateUserDTO, creatorRole?: string): Promise<IUser> {
     this.validateUserData(userData);
 
-    if (creatorRole === "employee" && userData.role && userData.role !== "customer") {
+    if (creatorRole === "employee" && 
+      userData.role && 
+      userData.role !== "customer" && 
+      userData.role !== "institution") {
       throw new PermissionError(
-        "Funcionários só podem cadastrar clientes",
+        "Funcionários só podem cadastrar clientes e instituições",
         ErrorCode.INSUFFICIENT_PERMISSIONS
       );
     }
     
-    const existingUserByCpf = await this.userModel.findByCpf(userData.cpf);
-    if (existingUserByCpf) {
-      throw new ValidationError("CPF já cadastrado", ErrorCode.DUPLICATE_CPF);
+    if (userData.role === "institution" && userData.cnpj) {
+      const existingInstitution = await this.userModel.findByCnpj(userData.cnpj);
+      if (existingInstitution) {
+        throw new ValidationError("CNPJ já cadastrado", ErrorCode.DUPLICATE_CNPJ);
+      }
+    } else if (userData.cpf) {
+      const existingUserByCpf = await this.userModel.findByCpf(userData.cpf);
+      if (existingUserByCpf) {
+        throw new ValidationError("CPF já cadastrado", ErrorCode.DUPLICATE_CPF);
+      }
     }
 
     const email = userData.email?.trim().toLowerCase() || null;
@@ -231,7 +265,12 @@ export class UserService {
       }
     }
 
-    if (userData.cpf) {
+    if (userData.role === "institution" && userData.cnpj) {
+      const existingInstitution = await this.userModel.findByCnpj(userData.cnpj);
+      if (existingInstitution && existingInstitution._id.toString() !== id) {
+        throw new ValidationError("CNPJ já cadastrado", ErrorCode.DUPLICATE_CNPJ);
+      }
+    } else if (userData.cpf) {
       const existingUser = await this.userModel.findByCpf(userData.cpf);
       if (existingUser && existingUser._id.toString() !== id) {
         throw new ValidationError("CPF já cadastrado", ErrorCode.DUPLICATE_CPF);

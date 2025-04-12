@@ -1,7 +1,7 @@
 import { AuthModel } from "../models/AuthModel";
 import { generateToken } from "../utils/jwt";
 import type { IUser } from "../interfaces/IUser";
-import { AuthError, NotFoundError } from "../utils/AppError";
+import { AuthError } from "../utils/AppError";
 import { ErrorCode } from "../utils/errorCodes";
 
 interface LoginResponse {
@@ -24,27 +24,36 @@ export class AuthService {
         ErrorCode.VALIDATION_ERROR
       );
     }
-
-    // Verificamos se o login é um email ou CPF
+  
+    // Verificamos se o login é um email, CPF ou CNPJ
     let user = null;
-    const isCPF = /^\d{11}$/.test(login.replace(/[^\d]/g, "")); // Verificar se é um CPF (apenas números e exatamente 11 dígitos)
-
-    if (isCPF) {
+    
+    // Verifica se é um CNPJ (apenas números e exatamente 14 dígitos)
+    const isCNPJ = /^\d{14}$/.test(login.replace(/[^\d]/g, ""));
+    
+    // Verifica se é um CPF (apenas números e exatamente 11 dígitos)
+    const isCPF = /^\d{11}$/.test(login.replace(/[^\d]/g, ""));
+  
+    if (isCNPJ) {
+      // Buscar por CNPJ
+      const sanitizedCNPJ = login.replace(/[^\d]/g, "");
+      user = await this.authModel.findUserByCnpj(sanitizedCNPJ);
+    } else if (isCPF) {
       // Buscar por CPF
-      const sanitizedCPF = login.replace(/[^\d]/g, ""); // Remover caracteres não numéricos
+      const sanitizedCPF = login.replace(/[^\d]/g, "");
       user = await this.authModel.findUserByCpf(sanitizedCPF);
     } else {
       // Buscar por email
       user = await this.authModel.findUserByEmail(login);
     }
-
+  
     if (!user) {
       throw new AuthError(
         "Credenciais inválidas",
         ErrorCode.INVALID_CREDENTIALS
       );
     }
-
+  
     const isValidPassword = await this.authModel.verifyPassword(user, password);
     if (!isValidPassword) {
       throw new AuthError(
@@ -52,7 +61,7 @@ export class AuthService {
         ErrorCode.INVALID_CREDENTIALS
       );
     }
-
+  
     const token = generateToken(user._id.toString(), user.role);
     const userData = this.authModel.convertToIUser(user);
     const {
@@ -60,7 +69,7 @@ export class AuthService {
       comparePassword: __,
       ...userWithoutSensitiveData
     } = userData;
-
+  
     return {
       token,
       user: userWithoutSensitiveData,

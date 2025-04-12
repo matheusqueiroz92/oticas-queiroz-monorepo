@@ -32,6 +32,14 @@ export class AuthModel {
     })) as unknown as UserDocument | null;
   }
 
+  async findUserByCnpj(cnpj: string): Promise<UserDocument | null> {
+    const sanitizedCnpj = cnpj.replace(/[^\d]/g, "");
+  
+    return (await User.findOne({
+      cnpj: sanitizedCnpj,
+    })) as unknown as UserDocument | null;
+  }
+
   async findUserById(id: string): Promise<UserDocument | null> {
     if (!Types.ObjectId.isValid(id)) return null;
     return (await User.findById(id)) as unknown as UserDocument | null;

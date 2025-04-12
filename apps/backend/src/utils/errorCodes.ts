@@ -9,9 +9,11 @@ export enum ErrorCode {
   VALIDATION_ERROR = "VALIDATION_ERROR", // Dados inválidos
   DUPLICATE_EMAIL = "DUPLICATE_EMAIL", // Email já cadastrado
   DUPLICATE_CPF = "DUPLICATE_CPF", // CPF já cadastrado
+  DUPLICATE_CNPJ = "DUPLICATE_CNPJ",
   INVALID_PASSWORD = "INVALID_PASSWORD", // Senha inválida
   INVALID_EMAIL = "INVALID_EMAIL", // Email inválido
   INVALID_CPF = "INVALID_CPF", // CPF inválido
+  INVALID_CNPJ = "INVALID_CNPJ", // CNPJ inválido
   INVALID_RG = "INVALID_RG", // RG inválido
   INVALID_ROLE = "INVALID_ROLE", // Role inválida
   INVALID_DATE = "INVALID_DATE", // Data inválida

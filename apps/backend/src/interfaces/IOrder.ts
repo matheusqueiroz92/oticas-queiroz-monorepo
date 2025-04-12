@@ -9,6 +9,8 @@ export interface IOrder {
   _id?: string;
   clientId: string | Types.ObjectId;
   employeeId: string | Types.ObjectId;
+  institutionId?: Types.ObjectId | string | null;
+  isInstitutionalOrder?: boolean;
   products: OrderProduct[];
   serviceOrder?: string;
   paymentMethod: string;

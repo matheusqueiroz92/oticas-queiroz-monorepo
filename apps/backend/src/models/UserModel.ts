@@ -101,6 +101,15 @@ export class UserModel {
     return user ? this.convertToIUser(user) : null;
   }
 
+  async findByCnpj(cnpj: string): Promise<IUser | null> {
+    const sanitizedCnpj = cnpj.replace(/[^\d]/g, "");
+  
+    const user = (await User.findOne({
+      cnpj: sanitizedCnpj,
+    }).exec()) as UserDocument | null;
+    return user ? this.convertToIUser(user) : null;
+  }
+
   async findById(id: string): Promise<IUser | null> {
     if (!this.isValidId(id)) return null;
     const user = (await User.findById(id).exec()) as UserDocument | null;

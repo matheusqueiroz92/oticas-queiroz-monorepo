@@ -79,15 +79,18 @@ export const errorMiddleware = (
     const keyPattern = (error as MongoServerError).keyPattern;
     let code = ErrorCode.VALIDATION_ERROR;
     let message = "Dados duplicados encontrados";
-
+  
     if (keyPattern?.email) {
       code = ErrorCode.DUPLICATE_EMAIL;
       message = "Email já cadastrado";
     } else if (keyPattern?.cpf) {
       code = ErrorCode.DUPLICATE_CPF;
       message = "CPF já cadastrado";
+    } else if (keyPattern?.cnpj) {
+      code = ErrorCode.DUPLICATE_CNPJ;
+      message = "CNPJ já cadastrado";
     }
-
+  
     const responseObj: ErrorResponse = {
       status: "error",
       code,

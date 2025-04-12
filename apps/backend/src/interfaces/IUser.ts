@@ -3,11 +3,12 @@ export interface IUser {
   name: string;
   email?: string;
   password: string;
-  role: "admin" | "employee" | "customer";
+  role: "admin" | "employee" | "customer" | "institution";
   image?: string;
   address?: string;
   phone?: string;
-  cpf: string;
+  cpf?: string;
+  cnpj?: string;
   rg?: string;
   birthDate?: Date;
   purchases?: string[];

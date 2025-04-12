@@ -1,7 +1,7 @@
 import { Schema, model } from "mongoose";
 import bcrypt from "bcrypt";
 import type { IUser } from "../interfaces/IUser";
-import { isValidCPF } from "../utils/validators";
+import { isValidCNPJ, isValidCPF } from "../utils/validators";
 
 const userSchema = new Schema<IUser>(
   {
@@ -21,20 +21,33 @@ const userSchema = new Schema<IUser>(
     image: { type: String },
     role: {
       type: String,
-      enum: ["admin", "employee", "customer"],
+      enum: ["admin", "employee", "customer", "institution"],
       required: true,
     },
     address: { type: String },
     phone: { type: String },
     cpf: {
       type: String,
-      required: true,
-      unique: true,
+      required: function(this: { role: string }) {
+        return this.role === 'customer' || this.role === 'employee' || this.role === 'admin';
+      },
       validate: {
         validator: (v: string) => {
           return isValidCPF(v);
         },
         message: (props) => `${props.value} não é um CPF válido!`,
+      },
+    },
+    cnpj: {
+      type: String,
+      required: function(this: { role: string }) {
+        return this.role === 'institution';
+      },
+      validate: {
+        validator: (v: string) => {
+          return isValidCNPJ(v);
+        },
+        message: (props) => `${props.value} não é um CNPJ válido!`,
       },
     },
     rg: {

@@ -56,6 +56,25 @@ const promissoryNoteSchema = z.object({
     .optional(),
 });
 
+const checkSchema = z.object({
+  check: z.object({
+    bank: z.string().min(1, "Banco é obrigatório"),
+    checkNumber: z.string().min(1, "O número do cheque é obrigatório"),
+  }),
+  clientDebt: z
+    .object({
+      generateDebt: z.boolean().default(false),
+      installments: z
+        .object({
+          total: z.number().min(1),
+          value: z.number().positive(),
+        })
+        .optional(),
+      dueDates: z.array(z.date()).optional(),
+    })
+    .optional(),
+})
+
 // Esquema base do pagamento
 const basePaymentSchema = z.object({
   amount: z.number().positive("Valor deve ser positivo"),
@@ -63,13 +82,15 @@ const basePaymentSchema = z.object({
     errorMap: () => ({ message: "Tipo de pagamento inválido" }),
   }),
   paymentMethod: z.enum(
-    ["credit", "debit", "cash", "pix", "bank_slip", "promissory_note"] as const,
+    ["credit", "debit", "cash", "pix", "bank_slip", "promissory_note", "check"] as const,
     {
       errorMap: () => ({ message: "Método de pagamento inválido" }),
     }
   ),
   orderId: z.string().optional(),
   customerId: z.string().optional(),
+  institutionId: z.string().optional(),
+  isInstitutionalPayment: z.boolean().default(false),
   legacyClientId: z.string().optional(),
   description: z.string().optional(),
 });
@@ -111,10 +132,27 @@ const paymentSchema = z.discriminatedUnion("paymentMethod", [
       paymentMethod: z.literal("promissory_note"),
     })
     .merge(promissoryNoteSchema),
+  
+  // Cheque
+  basePaymentSchema
+  .extend({
+    paymentMethod: z.literal("check"),
+  })
+  .merge(checkSchema),
 ]);
 
-type PaymentInput = z.infer<typeof paymentSchema>;
-
+const validatedPaymentSchema = paymentSchema.refine(
+  (data) => {
+    if (data.isInstitutionalPayment === true && !data.institutionId) {
+      return false;
+    }
+    return true;
+  },
+  {
+    message: "Para pagamentos institucionais, o ID da instituição é obrigatório",
+    path: ["institutionId"],
+  }
+);
 export class PaymentController {
   private paymentService: PaymentService;
 
@@ -130,7 +168,7 @@ export class PaymentController {
       }
 
       // Validar os dados de acordo com o method
-      const validatedData = paymentSchema.parse(req.body);
+      const validatedData = validatedPaymentSchema.parse(req.body);
 
       // Criar o objeto de pagamento
       const paymentData = {

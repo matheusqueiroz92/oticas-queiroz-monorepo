@@ -233,6 +233,30 @@ export class OrderService {
         return; // Não é necessário atualizar dívidas para outros métodos
       }
 
+      if (orderData.isInstitutionalOrder && orderData.institutionId) {
+        const institution = await this.userModel.findById(orderData.institutionId.toString());
+        if (!institution) {
+          console.error(`Instituição com ID ${orderData.institutionId} não encontrada para atualizar dívidas`);
+          return;
+        }
+  
+        // Calcular o valor da dívida (preço final - entrada se houver)
+        const debtAmount = orderData.finalPrice - (orderData.paymentEntry || 0);
+        
+        if (debtAmount <= 0) {
+          return; // Não há dívida a ser adicionada
+        }
+  
+        // Atualizar a dívida da instituição
+        const currentDebt = institution.debts || 0;
+        await this.userModel.update(orderData.institutionId.toString(), {
+          debts: currentDebt + debtAmount
+        });
+        
+        console.log(`Dívida de ${debtAmount} adicionada à instituição ${orderData.institutionId}`);
+        return;
+      }
+
       const customer = await this.userModel.findById(clientId);
       if (!customer) {
         console.error(`Cliente com ID ${clientId} não encontrado para atualizar dívidas`);

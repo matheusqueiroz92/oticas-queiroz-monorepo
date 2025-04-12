@@ -12,6 +12,14 @@ const orderSchema = new Schema<IOrder>({
     ref: 'User', 
     required: true 
   },
+  institutionId: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+  },
+  isInstitutionalOrder: {
+    type: Boolean,
+    default: false
+  },
   products: [{
     type: Schema.Types.Mixed,
     required: true

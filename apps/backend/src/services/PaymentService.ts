@@ -301,12 +301,14 @@ export class PaymentService {
    * @param legacyClientId ID do cliente legado
    * @param debtAmount Valor da dívida (negativo para redução da dívida)
    * @param paymentId ID do pagamento (opcional, para cliente legado)
+   * @param institutionId ID da instituição
    */
   private async updateClientDebt(
     customerId?: string,
     legacyClientId?: string,
     debtAmount?: number,
-    paymentId?: string
+    paymentId?: string,
+    institutionId?: string
   ): Promise<void> {
     if (!debtAmount) {
       console.log("Nenhuma alteração na dívida do cliente necessária");
@@ -315,6 +317,29 @@ export class PaymentService {
 
     const operation = debtAmount > 0 ? "adicionada" : "reduzida";
     const absAmount = Math.abs(debtAmount);
+
+    if (institutionId) {
+      try {
+        const institution = await this.userModel.findById(institutionId);
+        if (!institution) {
+          console.error(`Instituição ${institutionId} não encontrada ao atualizar dívida`);
+          return;
+        }
+        
+        const currentDebt = institution.debts || 0;
+        const newDebt = Math.max(0, currentDebt + debtAmount); // Evita dívidas negativas
+        
+        await this.userModel.update(institutionId, {
+          debts: newDebt,
+        });
+        
+        console.log(`Dívida da instituição ${institutionId} ${operation} em ${absAmount.toFixed(2)}`);
+        return;
+      } catch (error) {
+        console.error(`Erro ao atualizar dívida da instituição ${institutionId}:`, error);
+        return;
+      }
+    }
 
     if (customerId) {
       try {
@@ -355,6 +380,8 @@ export class PaymentService {
 
   /**
    * Atualiza o caixa com base no tipo e método de pagamento
+   * @param cashRegisterId ID do registro de caixa
+   * @param payment pagamento a ser registrado
    */
   private async updateCashRegister(
     cashRegisterId: string,
@@ -378,7 +405,8 @@ export class PaymentService {
         break;
       case "bank_slip":
       case "promissory_note":
-        // Para boleto e promissória, registramos como "cash" no caixa
+      case "check":
+        // Para boleto e promissória ou cheque, registramos como "cash" no caixa
         // Ou escolha outro tipo que faça mais sentido para o negócio
         registerMethod = "cash";
         break;
@@ -517,6 +545,22 @@ export class PaymentService {
           );
         } catch (error) {
           console.error(`Erro ao atualizar dívida do cliente no pagamento ${payment._id}:`, error);
+        }
+      }
+
+      if (payment.isInstitutionalPayment && payment.institutionId && payment.type === "debt_payment") {
+        try {
+          const debtAmount = -payment.amount; // Valor negativo para reduzir a dívida
+          await this.updateClientDebt(
+            undefined, 
+            undefined, 
+            debtAmount, 
+            payment._id, 
+            payment.institutionId
+          );
+          console.log(`Dívida da instituição ${payment.institutionId} reduzida em ${Math.abs(debtAmount)}`);
+        } catch (error) {
+          console.error(`Erro ao atualizar dívida da instituição no pagamento ${payment._id}:`, error);
         }
       }
 
@@ -774,7 +818,23 @@ export class PaymentService {
       }
 
       // Atualizar dívida se necessário
-      if (payment.type === "debt_payment") {
+      if (payment.isInstitutionalPayment && payment.institutionId && payment.type === "debt_payment") {
+        try {
+          const debtAmount = payment.amount; // Valor positivo para reverter a redução da dívida
+          await this.updateClientDebt(
+            undefined,
+            undefined,
+            debtAmount,
+            undefined,
+            payment.institutionId
+          );
+          console.log(`Revertendo pagamento institucional. Adicionando ${debtAmount} à dívida da instituição ${payment.institutionId}`);
+        } catch (error) {
+          console.error(`Erro ao atualizar dívida da instituição no cancelamento do pagamento ${id}:`, error);
+        }
+      }
+      // Tratar pagamentos de dívida de clientes normais (código existente)
+      else if (payment.type === "debt_payment") {
         try {
           const debtAmount = payment.amount; // Valor positivo para reverter a redução da dívida
           console.log(`Revertendo pagamento de dívida. Adicionando ${debtAmount} à dívida do cliente.`);

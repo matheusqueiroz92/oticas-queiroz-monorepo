@@ -37,6 +37,8 @@ const orderProductSchema = z.object({
 const baseOrderSchema = z.object({
   clientId: z.string().min(1, "ID do cliente é obrigatório"),
   employeeId: z.string().min(1, "ID do funcionário é obrigatório"),
+  institutionId: z.string().nullable().optional(),
+  isInstitutionalOrder: z.boolean().default(false),
   products: z.array(orderProductSchema).min(1, "Pelo menos um produto é obrigatório"),
   serviceOrder: z.string().optional(),
   paymentMethod: z.string().min(1, "Método de pagamento é obrigatório"),
@@ -126,6 +128,18 @@ export const createOrderSchema = baseOrderSchema
     {
       message: "Desconto não pode ser maior que o preço total",
       path: ["discount"],
+    }
+  ).refine(
+    (data) => {
+      // Se é pedido institucional, verificar se institutionId está preenchido
+      if (data.isInstitutionalOrder === true && !data.institutionId) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message: "Para pedidos institucionais, o ID da instituição é obrigatório",
+      path: ["institutionId"],
     }
   );
 

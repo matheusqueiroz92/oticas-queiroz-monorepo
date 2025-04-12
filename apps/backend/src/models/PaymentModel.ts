@@ -9,12 +9,14 @@ interface PaymentDocument extends Document {
   createdBy: Types.ObjectId;
   customerId?: Types.ObjectId;
   orderId?: Types.ObjectId;
+  institutionId: Types.ObjectId;
+  isInstitutionalPayment: boolean;
   legacyClientId?: Types.ObjectId;
   cashRegisterId: Types.ObjectId;
   amount: number;
   date: Date;
   type: "sale" | "debt_payment" | "expense";
-  paymentMethod: "credit" | "debit" | "cash" | "pix" | "installment";
+  paymentMethod: "credit" | "debit" | "cash" | "pix" | "bank_slip" | "promissory_note" | "check";
   status: "pending" | "completed" | "cancelled";
   installments?: {
     current: number;

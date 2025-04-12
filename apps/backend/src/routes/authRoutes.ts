@@ -34,7 +34,10 @@ const passwordResetController = new PasswordResetController();
  *           description: Email do usuário (utilizado para login)
  *         cpf:
  *           type: string
- *           description: CPF do usuário (pode ser utilizado para login)
+ *           description: CPF do usuário (pode ser utilizado para login de clientes, funcionários e admin)
+ *         cnpj:
+ *           type: string
+ *           description: CNPJ da instituição (pode ser utilizado para login de instituições)
  *         password:
  *           type: string
  *           description: Senha do usuário (armazenada com hash)
@@ -43,7 +46,7 @@ const passwordResetController = new PasswordResetController();
  *           description: URL da imagem de perfil do usuário
  *         role:
  *           type: string
- *           enum: [admin, employee, customer]
+ *           enum: [admin, employee, customer, institution]
  *           description: Função do usuário no sistema
  *         address:
  *           type: string
@@ -80,7 +83,7 @@ const passwordResetController = new PasswordResetController();
  *   post:
  *     summary: Realiza login do usuário
  *     tags: [Auth]
- *     description: Permite login com email/cpf e senha, retornando um token JWT
+ *     description: Permite login com email, CPF ou CNPJ e senha, retornando um token JWT
  *     requestBody:
  *       required: true
  *       content:
@@ -93,7 +96,7 @@ const passwordResetController = new PasswordResetController();
  *             properties:
  *               login:
  *                 type: string
- *                 description: Email ou CPF do usuário
+ *                 description: Email, CPF ou CNPJ do usuário
  *                 example: "usuario@exemplo.com"
  *               password:
  *                 type: string
@@ -121,9 +124,11 @@ const passwordResetController = new PasswordResetController();
  *                       type: string
  *                     cpf:
  *                       type: string
+ *                     cnpj:
+ *                       type: string
  *                     role:
  *                       type: string
- *                       enum: [admin, employee, customer]
+ *                       enum: [admin, employee, customer, institution]
  *       400:
  *         description: Dados de login inválidos
  *       401:
@@ -151,7 +156,7 @@ router.post("/login", asyncHandler(authController.login.bind(authController)));
  *             required:
  *               - name
  *               - email
- *               - cpf
+ *               - cpf ou cnpj
  *               - password
  *               - role
  *             properties:
@@ -173,7 +178,7 @@ router.post("/login", asyncHandler(authController.login.bind(authController)));
  *                 example: "12345678900"
  *               role:
  *                 type: string
- *                 enum: [admin, employee, customer]
+ *                 enum: [admin, employee, customer, institution]
  *                 description: Função do usuário no sistema
  *                 example: "customer"
  *               phone:

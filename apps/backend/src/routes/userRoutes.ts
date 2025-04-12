@@ -30,7 +30,10 @@ const userController = new UserController();
  *           description: Email do usuário (utilizado para login)
  *         cpf:
  *           type: string
- *           description: CPF do usuário (pode ser utilizado para login)
+ *           description: CPF do usuário (obrigatório para clientes, funcionários e admin)
+ *         cnpj:
+ *           type: string
+ *           description: CNPJ da instituição (obrigatório para instituições)
  *         password:
  *           type: string
  *           description: Senha do usuário (armazenada com hash)
@@ -39,7 +42,7 @@ const userController = new UserController();
  *           description: URL da imagem de perfil do usuário
  *         role:
  *           type: string
- *           enum: [admin, employee, customer]
+ *           enum: [admin, employee, customer, institution]
  *           description: Função do usuário no sistema
  *         address:
  *           type: string

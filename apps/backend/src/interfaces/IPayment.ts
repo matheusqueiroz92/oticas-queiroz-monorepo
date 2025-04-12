@@ -2,6 +2,8 @@ export interface IPayment {
   _id?: string;
   createdBy: string;
   customerId?: string;
+  institutionId?: string;
+  isInstitutionalPayment?: boolean;
   legacyClientId?: string;
   orderId?: string;
   cashRegisterId: string;
@@ -14,7 +16,8 @@ export interface IPayment {
     | "cash"
     | "pix"
     | "bank_slip"
-    | "promissory_note";
+    | "promissory_note"
+    | "check";
   status: "pending" | "completed" | "cancelled";
 
   creditCardInstallments?: {
@@ -31,6 +34,11 @@ export interface IPayment {
   promissoryNote?: {
     number: string;
   };
+
+  check?: {
+    bank: string;
+    checkNumber: string;
+  }
 
   clientDebt?: {
     generateDebt: boolean;

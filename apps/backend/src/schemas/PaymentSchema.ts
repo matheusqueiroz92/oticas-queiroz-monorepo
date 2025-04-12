@@ -4,6 +4,8 @@ const paymentSchema = new Schema(
   {
     createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
     customerId: { type: Schema.Types.ObjectId, ref: "User" },
+    institutionId: { type: Schema.Types.ObjectId, ref: "User" },
+    isInstitutionalPayment: { type: Boolean, default: false },
     legacyClientId: { type: Schema.Types.ObjectId, ref: "LegacyClient" },
     orderId: { type: Schema.Types.ObjectId, ref: "Order" },
     cashRegisterId: {
@@ -21,7 +23,7 @@ const paymentSchema = new Schema(
     // Método de pagamento
     paymentMethod: {
       type: String,
-      enum: ["credit", "debit", "cash", "pix", "bank_slip", "promissory_note"],
+      enum: ["credit", "debit", "cash", "pix", "bank_slip", "promissory_note", "check"],
       required: true,
     },
     status: {
@@ -55,6 +57,11 @@ const paymentSchema = new Schema(
     // Campos específicos para promissória
     promissoryNote: {
       number: { type: String },
+    },
+    // Campos específicos para cheque
+    check: {
+      bank: { type: String },
+      checkNumber: { type: String },
     },
     description: { type: String },
     // Campos de soft delete
@@ -128,6 +135,37 @@ paymentSchema.pre("validate", function (next) {
       }
     }
   }
+
+    // Se o método for cheque, os dados do cheque devem estar presentes
+    if (this.paymentMethod === "check") {
+      if (!this.check?.bank || !this.check.checkNumber) {
+        this.invalidate(
+          "check",
+          "Dados do cheque são obrigatórios para pagamento via cheque"
+        );
+      }
+  
+      // Se gerar débito, os dados de parcelamento devem estar presentes
+      if (this.clientDebt?.generateDebt) {
+        if (
+          !this.clientDebt.installments ||
+          !this.clientDebt.installments.total ||
+          !this.clientDebt.installments.value
+        ) {
+          this.invalidate(
+            "clientDebt.installments",
+            "Dados de parcelamento são obrigatórios para débito ao cliente"
+          );
+        }
+  
+        if (!this.clientDebt.dueDates || this.clientDebt.dueDates.length === 0) {
+          this.invalidate(
+            "clientDebt.dueDates",
+            "Datas de vencimento são obrigatórias para débito ao cliente"
+          );
+        }
+      }
+    }  
 
   // Se o método for cartão de crédito e tiver parcelamento
   if (
