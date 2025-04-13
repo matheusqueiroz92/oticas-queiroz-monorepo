@@ -20,6 +20,10 @@ const prescriptionDataSchema = z.object({
   nd: z.number(),
   oc: z.number(),
   addition: z.number(),
+  bridge: z.number(),
+  rim: z.number(),
+  vh: z.number(),
+  sh: z.number(),
 }).optional();
 
 // Schema para produtos no pedido

@@ -38,6 +38,13 @@ export interface IPayment {
   check?: {
     bank: string;
     checkNumber: string;
+    checkDate: Date; // Data do cheque
+    accountHolder: string; // Nome do titular da conta
+    branch: string; // Agência bancária
+    accountNumber: string; // Número da conta
+    presentationDate?: Date; // Data para apresentação (para cheques pré-datados)
+    compensationStatus: "pending" | "compensated" | "rejected"; // Status de compensação
+    rejectionReason?: string; // Razão da rejeição, se aplicável
   }
 
   clientDebt?: {

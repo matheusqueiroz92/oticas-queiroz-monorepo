@@ -312,4 +312,106 @@ export class PaymentModel {
 
     return payment ? this.convertToIPayment(payment) : null;
   }
+
+  async updateCheckStatus(
+    id: string,
+    updateData: Record<string, any>
+  ): Promise<IPayment | null> {
+    if (!this.isValidId(id)) return null;
+    
+    const payment = (await Payment.findByIdAndUpdate(
+      id,
+      { $set: updateData },
+      { new: true, runValidators: true }
+    ).populate("orderId")
+     .populate("customerId", "name email")
+     .populate("cashRegisterId")
+     .exec()) as PaymentDocument | null;
+    
+    return payment ? this.convertToIPayment(payment) : null;
+  }
+
+  async findAllWithMongoFilters(
+    page = 1,
+    limit = 10,
+    filters: Record<string, any> = {},
+    populate = false,
+    includeDeleted = false
+  ): Promise<{ payments: IPayment[]; total: number }> {
+    const skip = (page - 1) * limit;
+  
+    // Se não devemos incluir documentos excluídos, adicionar a condição isDeleted: false
+    if (!includeDeleted) {
+      filters.isDeleted = { $ne: true };
+    }
+  
+    try {
+      let paymentQuery = Payment.find(filters).skip(skip).limit(limit);
+  
+      if (populate) {
+        paymentQuery = paymentQuery
+          .populate("orderId")
+          .populate("customerId", "name email")
+          .populate("legacyClientId")
+          .populate("cashRegisterId")
+          .populate("createdBy", "name email");
+  
+        if (includeDeleted) {
+          paymentQuery = paymentQuery.populate("deletedBy", "name email");
+        }
+      }
+  
+      const [payments, total] = await Promise.all([
+        paymentQuery.exec() as Promise<PaymentDocument[]>,
+        Payment.countDocuments(filters),
+      ]);
+  
+      // Filtrando documentos nulos ou inválidos antes de convertê-los
+      const validPayments = payments.filter(payment => payment && payment._id);
+      
+      return {
+        payments: validPayments.map((payment) => this.convertToIPayment(payment)),
+        total,
+      };
+    } catch (error) {
+      console.error("Erro ao buscar pagamentos com filtros MongoDB:", error);
+      return { payments: [], total: 0 };
+    }
+  }
+
+  async findChecksByStatus(
+    status: "pending" | "compensated" | "rejected",
+    startDate?: Date,
+    endDate?: Date
+  ): Promise<IPayment[]> {
+    const filters: Record<string, any> = {
+      paymentMethod: "check",
+      "check.compensationStatus": status,
+      isDeleted: { $ne: true }
+    };
+    
+    if (startDate || endDate) {
+      const dateFilter: Record<string, Date> = {};
+      if (startDate) dateFilter.$gte = startDate;
+      if (endDate) dateFilter.$lte = endDate;
+      
+      if (status === "pending") {
+        // Para cheques pendentes, filtramos pela data de apresentação, se disponível
+        filters["check.presentationDate"] = dateFilter;
+      } else {
+        // Para outros status, filtramos pela data do pagamento
+        filters.date = dateFilter;
+      }
+    }
+    
+    const payments = await Payment.find(filters)
+      .populate("orderId")
+      .populate("customerId", "name email")
+      .populate("legacyClientId")
+      .populate("cashRegisterId")
+      .populate("createdBy", "name email")
+      .exec() as PaymentDocument[];
+    
+    return payments.map(payment => this.convertToIPayment(payment));
+  }
 }

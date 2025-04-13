@@ -275,19 +275,25 @@ export class PaymentService {
           this.validateClientDebtData(paymentData.clientDebt);
         }
         
-      case "check":
-        console.log("Validando pagamento com cheque");
-        // Validar dados do cheque
-        if (!paymentData.check || !paymentData.check.bank || !paymentData.check.checkNumber) {
-          throw new PaymentError("Dados do cheque são obrigatórios (banco e número)");
-        }
-      
-        // Se gerar débito, validar parcelamento
-        if (paymentData.clientDebt?.generateDebt) {
-          console.log("Cheque com geração de débito para o cliente");
-          this.validateClientDebtData(paymentData.clientDebt);
-        }
-      break;
+        case "check":
+          console.log("Validando pagamento com cheque");
+          // Validar dados do cheque
+          if (!paymentData.check || 
+              !paymentData.check.bank || 
+              !paymentData.check.checkNumber ||
+              !paymentData.check.checkDate ||
+              !paymentData.check.accountHolder ||
+              !paymentData.check.branch ||
+              !paymentData.check.accountNumber) {
+            throw new PaymentError("Dados completos do cheque são obrigatórios");
+          }
+        
+          // Se gerar débito, validar parcelamento
+          if (paymentData.clientDebt?.generateDebt) {
+            console.log("Cheque com geração de débito para o cliente");
+            this.validateClientDebtData(paymentData.clientDebt);
+          }
+        break;
     }
 
     return cashRegisterId;
@@ -1158,5 +1164,100 @@ export class PaymentService {
     } catch (error) {
       console.error(`Erro ao atualizar status de pagamento do pedido ${orderId}:`, error);
     }
+  }
+
+  /**
+   * Atualiza o status de compensação de um cheque
+   * @param id ID do pagamento
+   * @param status Novo status de compensação
+   * @param rejectionReason Motivo da rejeição (obrigatório se o status for "rejected")
+   * @returns Pagamento atualizado
+   */
+  async updateCheckCompensationStatus(
+    id: string,
+    status: "pending" | "compensated" | "rejected",
+    rejectionReason?: string
+  ): Promise<IPayment> {
+    const payment = await this.paymentModel.findById(id);
+    if (!payment) {
+      throw new PaymentError("Pagamento não encontrado");
+    }
+    
+    if (payment.paymentMethod !== "check") {
+      throw new PaymentError("Este pagamento não é um cheque");
+    }
+    
+    // Verificar se o objeto check já existe no pagamento
+    if (!payment.check) {
+      throw new PaymentError("Dados do cheque não encontrados no pagamento");
+    }
+    
+    // Atualizamos o campo check com os novos valores
+    const updatedCheck = {
+      ...payment.check,
+      compensationStatus: status
+    };
+    
+    if (status === "rejected" && rejectionReason) {
+      updatedCheck.rejectionReason = rejectionReason;
+    }
+    
+    // Usamos o novo método updateCheckStatus do PaymentModel
+    const updatedPayment = await this.paymentModel.updateCheckStatus(
+      id,
+      { check: updatedCheck }
+    );
+    
+    if (!updatedPayment) {
+      throw new PaymentError("Erro ao atualizar status do cheque");
+    }
+    
+    // Invalidar cache se necessário
+    this.invalidateCache(`payment_${id}`);
+    
+    // Tratar caso de rejeição (reverter valores, notificar, etc.)
+    if (status === "rejected") {
+      // Se um cheque for rejeitado, podemos precisar reverter o pagamento
+      console.log(`Cheque ${payment._id} rejeitado: ${rejectionReason}`);
+      
+      // Aqui poderíamos implementar lógica para:
+      // 1. Reverter o pagamento no caixa (usando updateCashRegister com valor negativo)
+      // 2. Atualizar dívidas do cliente se necessário
+      // 3. Notificar usuários sobre a rejeição
+      // 4. Registrar em um log de auditoria
+      
+      // Por simplicidade, não implementaremos toda essa lógica agora,
+      // mas é importante considerar essas ações em um sistema de produção
+    }
+    
+    return updatedPayment;
+  }
+
+  /**
+   * Obtém uma lista de cheques filtrados por status de compensação
+   * @param status Status de compensação dos cheques (pending, compensated, rejected)
+   * @param startDate Data inicial para filtro (opcional)
+   * @param endDate Data final para filtro (opcional)
+   * @returns Lista de pagamentos com cheques que correspondem aos critérios
+   */
+  async getChecksByStatus(
+    status: "pending" | "compensated" | "rejected",
+    startDate?: Date,
+    endDate?: Date
+  ): Promise<IPayment[]> {
+    // Utilizamos o método especializado findChecksByStatus do PaymentModel
+    const checks = await this.paymentModel.findChecksByStatus(
+      status,
+      startDate,
+      endDate
+    );
+    
+    // Criamos uma chave de cache para armazenar os resultados
+    const cacheKey = `checks_${status}_${startDate?.toISOString() || 'none'}_${endDate?.toISOString() || 'none'}`;
+    
+    // Armazenamos os resultados em cache para melhorar a performance em consultas repetidas
+    this.cache.set(cacheKey, checks, 300); // Cache por 5 minutos (300 segundos)
+    
+    return checks;
   }
 }

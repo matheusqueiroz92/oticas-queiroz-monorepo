@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 import { PaymentService, PaymentError } from "../services/PaymentService";
 import type { JwtPayload } from "jsonwebtoken";
-import type { IPayment, CreatePaymentDTO } from "../interfaces/IPayment";
+import type { IPayment } from "../interfaces/IPayment";
 import { z } from "zod";
 import type { ExportOptions } from "../utils/exportUtils";
 
@@ -60,6 +60,13 @@ const checkSchema = z.object({
   check: z.object({
     bank: z.string().min(1, "Banco é obrigatório"),
     checkNumber: z.string().min(1, "O número do cheque é obrigatório"),
+    checkDate: z.coerce.date(),
+    accountHolder: z.string().min(2, "Nome do titular da conta é obrigatório"),
+    branch: z.string().min(1, "Agência bancária é obrigatória"),
+    accountNumber: z.string().min(1, "Número da conta é obrigatório"),
+    presentationDate: z.coerce.date().optional(),
+    compensationStatus: z.enum(["pending", "compensated", "rejected"]).default("pending"),
+    rejectionReason: z.string().optional()
   }),
   clientDebt: z
     .object({
@@ -637,6 +644,74 @@ export class PaymentController {
               : String(error)
             : undefined,
       });
+    }
+  }
+
+  async updateCheckStatus(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      if (!req.user?.id) {
+        res.status(401).json({ message: "Usuário não autenticado" });
+        return;
+      }
+      
+      const { status, rejectionReason } = req.body;
+      
+      // Validação básica
+      if (!status || !["pending", "compensated", "rejected"].includes(status)) {
+        res.status(400).json({ message: "Status inválido" });
+        return;
+      }
+      
+      // Se o status for "rejected", exigir o motivo
+      if (status === "rejected" && !rejectionReason) {
+        res.status(400).json({ message: "Motivo da rejeição é obrigatório quando o status é 'rejected'" });
+        return;
+      }
+      
+      const payment = await this.paymentService.updateCheckCompensationStatus(
+        req.params.id,
+        status,
+        rejectionReason
+      );
+      
+      res.status(200).json(payment);
+    } catch (error) {
+      if (error instanceof PaymentError) {
+        res.status(400).json({ message: error.message });
+        return;
+      }
+      console.error("Error updating check status:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  }
+
+  async getChecksByStatus(req: Request, res: Response): Promise<void> {
+    try {
+      const { status } = req.params;
+      
+      if (!["pending", "compensated", "rejected"].includes(status)) {
+        res.status(400).json({ message: "Status inválido" });
+        return;
+      }
+      
+      const startDate = req.query.startDate 
+        ? new Date(String(req.query.startDate))
+        : undefined;
+        
+      const endDate = req.query.endDate
+        ? new Date(String(req.query.endDate))
+        : undefined;
+      
+      const checks = await this.paymentService.getChecksByStatus(
+        status as "pending" | "compensated" | "rejected",
+        startDate,
+        endDate
+      );
+      
+      res.status(200).json(checks);
+    } catch (error) {
+      console.error("Error getting checks by status:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
     }
   }
 }

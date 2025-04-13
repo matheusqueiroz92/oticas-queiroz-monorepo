@@ -446,6 +446,78 @@ router.get(
 
 /**
  * @swagger
+ * /api/payments/deleted:
+ *   get:
+ *     summary: Lista pagamentos excluídos logicamente
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Payments]
+ *     description: Retorna pagamentos que foram marcados como excluídos
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Número da página
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
+ *         description: Limite de itens por página
+ *       - in: query
+ *         name: type
+ *         schema:
+ *           type: string
+ *           enum: [sale, debt_payment, expense]
+ *         description: Filtrar por tipo de pagamento
+ *       - in: query
+ *         name: paymentMethod
+ *         schema:
+ *           type: string
+ *           enum: [credit, debit, cash, pix, installment]
+ *         description: Filtrar por método de pagamento
+ *     responses:
+ *       200:
+ *         description: Lista de pagamentos excluídos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 payments:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Payment'
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     page:
+ *                       type: integer
+ *                     limit:
+ *                       type: integer
+ *                     total:
+ *                       type: integer
+ *                     totalPages:
+ *                       type: integer
+ *       401:
+ *         description: Não autorizado
+ *       500:
+ *         description: Erro interno do servidor
+ */
+router.get(
+  "/payments/deleted",
+  authenticate,
+  authorize(["admin"]),
+  asyncHandler(paymentController.getDeletedPayments.bind(paymentController))
+);
+
+/**
+ * @swagger
  * /api/payments/{id}:
  *   get:
  *     summary: Retorna um pagamento específico
@@ -563,74 +635,97 @@ router.post(
 
 /**
  * @swagger
- * /api/payments/deleted:
- *   get:
- *     summary: Lista pagamentos excluídos logicamente
+ * /api/payments/{id}/check-status:
+ *   put:
+ *     summary: Atualiza o status de compensação de um cheque
  *     security:
  *       - bearerAuth: []
  *     tags: [Payments]
- *     description: Retorna pagamentos que foram marcados como excluídos
+ *     description: Permite atualizar o status de compensação de um pagamento feito com cheque
  *     parameters:
- *       - in: query
- *         name: page
- *         schema:
- *           type: integer
- *           minimum: 1
- *           default: 1
- *         description: Número da página
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           minimum: 1
- *           maximum: 100
- *           default: 10
- *         description: Limite de itens por página
- *       - in: query
- *         name: type
+ *       - in: path
+ *         name: id
+ *         required: true
  *         schema:
  *           type: string
- *           enum: [sale, debt_payment, expense]
- *         description: Filtrar por tipo de pagamento
- *       - in: query
- *         name: paymentMethod
- *         schema:
- *           type: string
- *           enum: [credit, debit, cash, pix, installment]
- *         description: Filtrar por método de pagamento
+ *         description: ID do pagamento
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - status
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum: [pending, compensated, rejected]
+ *                 description: Novo status de compensação
+ *               rejectionReason:
+ *                 type: string
+ *                 description: Razão da rejeição (obrigatório se status for rejected)
  *     responses:
  *       200:
- *         description: Lista de pagamentos excluídos
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 payments:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/Payment'
- *                 pagination:
- *                   type: object
- *                   properties:
- *                     page:
- *                       type: integer
- *                     limit:
- *                       type: integer
- *                     total:
- *                       type: integer
- *                     totalPages:
- *                       type: integer
+ *         description: Status do cheque atualizado com sucesso
+ *       400:
+ *         description: Dados inválidos ou pagamento não é um cheque
+ *       404:
+ *         description: Pagamento não encontrado
+ *       401:
+ *         description: Não autorizado
+ *       500:
+ *         description: Erro interno do servidor
+ */
+router.put(
+  "/payments/:id/check-status",
+  authenticate,
+  authorize(["admin", "employee"]),
+  asyncHandler(paymentController.updateCheckStatus.bind(paymentController))
+);
+
+/**
+ * @swagger
+ * /api/payments/checks/{status}:
+ *   get:
+ *     summary: Lista cheques por status de compensação
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Payments]
+ *     description: Retorna uma lista de pagamentos realizados com cheque filtrados por status
+ *     parameters:
+ *       - in: path
+ *         name: status
+ *         required: true
+ *         schema:
+ *           type: string
+ *           enum: [pending, compensated, rejected]
+ *         description: Status de compensação
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Data inicial para filtro
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Data final para filtro
+ *     responses:
+ *       200:
+ *         description: Lista de cheques
  *       401:
  *         description: Não autorizado
  *       500:
  *         description: Erro interno do servidor
  */
 router.get(
-  "/payments/deleted",
+  "/payments/checks/:status",
   authenticate,
-  authorize(["admin"]),
-  asyncHandler(paymentController.getDeletedPayments.bind(paymentController))
+  authorize(["admin", "employee"]),
+  asyncHandler(paymentController.getChecksByStatus.bind(paymentController))
 );
 
 export default router;

@@ -90,6 +90,10 @@ const orderSchema = new Schema<IOrder>({
     nd: Number,
     oc: Number,
     addition: Number,
+    bridge: Number,
+    rim: Number,
+    vh: Number,
+    sh: Number,
   },
   observations: {
     type: String,

@@ -62,6 +62,17 @@ const paymentSchema = new Schema(
     check: {
       bank: { type: String },
       checkNumber: { type: String },
+      checkDate: { type: Date },
+      accountHolder: { type: String },
+      branch: { type: String },
+      accountNumber: { type: String },
+      presentationDate: { type: Date },
+      compensationStatus: { 
+        type: String, 
+        enum: ["pending", "compensated", "rejected"],
+        default: "pending",
+      },
+      rejectionReason: { type: String }
     },
     description: { type: String },
     // Campos de soft delete

@@ -46,6 +46,10 @@ export interface IOrder {
     nd: number;
     oc: number;
     addition: number;
+    bridge: number;
+    rim: number;
+    vh: number;
+    sh: number;
   };
   observations?: string;
   totalPrice: number;
