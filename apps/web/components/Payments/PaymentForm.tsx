@@ -51,7 +51,7 @@ import type { Order } from "@/app/types/order";
 import type { User as UserType } from "@/app/types/user";
 import type { LegacyClient } from "@/app/types/legacy-client";
 
-type PaymentFormValues = any; // Using any due to form complexities in usePayments hook
+type PaymentFormValues = any;
 
 interface PaymentFormProps {
   form: ReturnType<typeof useForm<PaymentFormValues>>;
@@ -114,6 +114,7 @@ export function PaymentForm({
   fetchAllCustomers,
 }: PaymentFormProps) {
   const { watch, setValue } = form;
+  const [showCheckFields, setShowCheckFields] = useState(false)
   const paymentType = watch("type");
   
   const renderStep1 = () => (
@@ -149,43 +150,43 @@ export function PaymentForm({
         )}
       />
 
-        <FormField
-          control={form.control}
-          name="paymentDate"
-          render={({ field }) => (
-            <FormItem className="flex flex-col">
-              <FormLabel>Data do Pagamento *</FormLabel>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <FormControl>
-                    <Button
-                      variant={"outline"}
-                      className={`w-full pl-3 text-left font-normal ${
-                        !field.value ? "text-muted-foreground" : ""
-                      }`}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {field.value ? (
-                        format(field.value, "PPP", { locale: ptBR })
-                      ) : (
-                        <span>Selecione a data</span>
-                      )}
-                    </Button>
-                  </FormControl>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={field.value}
-                    onSelect={field.onChange}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+      <FormField
+        control={form.control}
+        name="paymentDate"
+        render={({ field }) => (
+          <FormItem className="flex flex-col">
+            <FormLabel>Data do Pagamento *</FormLabel>
+            <Popover>
+              <PopoverTrigger asChild>
+                <FormControl>
+                  <Button
+                    variant={"outline"}
+                    className={`w-full pl-3 text-left font-normal ${
+                      !field.value ? "text-muted-foreground" : ""
+                    }`}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {field.value ? (
+                      format(field.value, "PPP", { locale: ptBR })
+                    ) : (
+                      <span>Selecione a data</span>
+                    )}
+                  </Button>
+                </FormControl>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={field.value}
+                  onSelect={field.onChange}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -220,7 +221,14 @@ export function PaymentForm({
           render={({ field }) => (
             <FormItem>
               <FormLabel>Método de Pagamento *</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select onValueChange={(value) => {
+                field.onChange(value);
+                if (value === "check") {
+                  setShowCheckFields(true);
+                } else {
+                  setShowCheckFields(false);
+                }
+              }} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione o método" />
@@ -238,6 +246,169 @@ export function PaymentForm({
             </FormItem>
           )}
         />
+
+        {showCheckFields && (
+          <div className="space-y-4 border p-4 rounded-md bg-gray-50">
+            <h3 className="font-medium">Dados do Cheque</h3>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="check.bank"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Banco *</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Ex: Banco do Brasil" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="check.checkNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Número do Cheque *</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Ex: 000123" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="check.checkDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Data do Cheque *</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={"outline"}
+                            className={`w-full pl-3 text-left font-normal ${
+                              !field.value ? "text-muted-foreground" : ""
+                            }`}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {field.value ? (
+                              format(field.value, "PPP", { locale: ptBR })
+                            ) : (
+                              <span>Selecione a data</span>
+                            )}
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="check.presentationDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Data de Apresentação</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={"outline"}
+                            className={`w-full pl-3 text-left font-normal ${
+                              !field.value ? "text-muted-foreground" : ""
+                            }`}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {field.value ? (
+                              format(field.value, "PPP", { locale: ptBR })
+                            ) : (
+                              <span>Selecione a data</span>
+                            )}
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormDescription>
+                      Para cheques pré-datados
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            
+            <div className="grid grid-cols-1 gap-4">
+              <FormField
+                control={form.control}
+                name="check.accountHolder"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Titular da Conta *</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Nome completo do titular" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="check.branch"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Agência *</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Ex: 1234" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="check.accountNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Número da Conta *</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Ex: 12345-6" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {showInstallments && (
@@ -892,4 +1063,8 @@ export function PaymentForm({
       )}
     </div>
   );
+}
+
+function useState(arg0: boolean): [any, any] {
+  throw new Error("Function not implemented.");
 }

@@ -4,6 +4,8 @@ export interface Order {
   _id: string;
   clientId: string;
   employeeId: string;
+  institutionId?: string | null;
+  isInstitutionalOrder?: boolean;
   products: Product[];
   serviceOrder?: string | null;
   paymentMethod: string;
@@ -32,6 +34,10 @@ export interface Order {
     nd: number;
     oc: number;
     addition: number;
+    bridge: number;
+    rim: number;
+    vh: number;
+    sh: number;
   };
   observations?: string;
   totalPrice: number;

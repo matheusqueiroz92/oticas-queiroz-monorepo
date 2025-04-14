@@ -17,6 +17,8 @@ import {
   Menu,
   Timer,
   X,
+  Landmark,
+  NotepadText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -123,6 +125,18 @@ const menuItems: MenuItem[] = [
     title: "Clientes Legados",
     icon: Timer,
     href: "/legacy-clients",
+    roles: ["admin", "employee"],
+  },
+  {
+    title: "Instituições",
+    icon: Landmark,
+    href: "/institutions",
+    roles: ["admin", "employee"],
+  },
+  {
+    title: "Gestão de Cheques",
+    icon: NotepadText,
+    href: "/checks",
     roles: ["admin", "employee"],
   },
 ];

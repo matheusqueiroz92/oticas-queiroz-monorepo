@@ -47,6 +47,15 @@ export default function OrderConfirmation({
                 <p>{selectedCustomer?.name || "Não selecionado"}</p>
                 {selectedCustomer?.phone && <p className="text-xs text-gray-500">{selectedCustomer.phone}</p>}
               </div>
+
+              {form.getValues("isInstitutionalOrder") && (
+                <div className="mt-3">
+                  <h5 className="font-medium text-gray-600">Pedido Institucional</h5>
+                  <p className="text-sm mt-1">
+                    Instituição: APAE {/* Aqui poderia mostrar o nome da instituição buscado pelo ID */}
+                  </p>
+                </div>
+              )}
               
               <div>
                 <h5 className="font-medium text-gray-600">Pagamento</h5>

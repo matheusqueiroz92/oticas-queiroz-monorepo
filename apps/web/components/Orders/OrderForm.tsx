@@ -72,12 +72,9 @@ interface OrderFormProps {
 
 export function OrderForm({
   form,
-  selectedProducts,
-  setSelectedProducts,
+  selectedProducts, 
   selectedCustomer,
-  setSelectedCustomer,
   hasLenses,
-  setHasLenses,
   showInstallments,
   setShowInstallments,
   submittedOrder,
@@ -99,7 +96,6 @@ export function OrderForm({
 }: OrderFormProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [showPdfDownload, setShowPdfDownload] = useState(false);
-  const { toast } = useToast();
 
   useEffect(() => {
     if (submittedOrder) {

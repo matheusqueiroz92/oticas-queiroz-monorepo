@@ -16,14 +16,11 @@ interface PrescriptionFormProps {
 }
 
 export default function PrescriptionForm({ form }: PrescriptionFormProps) {
-  // Armazenar os valores de input como strings para manter comportamento consistente
   const [ndInput, setNdInput] = useState<string>("");
   const [ocInput, setOcInput] = useState<string>("");
   const [additionInput, setAdditionInput] = useState<string>("");
 
-  // Inicializar os valores dos inputs baseados nos valores do formulário
   useEffect(() => {
-    // Só inicializar se não for 0 ou undefined
     const nd = form.getValues("prescriptionData.nd");
     if (nd !== 0 && nd !== undefined) {
       setNdInput(nd.toString());
@@ -40,7 +37,6 @@ export default function PrescriptionForm({ form }: PrescriptionFormProps) {
     }
   }, [form]);
 
-  // Função para lidar com inputs numéricos de forma consistente
   const handleNumericInput = (
     e: React.ChangeEvent<HTMLInputElement>,
     onChange: (value: number | undefined) => void,
@@ -49,13 +45,11 @@ export default function PrescriptionForm({ form }: PrescriptionFormProps) {
     const inputValue = e.target.value;
     setInputState(inputValue);
     
-    // Se o campo estiver vazio, definimos como undefined
     if (inputValue === "") {
       onChange(undefined);
       return;
     }
     
-    // Caso contrário, convertemos para número
     const numValue = Number.parseFloat(inputValue);
     if (!Number.isNaN(numValue)) {
       onChange(numValue);
@@ -164,6 +158,92 @@ export default function PrescriptionForm({ form }: PrescriptionFormProps) {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Adição</FormLabel>
+                <FormControl>
+                  <Input
+                    type="text"
+                    inputMode="decimal"
+                    value={additionInput}
+                    onChange={(e) => 
+                      handleNumericInput(e, field.onChange, setAdditionInput)
+                    }
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <FormField
+            control={form.control}
+            name="prescriptionData.bridge"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Ponte</FormLabel>
+                <FormControl>
+                  <Input
+                    type="text"
+                    inputMode="decimal"
+                    value={additionInput}
+                    onChange={(e) => 
+                      handleNumericInput(e, field.onChange, setAdditionInput)
+                    }
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="prescriptionData.rim"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Aro</FormLabel>
+                <FormControl>
+                  <Input
+                    type="text"
+                    inputMode="decimal"
+                    value={additionInput}
+                    onChange={(e) => 
+                      handleNumericInput(e, field.onChange, setAdditionInput)
+                    }
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="prescriptionData.vh"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>AV</FormLabel>
+                <FormControl>
+                  <Input
+                    type="text"
+                    inputMode="decimal"
+                    value={additionInput}
+                    onChange={(e) => 
+                      handleNumericInput(e, field.onChange, setAdditionInput)
+                    }
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="prescriptionData.sh"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>AM</FormLabel>
                 <FormControl>
                   <Input
                     type="text"

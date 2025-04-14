@@ -20,12 +20,18 @@ export interface PrescriptionData {
   nd: number;
   oc: number;
   addition: number;
+  bridge: number;
+  rim: number;
+  vh: number;
+  sh: number;
 }
 
 // Schema do Zod para validação
 export const orderFormSchema = z.object({
   clientId: z.string().min(1, "Cliente é obrigatório"),
   employeeId: z.string().min(1, "ID do funcionário é obrigatório"),
+  institutionId: z.string().optional(),
+  isInstitutionalOrder: z.boolean(),
   products: z.array(z.any()).min(1, "Pelo menos um produto é obrigatório"),
   serviceOerder: z.string().min(4, "Nº da Ordem de Serviço é obrigatório"),
   paymentMethod: z.string().min(1, "Forma de pagamento é obrigatória"),
@@ -58,6 +64,10 @@ export const orderFormSchema = z.object({
     nd: z.number().default(0),
     oc: z.number().default(0),
     addition: z.number().default(0),
+    bridge: z.number().default(0),
+    rim: z.number().default(0),
+    vh: z.number().default(0),
+    sh: z.number().default(0),
   }),
 });
 
@@ -65,6 +75,8 @@ export const orderFormSchema = z.object({
 export interface OrderFormValues {
   clientId: string;
   employeeId: string;
+  institutionId: string;
+  isInstitutionalOrder: boolean;
   products: Product[]; // Array de produtos
   serviceOrder: number;
   paymentMethod: string;
@@ -76,8 +88,8 @@ export interface OrderFormValues {
   laboratoryId?: string;
   observations?: string;
   totalPrice: number;
-  discount: number; // Campo de desconto
-  finalPrice: number; // Campo de preço final
+  discount: number;
+  finalPrice: number;
   prescriptionData: {
     doctorName: string;
     clinicName: string;
@@ -87,12 +99,14 @@ export interface OrderFormValues {
     nd: number;
     oc: number;
     addition: number;
+    bridge: number;
+    rim: number;
+    vh: number;
+    sh: number;
   };
-  [key: string]: unknown; // Permite propriedades adicionais
+  [key: string]: unknown;
 }
 
-// Tipo para inferir os valores do schema do Zod
 export type OrderFormSchemaValues = z.infer<typeof orderFormSchema>;
 
-// Tipo para o hook useForm do React Hook Form para o formulário de pedido
 export type OrderFormReturn = UseFormReturn<OrderFormValues, any, undefined>;

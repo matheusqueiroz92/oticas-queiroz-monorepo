@@ -7,6 +7,8 @@ const orderFormSchema = z
   .object({
     clientId: z.string().min(1, "Cliente é obrigatório"),
     employeeId: z.string().min(1, "ID do funcionário é obrigatório"),
+    isInstitutionalOrder: z.boolean().default(false),
+    institutionId: z.string().optional(),
     products: z.array(z.any()).min(1, "Pelo menos um produto é obrigatório"),
     serviceOerder: z.string().min(4, "Nº da Ordem de Serviço é obrigatório"),
     paymentMethod: z.string().min(1, "Forma de pagamento é obrigatória"),
@@ -39,9 +41,25 @@ const orderFormSchema = z
       nd: z.number(),
       oc: z.number(),
       addition: z.number(),
+      bridge: z.number(),
+      rim: z.number(),
+      vh: z.number(),
+      sh: z.number(),
     }),
   })
-  .passthrough();
+  .passthrough()
+  .refine(
+    (data) => {
+      if (data.isInstitutionalOrder && !data.institutionId) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message: "Instituição é obrigatória para pedidos institucionais",
+      path: ["institutionId"],
+    }
+  );
 
 export type OrderFormData = z.infer<typeof orderFormSchema>;
 
@@ -73,6 +91,10 @@ export const createOrderform = () => {
         nd: 0,
         oc: 0,
         addition: 0,
+        bridge: 0,
+        rim: 0,
+        vh: 0,
+        sh: 0,
       },
     }
   })

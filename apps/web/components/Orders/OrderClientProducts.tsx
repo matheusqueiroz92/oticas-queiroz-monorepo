@@ -4,6 +4,7 @@ import {
   FormLabel,
   FormControl,
   FormMessage,
+  FormDescription
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { formatCurrency } from "@/app/utils/formatters";
 import type { Customer } from "@/app/types/customer";
 import type { Product } from "@/app/types/product";
@@ -66,7 +68,6 @@ export default function OrderClientProducts({
     return (
       <div className="space-y-3 mt-4">
         <h3 className="text-sm font-medium border-b pb-1">Pagamento e Entrega</h3>
-        
         <FormField
           control={form.control}
           name="paymentMethod"
@@ -77,7 +78,7 @@ export default function OrderClientProducts({
                 onValueChange={(value) => {
                   field.onChange(value);
                   setShowInstallments(
-                    value === "credit" || value === "bank_slip" || value === "promissory_note"
+                    value === "credit" || value === "bank_slip" || value === "promissory_note" || value === "check"
                   );
                 }}
                 value={field.value}
@@ -94,6 +95,7 @@ export default function OrderClientProducts({
                   <SelectItem value="pix">PIX</SelectItem>
                   <SelectItem value="bank_slip">Boleto Bancário</SelectItem>
                   <SelectItem value="promissory_note">Nota Promissória</SelectItem>
+                  <SelectItem value="check">Cheque</SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -243,7 +245,6 @@ export default function OrderClientProducts({
         <div className="lg:col-span-2 space-y-4">
           <div className="space-y-3">
             <h3 className="text-sm font-medium border-b pb-1">Informações do Cliente</h3>
-            
             <div className="grid grid-cols-4 gap-3">
               <div className="col-span-3">
                 <ClientSearch
@@ -383,6 +384,51 @@ export default function OrderClientProducts({
               />
             </div>
           </div>
+
+          <FormField
+          control={form.control}
+          name="isInstitutionalOrder"
+          render={({ field }) => (
+            <FormItem className="flex items-center space-x-2">
+              <FormControl>
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              </FormControl>
+              <div className="space-y-1 leading-none">
+                <FormLabel>Pedido Institucional (APAE)</FormLabel>
+                <FormDescription>
+                  Marque essa opção para pedidos de instituições conveniadas
+                </FormDescription>
+              </div>
+            </FormItem>
+          )}
+        />
+
+        {form.watch("isInstitutionalOrder") && (
+          <FormField
+            control={form.control}
+            name="institutionId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Instituição</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a instituição" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="[ID_DA_APAE]">APAE</SelectItem>
+                    {/* Aqui poderiam ser listadas outras instituições */}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
         </div>
         
         <div className="lg:col-span-1 space-y-4">
