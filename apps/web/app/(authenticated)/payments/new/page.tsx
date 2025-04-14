@@ -22,6 +22,8 @@ export default function NewPaymentPage() {
     legacyClientSearch,
     selectedEntityType,
     showInstallments,
+    showCheckFields,
+    setShowCheckFields,
     setCustomerSearch,
     setOrderSearch,
     setLegacyClientSearch,
@@ -55,6 +57,8 @@ export default function NewPaymentPage() {
       legacyClientSearch={legacyClientSearch}
       selectedEntityType={selectedEntityType}
       showInstallments={showInstallments}
+      showCheckFields={showCheckFields}
+      onShowCheckFields={setShowCheckFields}
       onCustomerSearchChange={setCustomerSearch}
       onOrderSearchChange={setOrderSearch}
       onLegacyClientSearchChange={setLegacyClientSearch}

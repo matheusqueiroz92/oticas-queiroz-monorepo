@@ -87,6 +87,8 @@ export function translatePaymentMethod(method: PaymentMethod | string): string {
     cash: "Dinheiro",
     pix: "PIX",
     installment: "Parcelado",
+    bank_slip: "Boleto",
+    promissory_note: "Promissória",
     check: "Cheque",
   };
 

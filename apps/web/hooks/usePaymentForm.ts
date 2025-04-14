@@ -24,10 +24,11 @@ export function usePaymentForm() {
   const [showInstallments, setShowInstallments] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [showCheckFields, setShowCheckFields] = useState(false);
 
   const {
     handleCreatePayment,
-    isCreating,
+    // isCreating,
     cashRegisterData,
     isLoadingCashRegister,
     checkForOpenCashRegisterBeforePayment
@@ -85,8 +86,14 @@ export function usePaymentForm() {
   // Handle payment method change for installments
   useEffect(() => {
     setShowInstallments(paymentMethod === "credit");
+    setShowCheckFields(paymentMethod === "check");
+    
     if (paymentMethod !== "credit") {
       setValue("installments", 1);
+    }
+    
+    if (paymentMethod !== "check") {
+      setValue("check", undefined);
     }
   }, [paymentMethod, setValue]);
 
@@ -152,6 +159,19 @@ export function usePaymentForm() {
           current: 1,
           total: data.installments,
           value: amountValue / data.installments,
+        };
+      }
+
+      if (data.paymentMethod === "check" && data.check) {
+        paymentData.check = {
+          bank: data.check.bank,
+          checkNumber: data.check.checkNumber,
+          checkDate: data.check.checkDate,
+          accountHolder: data.check.accountHolder,
+          branch: data.check.branch,
+          accountNumber: data.check.accountNumber,
+          presentationDate: data.check.presentationDate || data.check.checkDate,
+          compensationStatus: "pending"
         };
       }
     
@@ -230,11 +250,11 @@ export function usePaymentForm() {
   };
 
   // Load orders when searching
-//   useEffect(() => {
-//     if (orderSearch && orderSearch.length >= 3) {
-//       getAllOrders({ search: orderSearch });
-//     }
-//   }, [orderSearch, getAllOrders]);
+  //   useEffect(() => {
+  //     if (orderSearch && orderSearch.length >= 3) {
+  //       getAllOrders({ search: orderSearch });
+  //     }
+  //   }, [orderSearch, getAllOrders]);
 
   // Return all required props and functions
   return {
@@ -255,7 +275,9 @@ export function usePaymentForm() {
     legacyClientSearch,
     selectedEntityType,
     showInstallments,
+    showCheckFields,
     showConfirmDialog,
+    setShowCheckFields,
     setCustomerSearch,
     setOrderSearch,
     setLegacyClientSearch,

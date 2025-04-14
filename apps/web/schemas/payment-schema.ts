@@ -16,6 +16,17 @@ export const paymentFormSchema = z.object({
   paymentMethod: z.enum(["credit", "debit", "cash", "pix", "check"] as const, {
     required_error: "Selecione o método de pagamento",
   }),
+  check: z.object({
+    bank: z.string().min(1, "Banco é obrigatório").optional(),
+    checkNumber: z.string().min(1, "Número do cheque é obrigatório").optional(),
+    checkDate: z.date().optional(),
+    accountHolder: z.string().min(2, "Nome do titular é obrigatório").optional(),
+    branch: z.string().min(1, "Agência é obrigatória").optional(),
+    accountNumber: z.string().min(1, "Número da conta é obrigatório").optional(),
+    presentationDate: z.date().optional(),
+    compensationStatus: z.enum(["pending", "compensated", "rejected"]).default("pending").optional(),
+    rejectionReason: z.string().optional()
+  }).optional(),
   paymentDate: z.date({
     required_error: "Selecione a data do pagamento",
   }),
@@ -34,6 +45,22 @@ export const paymentFormSchema = z.object({
   status: z.enum(["pending", "completed"] as const, {
     required_error: "Selecione o status",
   }),
+}).refine((data) => {
+  // Se o método for cheque, validar os campos obrigatórios
+  if (data.paymentMethod === "check") {
+    return !!(
+      data.check?.bank &&
+      data.check?.checkNumber &&
+      data.check?.checkDate &&
+      data.check?.accountHolder &&
+      data.check?.branch &&
+      data.check?.accountNumber
+    );
+  }
+  return true;
+}, {
+  message: "Todos os dados do cheque são obrigatórios",
+  path: ["check"]
 });
 
 export type PaymentFormValues = z.infer<typeof paymentFormSchema>;

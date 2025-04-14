@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -71,6 +71,8 @@ interface PaymentFormProps {
   legacyClientSearch: string;
   selectedEntityType: "customer" | "legacyClient" | null;
   showInstallments: boolean;
+  showCheckFields: boolean;
+  onShowCheckFields: (value: boolean) => void;
   onCustomerSearchChange: (value: string) => void;
   onOrderSearchChange: (value: string) => void;
   onLegacyClientSearchChange: (value: string) => void;
@@ -101,6 +103,8 @@ export function PaymentForm({
   legacyClientSearch,
   selectedEntityType,
   showInstallments,
+  showCheckFields,
+  onShowCheckFields,
   onOrderSearchChange,
   onLegacyClientSearchChange,
   onEntityTypeSelect,
@@ -113,8 +117,7 @@ export function PaymentForm({
   onCancel,
   fetchAllCustomers,
 }: PaymentFormProps) {
-  const { watch, setValue } = form;
-  const [showCheckFields, setShowCheckFields] = useState(false)
+  const { watch } = form;
   const paymentType = watch("type");
   
   const renderStep1 = () => (
@@ -138,7 +141,6 @@ export function PaymentForm({
                   {...field}
                   value={field.value === 0 ? "" : field.value}
                   onChange={(e) => {
-                    // Converte para número ou 0 se vazio
                     const value = e.target.value === "" ? 0 : parseFloat(e.target.value);
                     field.onChange(value);
                   }}
@@ -224,9 +226,9 @@ export function PaymentForm({
               <Select onValueChange={(value) => {
                 field.onChange(value);
                 if (value === "check") {
-                  setShowCheckFields(true);
+                  onShowCheckFields(true);
                 } else {
-                  setShowCheckFields(false);
+                  onShowCheckFields(false);
                 }
               }} defaultValue={field.value}>
                 <FormControl>
@@ -1009,7 +1011,7 @@ export function PaymentForm({
               </Button>
             )}
 
-{currentStep < 3 ? (
+            {currentStep < 3 ? (
               <Button
                 type="button"
                 onClick={onNext}
@@ -1063,8 +1065,4 @@ export function PaymentForm({
       )}
     </div>
   );
-}
-
-function useState(arg0: boolean): [any, any] {
-  throw new Error("Function not implemented.");
 }

@@ -156,9 +156,7 @@ export function PaymentDetails({
         </CardHeader>
 
         <CardContent className="space-y-6">
-          {/* Informações Principais */}
           <div className="grid md:grid-cols-2 gap-6">
-            {/* Coluna de Detalhes do Pagamento */}
             <div className="space-y-4">
               <h3 className="font-medium text-lg flex items-center gap-2">
                 <DollarSign className="h-5 w-5" /> Detalhes do Pagamento
@@ -186,6 +184,72 @@ export function PaymentDetails({
                     </span>
                   </div>
                 )}
+
+                {payment.paymentMethod === "check" && payment.check && (
+                  <div className="mt-4 p-3 bg-gray-50 rounded-md border">
+                    <h3 className="font-medium mb-2">Dados do Cheque</h3>
+                    <div className="space-y-2 text-sm">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <span className="font-medium">Banco:</span>
+                          <p>{payment.check.bank}</p>
+                        </div>
+                        <div>
+                          <span className="font-medium">Número:</span>
+                          <p>{payment.check.checkNumber}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <span className="font-medium">Data do Cheque:</span>
+                          <p>{formatDate(payment.check.checkDate)}</p>
+                        </div>
+                        <div>
+                          <span className="font-medium">Data de Apresentação:</span>
+                          <p>{payment.check.presentationDate ? formatDate(payment.check.presentationDate) : "Imediata"}</p>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <span className="font-medium">Titular:</span>
+                        <p>{payment.check.accountHolder}</p>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <span className="font-medium">Agência:</span>
+                          <p>{payment.check.branch}</p>
+                        </div>
+                        <div>
+                          <span className="font-medium">Conta:</span>
+                          <p>{payment.check.accountNumber}</p>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <span className="font-medium">Status de Compensação:</span>
+                        <Badge className={
+                          payment.check.compensationStatus === "compensated" ? "bg-green-100 text-green-800" :
+                          payment.check.compensationStatus === "rejected" ? "bg-red-100 text-red-800" :
+                          "bg-yellow-100 text-yellow-800"
+                        }>
+                          {payment.check.compensationStatus === "compensated" ? "Compensado" :
+                          payment.check.compensationStatus === "rejected" ? "Rejeitado" :
+                          "Pendente"}
+                        </Badge>
+                        
+                        {payment.check.compensationStatus === "rejected" && payment.check.rejectionReason && (
+                          <div className="mt-1">
+                            <span className="font-medium">Motivo da rejeição:</span>
+                            <p className="text-red-600">{payment.check.rejectionReason}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {payment.category && (
                   <div className="flex items-center justify-between">
                     <span className="font-medium">Categoria:</span>
@@ -205,7 +269,6 @@ export function PaymentDetails({
               </div>
             </div>
 
-            {/* Coluna de Informações Relacionadas */}
             <div className="space-y-4">
               <h3 className="font-medium text-lg flex items-center gap-2">
                 <FileText className="h-5 w-5" /> Informações Relacionadas
@@ -269,7 +332,6 @@ export function PaymentDetails({
             </div>
           </div>
 
-          {/* Descrição ou Observações */}
           {payment.description && (
             <>
               <Separator />
@@ -282,7 +344,6 @@ export function PaymentDetails({
             </>
           )}
 
-          {/* Histórico de Alterações */}
           <Separator />
           <div className="space-y-2">
             <h3 className="font-medium text-lg flex items-center gap-2">

@@ -87,7 +87,7 @@ export default function UserDetailsPage({
   ];
   
   const handleEditClick = () => {
-    router.push(`/users/${user._id}/edit`);
+    router.push(`/${userType}s/${user._id}/edit`);
   };
 
   return (

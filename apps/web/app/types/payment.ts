@@ -25,6 +25,17 @@ export interface IPayment {
     total: number;
     value: number;
   };
+  check?: {
+    bank: string,
+    checkNumber: string,
+    checkDate: Date,
+    accountHolder: string,
+    branch: string,
+    accountNumber: string,
+    presentationDate: Date,
+    compensationStatus: "pending" | "compensated" | "rejected",
+    rejectionReason?: string;
+  }
   description?: string;
   category?: string;
   createdAt?: Date;
@@ -63,6 +74,17 @@ export interface CreatePaymentDTO {
     total: number;
     value: number;
   };
+  check?: {
+    bank: string,
+    checkNumber: string,
+    checkDate: Date,
+    accountHolder: string,
+    branch: string,
+    accountNumber: string,
+    presentationDate: Date,
+    compensationStatus: "pending" | "compensated" | "rejected",
+    rejectionReason?: string;
+  }
   status: PaymentStatus;
   customerId?: string;
   legacyClientId?: string;
