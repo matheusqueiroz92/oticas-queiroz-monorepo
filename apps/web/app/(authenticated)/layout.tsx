@@ -150,7 +150,7 @@ export default function AuthenticatedLayout({
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const [userName, setUserName] = useState("");
+  const [_userName, setUserName] = useState("");
   const [userRole, setUserRole] = useState("");
 
   useEffect(() => {
@@ -167,7 +167,7 @@ export default function AuthenticatedLayout({
 
   const isAdminByRole = userRole === "admin";
   const isEmployeeByRole = userRole === "employee";
-  const isCustomerByRole = userRole === "customer";
+  // const isCustomerByRole = userRole === "customer";
 
   const canAccessAdmin = isAdmin || isAdminByRole;
   const canAccessEmployee = isEmployee || isEmployeeByRole;

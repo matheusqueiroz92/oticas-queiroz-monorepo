@@ -5,7 +5,7 @@ import type { Customer } from "@/app/types/customer";
 import { Phone, MapPin, CreditCard, ShoppingBag, Info, Activity } from "lucide-react";
 
 export default function CustomerDetailsPage() {
-  const getCustomerFields = (customer: Customer) => [
+  const getCustomerFields = (_customer: Customer) => [
     { 
       key: "cpf", 
       label: "CPF", 

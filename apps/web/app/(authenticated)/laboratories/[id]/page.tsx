@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useRouter } from "next/navigation";
-import { usePermissions } from "@/hooks/usePermissions";
 import { useLaboratories } from "@/hooks/useLaboratories";
 import { LaboratoryDetailsCard } from "@/components/Laboratories/LaboratoryDetailsCard";
 import { Loader2 } from "lucide-react";

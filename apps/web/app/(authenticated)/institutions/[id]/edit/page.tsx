@@ -20,7 +20,7 @@ export default function EditInstitutionPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { useUserQuery, getUserImageUrl } = useUsers();
+  const { useUserQuery } = useUsers();
   
   const { 
     data: institution, 

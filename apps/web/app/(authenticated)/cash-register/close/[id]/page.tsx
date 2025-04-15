@@ -48,7 +48,7 @@ export default function CloseCashRegisterPage() {
     }
   }, [closingBalance, cashRegister]);
 
-  const onSubmit = (data: CloseCashRegisterFormValues) => {
+  const onSubmit = (_data: CloseCashRegisterFormValues) => {
     if (!cashRegister || cashRegister.status !== "open") {
       toast({
         variant: "destructive",

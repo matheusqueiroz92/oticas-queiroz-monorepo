@@ -5,7 +5,7 @@ import type { Employee } from "@/app/types/employee";
 import { Mail, Phone, MapPin, Briefcase, ShoppingCart, Info, Activity } from "lucide-react";
 
 export default function EmployeeDetailsPage() {
-  const getEmployeeFields = (employee: Employee) => [
+  const getEmployeeFields = (_employee: Employee) => [
     { 
       key: "email", 
       label: "Email", 
