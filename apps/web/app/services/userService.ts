@@ -9,6 +9,7 @@ export interface UserFilters {
   role?: string;
   sort?: string;
   cpf?: string;
+  cnpj?: string;
 }
 
 interface PaginationInfo {

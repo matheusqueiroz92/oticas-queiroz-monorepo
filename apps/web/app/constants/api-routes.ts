@@ -53,6 +53,7 @@ export const API_ROUTES = {
     BY_ID: (id: string) => `/api/users/${id}`,
     CUSTOMERS: "/api/users?role=customer",
     EMPLOYEES: "/api/users?role=employee",
+    INSTITUTIONS: "/api/users?role=institution",
   },
   REPORTS: {
     BASE: "/api/reports",

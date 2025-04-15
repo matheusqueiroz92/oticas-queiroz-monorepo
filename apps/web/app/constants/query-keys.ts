@@ -11,6 +11,8 @@ export const QUERY_KEYS = {
       ["users", "customers", search, page, pageSize],
     EMPLOYEES: (search?: string, page?: number, pageSize?: number) => 
       ["users", "employees", search, page, pageSize],
+    INSTITUTIONS: (search?: string, page?: number, pageSize?: number) => 
+      ["users", "institutions", search, page, pageSize],
     ADMINS: (search?: string) => ["users", "admins", search],
     VENDORS: (search?: string) => ["users", "vendors", search],
     BASE: () => ["users"]

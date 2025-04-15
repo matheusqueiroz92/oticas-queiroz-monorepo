@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { isValidCPF } from "../utils/validators";
+import { isValidCNPJ, isValidCPF } from "../utils/validators";
 
 export const userSchema = z.object({
   name: z.string().min(2).optional(),
@@ -13,6 +13,11 @@ export const userSchema = z.object({
     .string()
     .min(11, "CPF deve ter pelo menos 11 dígitos")
     .refine((cpf) => isValidCPF(cpf), { message: "CPF inválido" })
+    .optional(),
+  cnpj: z
+    .string()
+    .min(14, "CNPJ deve ter pelo menos 14 dígitos")
+    .refine((cnpj) => isValidCNPJ(cnpj), { message: "CNPJ inválido" })
     .optional(),
   rg: z.string().optional(),
   birthDate: z
@@ -46,11 +51,12 @@ export const userQuerySchema = z.object({
     .union([z.string(), z.number()])
     .transform(val => Number(val))
     .default(10),
-  role: z.enum(["admin", "employee", "customer"]).optional(),
+  role: z.enum(["admin", "employee", "customer", "institution"]).optional(),
   search: z.string().optional(),
   cpf: z.string().optional(),
+  cnpj: z.string().optional(),
   serviceOrder: z.string().optional(),
-  sort: z.string().optional().default("name") // Ordenação padrão por nome
+  sort: z.string().optional().default("name")
 });
 
 export type UserQueryParams = z.infer<typeof userQuerySchema>;

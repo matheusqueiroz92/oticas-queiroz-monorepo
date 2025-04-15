@@ -32,6 +32,7 @@ import {
 import { useOrders } from "@/hooks/useOrders";
 import { useToast } from "@/hooks/useToast";
 import type { Order } from "@/app/types/order";
+import { formatRefractionValue } from "@/app/utils/formatters";
 
 interface OrderDetailsProps {
   order: Order;
@@ -391,99 +392,243 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
 
             {/* Aba de Receita Médica */}
             {hasPrescriptionData && (
-              <TabsContent value="prescription" className="p-3">
-                {/* Conteúdo da aba de receita */}
-                {/* ... Conteúdo existente para prescrição ... */}
+              <TabsContent value="prescription">
+                <div className="flex justify-between items-start mb-3">
+                  <h3 className="font-medium text-lg flex items-center p-4">
+                    <FileText className="h-5 w-5 mr-2" />
+                    Receita Médica
+                  </h3>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-md">
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-3 gap-4">
+                      <p className="text-sm">
+                        <span className="font-semibold">Médico:</span>{" "}
+                        {order.prescriptionData?.doctorName || "N/A"}
+                      </p>
+                      <p className="text-sm">
+                        <span className="font-semibold">Clínica:</span>{" "}
+                        {order.prescriptionData?.clinicName || "N/A"}
+                      </p>
+                      <p className="text-sm">
+                        <span className="font-semibold">Data da Consulta:</span>{" "}
+                        {formatDate(order.prescriptionData?.appointmentDate)}
+                      </p>
+                    </div>
+
+                    {/* Tabela de receita */}
+                    <div className="mt-3 overflow-x-auto">
+                      <table className="min-w-full bg-white border border-gray-200 text-sm">
+                        <thead>
+                          <tr className="bg-gray-100">
+                            <th className="py-2 px-3 text-left">Olho</th>
+                            <th className="py-2 px-3 text-center">Esf.</th>
+                            <th className="py-2 px-3 text-center">Cil.</th>
+                            <th className="py-2 px-3 text-center">Eixo</th>
+                            <th className="py-2 px-3 text-center">DP</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {order.prescriptionData?.leftEye && (
+                            <tr className="border-t border-gray-200">
+                              <td className="py-2 px-3 font-medium">
+                                Esquerdo
+                              </td>
+                              <td className="py-2 px-3 text-center">
+                                {formatRefractionValue(
+                                  order.prescriptionData.leftEye.sph
+                                )}
+                              </td>
+                              <td className="py-2 px-3 text-center">
+                                {formatRefractionValue(
+                                  order.prescriptionData.leftEye.cyl
+                                )}
+                              </td>
+                              <td className="py-2 px-3 text-center">
+                                {order.prescriptionData.leftEye.axis || "N/A"}°
+                              </td>
+                              <td className="py-2 px-3 text-center">
+                                {order.prescriptionData.leftEye.pd || "N/A"}
+                              </td>
+                            </tr>
+                          )}
+
+                          {order.prescriptionData?.rightEye && (
+                            <tr className="border-t border-gray-200">
+                              <td className="py-2 px-3 font-medium">
+                                Direito
+                              </td>
+                              <td className="py-2 px-3 text-center">
+                                {formatRefractionValue(
+                                  order.prescriptionData.rightEye.sph
+                                )}
+                              </td>
+                              <td className="py-2 px-3 text-center">
+                                {formatRefractionValue(
+                                  order.prescriptionData.rightEye.cyl
+                                )}
+                              </td>
+                              <td className="py-2 px-3 text-center">
+                                {order.prescriptionData.rightEye.axis || "N/A"}°
+                              </td>
+                              <td className="py-2 px-3 text-center">
+                                {order.prescriptionData.rightEye.pd || "N/A"}
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                        <tfoot>
+                          <tr className="bg-gray-100">
+                            <th className="py-2 px-3 text-left" colSpan={5}>
+                              Informações adicionais
+                            </th>
+                          </tr>
+                          <tr>
+                            <td className="py-2 px-3 font-medium">D.N.P.</td>
+                            <td className="py-2 px-3 text-center" colSpan={4}>
+                              {order.prescriptionData?.nd || "N/A"}
+                            </td>
+                          </tr>
+                          <tr>
+                            <td className="py-2 px-3 font-medium">C.O.</td>
+                            <td className="py-2 px-3 text-center" colSpan={4}>
+                              {order.prescriptionData?.oc || "N/A"}
+                            </td>
+                          </tr>
+                          <tr>
+                            <td className="py-2 px-3 font-medium">Adição</td>
+                            <td className="py-2 px-3 text-center" colSpan={4}>
+                              {order.prescriptionData?.addition || "N/A"}
+                            </td>
+                          </tr>
+                          <tr>
+                            <td className="py-2 px-3 font-medium">Ponte</td>
+                            <td className="py-2 px-3 text-center" colSpan={4}>
+                              {order.prescriptionData?.bridge || "N/A"}
+                            </td>
+                          </tr>
+                          <tr>
+                            <td className="py-2 px-3 font-medium">Aro</td>
+                            <td className="py-2 px-3 text-center" colSpan={4}>
+                              {order.prescriptionData?.rim || "N/A"}
+                            </td>
+                          </tr>
+                          <tr>
+                            <td className="py-2 px-3 font-medium">AV</td>
+                            <td className="py-2 px-3 text-center" colSpan={4}>
+                              {order.prescriptionData?.vh || "N/A"}
+                            </td>
+                          </tr>
+                          <tr>
+                            <td className="py-2 px-3 font-medium">AM</td>
+                            <td className="py-2 px-3 text-center" colSpan={4}>
+                              {order.prescriptionData?.sh || "N/A"}
+                            </td>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                  </div>
+                </div>
               </TabsContent>
             )}
 
             {/* Aba de Laboratório */}
-            <TabsContent value="laboratory" className="p-3">
-              <div className="flex justify-between items-start mb-3">
-                <h3 className="text-sm font-medium">Laboratório Associado</h3>
+            <TabsContent value="laboratory">
+              <div className="flex justify-between items-start">
+                <h3 className="font-medium text-lg flex items-center p-4">
+                  <Beaker className="h-5 w-5 mr-2" />
+                  Laboratório Associado
+                </h3>
+                <div className="p-4">
                 <OrderLaboratoryUpdate
                   order={order}
                   onUpdateSuccess={onRefresh}
                 />
+                </div>
               </div>
               
               {laboratoryInfo ? (
-                <Card className="shadow-none border">
-                  <CardContent className="p-3">
-                    <div className="grid grid-cols-2 gap-4 text-xs">
-                      <div className="space-y-2">
-                        <div>
-                          <p className="text-gray-600">Nome:</p>
-                          <p className="font-medium flex items-center gap-1">
-                            <Building className="h-3.5 w-3.5 text-gray-400" />
-                            {laboratoryInfo.name}
-                          </p>
+                <div className="p-4 rounded-md">
+                  <Card className="shadow-none border">
+                    <CardContent className="p-3">
+                      <div className="grid grid-cols-2 gap-4 text-xs">
+                        <div className="space-y-2">
+                          <div>
+                            <p className="text-gray-600">Nome:</p>
+                            <p className="font-medium flex items-center gap-1">
+                              <Building className="h-3.5 w-3.5 text-gray-400" />
+                              {laboratoryInfo.name}
+                            </p>
+                          </div>
+                          
+                          {laboratoryInfo.contactName && (
+                            <div>
+                              <p className="text-gray-600">Contato:</p>
+                              <p className="font-medium flex items-center gap-1">
+                                <User className="h-3.5 w-3.5 text-gray-400" />
+                                {laboratoryInfo.contactName}
+                              </p>
+                            </div>
+                          )}
+                          
+                          {laboratoryInfo.phone && (
+                            <div>
+                              <p className="text-gray-600">Telefone:</p>
+                              <p className="font-medium flex items-center gap-1">
+                                <Phone className="h-3.5 w-3.5 text-gray-400" />
+                                {laboratoryInfo.phone}
+                              </p>
+                            </div>
+                          )}
                         </div>
                         
-                        {laboratoryInfo.contactName && (
+                        <div className="space-y-2">
+                          {laboratoryInfo.email && (
+                            <div>
+                              <p className="text-gray-600">Email:</p>
+                              <p className="font-medium flex items-center gap-1">
+                                <Mail className="h-3.5 w-3.5 text-gray-400" />
+                                {laboratoryInfo.email}
+                              </p>
+                            </div>
+                          )}
+                          
                           <div>
-                            <p className="text-gray-600">Contato:</p>
-                            <p className="font-medium flex items-center gap-1">
-                              <User className="h-3.5 w-3.5 text-gray-400" />
-                              {laboratoryInfo.contactName}
+                            <p className="text-gray-600">Status:</p>
+                            <p>
+                              <Badge
+                                variant={laboratoryInfo.isActive ? "outline" : "destructive"}
+                                className="mt-1 text-xs py-0 px-1 h-5"
+                              >
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                {laboratoryInfo.isActive ? "Ativo" : "Inativo"}
+                              </Badge>
                             </p>
                           </div>
-                        )}
-                        
-                        {laboratoryInfo.phone && (
+                          
                           <div>
-                            <p className="text-gray-600">Telefone:</p>
+                            <p className="text-gray-600">Data de entrega prevista:</p>
                             <p className="font-medium flex items-center gap-1">
-                              <Phone className="h-3.5 w-3.5 text-gray-400" />
-                              {laboratoryInfo.phone}
+                              <CalendarDays className="h-3.5 w-3.5 text-gray-400" />
+                              {formatDate(order.deliveryDate)}
                             </p>
                           </div>
-                        )}
+                        </div>
                       </div>
-                      
-                      <div className="space-y-2">
-                        {laboratoryInfo.email && (
-                          <div>
-                            <p className="text-gray-600">Email:</p>
-                            <p className="font-medium flex items-center gap-1">
-                              <Mail className="h-3.5 w-3.5 text-gray-400" />
-                              {laboratoryInfo.email}
-                            </p>
-                          </div>
-                        )}
-                        
-                        <div>
-                          <p className="text-gray-600">Status:</p>
-                          <p>
-                            <Badge
-                              variant={laboratoryInfo.isActive ? "outline" : "destructive"}
-                              className="mt-1 text-xs py-0 px-1 h-5"
-                            >
-                              <CheckCircle className="h-3 w-3 mr-1" />
-                              {laboratoryInfo.isActive ? "Ativo" : "Inativo"}
-                            </Badge>
-                          </p>
-                        </div>
-                        
-                        <div>
-                          <p className="text-gray-600">Data de entrega prevista:</p>
-                          <p className="font-medium flex items-center gap-1">
-                            <CalendarDays className="h-3.5 w-3.5 text-gray-400" />
-                            {formatDate(order.deliveryDate)}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                </div>
               ) : (
                 <div className="bg-gray-50 p-4 rounded-md border text-sm">
-                  <p className="text-gray-600 text-xs">
-                    Nenhum laboratório associado a este pedido.
-                  </p>
-                  <p className="text-xs mt-1">
-                    Use o botão "Associar Laboratório" para vincular um laboratório a este pedido.
-                  </p>
+                  <div className="space-y-4">
+                    <p className="text-gray-600 text-xs">
+                      Nenhum laboratório associado a este pedido.
+                    </p>
+                    <p className="text-xs mt-1">
+                      Use o botão "Associar Laboratório" para vincular um laboratório a este pedido.
+                    </p>
+                  </div>
                 </div>
               )}
             </TabsContent>

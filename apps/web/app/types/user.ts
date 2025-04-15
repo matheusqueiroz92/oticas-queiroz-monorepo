@@ -1,10 +1,11 @@
-export type UserRole = "admin" | "employee" | "customer";
+export type UserRole = "admin" | "employee" | "customer" | "institution";
 
 export interface User {
   _id: string;
   name: string;
   email?: string;
-  cpf: string;
+  cpf?: string;
+  cnpj?: string;
   rg?: string;
   role: UserRole;
   image?: string;

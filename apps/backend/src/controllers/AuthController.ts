@@ -3,7 +3,7 @@ import { AuthService } from "../services/AuthService";
 import { UserService } from "../services/UserService";
 import type { JwtPayload } from "jsonwebtoken";
 import { z } from "zod";
-import { isValidCPF } from "../utils/validators";
+import { isValidCNPJ, isValidCPF } from "../utils/validators";
 import { ValidationError, AuthError, PermissionError } from "../utils/AppError";
 import { ErrorCode } from "../utils/errorCodes";
 
@@ -30,7 +30,13 @@ const registerSchema = z.object({
   cpf: z
     .string()
     .min(11, "CPF deve ter pelo menos 11 dígitos")
-    .refine((cpf) => isValidCPF(cpf), { message: "CPF inválido" }),
+    .refine((cpf) => isValidCPF(cpf), { message: "CPF inválido" })
+    .optional(),
+  cnpj: z
+      .string()
+      .min(14, "CNPJ deve ter pelo menos 14 dígitos")
+      .refine((cnpj) => isValidCNPJ(cnpj), { message: "CNPJ inválido" })
+      .optional(),
   rg: z.string().optional(),
   birthDate: z
     .string()

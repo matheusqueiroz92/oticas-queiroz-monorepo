@@ -191,7 +191,7 @@ export class UserService {
     page = 1,
     limit = 10
   ): Promise<{ users: IUser[]; total: number }> {
-    if (!["admin", "employee", "customer"].includes(role)) {
+    if (!["admin", "employee", "customer", "institution"].includes(role)) {
       throw new ValidationError("Role inválida", ErrorCode.INVALID_ROLE);
     }
   
