@@ -184,6 +184,7 @@ export function normalizeOrder(order: any): Order {
       products: normalizedProducts,
       serviceOrder: order.serviceOrder ||  "",
       paymentMethod: order.paymentMethod || "",
+      paymentStatus: order.paymentStatus || "pending",
       paymentEntry: order.paymentEntry || 0,
       installments: order.installments || 0,
       orderDate: order.orderDate || new Date().toISOString(),

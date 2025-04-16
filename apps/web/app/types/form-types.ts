@@ -35,6 +35,7 @@ export const orderFormSchema = z.object({
   products: z.array(z.any()).min(1, "Pelo menos um produto é obrigatório"),
   serviceOerder: z.string().min(4, "Nº da Ordem de Serviço é obrigatório"),
   paymentMethod: z.string().min(1, "Forma de pagamento é obrigatória"),
+  paymentStatus: z.enum(["pending", "paid", "partially_paid"]).default("pending"),
   paymentEntry: z.number().min(0).default(0),
   installments: z.number().min(1).optional(),
   orderDate: z.string().default(() => new Date().toISOString().split("T")[0]),

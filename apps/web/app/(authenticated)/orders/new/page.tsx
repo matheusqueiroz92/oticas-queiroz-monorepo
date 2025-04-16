@@ -71,6 +71,7 @@ export default function NewOrderPage() {
         products: formData.products,
         serviceOrder: formData.serviceOrder,
         paymentMethod: formData.paymentMethod,
+        paymentStatus: "pending",
         paymentEntry: formData.paymentEntry,
         installments: formData.installments,
         orderDate: formData.orderDate,

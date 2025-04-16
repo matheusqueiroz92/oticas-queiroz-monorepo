@@ -134,6 +134,7 @@ export function useOrders(options: UseOrdersOptions = {}) {
   });
 
   const orders = data?.orders || [];
+  
   const totalPages = data?.pagination?.totalPages || 1;
   const totalOrders = data?.pagination?.total || 0;
   
@@ -372,6 +373,28 @@ export function useOrders(options: UseOrdersOptions = {}) {
     };
   }, []);
 
+  const getPaymentStatusBadge = useCallback((paymentStatus: string) => {
+    const statusMap: Record<string, { label: string; className: string }> = {
+      pending: {
+        label: "Pendente",
+        className: "bg-red-100 text-red-800",
+      },
+      partially_paid: { 
+        label: "Pago parcialmente",
+        className: "bg-yellow-100 text-yellow-800" 
+      },
+      paid: {
+        label: "Pago",
+        className: "bg-green-100 text-green-800",
+      },
+    };
+
+    return statusMap[paymentStatus] || {
+      label: paymentStatus,
+      className: "bg-gray-100 text-gray-800",
+    };
+  }, []);
+
   const getPaymentMethodText = useCallback((method?: string) => {
     if (!method) return "N/A";
 
@@ -528,6 +551,7 @@ export function useOrders(options: UseOrdersOptions = {}) {
     translateOrderStatus,
     getOrderStatusClass,
     getStatusBadge,
+    getPaymentStatusBadge,
     getPaymentMethodText,
     getProductTypeLabel,
     getClientName,

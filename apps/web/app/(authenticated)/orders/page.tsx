@@ -48,6 +48,7 @@ export default function OrdersPage() {
     getEmployeeName,
     getLaboratoryName,
     getStatusBadge,
+    getPaymentStatusBadge,
   } = useOrders();
   
   const handleManualRefresh = async () => {
@@ -100,7 +101,7 @@ export default function OrdersPage() {
     },
     { 
       key: "status", 
-      header: "Status",
+      header: "Status Pedido",
       render: (order: Order) => {
         const statusInfo = getStatusBadge(order.status);
         return (
@@ -126,6 +127,18 @@ export default function OrdersPage() {
       key: "total", 
       header: "Total",
       render: (order: Order) => formatCurrency(order.finalPrice || order.totalPrice)
+    },
+    { 
+      key: "paymentStatus",
+      header: "Status Pagamento", 
+      render: (order: Order) => {
+        const statusInfo = getPaymentStatusBadge(order.paymentStatus);
+        return (
+          <Badge className={`status-badge ${statusInfo.className}`}>
+            {statusInfo.label}
+          </Badge>
+        );
+      }
     },
   ];
 

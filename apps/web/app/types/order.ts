@@ -9,6 +9,7 @@ export interface Order {
   products: Product[];
   serviceOrder?: string | null;
   paymentMethod: string;
+  paymentStatus: "pending" | "paid" | "partially_paid";
   paymentEntry?: number;
   installments?: number;
   orderDate: string | Date;
