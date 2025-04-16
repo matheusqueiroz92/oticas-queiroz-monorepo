@@ -18,7 +18,7 @@ import {
 import { Loader2 } from "lucide-react";
 import { api } from "@/app/services/authService";
 import Cookies from "js-cookie";
-import { AxiosError } from "axios";
+import axios from "axios";
 import { LoginFormData, loginSchema } from "@/schemas/login-schema";
 import { API_ROUTES } from "@/app/constants/api-routes";
 
@@ -48,7 +48,7 @@ export default function LoginPage() {
         password: data.password,
       });
 
-      if (response.data.token) {
+      if (response && response.data && response.data.token) {
         const cookiesToClear = [
           "token",
           "name",
@@ -88,7 +88,8 @@ export default function LoginPage() {
     } catch (error) {
       console.error("Erro durante o login:", error);
 
-      if (error instanceof AxiosError) {
+      // Verificar se é um erro do Axios
+      if (axios.isAxiosError(error)) {
         setError(
           error.response?.data?.message ||
             error.message ||
@@ -134,7 +135,7 @@ export default function LoginPage() {
           </CardHeader>
           <CardContent>
             {error && (
-              <Alert variant="destructive" className="mb-6">
+              <Alert variant="destructive" className="mb-6" role="alert">
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
@@ -182,7 +183,7 @@ export default function LoginPage() {
               >
                 {isSubmitting ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 data-testid="loading-spinner" className="mr-2 h-4 w-4 animate-spin" />
                     Aguarde
                   </>
                 ) : (
