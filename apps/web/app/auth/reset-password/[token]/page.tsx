@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import LogoOticasQueiroz from "../../../../public/logo-oticas-queiroz-branca.png";
+import LogoOticasQueiroz from "@/public/logo-oticas-queiroz-branca.png";
 import Link from "next/link";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,7 @@ import { Loader2, ArrowLeft, CheckCircle2, XCircle } from "lucide-react";
 import {
   resetPassword,
   validateResetToken,
-} from "../../../services/authService";
+} from "@/app/services/authService";
 
 const resetPasswordSchema = z
   .object({

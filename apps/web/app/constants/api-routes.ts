@@ -1,4 +1,8 @@
 export const API_ROUTES = {
+  LOGIN: "/api/auth/login",
+  REGISTER: "/api/auth/register",
+  FORGOT_PASSWORD: "/api/auth/forgot-password",
+
   ORDERS: {
     BASE: "/api/orders",
     LIST: '/api/orders',

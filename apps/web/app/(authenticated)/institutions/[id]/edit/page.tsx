@@ -12,15 +12,18 @@ import { useToast } from "@/hooks/useToast";
 import { useUsers } from "@/hooks/useUsers";
 import { api } from "@/app/services/authService";
 import { ErrorAlert } from "@/components/ErrorAlert";
-import { Institution } from "@/app/types/institution";
 import { API_ROUTES } from "@/app/constants/api-routes";
+import { Institution } from "@/app/types/institution";
 
 export default function EditInstitutionPage() {
   const { id } = useParams();
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { useUserQuery } = useUsers();
+  const { useUserQuery, getUserImageUrl } = useUsers();
+  const [formInitialized, setFormInitialized] = useState(false);
+  
+  const form = updateInstitutionForm();
   
   const { 
     data: institution, 
@@ -29,10 +32,9 @@ export default function EditInstitutionPage() {
     refetch
   } = useUserQuery(id as string);
   
-  const form = updateInstitutionForm();
-  
+  // Inicializa o formulário apenas uma vez quando os dados estiverem disponíveis
   useEffect(() => {
-    if (institution && institution.role === "institution") {
+    if (institution && institution.role === "institution" && !formInitialized) {
       form.reset({
         name: institution.name,
         email: institution.email,
@@ -45,33 +47,10 @@ export default function EditInstitutionPage() {
         contactPerson: (institution as Institution).contactPerson,
         image: institution.image,
       });
+      
+      setFormInitialized(true);
     }
-  }, [institution, form]);
-
-  if (isLoading) {
-    return (
-      <div className="flex flex-col justify-center items-center min-h-[50vh]">
-        <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-        <p className="text-muted-foreground">Carregando dados da instituição...</p>
-      </div>
-    );
-  }
-
-  if (error || !institution) {
-    return (
-      <ErrorAlert
-        message={(error as Error)?.message || "Erro ao carregar dados da instituição"}
-      />
-    );
-  }
-
-  if (institution.role !== "institution") {
-    return (
-      <ErrorAlert
-        message="O usuário carregado não é uma instituição."
-      />
-    );
-  }
+  }, [institution, form, formInitialized]);
 
   const handleSubmit = async (data: InstitutionUpdateData) => {
     try {
@@ -120,6 +99,31 @@ export default function EditInstitutionPage() {
       setIsSubmitting(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col justify-center items-center min-h-[50vh]">
+        <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+        <p className="text-muted-foreground">Carregando dados da instituição...</p>
+      </div>
+    );
+  }
+
+  if (error || !institution) {
+    return (
+      <ErrorAlert
+        message={(error as Error)?.message || "Erro ao carregar dados da instituição"}
+      />
+    );
+  }
+
+  if (institution.role !== "institution") {
+    return (
+      <ErrorAlert
+        message="O usuário carregado não é uma instituição."
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">

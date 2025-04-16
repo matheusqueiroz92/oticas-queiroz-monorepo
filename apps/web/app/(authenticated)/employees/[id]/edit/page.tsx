@@ -21,6 +21,9 @@ export default function EditEmployeePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const { useUserQuery, getUserImageUrl } = useUsers();
+  const [formInitialized, setFormInitialized] = useState(false);
+  
+  const form = updateUserForm();
   
   const { 
     data: employee, 
@@ -29,10 +32,9 @@ export default function EditEmployeePage() {
     refetch
   } = useUserQuery(id as string);
   
-  const form = updateUserForm();
-  
+  // Inicializa o formulário apenas uma vez quando os dados do funcionário estiverem disponíveis
   useEffect(() => {
-    if (employee && (employee.role === "employee" || employee.role === "admin")) {
+    if (employee && (employee.role === "employee" || employee.role === "admin") && !formInitialized) {
       // Set preview image if exists
       if (employee.image) {
         setPreviewImage(getUserImageUrl(employee.image));
@@ -45,33 +47,10 @@ export default function EditEmployeePage() {
         address: employee.address,
         rg: employee.rg,
       });
+      
+      setFormInitialized(true);
     }
-  }, [employee, form, getUserImageUrl]);
-
-  if (isLoading) {
-    return (
-      <div className="flex flex-col justify-center items-center min-h-[50vh]">
-        <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-        <p className="text-muted-foreground">Carregando dados do funcionário...</p>
-      </div>
-    );
-  }
-
-  if (error || !employee) {
-    return (
-      <ErrorAlert
-        message={(error as Error)?.message || "Erro ao carregar dados do funcionário"}
-      />
-    );
-  }
-
-  if (employee.role !== "employee" && employee.role !== "admin") {
-    return (
-      <ErrorAlert
-        message="O usuário carregado não é um funcionário."
-      />
-    );
-  }
+  }, [employee, form, getUserImageUrl, formInitialized]);
 
   const handleSubmit = async (data: UserUpdateData) => {
     try {
@@ -120,6 +99,31 @@ export default function EditEmployeePage() {
       setIsSubmitting(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col justify-center items-center min-h-[50vh]">
+        <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+        <p className="text-muted-foreground">Carregando dados do funcionário...</p>
+      </div>
+    );
+  }
+
+  if (error || !employee) {
+    return (
+      <ErrorAlert
+        message={(error as Error)?.message || "Erro ao carregar dados do funcionário"}
+      />
+    );
+  }
+
+  if (employee.role !== "employee" && employee.role !== "admin") {
+    return (
+      <ErrorAlert
+        message="O usuário carregado não é um funcionário."
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">

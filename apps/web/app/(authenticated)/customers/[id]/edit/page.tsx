@@ -21,6 +21,9 @@ export default function EditCustomerPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const { useUserQuery, getUserImageUrl } = useUsers();
+  const [formInitialized, setFormInitialized] = useState(false);
+  
+  const form = updateUserForm();
   
   const { 
     data: customer, 
@@ -29,10 +32,9 @@ export default function EditCustomerPage() {
     refetch
   } = useUserQuery(id as string);
   
-  const form = updateUserForm();
-  
+  // Inicializa o formulário apenas uma vez quando os dados do cliente estiverem disponíveis
   useEffect(() => {
-    if (customer && customer.role === "customer") {
+    if (customer && customer.role === "customer" && !formInitialized) {
       // Set preview image if exists
       if (customer.image) {
         setPreviewImage(getUserImageUrl(customer.image));
@@ -45,33 +47,10 @@ export default function EditCustomerPage() {
         address: customer.address,
         rg: customer.rg,
       });
+      
+      setFormInitialized(true);
     }
-  }, [customer, form, getUserImageUrl]);
-
-  if (isLoading) {
-    return (
-      <div className="flex flex-col justify-center items-center min-h-[50vh]">
-        <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-        <p className="text-muted-foreground">Carregando dados do cliente...</p>
-      </div>
-    );
-  }
-
-  if (error || !customer) {
-    return (
-      <ErrorAlert
-        message={(error as Error)?.message || "Erro ao carregar dados do cliente"}
-      />
-    );
-  }
-
-  if (customer.role !== "customer") {
-    return (
-      <ErrorAlert
-        message="O usuário carregado não é um cliente."
-      />
-    );
-  }
+  }, [customer, form, getUserImageUrl, formInitialized]);
 
   const handleSubmit = async (data: UserUpdateData) => {
     try {
@@ -120,6 +99,31 @@ export default function EditCustomerPage() {
       setIsSubmitting(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col justify-center items-center min-h-[50vh]">
+        <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+        <p className="text-muted-foreground">Carregando dados do cliente...</p>
+      </div>
+    );
+  }
+
+  if (error || !customer) {
+    return (
+      <ErrorAlert
+        message={(error as Error)?.message || "Erro ao carregar dados do cliente"}
+      />
+    );
+  }
+
+  if (customer.role !== "customer") {
+    return (
+      <ErrorAlert
+        message="O usuário carregado não é um cliente."
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">

@@ -3,9 +3,8 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import Image from "next/image";
-import LogoOticasQueiroz from "../../../public/logo-oticas-queiroz-branca.png";
+import LogoOticasQueiroz from "@/public/logo-oticas-queiroz-branca.png";
 import Link from "next/link";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -17,16 +16,11 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
-import { api } from "../../services/authService";
+import { api } from "@/app/services/authService";
 import Cookies from "js-cookie";
 import { AxiosError } from "axios";
-
-const loginSchema = z.object({
-  login: z.string().min(1, "Login é obrigatório"),
-  password: z.string().min(6, "Senha deve ter no mínimo 6 caracteres"),
-});
-
-type LoginFormData = z.infer<typeof loginSchema>;
+import { LoginFormData, loginSchema } from "@/schemas/login-schema";
+import { API_ROUTES } from "@/app/constants/api-routes";
 
 export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
@@ -49,7 +43,7 @@ export default function LoginPage() {
       setIsSubmitting(true);
       setError(null);
 
-      const response = await api.post("/api/auth/login", {
+      const response = await api.post(API_ROUTES.LOGIN, {
         login: data.login,
         password: data.password,
       });
