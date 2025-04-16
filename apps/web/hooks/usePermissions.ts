@@ -15,8 +15,6 @@ export function usePermissions() {
     return roles.includes(user.role);
   };
 
-  console.log(user);
-
   // Verifica permissões específicas para certas funcionalidades
   const canViewEmployees = isAdmin;
   const canViewReports = isAdmin || isEmployee;

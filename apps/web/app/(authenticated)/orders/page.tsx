@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/useToast";
 import { OrderExportButton } from "@/components/Orders/exports/OrderExportButton";
 import { OrderFilters } from "@/components/Orders/OrderFilters";
-import { OrderTable } from "@/components/Orders/OrderTable";
+import { OrdersList } from "@/components/Orders/OrdersList";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { Order } from "@/app/types/order";
 import { formatCurrency, formatDate } from "@/app/utils/formatters";
@@ -268,7 +268,7 @@ export default function OrdersPage() {
         )}
 
         {!isLoading && !error && orders.length > 0 && (
-          <OrderTable
+          <OrdersList
             data={orders}
             columns={orderColumns}
             onDetailsClick={navigateToOrderDetails}

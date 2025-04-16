@@ -27,7 +27,7 @@ interface OrderTableProps {
   sortDirection?: "asc" | "desc";
 }
 
-export const OrderTable: React.FC<OrderTableProps> = ({
+export const OrdersList: React.FC<OrderTableProps> = ({
   data,
   columns,
   onDetailsClick,

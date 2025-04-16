@@ -9,7 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Loader2, FileText, Ban, CreditCard, ExternalLink } from "lucide-react";
+import { Loader2, FileText, Ban, CreditCard, ExternalLink, Banknote, BookText, TicketsPlane, NotepadText, Repeat } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -88,6 +88,25 @@ export function PaymentsList({
       await cancelPayment(id);
     }
   };
+
+  const getIconMethod = (method: string) => {
+    switch (method) {
+      case "credit_card":
+        return <CreditCard className="h-4 w-4 mr-1 text-muted-foreground" />;
+      case "cash":
+        return <Banknote className="h-4 w-4 mr-1 text-muted-foreground" />;
+      case "debit_card":
+        return <CreditCard className="h-4 w-4 mr-1 text-muted-foreground" />;
+      case "bank_slip":
+        return <BookText className="h-4 w-4 mr-1 text-muted-foreground" />;
+      case "promissor_note":
+        return <NotepadText className="h-4 w-4 mr-1 text-muted-foreground" />;
+      case "pix":
+        return <Repeat className="h-4 w-4 mr-1 text-muted-foreground" />;
+      case "check":
+        return <TicketsPlane className="h-4 w-4 mr-1 text-muted-foreground" />;
+    }
+  }
 
   return (
     <>
@@ -201,13 +220,13 @@ export function PaymentsList({
                     {payment.description || "Sem descrição"}
                   </TableCell>
                   <TableCell>
-                    <Badge className={getPaymentTypeClass(payment.type)}>
+                    <Badge className={`status-badge ${getPaymentTypeClass(payment.type)}`}>
                       {translatePaymentType(payment.type)}
                     </Badge>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center">
-                      <CreditCard className="h-4 w-4 mr-1 text-muted-foreground" />
+                      {getIconMethod(payment.paymentMethod)}
                       {translatePaymentMethod(payment.paymentMethod)}
                     </div>
                   </TableCell>
@@ -222,7 +241,7 @@ export function PaymentsList({
                     {formatCurrency(payment.amount)}
                   </TableCell>
                   <TableCell>
-                    <Badge className={getPaymentStatusClass(payment.status)}>
+                    <Badge className={`status-badge ${getPaymentStatusClass(payment.status)}`}>
                       {translatePaymentStatus(payment.status)}
                     </Badge>
                   </TableCell>

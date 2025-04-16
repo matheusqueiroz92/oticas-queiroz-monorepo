@@ -71,13 +71,12 @@ export const orderFormSchema = z.object({
   }),
 });
 
-// Interface para o formulário de pedido
 export interface OrderFormValues {
   clientId: string;
   employeeId: string;
   institutionId: string;
   isInstitutionalOrder: boolean;
-  products: Product[]; // Array de produtos
+  products: Product[];
   serviceOrder: number;
   paymentMethod: string;
   paymentEntry: number;

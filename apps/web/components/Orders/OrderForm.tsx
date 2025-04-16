@@ -19,7 +19,6 @@ import OrderClientProducts from "@/components/Orders/OrderClientProducts";
 import OrderPrescription from "@/components/Orders/OrderPrescription";
 import OrderConfirmation from "@/components/Orders/OrderConfirmation";
 import OrderSuccessScreen from "@/components/Orders/OrderSuccessScreen";
-import { useToast } from "@/hooks/useToast";
 import { useCustomers } from "@/hooks/useCustomers";
 
 const numericInputStyles = `
