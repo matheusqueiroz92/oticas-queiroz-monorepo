@@ -1,3 +1,4 @@
+// apps/web/__tests__/app/auth/login/login-page.test.tsx
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -26,6 +27,7 @@ jest.mock('@/app/services/authService', () => ({
   api: {
     post: jest.fn(),
   },
+  loginWithCredentials: jest.fn(),
 }));
 
 // Mock do js-cookie
@@ -104,6 +106,7 @@ describe('LoginPage', () => {
     };
     
     (authService.api.post as jest.Mock).mockResolvedValueOnce(mockResponse);
+    (authService.loginWithCredentials as jest.Mock).mockResolvedValueOnce(mockResponse.data);
     
     render(<LoginPage />);
     const user = userEvent.setup();
@@ -117,20 +120,7 @@ describe('LoginPage', () => {
     
     // Verifica se a API foi chamada corretamente
     await waitFor(() => {
-      expect(authService.api.post).toHaveBeenCalledWith('/api/auth/login', {
-        login: 'test@example.com',
-        password: 'password123',
-      });
-    });
-    
-    // Verifica se os cookies foram definidos
-    await waitFor(() => {
-      expect(Cookies.set).toHaveBeenCalledWith('token', 'fake-token', expect.any(Object));
-      expect(Cookies.set).toHaveBeenCalledWith('userId', 'user-id', expect.any(Object));
-      expect(Cookies.set).toHaveBeenCalledWith('name', 'Test User', expect.any(Object));
-      expect(Cookies.set).toHaveBeenCalledWith('role', 'admin', expect.any(Object));
-      expect(Cookies.set).toHaveBeenCalledWith('email', 'test@example.com', expect.any(Object));
-      expect(Cookies.set).toHaveBeenCalledWith('cpf', '12345678901', expect.any(Object));
+      expect(authService.loginWithCredentials).toHaveBeenCalledWith('test@example.com', 'password123');
     });
     
     // Verifica se houve o redirecionamento
@@ -140,17 +130,10 @@ describe('LoginPage', () => {
   });
 
   it('handles login error', async () => {
-    // Mock de erro da API
-    const errorMessage = 'Credenciais inválidas';
-    const mockError = {
-      response: {
-        data: {
-          message: errorMessage
-        }
-      }
-    };
-    
-    (authService.api.post as jest.Mock).mockRejectedValueOnce(mockError);
+    // Configuramos o mock para retornar um erro genérico
+    (authService.loginWithCredentials as jest.Mock).mockRejectedValueOnce(
+      new Error('Erro ao fazer login. Tente novamente.')
+    );
     
     render(<LoginPage />);
     const user = userEvent.setup();
@@ -162,9 +145,9 @@ describe('LoginPage', () => {
     // Clica no botão de entrar
     await user.click(screen.getByRole('button', { name: /Entrar/i }));
     
-    // Verifica se a mensagem de erro aparece
+    // Verifica se a mensagem de erro genérica aparece
     await waitFor(() => {
-      expect(screen.getByText(errorMessage)).toBeInTheDocument();
+      expect(screen.getByText('Erro ao fazer login. Tente novamente.')).toBeInTheDocument();
     });
     
     // Verifica se não houve redirecionamento
@@ -173,20 +156,20 @@ describe('LoginPage', () => {
 
   it('shows loading state during submission', async () => {
     // Mock com delay para verificar estado de loading
-    (authService.api.post as jest.Mock).mockImplementation(() => new Promise(resolve => {
-      setTimeout(() => {
-        resolve({
-          data: {
+    (authService.loginWithCredentials as jest.Mock).mockImplementation(() => 
+      new Promise(resolve => {
+        setTimeout(() => {
+          resolve({
             token: 'fake-token',
             user: {
               _id: 'user-id',
               name: 'Test User',
               role: 'admin'
             }
-          }
-        });
-      }, 100);
-    }));
+          });
+        }, 100);
+      })
+    );
     
     render(<LoginPage />);
     const user = userEvent.setup();
@@ -206,7 +189,7 @@ describe('LoginPage', () => {
     
     // Aguarda a conclusão
     await waitFor(() => {
-      expect(Cookies.set).toHaveBeenCalled();
+      expect(window.location.href).toBe('/dashboard');
     });
   });
 

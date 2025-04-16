@@ -10,9 +10,26 @@ global.TextDecoder = TextDecoder;
 // Mock para o next/image
 jest.mock('next/image', () => ({
   __esModule: true,
-  default: (props) => {
-    // eslint-disable-next-line jsx-a11y/alt-text
-    return <img {...props} />;
+  default: function MockImage({ src, alt, className, sizes, ...props }) {
+    // Converte propriedades booleanas em strings para evitar warnings
+    const booleanProps = ['fill', 'priority', 'loading', 'unoptimized'];
+    const convertedProps = { ...props };
+    
+    booleanProps.forEach(prop => {
+      if (prop in convertedProps && typeof convertedProps[prop] === 'boolean') {
+        convertedProps[prop] = convertedProps[prop].toString();
+      }
+    });
+    
+    return (
+      <img
+        src={typeof src === 'object' ? '/mock-image-path.jpg' : src}
+        alt={alt}
+        className={className}
+        data-testid="mock-image"
+        {...convertedProps}
+      />
+    );
   },
 }));
 
