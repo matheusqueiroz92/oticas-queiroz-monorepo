@@ -4,9 +4,7 @@
  */
 
 import type { Order } from "@/app/types/order";
-import type { CleanLens, Lens, PrescriptionFrame, Product, SunglassesFrame } from "@/app/types/product";
 import { diagnosticLog } from "./env-utils";
-import { getProductById } from "../services/productService";
 import { normalizeProducts } from "./product-utils";
 
 /**

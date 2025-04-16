@@ -119,6 +119,7 @@ export class CashRegisterService {
           credit: 0,
           debit: 0,
           pix: 0,
+          check: 0,
         },
         payments: {
           received: 0,

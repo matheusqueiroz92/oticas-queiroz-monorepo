@@ -9,11 +9,12 @@ interface UserDocument extends Document {
   name: string;
   email?: string;
   password: string;
-  role: "admin" | "employee" | "customer";
+  role: "admin" | "employee" | "customer" | "institution";
   image?: string;
   address?: string;
   phone?: string;
-  cpf: number;
+  cpf?: number;
+  cnpj?: number;
   rg?: number;
   purchases?: Types.ObjectId[];
   debts?: number;

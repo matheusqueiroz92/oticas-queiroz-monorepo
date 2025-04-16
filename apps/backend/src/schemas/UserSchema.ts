@@ -13,7 +13,6 @@ const userSchema = new Schema<IUser>(
       default: null,
       index: {
         unique: true,
-        sparse: true,
         partialFilterExpression: { email: { $ne: null } }
       }
     },
@@ -32,11 +31,13 @@ const userSchema = new Schema<IUser>(
         return this.role === 'customer' || this.role === 'employee' || this.role === 'admin';
       },
       validate: {
-        validator: (v: string) => {
+        validator: function(v: string) {
+          // Se for instituição, não validar CPF
+          if (this.role === 'institution') return true;
           return isValidCPF(v);
         },
         message: (props) => `${props.value} não é um CPF válido!`,
-      },
+      }
     },
     cnpj: {
       type: String,
@@ -48,7 +49,7 @@ const userSchema = new Schema<IUser>(
           return isValidCNPJ(v);
         },
         message: (props) => `${props.value} não é um CNPJ válido!`,
-      },
+      }
     },
     rg: {
       type: String,
@@ -74,17 +75,53 @@ const userSchema = new Schema<IUser>(
   { timestamps: true }
 );
 
+// Hook pre-save para garantir campos corretos conforme o tipo
+userSchema.pre('save', function(next) {
+  // Para instituições, garantir que CPF não exista
+  if (this.role === 'institution') {
+    this.cpf = undefined;
+  } else {
+    // Para não-instituições, garantir que CNPJ não exista
+    this.cnpj = undefined;
+  }
+  
+  // Limpar outros campos opcionais para não serem null
+  if (this.email === null || this.email === '') {
+    this.email = undefined;
+  }
+  
+  next();
+});
+
+// Adicionar índices manualmente, fora do schema
+// Para CPF (apenas para não-instituições)
+userSchema.index(
+  { cpf: 1 }, 
+  { 
+    unique: true,
+    partialFilterExpression: { 
+      cpf: { $exists: true, $ne: null },
+      role: { $ne: "institution" }
+    }
+  }
+);
+
+// Para CNPJ (apenas para instituições)
+userSchema.index(
+  { cnpj: 1 }, 
+  { 
+    unique: true,
+    partialFilterExpression: { 
+      cnpj: { $exists: true, $ne: null },
+      role: "institution"
+    }
+  }
+);
+
 userSchema.methods.comparePassword = async function (
   candidatePassword: string
 ): Promise<boolean> {
   return bcrypt.compare(candidatePassword, this.password);
 };
-
-userSchema.pre('save', function(next) {
-  if (this.email === null || this.email === '') {
-      this.email = undefined;
-  }
-  next();
-});
 
 export const User = model<IUser>("User", userSchema);

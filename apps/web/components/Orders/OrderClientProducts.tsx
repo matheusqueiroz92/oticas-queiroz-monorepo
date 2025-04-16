@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { 
   FormField,
   FormItem,
@@ -19,7 +20,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { formatCurrency } from "@/app/utils/formatters";
 import type { Customer } from "@/app/types/customer";
 import type { Product } from "@/app/types/product";
+import { Loader2 } from "lucide-react";
 
+import { useInstitutions } from "@/hooks/useInstitutions";
 import ClientSearch from "@/components/Orders/ClientSearch";
 import ProductSearch from "@/components/Orders/ProductSearch";
 import SelectedProductsList from "@/components/Orders/SelectedProductList";
@@ -60,6 +63,32 @@ export default function OrderClientProducts({
   handleDiscountChange,
   calculateInstallmentValue,
 }: OrderClientProductsProps) {
+  // Estado para armazenar instituições carregadas
+  const [loadedInstitutions, setLoadedInstitutions] = useState<any[]>([]);
+  
+  // Hook para carregar instituições conveniadas
+  const { 
+    institutions, 
+    isLoading: isLoadingInstitutions,
+    fetchAllInstitutions
+  } = useInstitutions({
+    enablePagination: false // Desabilitamos paginação para carregar todas
+  });
+
+  // Efeito para atualizar o estado quando as instituições são carregadas
+  useEffect(() => {
+    if (institutions && institutions.length > 0) {
+      setLoadedInstitutions(institutions);
+    }
+  }, [institutions]);
+  
+  // Efeito para carregar instituições quando o pedido é marcado como institucional
+  useEffect(() => {
+    const isInstitutional = form.watch("isInstitutionalOrder");
+    if (isInstitutional && loadedInstitutions.length === 0) {
+      fetchAllInstitutions();
+    }
+  }, [form, loadedInstitutions.length, fetchAllInstitutions]);
   
   const renderPaymentSection = () => {
     const paymentMethod = form.watch("paymentMethod");
@@ -393,11 +422,17 @@ export default function OrderClientProducts({
               <FormControl>
                 <Checkbox
                   checked={field.value}
-                  onCheckedChange={field.onChange}
+                  onCheckedChange={(checked) => {
+                    field.onChange(checked);
+                    // Carregar instituições quando a checkbox for marcada
+                    if (checked && loadedInstitutions.length === 0) {
+                      fetchAllInstitutions();
+                    }
+                  }}
                 />
               </FormControl>
               <div className="space-y-1 leading-none">
-                <FormLabel>Pedido Institucional (APAE)</FormLabel>
+                <FormLabel>Pedido Institucional</FormLabel>
                 <FormDescription>
                   Marque essa opção para pedidos de instituições conveniadas
                 </FormDescription>
@@ -413,15 +448,38 @@ export default function OrderClientProducts({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Instituição</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
+                <Select 
+                  onValueChange={field.onChange} 
+                  value={field.value}
+                  onOpenChange={(open) => {
+                    // Garantir que temos instituições carregadas quando o select é aberto
+                    if (open && loadedInstitutions.length === 0 && !isLoadingInstitutions) {
+                      fetchAllInstitutions();
+                    }
+                  }}
+                >
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione a instituição" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="[ID_DA_APAE]">APAE</SelectItem>
-                    {/* Aqui poderiam ser listadas outras instituições */}
+                    {isLoadingInstitutions ? (
+                      <div className="flex items-center justify-center py-2">
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        <span className="text-sm">Carregando instituições...</span>
+                      </div>
+                    ) : loadedInstitutions.length > 0 ? (
+                      loadedInstitutions.map((institution) => (
+                        <SelectItem key={institution._id} value={institution._id}>
+                          {institution.name}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <div className="text-center py-2 text-sm text-muted-foreground">
+                        Nenhuma instituição encontrada
+                      </div>
+                    )}
                   </SelectContent>
                 </Select>
                 <FormMessage />

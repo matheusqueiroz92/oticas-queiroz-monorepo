@@ -10,10 +10,12 @@ Sistema completo de gestão para Óticas Queiroz, desenvolvido para otimizar pro
   - Administradores: Acesso completo ao sistema;
   - Funcionários: Podem registrar vendas, gerenciar clientes e produtos;
   - Clientes: Acesso limitado aos seus pedidos e perfil;
-- 🔑 **Autenticação Segura**: Login com email ou CPF, protegido por JWT (JSON Web Tokens);
+  - Instituições: Parceiros institucionais com acesso a funcionalidades específicas;
+- 🔑 **Autenticação Segura**: Login com email, CPF ou CNPJ, protegido por JWT (JSON Web Tokens);
 - 🔄 **Recuperação de Senha**: Sistema de reset de senha via tokens enviados por email;
 - **Gerenciamento de Perfil**: Upload de foto, atualização de dados pessoais e senha;
 - ✅ **Validação de CPF**: Verificação automática da validade do CPF para evitar cadastros fraudulentos;
+- ✅ **Validação de CNPJ**: Verificação automática da validade do CNPJ para evitar cadastros fraudulentos;
 - 📊 **Controle de Sessão**: Verificação e renovação automática de tokens de autenticação.
 
 ### 📦 Gestão de Produtos
@@ -64,6 +66,7 @@ Sistema completo de gestão para Óticas Queiroz, desenvolvido para otimizar pro
   - PIX;
   - Boleto Bancário: Com registro de código e banco;
   - Promissória: Com registro de número e controle;
+  - Cheque: Com gestão completa de pagamentos via cheques bancários;
 - 🧩 **Parcelamento Inteligente**: Cálculo automático de valores parcelados;
 - 📉 **Gerenciamento de Dívidas**: Controle de débitos de clientes;
   - Geração automática de planos de pagamento;
@@ -274,6 +277,8 @@ A API expõe diversos endpoints organizados por domínio:
 - `GET /api/orders/export`: Exporta pedidos filtrados
 - `GET /api/orders/export/daily`: Exporta resumo diário
 - `GET /api/orders/:id/export`: Exporta detalhes de um pedido
+- `GET /api/orders/:id/payments`: Obtém os pagamentos associados a um pedido
+- `GET /api/orders/:id/payment-status`: Obtém o resumo de pagamento de um pedido 
 
 ### 🔬 Laboratórios
 - `POST /api/laboratories`: Cria um novo laboratório
@@ -293,6 +298,8 @@ A API expõe diversos endpoints organizados por domínio:
 - `GET /api/payments/deleted`: Lista pagamentos excluídos
 - `GET /api/payments/export`: Exporta pagamentos
 - `GET /api/payments/report/daily`: Relatório financeiro diário
+- `PUT /api/payments/:id/check-status`: Atualiza o status de compensação de um cheque
+- `GET /api/payments/checks/:status`: Lista cheques por status de compensação
 
 ### 📊 Registros de Caixa
 - `POST /api/cash-registers/open`: Abre um novo caixa
@@ -328,8 +335,8 @@ A API expõe diversos endpoints organizados por domínio:
 
 A API segue os princípios REST com:
 
-- Recursos bem definidos (users, products, orders)
-- Verbos HTTP semânticos (GET, POST, PUT, DELETE)
+- Recursos bem definidos (users, products, orders, payments, cash registers, laboratories, legacy clients, reports)
+- Verbos HTTP semânticos (GET, POST, PUT, PATCH, DELETE)
 - Status codes apropriados (200, 201, 400, 404, 500)
 - JSON como formato padrão para requests/responses
 - Autenticação via JWT (Bearer tokens)
@@ -348,7 +355,7 @@ Exemplo:
 const userSchema = new Schema({
   name: { type: String, required: true },
   email: { type: String, unique: true },
-  role: { type: String, enum: ['admin', 'employee', 'customer'] }
+  role: { type: String, enum: ['admin', 'employee', 'customer', 'institution'] }
 });
 ```
 
@@ -405,16 +412,17 @@ Schemas do Typescript de cada entidade da aplicação
   name: string;
   email?: string;
   password: string;
-  role: "admin" | "employee" | "customer";
+  role: "admin" | "employee" | "customer" | "institution";
   image?: string;
   address?: string;
   phone?: string;
-  cpf: string;
+  cpf?: string;
+  cnpj?: string; // apenas para instituições
   rg?: string;
   birthDate?: Date;
-  sales?: string[]; // apenas para funcionários
-  purchases?: string[]; // apenas para clientes
-  debts?: number; // apenas para clientes
+  sales?: string[]; // apenas para funcionários (vendas realizadas)
+  purchases?: string[]; // apenas para clientes (compras realizadas)
+  debts?: number; // apenas para clientes (débitos dos clientes)
   createdAt?: Date;
   updatedAt?: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -438,11 +446,13 @@ Schemas do Typescript de cada entidade da aplicação
   // Campos específicos baseados em productType
   // Para lentes (lenses):
   lensType?: string;
+  
   // Para armações (prescription_frame e sunglasses_frame):
   typeFrame?: string;
   color?: string;
   shape?: string;
   reference?: string;
+  
   // Apenas para armações solares:
   modelSunglasses?: string;
   
@@ -458,8 +468,7 @@ Schemas do Typescript de cada entidade da aplicação
   _id?: string;
   clientId: string;
   employeeId: string;
-  // Array de produtos
-  products: Product[];
+  products: Product[]; // array de produtos
   serviceOrder?: string;
   paymentMethod: string;
   paymentEntry?: number;
@@ -468,6 +477,7 @@ Schemas do Typescript de cada entidade da aplicação
   deliveryDate?: Date;
   status: "pending" | "in_production" | "ready" | "delivered" | "cancelled";
   laboratoryId?: string | null;
+  
   // Dados da prescrição dos óculos
   prescriptionData?: {
     doctorName: string;
@@ -488,6 +498,10 @@ Schemas do Typescript de cada entidade da aplicação
     nd: number;
     oc: number;
     addition: number;
+    bridge: number;
+    rim: number;
+    vh: number;
+    sh: number;
   };
   observations?: string;
   totalPrice: number;
@@ -548,11 +562,29 @@ Schemas do Typescript de cada entidade da aplicação
     value: number;
   };
 
-  // Campos para boleto
+  // Campos para boleto bancário
   bank_slip?: {
     code: string;
     bank: string;
   };
+
+  // Campos para nota promissória
+  promissoryNote?: {
+    number: string;
+  };
+
+  // Campos para cheque bancário
+  check?: {
+    bank: string;
+    checkNumber: string;
+    checkDate: Date;
+    accountHolder: string;
+    branch: string;
+    accountNumber: string;
+    presentationDate?: Date;
+    compensationStatus: "pending" | "compensated" | "rejected";
+    rejectionReason?: string;
+  }
 
   // Campos para débito ao cliente
   clientDebt?: {
@@ -590,6 +622,7 @@ Schemas do Typescript de cada entidade da aplicação
     credit: number;
     debit: number;
     pix: number;
+    check: number;
   };
   payments: {
     received: number;

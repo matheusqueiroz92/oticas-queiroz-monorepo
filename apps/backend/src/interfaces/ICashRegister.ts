@@ -12,6 +12,7 @@ export interface ICashRegister {
     credit: number;
     debit: number;
     pix: number;
+    check: number;
   };
   payments: {
     received: number;

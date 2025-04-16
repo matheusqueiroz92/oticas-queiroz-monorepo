@@ -150,6 +150,51 @@ export function useInstitutions(options: UseInstitutionsOptions = {}) {
     setCurrentPage(newPage);
   }, []);
 
+  // Função para buscar todas as instituições (sem paginação)
+  const fetchAllInstitutions = useCallback(
+    async (searchQuery?: string): Promise<User[]> => {
+      try {
+        const timestamp = new Date().getTime();
+        
+        const searchParams: Record<string, any> = { 
+          role: "institution",
+          limit: 100, // Um número grande para pegar todos
+          _t: timestamp
+        };
+        
+        if (searchQuery) {
+          const cleanSearch = searchQuery.trim().replace(/\D/g, '');
+          
+          if (/^\d{14}$/.test(cleanSearch)) {
+            searchParams.cnpj = cleanSearch;
+          } else {
+            searchParams.search = searchQuery;
+          }
+        }
+        
+        const response = await api.get(API_ROUTES.USERS.BASE, {
+          params: searchParams,
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0',
+            'X-Timestamp': timestamp.toString()
+          }
+        });
+        
+        if (response.data && Array.isArray(response.data.users)) {
+          return response.data.users.filter((user: User) => user.role === 'institution');
+        }
+        
+        return [];
+      } catch (error) {
+        console.error("Erro ao buscar instituições:", error);
+        return [];
+      }
+    },
+    []
+  );
+
   return {
     institutions,
     isLoading,
@@ -161,6 +206,7 @@ export function useInstitutions(options: UseInstitutionsOptions = {}) {
     navigateToInstitutionDetails,
     navigateToNewInstitution,
     getUserImageUrl,
+    fetchAllInstitutions,
     limit: pagination.limit,
     currentPage: pagination.currentPage,
     totalPages: pagination.totalPages,

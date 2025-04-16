@@ -202,3 +202,25 @@ export const getTomorrowDate = () => {
     tomorrow.setDate(tomorrow.getDate() + 1);
     return tomorrow.toISOString().split("T")[0];
   };
+
+  /**
+ * Formata um CNPJ adicionando pontos, barra e traço
+ * Formato: XX.XXX.XXX/XXXX-XX
+ */
+export function formatCNPJ(value: string): string {
+  const cnpj = value.replace(/\D/g, '');
+  
+  if (cnpj.length <= 2) {
+    return cnpj;
+  }
+  if (cnpj.length <= 5) {
+    return cnpj.replace(/^(\d{2})(\d+)/, '$1.$2');
+  }
+  if (cnpj.length <= 8) {
+    return cnpj.replace(/^(\d{2})(\d{3})(\d+)/, '$1.$2.$3');
+  }
+  if (cnpj.length <= 12) {
+    return cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d+)/, '$1.$2.$3/$4');
+  }
+  return cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d+)/, '$1.$2.$3/$4-$5');
+}

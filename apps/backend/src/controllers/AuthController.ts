@@ -115,6 +115,12 @@ export class AuthController {
         : undefined,
     };
 
+    if (userData.role === 'institution') {
+      userData.cpf = undefined; // Remover o CPF para instituições
+    } else {
+      userData.cnpj = undefined; // Remover CNPJ para outros tipos
+    }
+
     if (!req.user?.role) {
       throw new AuthError("Usuário não autenticado", ErrorCode.UNAUTHORIZED);
     }

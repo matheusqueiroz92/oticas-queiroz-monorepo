@@ -5,7 +5,7 @@ import { z } from "zod";
 // Schema base para todos os usuários
 const baseUserSchema = z.object({
   name: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
-  email: z.string().email("Email inválido").optional(),
+  email: z.string().optional(),
   phone: z.string().regex(/^\d{10,11}$/, "Telefone inválido").optional(),
   address: z.string().min(10, "Endereço muito curto").optional(),
   rg: z.string().optional(),

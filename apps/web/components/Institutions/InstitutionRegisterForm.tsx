@@ -97,7 +97,8 @@ export function InstitutionRegisterForm({ title, description }: InstitutionFormP
       
       Object.entries(data).forEach(([key, value]) => {
         if (key !== "image" && key !== "confirmPassword" && 
-            key !== "email" && key !== "phone" && key !== "address") {
+            key !== "email" && key !== "phone" && key !== "address" &&
+            key !== "cpf") {
           formData.append(key, String(value));
         }
       });
@@ -176,7 +177,7 @@ export function InstitutionRegisterForm({ title, description }: InstitutionFormP
           !!form.getValues("cnpj");
         break;
       case 1:
-        canContinue = true; // Contact info is optional
+        canContinue = true;
         break;
       case 2:
         canContinue = 
