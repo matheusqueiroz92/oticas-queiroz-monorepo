@@ -735,5 +735,5 @@ export class PaymentController {
         details: error instanceof Error ? error.message : "Erro desconhecido"
       });
     }
-  }
+  }  
 }

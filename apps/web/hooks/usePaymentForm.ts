@@ -11,24 +11,22 @@ import { useCustomers } from "@/hooks/useCustomers";
 import { paymentFormSchema } from "@/schemas/payment-schema";
 import { useOrders } from "@/hooks/useOrders";
 import type { CreatePaymentDTO } from "@/app/types/payment";
+import { Order } from "@/app/types/order";
 
 export function usePaymentForm() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
-  const [selectedEntityType, setSelectedEntityType] = useState<
-    "customer" | "legacyClient" | null
-  >(null);
+  const [selectedEntityType, setSelectedEntityType] = useState<"customer" | "legacyClient" | null>(null);
   const [customerSearch, setCustomerSearch] = useState("");
-  const [orderSearch, setOrderSearch] = useState("");
   const [legacyClientSearch, setLegacyClientSearch] = useState("");
   const [showInstallments, setShowInstallments] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showCheckFields, setShowCheckFields] = useState(false);
+  const [clientOrders, setClientOrders] = useState<Order[]>([]);
 
   const {
     handleCreatePayment,
-    // isCreating,
     cashRegisterData,
     isLoadingCashRegister,
     checkForOpenCashRegisterBeforePayment
@@ -36,7 +34,42 @@ export function usePaymentForm() {
 
   const { customers, isLoading: isLoadingCustomers, fetchAllCustomers } = useCustomers();
 
-  const { orders, isLoading: isLoadingOrders } = useOrders();
+  // Usar a função useOrders para obter pedidos e funções relacionadas
+  const ordersHook = useOrders();
+  const isLoadingOrders = ordersHook.isLoading;
+
+  // Query para buscar pedidos pelo cliente
+  const fetchClientOrders = async (clientId: string) => {
+    try {
+      if (!clientId) return;
+      console.log("Buscando pedidos para o cliente ID:", clientId);
+      
+      // Mudar a implementação para usar o service diretamente
+      const response = await api.get(`/api/orders/client/${clientId}`);
+      console.log("Resposta da API:", response.data);
+      
+      // Normalizar os dados dos pedidos se necessário
+      const orders = Array.isArray(response.data) 
+        ? response.data
+        : [];
+      setClientOrders(orders);
+
+    } catch (error) {
+      console.error("Erro ao buscar pedidos do cliente:", error);
+      
+      // Verificar se é um erro 404 (pedidos não encontrados)
+      if (error instanceof Error && (error as any).response && (error as any).response.status === 404) {
+        console.log("Nenhum pedido encontrado para este cliente");
+        setClientOrders([]);
+      } else {
+        // Outro tipo de erro
+        setClientOrders([]);
+      }
+    }
+
+    console.log(clientOrders);
+    
+  };
 
   // Query to fetch legacy clients
   const { data: legacyClients = [], isLoading: isLoadingLegacyClients } =
@@ -70,6 +103,7 @@ export function usePaymentForm() {
   const { watch, setValue } = form;
   const paymentMethod = watch("paymentMethod");
   const paymentType = watch("type");
+  const selectedCustomerId = watch("customerId");
 
   // Check if we have an open cash register on initial load
   useEffect(() => {
@@ -114,6 +148,15 @@ export function usePaymentForm() {
     }
   }, [cashRegisterData, setValue]);
 
+  // Buscar pedidos quando um cliente é selecionado
+  useEffect(() => {
+    if (selectedCustomerId) {
+      fetchClientOrders(selectedCustomerId);
+    } else {
+      setClientOrders([]);
+    }
+  }, [selectedCustomerId]);
+
   // Process payment submission
   const onSubmit = async (data: any) => {
     if (isSubmitting) return;
@@ -146,7 +189,7 @@ export function usePaymentForm() {
         customerId: data.customerId,
         legacyClientId: data.legacyClientId,
         orderId: data.orderId,
-        status: data.status,
+        status: "completed", // Sempre completado
       };
     
       // Add installments data if using credit card with multiple installments
@@ -228,8 +271,12 @@ export function usePaymentForm() {
 
   // Handle client selection
   const handleClientSelect = (clientId: string, name: string) => {
+    console.log("ID do cliente selecionado:", clientId);
     setValue("customerId", clientId);
     setCustomerSearch(name);
+    
+    // Quando um cliente é selecionado, procura os pedidos dele
+    fetchClientOrders(clientId);
   };
 
   // Handle legacy client selection
@@ -239,22 +286,31 @@ export function usePaymentForm() {
   };
 
   // Handle order selection
-  const handleOrderSelect = (orderId: string, name: string) => {
+  const handleOrderSelect = (orderId: string) => {
     setValue("orderId", orderId);
-    setOrderSearch(name);
+    
+    // Quando um pedido é selecionado, preenche o valor do pagamento automaticamente
+    const selectedOrder = clientOrders.find(order => order._id === orderId);
+    if (selectedOrder) {
+      // Se o pedido já estiver parcialmente pago, calcular o valor restante
+      if (selectedOrder.paymentStatus === "partially_paid") {
+        // Aqui você precisará obter o valor já pago do pedido
+        // Por simplicidade, vamos presumir que o valor restante é o valor final
+        setValue("amount", selectedOrder.finalPrice);
+      } else if (selectedOrder.paymentStatus === "pending") {
+        // Se estiver pendente, o valor é o total
+        setValue("amount", selectedOrder.finalPrice);
+      } else {
+        // Se já estiver pago, deixar o valor como 0 ou perguntar ao usuário
+        setValue("amount", 0);
+      }
+    }
   };
 
   // Handle cancel (go back to payments page)
   const handleCancel = () => {
     router.push("/payments");
   };
-
-  // Load orders when searching
-  //   useEffect(() => {
-  //     if (orderSearch && orderSearch.length >= 3) {
-  //       getAllOrders({ search: orderSearch });
-  //     }
-  //   }, [orderSearch, getAllOrders]);
 
   // Return all required props and functions
   return {
@@ -268,10 +324,9 @@ export function usePaymentForm() {
     isLoadingCustomers,
     legacyClients,
     isLoadingLegacyClients,
-    orders,
+    clientOrders,
     isLoadingOrders,
     customerSearch,
-    orderSearch,
     legacyClientSearch,
     selectedEntityType,
     showInstallments,
@@ -279,7 +334,6 @@ export function usePaymentForm() {
     showConfirmDialog,
     setShowCheckFields,
     setCustomerSearch,
-    setOrderSearch,
     setLegacyClientSearch,
     setSelectedEntityType,
     setShowConfirmDialog,
@@ -291,6 +345,7 @@ export function usePaymentForm() {
     onPrev: prevStep,
     onSubmit,
     onCancel: handleCancel,
-    fetchAllCustomers
+    fetchAllCustomers,
+    fetchClientOrders
   };
 }

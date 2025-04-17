@@ -466,6 +466,8 @@ export class OrderService {
       throw new OrderError("Nenhum pedido encontrado para este cliente");
     }
 
+    console.log(orders, "Order Service");
+    
     return orders;
   }
 

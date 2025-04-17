@@ -516,6 +516,12 @@ router.get(
   asyncHandler(paymentController.getDeletedPayments.bind(paymentController))
 );
 
+router.get(
+  '/api/payments/recalculate-debts',
+  authenticate,
+  authorize(["admin", "employee"]),
+  asyncHandler(paymentController.recalculateDebts.bind(paymentController)));
+
 /**
  * @swagger
  * /api/payments/{id}:

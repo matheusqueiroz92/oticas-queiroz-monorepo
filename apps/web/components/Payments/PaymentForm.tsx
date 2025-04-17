@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { useForm } from "react-hook-form";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -36,17 +36,18 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft,
   Calendar as CalendarIcon,
   DollarSign,
   Loader2,
-  Search,
   User,
   Store,
+  ClipboardCheck,
 } from "lucide-react";
 import ClientSearch from "@/components/Orders/ClientSearch";
-import { formatCurrency } from "@/app/utils/formatters";
+import { formatCurrency, formatDate } from "@/app/utils/formatters";
 import type { Order } from "@/app/types/order";
 import type { User as UserType } from "@/app/types/user";
 import type { LegacyClient } from "@/app/types/legacy-client";
@@ -64,22 +65,20 @@ interface PaymentFormProps {
   isLoadingCustomers: boolean;
   legacyClients: LegacyClient[];
   isLoadingLegacyClients: boolean;
-  orders: Order[];
+  clientOrders: Order[];
   isLoadingOrders: boolean;
   customerSearch: string;
-  orderSearch: string;
   legacyClientSearch: string;
   selectedEntityType: "customer" | "legacyClient" | null;
   showInstallments: boolean;
   showCheckFields: boolean;
   onShowCheckFields: (value: boolean) => void;
   onCustomerSearchChange: (value: string) => void;
-  onOrderSearchChange: (value: string) => void;
   onLegacyClientSearchChange: (value: string) => void;
   onEntityTypeSelect: (type: "customer" | "legacyClient" | null) => void;
   onClientSelect: (id: string, name: string) => void;
   onLegacyClientSelect: (id: string, name: string) => void;
-  onOrderSelect: (id: string, name: string) => void;
+  onOrderSelect: (id: string) => void;
   onNext: () => void;
   onPrev: () => void;
   onSubmit: (data: PaymentFormValues) => void;
@@ -97,15 +96,13 @@ export function PaymentForm({
   customers,
   legacyClients,
   isLoadingLegacyClients,
-  orders,
+  clientOrders,
   isLoadingOrders,
-  orderSearch,
   legacyClientSearch,
   selectedEntityType,
   showInstallments,
   showCheckFields,
   onShowCheckFields,
-  onOrderSearchChange,
   onLegacyClientSearchChange,
   onEntityTypeSelect,
   onClientSelect,
@@ -117,8 +114,31 @@ export function PaymentForm({
   onCancel,
   fetchAllCustomers,
 }: PaymentFormProps) {
-  const { watch } = form;
+  const { watch, setValue } = form;
   const paymentType = watch("type");
+  const selectedCustomerId = watch("customerId");
+  const selectedOrderId = watch("orderId");
+  
+  // Função para obter o status do pagamento do pedido selecionado
+  const getOrderPaymentStatus = () => {
+    if (!selectedOrderId) return null;
+    const selectedOrder = clientOrders.find(order => order._id === selectedOrderId);
+    if (!selectedOrder) return null;
+    
+    return {
+      status: selectedOrder.paymentStatus,
+      label: selectedOrder.paymentStatus === "paid" 
+        ? "Pago" 
+        : selectedOrder.paymentStatus === "partially_paid" 
+          ? "Parcialmente Pago" 
+          : "Pendente",
+      className: selectedOrder.paymentStatus === "paid" 
+        ? "bg-green-100 text-green-800" 
+        : selectedOrder.paymentStatus === "partially_paid" 
+          ? "bg-yellow-100 text-yellow-800" 
+          : "bg-red-100 text-red-800"
+    };
+  };
   
   const renderStep1 = () => (
     <div className="space-y-6">
@@ -250,7 +270,7 @@ export function PaymentForm({
         />
 
         {showCheckFields && (
-          <div className="space-y-4 border p-4 rounded-md bg-gray-50">
+          <div className="space-y-4 border p-4 rounded-md bg-gray-50 col-span-2">
             <h3 className="font-medium">Dados do Cheque</h3>
             
             <div className="grid grid-cols-2 gap-4">
@@ -445,68 +465,37 @@ export function PaymentForm({
         />
       )}
 
+      {/* Substituído select de caixa por visualização de caixa atual */}
       <FormField
         control={form.control}
         name="cashRegisterId"
         render={({ field }) => (
           <FormItem>
             <FormLabel>Caixa *</FormLabel>
-            <Select onValueChange={field.onChange} defaultValue={field.value}>
-              <FormControl>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o caixa" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                {isLoadingCashRegister ? (
-                  <SelectItem value="loading" disabled>
-                    <Loader2 className="h-4 w-4 animate-spin mr-2 inline" />
-                    Carregando...
-                  </SelectItem>
-                ) : !cashRegister ? (
-                  <SelectItem value="no-cash" disabled>
-                    Nenhum caixa disponível
-                  </SelectItem>
-                ) : (
-                  <SelectItem value={cashRegister}>Caixa Aberto</SelectItem>
-                )}
-              </SelectContent>
-            </Select>
-            <FormDescription>
-              {!cashRegister ? (
-                <span className="text-red-500">
-                  Você precisa abrir um caixa primeiro
-                </span>
+            <div className="border rounded-md p-3 bg-gray-50">
+              {isLoadingCashRegister ? (
+                <div className="flex items-center">
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  <span className="text-muted-foreground">Carregando caixa...</span>
+                </div>
+              ) : !cashRegister ? (
+                <div className="text-red-500">
+                  Nenhum caixa disponível. Você precisa abrir um caixa primeiro.
+                </div>
               ) : (
-                "Caixa selecionado para este pagamento"
+                <div className="flex items-center space-x-2">
+                  <ClipboardCheck className="h-4 w-4 text-green-500" />
+                  <span>Caixa Aberto: {cashRegister}</span>
+                </div>
               )}
-            </FormDescription>
+            </div>
+            <input type="hidden" {...field} value={cashRegister || ""} />
             <FormMessage />
           </FormItem>
         )}
       />
 
-      <FormField
-        control={form.control}
-        name="status"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Status do Pagamento *</FormLabel>
-            <Select onValueChange={field.onChange} defaultValue={field.value}>
-              <FormControl>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o status" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                <SelectItem value="completed">Concluído</SelectItem>
-                <SelectItem value="pending">Pendente</SelectItem>
-              </SelectContent>
-            </Select>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+      {/* Status de pagamento removido do step 1 */}
     </div>
   );
   
@@ -520,6 +509,22 @@ export function PaymentForm({
               Registrando uma despesa. Você não precisa vincular a um cliente ou
               pedido.
             </p>
+          </div>
+
+          {/* Status do pagamento como badge para despesas */}
+          <div className="space-y-2">
+            <FormLabel>Status do Pagamento</FormLabel>
+            <div>
+              <Badge className="bg-blue-100 text-blue-800 px-3 py-1 text-sm">
+                Concluído
+              </Badge>
+              <input 
+                type="hidden" 
+                name="status" 
+                value="completed" 
+                onChange={() => setValue("status", "completed")}
+              />
+            </div>
           </div>
 
           <FormField
@@ -605,14 +610,14 @@ export function PaymentForm({
                 fetchAllCustomers={fetchAllCustomers}
               />
 
-              {watch("customerId") && (
+              {selectedCustomerId && (
                 <div className="bg-green-50 border border-green-200 rounded-md p-4">
                   <h4 className="text-sm font-medium text-green-800">
                     Cliente selecionado
                   </h4>
                   <p className="text-sm text-green-700 mt-1">
                     {customers.find(
-                      (c: UserType) => c._id === watch("customerId")
+                      (c: UserType) => c._id === selectedCustomerId
                     )?.name || "Cliente"}
                   </p>
                 </div>
@@ -629,9 +634,6 @@ export function PaymentForm({
                   onChange={(e) => onLegacyClientSearchChange(e.target.value)}
                   className="flex-1"
                 />
-                <Button type="button" variant="ghost" size="icon">
-                  <Search className="h-4 w-4" />
-                </Button>
               </div>
 
               {isLoadingLegacyClients && (
@@ -699,86 +701,125 @@ export function PaymentForm({
             </div>
           )}
 
-          {(watch("customerId") || watch("legacyClientId")) &&
+          {/* Mostrar status de pagamento como badge quando um cliente é selecionado */}
+          {(selectedCustomerId || watch("legacyClientId")) && (
+            <div className="space-y-2 mt-4">
+              <FormLabel>Status do Pagamento</FormLabel>
+              <div>
+                <Badge className="bg-blue-100 text-blue-800 px-3 py-1 text-sm">
+                  {selectedOrderId && getOrderPaymentStatus() ? 
+                    getOrderPaymentStatus()?.label : 
+                    "Concluído"}
+                </Badge>
+                <input 
+                  type="hidden" 
+                  name="status" 
+                  value="completed" 
+                  onChange={() => setValue("status", "completed")}
+                />
+              </div>
+            </div>
+          )}
+
+          {(selectedCustomerId || watch("legacyClientId")) &&
             paymentType === "sale" && (
               <div className="space-y-4 mt-6">
                 <div className="flex items-center space-x-4">
                   <h3 className="text-lg font-medium">
-                    Vincular a Pedido (Opcional)
+                    Pedidos do Cliente
                   </h3>
                   <Separator className="flex-1" />
                 </div>
 
-                <div className="flex items-center space-x-2">
-                  <Input
-                    placeholder="Buscar pedido..."
-                    value={orderSearch}
-                    onChange={(e) => onOrderSearchChange(e.target.value)}
-                    className="flex-1"
-                  />
-                  <Button type="button" variant="ghost" size="icon">
-                    <Search className="h-4 w-4" />
-                  </Button>
-                </div>
-
-                {isLoadingOrders && (
+                {isLoadingOrders ? (
                   <div className="flex items-center justify-center py-4">
                     <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                   </div>
-                )}
-
-                {orderSearch &&
-                  orderSearch.length >= 3 &&
-                  orders.length > 0 && (
-                    <div className="border rounded-md p-4 max-h-60 overflow-y-auto">
-                      <ul className="space-y-2">
-                        {orders.map((order: Order) => (
+                ) : clientOrders && Array.isArray(clientOrders) ? (
+                  <div 
+                    key={`orders-list-${clientOrders.length}-${selectedCustomerId}`} 
+                    className="border rounded-md p-4 max-h-80 overflow-y-auto"
+                  >
+                    <ul className="space-y-3">
+                      {clientOrders.map((order) => {
+                        // Adicione um log para cada pedido aqui para depuração
+                        console.log("Renderizando pedido:", order);
+                        
+                        const paymentStatus = order.paymentStatus === "paid" 
+                          ? "Pago" 
+                          : order.paymentStatus === "partially_paid" 
+                            ? "Parcialmente Pago" 
+                            : "Pendente";
+                            
+                        const statusClass = order.paymentStatus === "paid" 
+                          ? "bg-green-100 text-green-800" 
+                          : order.paymentStatus === "partially_paid" 
+                            ? "bg-yellow-100 text-yellow-800" 
+                            : "bg-red-100 text-red-800";
+                          
+                        return (
                           <li
-                            key={order._id}
-                            className="flex items-center justify-between"
+                            key={order._id || `order-${Math.random()}`}
+                            className={`flex justify-between items-start border-b pb-3 ${
+                              selectedOrderId === order._id ? "bg-blue-50 p-2 rounded" : ""
+                            }`}
                           >
-                            <div>
-                              <p className="font-medium">
-                                Pedido #{order._id.substring(0, 8)}
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                Valor: {formatCurrency(order.totalPrice)} -
-                                Status: {order.status}
-                              </p>
-                            </div>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => onOrderSelect(
-                                order._id,
-                                `Pedido #${order._id.substring(0, 8)}`
-                              )}
-                            >
-                              Selecionar
-                            </Button>
+                              <div>
+                                <p className="font-medium">
+                                  {order.serviceOrder ? `O.S. #${order.serviceOrder}` : `Pedido #${order._id.substring(0, 8)}`}
+                                </p>
+                                <div className="flex items-center space-x-2 mt-1">
+                                  <Badge className={`text-xs ${statusClass}`}>
+                                    {paymentStatus}
+                                  </Badge>
+                                  <span className="text-sm text-muted-foreground">
+                                    Status: {order.status === "pending" ? "Pendente" :
+                                          order.status === "in_production" ? "Em Produção" :
+                                          order.status === "ready" ? "Pronto" :
+                                          order.status === "delivered" ? "Entregue" :
+                                          "Cancelado"}
+                                  </span>
+                                </div>
+                                <div className="text-sm mt-1">
+                                  <span className="font-medium text-green-700">
+                                    {formatCurrency(order.finalPrice)}
+                                  </span>
+                                  <span className="text-gray-500 ml-2">
+                                    {formatDate(order.createdAt)}
+                                  </span>
+                                </div>
+                              </div>
+                              <div>
+                                <Button
+                                  type="button"
+                                  variant={selectedOrderId === order._id ? "default" : "outline"}
+                                  size="sm"
+                                  onClick={() => onOrderSelect(order._id)}
+                                  className="mt-2"
+                                >
+                                  {selectedOrderId === order._id ? "Selecionado" : "Selecionar"}
+                                </Button>
+                              </div>
                           </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                {orderSearch &&
-                  orderSearch.length >= 3 &&
-                  orders.length === 0 &&
-                  !isLoadingOrders && (
-                    <div className="text-center py-4 text-muted-foreground">
-                      Nenhum pedido encontrado
-                    </div>
-                  )}
-
-                {watch("orderId") && (
-                  <div className="bg-green-50 border border-green-200 rounded-md p-4">
-                    <h4 className="text-sm font-medium text-green-800">
+                        );
+                      })}
+                    </ul>
+                  </div>
+                ) : (
+                  <div className="text-center py-4 text-muted-foreground border rounded-md">
+                    Nenhum pedido encontrado para este cliente
+                  </div>
+                )}
+                
+                {selectedOrderId && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mt-4">
+                    <h4 className="text-sm font-medium text-blue-800">
                       Pedido selecionado
                     </h4>
-                    <p className="text-sm text-green-700 mt-1">
-                      #{watch("orderId")?.substring(0, 8)}
+                    <p className="text-sm text-blue-700 mt-1">
+                      {clientOrders.find(order => order._id === selectedOrderId)?.serviceOrder 
+                        ? `O.S. #${clientOrders.find(order => order._id === selectedOrderId)?.serviceOrder}` 
+                        : `Pedido #${selectedOrderId.substring(0, 8)}`}
                     </p>
                   </div>
                 )}
@@ -815,7 +856,7 @@ export function PaymentForm({
         />
 
         <div className="bg-blue-50 border border-blue-200 rounded-md p-4 space-y-3">
-          <h3 className="text-md font-medium text-blue-800">
+        <h3 className="text-md font-medium text-blue-800">
             Resumo do Pagamento
           </h3>
 
@@ -858,7 +899,7 @@ export function PaymentForm({
 
             <div className="text-blue-700 font-medium">Status:</div>
             <div className="text-blue-900">
-              {watch("status") === "completed" ? "Concluído" : "Pendente"}
+              Concluído
             </div>
 
             {watch("paymentMethod") === "credit" &&
@@ -902,8 +943,32 @@ export function PaymentForm({
                   Pedido vinculado:
                 </div>
                 <div className="text-blue-900">
-                  #{watch("orderId")?.substring(0, 8) ?? ""}
+                  {clientOrders.find(order => order._id === watch("orderId"))?.serviceOrder 
+                    ? `O.S. #${clientOrders.find(order => order._id === watch("orderId"))?.serviceOrder}` 
+                    : `#${watch("orderId")?.substring(0, 8) ?? ""}`}
                 </div>
+                {watch("orderId") && (
+                  <div className="text-blue-700 font-medium mt-2">
+                    Valor do pedido:
+                  </div>
+                )}
+                {watch("orderId") && (
+                  <div className="text-blue-900">
+                    {formatCurrency(clientOrders.find(order => order._id === watch("orderId"))?.finalPrice || 0)}
+                  </div>
+                )}
+                {watch("orderId") && (
+                  <div className="text-blue-700 font-medium mt-2">
+                    Status de pagamento:
+                  </div>
+                )}
+                {watch("orderId") && (
+                  <div className="text-blue-900 flex items-center">
+                    <Badge className={`mr-2 ${getOrderPaymentStatus()?.className || "bg-gray-100 text-gray-800"}`}>
+                      {getOrderPaymentStatus()?.label || "Pendente"}
+                    </Badge>
+                  </div>
+                )}
               </>
             )}
 
@@ -918,7 +983,8 @@ export function PaymentForm({
       </div>
     );
   };
-  
+
+  // Função para determinar qual conteúdo renderizar com base no passo atual
   const renderStepContent = () => {
     switch (currentStep) {
       case 1:
@@ -930,6 +996,40 @@ export function PaymentForm({
       default:
         return renderStep1();
     }
+  };
+  
+  // Função para verificar se o botão próximo deve estar desabilitado
+  const isNextButtonDisabled = () => {
+    if (currentStep === 1) {
+      // Verificar campos obrigatórios do Step 1
+      const amount = watch("amount");
+      const paymentDate = watch("paymentDate");
+      const cashRegisterId = watch("cashRegisterId");
+      
+      return !amount || amount <= 0 || !paymentDate || !cashRegisterId || !isCashRegisterOpen;
+    }
+    
+    if (currentStep === 2) {
+      // Verificar campos obrigatórios do Step 2
+      const type = watch("type");
+      
+      if (type === "expense") {
+        // Para despesas, não precisamos de cliente ou pedido
+        return false;
+      } else {
+        // Para vendas e pagamentos de débito, precisamos de um cliente
+        const hasCustomer = !!watch("customerId") || !!watch("legacyClientId");
+        
+        // Para vendas, idealmente devemos ter um pedido selecionado
+        if (type === "sale") {
+          return !hasCustomer;
+        }
+        
+        return !hasCustomer;
+      }
+    }
+    
+    return false;
   };
 
   return (
@@ -1015,7 +1115,7 @@ export function PaymentForm({
               <Button
                 type="button"
                 onClick={onNext}
-                disabled={isLoadingCashRegister || !isCashRegisterOpen}
+                disabled={isLoadingCashRegister || !isCashRegisterOpen || isNextButtonDisabled()}
               >
                 Próximo
               </Button>
