@@ -6,6 +6,7 @@ import { LegacyClientModel } from "../models/LegacyClientModel";
 import type { IPayment, CreatePaymentDTO } from "../interfaces/IPayment";
 import NodeCache from "node-cache";
 import { ExportUtils, type ExportOptions } from "../utils/exportUtils";
+import mongoose from "mongoose";
 
 export class PaymentError extends Error {
   constructor(message: string) {
@@ -331,7 +332,7 @@ export class PaymentService {
     debtAmount?: number,
     paymentId?: string,
     institutionId?: string
-  ): Promise<void> {
+): Promise<void> {
     if (!debtAmount) {
       console.log("Nenhuma alteração na dívida do cliente necessária");
       return;
@@ -448,11 +449,14 @@ export class PaymentService {
    * @param paymentData Dados do pagamento
    * @returns Pagamento criado
    */
-  async createPayment(paymentData: CreatePaymentDTO): Promise<IPayment> {
+  async createPayment(paymentData: Omit<IPayment, "_id">): Promise<IPayment> {
+    const session = await mongoose.connection.startSession();
+    session.startTransaction();
+    
     try {
       // Validar os dados do pagamento e obter o ID do caixa
       const cashRegisterId = await this.validatePayment(paymentData);
-
+  
       // Verificar se já existe um pagamento com os mesmos detalhes para evitar duplicação
       // Este é um exemplo de como tornar a operação idempotente
       if (paymentData.orderId) {
@@ -469,7 +473,7 @@ export class PaymentService {
           return existingPayments.payments[0];
         }
       }
-
+  
       // Criar o pagamento
       let payment: IPayment | null = null;
       let retryCount = 0;
@@ -494,11 +498,11 @@ export class PaymentService {
           await new Promise(resolve => setTimeout(resolve, 500 * retryCount));
         }
       }
-
+  
       if (!payment) {
         throw new PaymentError("Falha ao criar pagamento");
       }
-
+  
       // Atualizar o caixa - com retry
       let cashUpdateSuccess = false;
       retryCount = 0;
@@ -521,7 +525,7 @@ export class PaymentService {
           await new Promise(resolve => setTimeout(resolve, 500 * retryCount));
         }
       }
-
+  
       // Se o pagamento está relacionado a um pedido, atualizar o status de pagamento
       if (payment.orderId) {
         try {
@@ -554,22 +558,64 @@ export class PaymentService {
           // Continuamos o fluxo mesmo com erro na atualização do pedido
         }
       }
-
+  
       // Se for pagamento de dívida, atualizar a dívida do cliente
       if (payment.type === "debt_payment") {
         try {
-          const debtAmount = -payment.amount; // Valor negativo para reduzir a dívida
+          // Valor negativo para reduzir a dívida
+          const debtAmount = -payment.amount; 
+      
+          // Atualize a dívida do cliente
           await this.updateClientDebt(
             payment.customerId,
             payment.legacyClientId,
             debtAmount,
             payment._id
           );
+      
+          // Se o pagamento está relacionado a um pedido específico, atualize o status de pagamento do pedido
+          if (payment.orderId) {
+            try {
+              await this.updateOrderPaymentStatus(
+                payment.orderId.toString(),
+                payment._id,
+                payment.amount,
+                payment.paymentMethod,
+                'add'
+              );
+              
+              // Obtenha o pedido para verificar o status geral de pagamento
+              const order = await this.orderModel.findById(payment.orderId);
+              if (order) {
+                // Calcule quanto já foi pago e quanto resta a pagar
+                const totalPayments = (order.paymentHistory || []).reduce((sum, entry) => sum + entry.amount, 0);
+                const remainingDebt = order.finalPrice - totalPayments;
+                
+                console.log(`Pedido ${order._id}: Total pago = ${totalPayments}, Valor restante = ${remainingDebt}`);
+                
+                // Se não houver mais dívida a pagar, atualize o status de pagamento para pago
+                if (remainingDebt <= 0) {
+                  await this.orderModel.update(order._id, { 
+                    paymentStatus: "paid" 
+                  });
+                  console.log(`Status de pagamento do pedido ${order._id} atualizado para: pago`);
+                } else {
+                  // Se ainda há dívida, mas já houve algum pagamento, atualize para parcialmente pago
+                  await this.orderModel.update(order._id, { 
+                    paymentStatus: "partially_paid" 
+                  });
+                  console.log(`Status de pagamento do pedido ${order._id} atualizado para: parcialmente pago`);
+                }
+              }
+            } catch (error) {
+              console.error(`Erro ao atualizar status de pagamento do pedido ${payment.orderId}:`, error);
+            }
+          }
         } catch (error) {
           console.error(`Erro ao atualizar dívida do cliente no pagamento ${payment._id}:`, error);
         }
       }
-
+  
       if (payment.isInstitutionalPayment && payment.institutionId && payment.type === "debt_payment") {
         try {
           const debtAmount = -payment.amount; // Valor negativo para reduzir a dívida
@@ -585,7 +631,7 @@ export class PaymentService {
           console.error(`Erro ao atualizar dívida da instituição no pagamento ${payment._id}:`, error);
         }
       }
-
+  
       // Se for boleto ou promissória com geração de débito, atualizar débito do cliente
       if (
         this.isInstallmentPaymentMethod(payment.paymentMethod) &&
@@ -599,7 +645,7 @@ export class PaymentService {
               ? payment.clientDebt.installments.total *
                 payment.clientDebt.installments.value
               : payment.amount;
-
+  
           await this.updateClientDebt(
             payment.customerId,
             payment.legacyClientId,
@@ -610,7 +656,7 @@ export class PaymentService {
           console.error(`Erro ao atualizar débito parcelado do cliente no pagamento ${payment._id}:`, error);
         }
       }
-
+  
       // Invalidar cache
       try {
         const date = new Date(payment.date);
@@ -623,7 +669,7 @@ export class PaymentService {
       } catch (error) {
         console.error("Erro ao invalidar cache:", error);
       }
-
+  
       return payment;
     } catch (error) {
       console.error("Erro fatal ao processar pagamento:", error);
@@ -750,191 +796,204 @@ export class PaymentService {
    * @throws PaymentError se o cancelamento falhar
    */
   async cancelPayment(id: string, userId: string): Promise<IPayment> {
-    // Verificar se o pagamento existe
-    const payment = await this.paymentModel.findById(id);
-    if (!payment) {
-      throw new PaymentError("Pagamento não encontrado");
-    }
-
-    // Verificar se já está cancelado
-    if (payment.status === "cancelled") {
-      console.log(`Pagamento ${id} já está cancelado. Retornando pagamento existente.`);
-      return payment;
-    }
-
-    // Verificar se o caixa existe e está aberto
-    const register = await this.cashRegisterModel.findById(
-      payment.cashRegisterId
-    );
-    if (!register) {
-      throw new PaymentError("Caixa não encontrado");
-    }
-
-    if (register.status === "closed") {
-      throw new PaymentError(
-        "Não é possível cancelar pagamento de um caixa fechado"
-      );
-    }
-
-    let updatedPayment: IPayment | null = null;
+    const session = await mongoose.connection.startSession();
+    session.startTransaction();
     
     try {
-      // Se o pagamento está relacionado a um pedido, verificar se precisamos reverter débitos
-      if (payment.orderId) {
-        try {
-          // Atualizar status de pagamento do pedido
-          await this.updateOrderPaymentStatus(
-            payment.orderId.toString(),
-            payment._id,
-            undefined,
-            undefined,
-            'remove'
-          );
-          
-          // Se o método de pagamento for parcelado, reverter o débito do cliente
-          if (this.isInstallmentPaymentMethod(payment.paymentMethod) && 
-              payment.type !== "debt_payment") {
-            const order = await this.orderModel.findById(payment.orderId);
-            if (order && order.clientId) {
-              const debtAmount = -(order.finalPrice - (order.paymentEntry || 0)); // Valor negativo para reverter
-              if (debtAmount < 0) {
-                console.log(`Cancelando pagamento parcelado para o pedido ${order._id}. Removendo débito do cliente ${order.clientId}`);
-                await this.updateClientDebt(
-                  order.clientId.toString(),
-                  undefined,
-                  debtAmount
-                );
+      // Verificar se o pagamento existe
+      const payment = await this.paymentModel.findById(id);
+      if (!payment) {
+        throw new PaymentError("Pagamento não encontrado");
+      }
+  
+      // Verificar se já está cancelado
+      if (payment.status === "cancelled") {
+        console.log(`Pagamento ${id} já está cancelado. Retornando pagamento existente.`);
+        return payment;
+      }
+  
+      // Verificar se o caixa existe e está aberto
+      const register = await this.cashRegisterModel.findById(
+        payment.cashRegisterId
+      );
+      if (!register) {
+        throw new PaymentError("Caixa não encontrado");
+      }
+  
+      if (register.status === "closed") {
+        throw new PaymentError(
+          "Não é possível cancelar pagamento de um caixa fechado"
+        );
+      }
+  
+      let updatedPayment: IPayment | null = null;
+      
+      try {
+        // Se o pagamento está relacionado a um pedido, verificar se precisamos reverter débitos
+        if (payment.orderId) {
+          try {
+            // Atualizar status de pagamento do pedido
+            await this.updateOrderPaymentStatus(
+              payment.orderId.toString(),
+              payment._id,
+              undefined,
+              undefined,
+              'remove'
+            );
+            
+            // Se o método de pagamento for parcelado, reverter o débito do cliente
+            if (this.isInstallmentPaymentMethod(payment.paymentMethod) && 
+                payment.type !== "debt_payment") {
+              const order = await this.orderModel.findById(payment.orderId);
+              if (order && order.clientId) {
+                const debtAmount = -(order.finalPrice - (order.paymentEntry || 0)); // Valor negativo para reverter
+                if (debtAmount < 0) {
+                  console.log(`Cancelando pagamento parcelado para o pedido ${order._id}. Removendo débito do cliente ${order.clientId}`);
+                  await this.updateClientDebt(
+                    order.clientId.toString(),
+                    undefined,
+                    debtAmount
+                  );
+                }
               }
             }
+          } catch (error) {
+            console.error(`Erro ao processar pedido relacionado ao cancelar pagamento ${id}:`, error);
+            // Continuamos o processo mesmo com erro na atualização do pedido
           }
-        } catch (error) {
-          console.error(`Erro ao processar pedido relacionado ao cancelar pagamento ${id}:`, error);
-          // Continuamos o processo mesmo com erro na atualização do pedido
         }
-      }
-
-      // Atualizar caixa (com retry se necessário)
-      let cashUpdateSuccess = false;
-      let retryCount = 0;
-      const maxRetries = 3;
-      
-      while (!cashUpdateSuccess && retryCount < maxRetries) {
-        try {
-          await this.updateCashRegister(payment.cashRegisterId, {
-            ...payment,
-            amount: -payment.amount,
-          });
-          cashUpdateSuccess = true;
-        } catch (error) {
-          retryCount++;
-          console.error(`Erro ao atualizar caixa no cancelamento (tentativa ${retryCount}/${maxRetries}):`, error);
-          
-          if (retryCount >= maxRetries) {
-            console.error(`Falha ao atualizar caixa após múltiplas tentativas. Pagamento ID: ${id}`);
-            // Continuamos o processo mesmo com erro na atualização do caixa
-            break;
+  
+        // Atualizar caixa (com retry se necessário)
+        let cashUpdateSuccess = false;
+        let retryCount = 0;
+        const maxRetries = 3;
+        
+        while (!cashUpdateSuccess && retryCount < maxRetries) {
+          try {
+            await this.updateCashRegister(payment.cashRegisterId, {
+              ...payment,
+              amount: -payment.amount,
+            });
+            cashUpdateSuccess = true;
+          } catch (error) {
+            retryCount++;
+            console.error(`Erro ao atualizar caixa no cancelamento (tentativa ${retryCount}/${maxRetries}):`, error);
+            
+            if (retryCount >= maxRetries) {
+              console.error(`Falha ao atualizar caixa após múltiplas tentativas. Pagamento ID: ${id}`);
+              // Continuamos o processo mesmo com erro na atualização do caixa
+              break;
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, 500 * retryCount));
           }
-          
-          await new Promise(resolve => setTimeout(resolve, 500 * retryCount));
         }
-      }
-
-      // Atualizar dívida se necessário
-      if (payment.isInstitutionalPayment && payment.institutionId && payment.type === "debt_payment") {
-        try {
-          const debtAmount = payment.amount; // Valor positivo para reverter a redução da dívida
-          await this.updateClientDebt(
-            undefined,
-            undefined,
-            debtAmount,
-            undefined,
-            payment.institutionId
-          );
-          console.log(`Revertendo pagamento institucional. Adicionando ${debtAmount} à dívida da instituição ${payment.institutionId}`);
-        } catch (error) {
-          console.error(`Erro ao atualizar dívida da instituição no cancelamento do pagamento ${id}:`, error);
-        }
-      }
-      // Tratar pagamentos de dívida de clientes normais (código existente)
-      else if (payment.type === "debt_payment") {
-        try {
-          const debtAmount = payment.amount; // Valor positivo para reverter a redução da dívida
-          console.log(`Revertendo pagamento de dívida. Adicionando ${debtAmount} à dívida do cliente.`);
-          await this.updateClientDebt(
-            payment.customerId,
-            payment.legacyClientId,
-            debtAmount
-          );
-        } catch (error) {
-          console.error(`Erro ao atualizar dívida do cliente no cancelamento do pagamento ${id}:`, error);
-        }
-      }
-
-      // Se for boleto ou promissória com geração de débito, reverter débito do cliente
-      if (
-        this.isInstallmentPaymentMethod(payment.paymentMethod) &&
-        payment.clientDebt?.generateDebt
-      ) {
-        try {
-          // Calcular o valor total do débito (total do parcelamento)
-          const totalDebt =
-            payment.clientDebt.installments?.total &&
-            payment.clientDebt.installments.value
-              ? -(
-                  payment.clientDebt.installments.total *
-                  payment.clientDebt.installments.value
-                )
-              : -payment.amount;
-
-          console.log(`Revertendo débito parcelado. Reduzindo ${Math.abs(totalDebt)} da dívida do cliente.`);
-          await this.updateClientDebt(
-            payment.customerId,
-            payment.legacyClientId,
-            totalDebt
-          );
-        } catch (error) {
-          console.error(`Erro ao reverter débito parcelado do cliente no cancelamento do pagamento ${id}:`, error);
-        }
-      }
-
-      // Atualizar status do pagamento (com retry)
-      retryCount = 0;
-      while (!updatedPayment && retryCount < maxRetries) {
-        try {
-          updatedPayment = await this.paymentModel.updateStatus(
-            id,
-            "cancelled"
-          );
-        } catch (error) {
-          retryCount++;
-          console.error(`Erro ao atualizar status do pagamento (tentativa ${retryCount}/${maxRetries}):`, error);
-          
-          if (retryCount >= maxRetries) {
-            throw new PaymentError("Erro ao cancelar pagamento após múltiplas tentativas");
+  
+        // Atualizar dívida se necessário
+        if (payment.isInstitutionalPayment && payment.institutionId && payment.type === "debt_payment") {
+          try {
+            const debtAmount = payment.amount; // Valor positivo para reverter a redução da dívida
+            await this.updateClientDebt(
+              undefined,
+              undefined,
+              debtAmount,
+              undefined,
+              payment.institutionId
+            );
+            console.log(`Revertendo pagamento institucional. Adicionando ${debtAmount} à dívida da instituição ${payment.institutionId}`);
+          } catch (error) {
+            console.error(`Erro ao atualizar dívida da instituição no cancelamento do pagamento ${id}:`, error);
           }
-          
-          await new Promise(resolve => setTimeout(resolve, 500 * retryCount));
         }
-      }
-
-      if (!updatedPayment) {
-        throw new PaymentError("Erro ao cancelar pagamento");
-      }
-
-      // Invalidar cache
-      try {
-        this.invalidateCache(`payment_${id}`);
-        const date = new Date(payment.date);
-        const dateString = date.toISOString().split("T")[0];
-        this.invalidateCache([
-          `daily_payments_${dateString}_all`,
-          `daily_payments_${dateString}_${payment.type}`,
-        ]);
+        // Tratar pagamentos de dívida de clientes normais (código existente)
+        else if (payment.type === "debt_payment") {
+          try {
+            const debtAmount = payment.amount; // Valor positivo para reverter a redução da dívida
+            console.log(`Revertendo pagamento de dívida. Adicionando ${debtAmount} à dívida do cliente.`);
+            await this.updateClientDebt(
+              payment.customerId,
+              payment.legacyClientId,
+              debtAmount
+            );
+          } catch (error) {
+            console.error(`Erro ao atualizar dívida do cliente no cancelamento do pagamento ${id}:`, error);
+          }
+        }
+  
+        // Se for boleto ou promissória com geração de débito, reverter débito do cliente
+        if (
+          this.isInstallmentPaymentMethod(payment.paymentMethod) &&
+          payment.clientDebt?.generateDebt
+        ) {
+          try {
+            // Calcular o valor total do débito (total do parcelamento)
+            const totalDebt =
+              payment.clientDebt.installments?.total &&
+              payment.clientDebt.installments.value
+                ? -(
+                    payment.clientDebt.installments.total *
+                    payment.clientDebt.installments.value
+                  )
+                : -payment.amount;
+  
+            console.log(`Revertendo débito parcelado. Reduzindo ${Math.abs(totalDebt)} da dívida do cliente.`);
+            await this.updateClientDebt(
+              payment.customerId,
+              payment.legacyClientId,
+              totalDebt
+            );
+          } catch (error) {
+            console.error(`Erro ao reverter débito parcelado do cliente no cancelamento do pagamento ${id}:`, error);
+          }
+        }
+  
+        // Atualizar status do pagamento (com retry)
+        retryCount = 0;
+        while (!updatedPayment && retryCount < maxRetries) {
+          try {
+            updatedPayment = await this.paymentModel.updateStatus(
+              id,
+              "cancelled"
+            );
+          } catch (error) {
+            retryCount++;
+            console.error(`Erro ao atualizar status do pagamento (tentativa ${retryCount}/${maxRetries}):`, error);
+            
+            if (retryCount >= maxRetries) {
+              throw new PaymentError("Erro ao cancelar pagamento após múltiplas tentativas");
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, 500 * retryCount));
+          }
+        }
+  
+        if (!updatedPayment) {
+          throw new PaymentError("Erro ao cancelar pagamento");
+        }
+  
+        // Invalidar cache
+        try {
+          this.invalidateCache(`payment_${id}`);
+          const date = new Date(payment.date);
+          const dateString = date.toISOString().split("T")[0];
+          this.invalidateCache([
+            `daily_payments_${dateString}_all`,
+            `daily_payments_${dateString}_${payment.type}`,
+          ]);
+        } catch (error) {
+          console.error("Erro ao invalidar cache:", error);
+        }
+  
+        return updatedPayment;
       } catch (error) {
-        console.error("Erro ao invalidar cache:", error);
+        console.error("Erro fatal ao cancelar pagamento:", error);
+        if (error instanceof PaymentError) {
+          throw error;
+        }
+        throw new PaymentError(
+          error instanceof Error ? error.message : "Erro desconhecido ao cancelar pagamento"
+        );
       }
-
-      return updatedPayment;
     } catch (error) {
       console.error("Erro fatal ao cancelar pagamento:", error);
       if (error instanceof PaymentError) {
@@ -945,7 +1004,6 @@ export class PaymentService {
       );
     }
   }
-
   /**
    * Realiza exclusão lógica (soft delete) de um pagamento
    * @param id ID do pagamento
@@ -1156,6 +1214,40 @@ export class PaymentService {
         });
         
         console.log(`Status de pagamento do pedido ${orderId} atualizado para ${newPaymentStatus}`);
+        
+        // Se este pedido for via boleto ou promissória, atualize o débito do cliente
+        if (
+          (order.paymentMethod === "bank_slip" || order.paymentMethod === "promissory_note") && 
+          order.clientId
+        ) {
+          const clientId = typeof order.clientId === 'string' 
+            ? order.clientId 
+            : order.clientId.toString();
+            
+          // Obter o cliente
+          const client = await this.userModel.findById(clientId);
+          if (client) {
+            // Calcular o valor restante após o pagamento
+            const remainingDebt = Math.max(0, order.finalPrice - totalPaid);
+            
+            // Calcular o ajuste de débito necessário
+            // Lógica: o valor que o cliente deve por este pedido é o valor original - o valor já pago
+            const originalDebt = order.finalPrice - (order.paymentEntry || 0);
+            
+            // O ajuste é a diferença entre o débito original e o débito restante
+            // Valor positivo: aumenta o débito, valor negativo: reduz o débito
+            const adjustmentNeeded = remainingDebt - originalDebt;
+            
+            // Se houver ajuste, atualizar o débito do cliente
+            if (adjustmentNeeded !== 0) {
+              await this.updateClientDebt(
+                clientId,
+                undefined,
+                adjustmentNeeded
+              );
+            }
+          }
+        }
       } else {
         console.log(`Nenhuma alteração necessária no status de pagamento do pedido ${orderId}`);
       }
@@ -1260,4 +1352,163 @@ export class PaymentService {
     
     return checks;
   }
+
+  /**
+   * Recalcula o status de pagamento de um pedido com base nos pagamentos realizados
+   * @param orderId ID do pedido
+   * @param customerId ID opcional do cliente para atualizar seu débito total
+  */
+  private async recalculateOrderPaymentStatus(orderId: string, customerId?: string): Promise<void> {
+  try {
+    // Buscar o pedido
+    const order = await this.orderModel.findById(orderId);
+    if (!order) {
+      console.error(`Pedido ${orderId} não encontrado ao recalcular status de pagamento`);
+      return;
+    }
+    
+    // Calcular o total pago
+    const totalPaid = order.paymentHistory 
+      ? order.paymentHistory.reduce((sum, entry) => sum + entry.amount, 0) 
+      : 0;
+    
+    // Calcular o valor restante
+    const remainingDebt = order.finalPrice - totalPaid;
+    
+    console.log(`Recalculando pagamento do pedido ${orderId}:`);
+    console.log(`- Preço final: ${order.finalPrice}`);
+    console.log(`- Total pago: ${totalPaid}`);
+    console.log(`- Valor restante: ${remainingDebt}`);
+    
+    let newPaymentStatus: "pending" | "partially_paid" | "paid" = "pending";
+    
+    if (totalPaid >= order.finalPrice) {
+      newPaymentStatus = "paid";
+    } else if (totalPaid > 0) {
+      newPaymentStatus = "partially_paid";
+    }
+    
+    // Atualizar o status de pagamento do pedido
+    if (newPaymentStatus !== order.paymentStatus) {
+      await this.orderModel.update(orderId, {
+        paymentStatus: newPaymentStatus
+      });
+      console.log(`Status de pagamento do pedido ${orderId} atualizado para: ${newPaymentStatus}`);
+    }
+    
+    // Se o cliente foi informado, atualizar o débito total do cliente
+    if (customerId && (order.paymentMethod === 'bank_slip' || order.paymentMethod === 'promissory_note')) {
+      try {
+        const customer = await this.userModel.findById(customerId);
+        if (customer) {
+          // Obter todos os pedidos do cliente
+          const customerOrders = await this.orderModel.findByClientId(customerId);
+          
+          // Calcular o débito total do cliente com base em todos os seus pedidos
+          let totalDebt = 0;
+          
+          for (const customerOrder of customerOrders) {
+            if (customerOrder.paymentMethod === 'bank_slip' || customerOrder.paymentMethod === 'promissory_note') {
+              // Calcular o valor pago neste pedido
+              const orderPaid = customerOrder.paymentHistory 
+                ? customerOrder.paymentHistory.reduce((sum, entry) => sum + entry.amount, 0) 
+                : 0;
+              
+              // Adicionar ao débito o valor restante
+              if (orderPaid < customerOrder.finalPrice) {
+                totalDebt += (customerOrder.finalPrice - orderPaid);
+              }
+            }
+          }
+          
+          // Atualizar o débito total do cliente
+          if (customer.debts !== totalDebt) {
+            await this.userModel.update(customerId, {
+              debts: totalDebt
+            });
+            console.log(`Débito do cliente ${customerId} recalculado: ${totalDebt}`);
+          }
+        }
+      } catch (error) {
+        console.error(`Erro ao recalcular débito do cliente ${customerId}:`, error);
+      }
+    }
+  } catch (error) {
+    console.error(`Erro ao recalcular status de pagamento do pedido ${orderId}:`, error);
+  }
+  }
+
+  /**
+ * Recalcula os débitos de todos os clientes ou de um cliente específico
+ * @param clientId ID opcional do cliente específico
+ * @returns Objeto com informações sobre os ajustes realizados
+ */
+async recalculateClientDebts(clientId?: string): Promise<{
+  updated: number;
+  clients: Array<{ id: string; oldDebt: number; newDebt: number; diff: number }>;
+}> {
+  try {
+    const result = {
+      updated: 0,
+      clients: [] as Array<{ id: string; oldDebt: number; newDebt: number; diff: number }>
+    };
+
+    // Se um clientId foi fornecido, recalcular apenas para esse cliente
+    if (clientId) {
+      const client = await this.userModel.findById(clientId);
+      if (!client) {
+        throw new PaymentError("Cliente não encontrado");
+      }
+
+      const oldDebt = client.debts || 0;
+      const newDebt = await this.calculateClientTotalDebt(clientId);
+      
+      // Se houver diferença, atualizar o débito do cliente
+      if (newDebt !== oldDebt) {
+        await this.userModel.update(clientId, {
+          debts: newDebt
+        });
+        
+        result.updated = 1;
+        result.clients.push({
+          id: clientId,
+          oldDebt,
+          newDebt,
+          diff: newDebt - oldDebt
+        });
+      }
+      
+      return result;
+    }
+    
+    // Caso contrário, buscar todos os clientes
+    const { users } = await this.userModel.findAll(1, 1000, { role: 'customer' });
+    
+    // Para cada cliente, recalcular o débito total
+    for (const client of users) {
+      const oldDebt = client.debts || 0;
+      const newDebt = await this.calculateClientTotalDebt(client._id);
+      
+      // Se houver diferença, atualizar o débito do cliente
+      if (newDebt !== oldDebt) {
+        await this.userModel.update(client._id, {
+          debts: newDebt
+        });
+        
+        result.updated++;
+        result.clients.push({
+          id: client._id,
+          oldDebt,
+          newDebt,
+          diff: newDebt - oldDebt
+        });
+      }
+    }
+    
+    return result;
+  } catch (error) {
+    console.error("Erro ao recalcular débitos de clientes:", error);
+    throw error;
+  }
+}
 }

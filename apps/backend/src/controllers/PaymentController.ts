@@ -714,4 +714,26 @@ export class PaymentController {
       res.status(500).json({ message: "Erro interno do servidor" });
     }
   }
+
+  async recalculateDebts(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      if (!req.user?.id || req.user?.role !== "admin") {
+        res.status(403).json({
+          message: "Acesso não autorizado. Apenas administradores podem recalcular débitos."
+        });
+        return;
+      }
+  
+      const { clientId } = req.query;
+      const result = await this.paymentService.recalculateClientDebts(clientId as string | undefined);
+      
+      res.status(200).json(result);
+    } catch (error) {
+      console.error("Erro ao recalcular débitos:", error);
+      res.status(500).json({
+        message: "Erro interno ao recalcular débitos",
+        details: error instanceof Error ? error.message : "Erro desconhecido"
+      });
+    }
+  }
 }
