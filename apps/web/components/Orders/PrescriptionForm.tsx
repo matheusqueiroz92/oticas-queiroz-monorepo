@@ -19,6 +19,10 @@ export default function PrescriptionForm({ form }: PrescriptionFormProps) {
   const [ndInput, setNdInput] = useState<string>("");
   const [ocInput, setOcInput] = useState<string>("");
   const [additionInput, setAdditionInput] = useState<string>("");
+  const [bridgeInput, setBridgeInput] = useState<string>("");
+  const [rimInput, setRimInput] = useState<string>("");
+  const [avInput, setAvInput] = useState<string>("");
+  const [amInput, setAmInput] = useState<string>("");
 
   useEffect(() => {
     const nd = form.getValues("prescriptionData.nd");
@@ -185,9 +189,9 @@ export default function PrescriptionForm({ form }: PrescriptionFormProps) {
                   <Input
                     type="text"
                     inputMode="decimal"
-                    value={additionInput}
+                    value={bridgeInput}
                     onChange={(e) => 
-                      handleNumericInput(e, field.onChange, setAdditionInput)
+                      handleNumericInput(e, field.onChange, setBridgeInput)
                     }
                   />
                 </FormControl>
@@ -206,9 +210,9 @@ export default function PrescriptionForm({ form }: PrescriptionFormProps) {
                   <Input
                     type="text"
                     inputMode="decimal"
-                    value={additionInput}
+                    value={rimInput}
                     onChange={(e) => 
-                      handleNumericInput(e, field.onChange, setAdditionInput)
+                      handleNumericInput(e, field.onChange, setRimInput)
                     }
                   />
                 </FormControl>
@@ -227,9 +231,9 @@ export default function PrescriptionForm({ form }: PrescriptionFormProps) {
                   <Input
                     type="text"
                     inputMode="decimal"
-                    value={additionInput}
+                    value={avInput}
                     onChange={(e) => 
-                      handleNumericInput(e, field.onChange, setAdditionInput)
+                      handleNumericInput(e, field.onChange, setAvInput)
                     }
                   />
                 </FormControl>
@@ -248,9 +252,9 @@ export default function PrescriptionForm({ form }: PrescriptionFormProps) {
                   <Input
                     type="text"
                     inputMode="decimal"
-                    value={additionInput}
+                    value={amInput}
                     onChange={(e) => 
-                      handleNumericInput(e, field.onChange, setAdditionInput)
+                      handleNumericInput(e, field.onChange, setAmInput)
                     }
                   />
                 </FormControl>
