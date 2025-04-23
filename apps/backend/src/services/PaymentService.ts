@@ -454,9 +454,11 @@ export class PaymentService {
     session.startTransaction();
     
     try {
+      console.log("Dados de pagamento recebidos no serviço:", paymentData);
+      
       // Validar os dados do pagamento e obter o ID do caixa
       const cashRegisterId = await this.validatePayment(paymentData);
-  
+    
       // Verificar se já existe um pagamento com os mesmos detalhes para evitar duplicação
       // Este é um exemplo de como tornar a operação idempotente
       if (paymentData.orderId) {
@@ -473,7 +475,7 @@ export class PaymentService {
           return existingPayments.payments[0];
         }
       }
-  
+    
       // Criar o pagamento
       let payment: IPayment | null = null;
       let retryCount = 0;
@@ -486,6 +488,9 @@ export class PaymentService {
             cashRegisterId: cashRegisterId,
             status: "completed",
           });
+          
+          console.log("Pagamento criado com sucesso:", payment);
+          console.log(`Valor final do pagamento criado: ${payment.amount}`);
         } catch (error) {
           retryCount++;
           console.error(`Erro ao criar pagamento (tentativa ${retryCount}/${maxRetries}):`, error);
@@ -498,11 +503,11 @@ export class PaymentService {
           await new Promise(resolve => setTimeout(resolve, 500 * retryCount));
         }
       }
-  
+    
       if (!payment) {
         throw new PaymentError("Falha ao criar pagamento");
       }
-  
+    
       // Atualizar o caixa - com retry
       let cashUpdateSuccess = false;
       retryCount = 0;
@@ -525,14 +530,17 @@ export class PaymentService {
           await new Promise(resolve => setTimeout(resolve, 500 * retryCount));
         }
       }
-  
+    
       // Se o pagamento está relacionado a um pedido, atualizar o status de pagamento
       if (payment.orderId) {
         try {
+          console.log(`Atualizando status de pagamento do pedido ${payment.orderId}`);
+          console.log(`Usando valor de pagamento: ${payment.amount}`);
+          
           await this.updateOrderPaymentStatus(
             payment.orderId.toString(),
             payment._id,
-            payment.amount,
+            payment.amount,  // Usar o valor do pagamento, não o valor total do pedido
             payment.paymentMethod,
             'add'
           );
@@ -558,13 +566,13 @@ export class PaymentService {
           // Continuamos o fluxo mesmo com erro na atualização do pedido
         }
       }
-  
+    
       // Se for pagamento de dívida, atualizar a dívida do cliente
       if (payment.type === "debt_payment") {
         try {
           // Valor negativo para reduzir a dívida
           const debtAmount = -payment.amount; 
-
+  
           // Atualize a dívida do cliente
           await this.updateClientDebt(
             payment.customerId,
@@ -572,7 +580,7 @@ export class PaymentService {
             debtAmount,
             payment._id
           );
-
+  
           // Se o pagamento está relacionado a um pedido específico, atualize o status de pagamento do pedido
           if (payment.orderId) {
             try {
@@ -604,7 +612,7 @@ export class PaymentService {
           console.error(`Erro ao atualizar dívida do cliente no pagamento ${payment._id}:`, error);
         }
       }
-        
+          
       if (payment.isInstitutionalPayment && payment.institutionId && payment.type === "debt_payment") {
         try {
           const debtAmount = -payment.amount; // Valor negativo para reduzir a dívida
@@ -620,7 +628,7 @@ export class PaymentService {
           console.error(`Erro ao atualizar dívida da instituição no pagamento ${payment._id}:`, error);
         }
       }
-  
+    
       // Se for boleto ou promissória com geração de débito, atualizar débito do cliente
       if (
         this.isInstallmentPaymentMethod(payment.paymentMethod) &&
@@ -634,7 +642,7 @@ export class PaymentService {
               ? payment.clientDebt.installments.total *
                 payment.clientDebt.installments.value
               : payment.amount;
-  
+    
           await this.updateClientDebt(
             payment.customerId,
             payment.legacyClientId,
@@ -645,7 +653,7 @@ export class PaymentService {
           console.error(`Erro ao atualizar débito parcelado do cliente no pagamento ${payment._id}:`, error);
         }
       }
-  
+    
       // Invalidar cache
       try {
         const date = new Date(payment.date);
@@ -658,16 +666,20 @@ export class PaymentService {
       } catch (error) {
         console.error("Erro ao invalidar cache:", error);
       }
-  
+    
+      await session.commitTransaction();
       return payment;
     } catch (error) {
       console.error("Erro fatal ao processar pagamento:", error);
+      await session.abortTransaction();
       if (error instanceof PaymentError) {
         throw error;
       }
       throw new PaymentError(
         error instanceof Error ? error.message : "Erro desconhecido ao criar pagamento"
       );
+    } finally {
+      session.endSession();
     }
   }
 
@@ -1139,10 +1151,17 @@ export class PaymentService {
         return;
       }
 
+      console.log(`Atualizando pagamento para o pedido ${orderId}`);
+      console.log(`Valor do pedido: ${order.finalPrice}`);
+      console.log(`Valor do pagamento recebido: ${amount}`);
+
       // Inicializar histórico de pagamentos se não existir
       let updatedHistory = [...(order.paymentHistory || [])];
       
       if (action === 'add' && paymentId && amount !== undefined && method) {
+        // IMPORTANTE: Não modificar o valor do pagamento aqui!
+        console.log(`Adicionando pagamento ${paymentId} ao histórico com valor ${amount}`);
+        
         // Verificar se o pagamento já existe no histórico
         const existingIndex = updatedHistory.findIndex(
           entry => entry.paymentId.toString() === paymentId
@@ -1152,7 +1171,7 @@ export class PaymentService {
           // Adicionar novo pagamento ao histórico
           updatedHistory.push({
             paymentId,
-            amount,
+            amount,  // Usar o valor exato fornecido
             date: new Date(),
             method
           });
@@ -1161,7 +1180,7 @@ export class PaymentService {
           // Opcional: atualizar entrada existente
           updatedHistory[existingIndex] = {
             ...updatedHistory[existingIndex],
-            amount,
+            amount,  // Usar o valor exato fornecido
             date: new Date(),
             method
           };

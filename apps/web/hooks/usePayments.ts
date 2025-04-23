@@ -204,6 +204,20 @@ export function usePayments() {
 
   // Funções que utilizam as mutations
   const handleCreatePayment = (data: CreatePaymentDTO) => {
+    console.log("Dados recebidos em handleCreatePayment:", data);
+    console.log("Valor final antes de enviar para o backend:", data.amount);
+    
+    // VERIFICAÇÃO IMPORTANTE: Se houver um pedido selecionado, NÃO substitua o valor
+    // Remova ou comente qualquer código similar a este:
+    /*
+    if (data.orderId) {
+      const selectedOrder = clientOrders.find(order => order._id === data.orderId);
+      if (selectedOrder) {
+        data.amount = selectedOrder.finalPrice; // <-- REMOVA ESTA LINHA
+      }
+    }
+    */
+    
     return createPaymentMutation.mutateAsync(data);
   };
 
@@ -373,6 +387,12 @@ const usePaymentForm = () => {
     }
   }, [selectedCustomerId]);
 
+  const amountValue = watch('amount');
+  // Monitorar o valor do pagamento
+  useEffect(() => {
+    console.log('Valor do pagamento monitorado:', amountValue);
+  }, [amountValue]);
+
   // Processar o envio do pagamento
   const onSubmit = async (data: any) => {
     if (isSubmitting) return;
@@ -380,6 +400,9 @@ const usePaymentForm = () => {
     setIsSubmitting(true);
     
     try {
+      console.log("Valores do formulário antes do processamento:", data);
+      console.log("Valor do pagamento antes do processamento:", data.amount);
+      
       // Converter amount para número se for uma string
       let amountValue: number;
       
@@ -393,6 +416,8 @@ const usePaymentForm = () => {
       if (isNaN(amountValue)) {
         amountValue = 0;
       }
+      
+      console.log("Valor de pagamento processado:", amountValue);
     
       const paymentData: CreatePaymentDTO = {
         amount: amountValue,
@@ -407,6 +432,10 @@ const usePaymentForm = () => {
         orderId: data.orderId,
         status: "completed" as PaymentStatus,
       };
+      
+      // IMPORTANTE: Verificar se o valor ainda é o correto após criar o objeto
+      console.log("Dados de pagamento construídos:", paymentData);
+      console.log("Verificação final do valor de pagamento:", paymentData.amount);
     
       // Adicionar dados de parcelamento se usar cartão de crédito com múltiplas parcelas
       if (
@@ -420,7 +449,7 @@ const usePaymentForm = () => {
           value: amountValue / data.installments,
         };
       }
-
+  
       // Adicionar dados do cheque se o método de pagamento for cheque
       if (data.paymentMethod === "check" && data.check) {
         paymentData.check = {
@@ -434,8 +463,13 @@ const usePaymentForm = () => {
           compensationStatus: "pending"
         };
       }
-    
+      
+      console.log("Dados de pagamento finais antes do envio:", paymentData);
+      console.log("Verificação final do valor de pagamento antes do envio:", paymentData.amount);
+      
       const response = await handleCreatePayment(paymentData);
+      
+      console.log("Resposta do servidor após criar pagamento:", response);
       
       if (response && response._id) {
         router.push(`/payments/${response._id}`);
@@ -506,41 +540,29 @@ const usePaymentForm = () => {
   const handleOrderSelect = (orderId: string) => {
     setValue("orderId", orderId);
     
-    // Quando um pedido é selecionado, deixar o usuário escolher o valor
-    // em vez de preencher automaticamente com o valor total
+    // NÃO modifique o valor amount aqui! Deixe o valor que o usuário já digitou
+    
+    // Quando um pedido é selecionado, apenas notificar sobre o valor total
     const selectedOrder = clientOrders.find(order => order._id === orderId);
     if (selectedOrder) {
-      // Verificamos o status de pagamento
-      if (selectedOrder.paymentStatus === "partially_paid") {
-        // Para pedidos parcialmente pagos, calculamos o valor restante
-        const totalPaid = selectedOrder.paymentHistory?.reduce((sum, entry) => sum + entry.amount, 0) || 0;
+      toast({
+        title: "Pedido selecionado",
+        description: `Pedido no valor total de ${formatCurrency(selectedOrder.finalPrice)}. Informe o valor que deseja pagar.`,
+      });
+      
+      // Se estiver parcialmente pago, mostrar quanto já foi pago
+      if (selectedOrder.paymentStatus === "partially_paid" && selectedOrder.paymentHistory) {
+        const totalPaid = selectedOrder.paymentHistory.reduce((sum, entry) => sum + entry.amount, 0) || 0;
         const remainingAmount = Math.max(0, selectedOrder.finalPrice - totalPaid);
         
-        // Sugerimos o valor restante, mas não impomos
-        // O usuário pode alterar se desejar pagar um valor diferente
-        setValue("amount", remainingAmount);
-        
-        // Exibir toast informativo
         toast({
-          title: "Valor restante sugerido",
-          description: `Foi sugerido o valor restante de ${formatCurrency(remainingAmount)}, mas você pode alterá-lo conforme necessário.`,
+          title: "Pagamento parcial",
+          description: `Este pedido já possui pagamentos: ${formatCurrency(totalPaid)} de ${formatCurrency(selectedOrder.finalPrice)}. Restante: ${formatCurrency(remainingAmount)}.`,
         });
-      } 
-      else if (selectedOrder.paymentStatus === "pending") {
-        // Se estiver pendente, sugerimos o valor total
-        setValue("amount", selectedOrder.finalPrice);
-        
-        // Exibir toast informativo
-        toast({
-          title: "Valor total sugerido",
-          description: `Foi sugerido o valor total de ${formatCurrency(selectedOrder.finalPrice)}, mas você pode alterá-lo conforme necessário.`,
-        });
-      } 
-      else if (selectedOrder.paymentStatus === "paid") {
-        // Se já estiver pago, deixamos o usuário decidir o valor
-        // Sem alterar o campo amount
-        
-        // Exibir toast informativo
+      }
+      
+      // Se já estiver pago, alertar o usuário
+      if (selectedOrder.paymentStatus === "paid") {
         toast({
           variant: "warning",
           title: "Pedido já pago",
