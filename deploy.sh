@@ -89,19 +89,35 @@ pm2 save || {
 
 # Configurar PM2 para iniciar com o sistema
 log "Configurando PM2 para iniciar com o sistema"
-{
-    # Captura o comando de startup removendo possíveis caracteres inválidos
-    STARTUP_CMD=$(pm2 startup 2>/dev/null | grep -o "sudo.*$" | head -n 1)
-    
-    if [ -n "$STARTUP_CMD" ]; then
-        log "Executando comando de startup: $STARTUP_CMD"
-        eval "$STARTUP_CMD" && pm2 save
-    else
-        log "AVISO: Não foi possível obter o comando de startup do PM2"
-        log "AVISO: Você pode precisar configurar manualmente com: pm2 startup && pm2 save"
-    fi
+
+# Verifica se o PM2 está instalado
+if ! command -v pm2 &> /dev/null; then
+    log "ERRO: PM2 não está instalado. Instale primeiro com: npm install pm2 -g"
+    exit 1
+fi
+
+# Tenta detectar automaticamente o comando de startup
+if [ -f /etc/redhat-release ]; then
+    # Sistema RedHat/CentOS
+    STARTUP_CMD="pm2 startup systemd -u $(whoami) --hp /home/$(whoami)"
+elif [ -f /etc/lsb-release ]; then
+    # Sistema Ubuntu/Debian
+    STARTUP_CMD="pm2 startup systemd -u $(whoami) --hp /home/$(whoami)"
+else
+    # Sistema genérico (tenta detectar)
+    STARTUP_CMD="pm2 startup -u $(whoami) --hp /home/$(whoami)"
+fi
+
+# Executa o comando de startup
+log "Executando: $STARTUP_CMD"
+eval "$STARTUP_CMD" && {
+    pm2 save
+    log "PM2 configurado para iniciar com o sistema com sucesso"
 } || {
     log "AVISO: Falha ao configurar inicialização automática do PM2"
+    log "Solução alternativa:"
+    log "1. Execute manualmente: $STARTUP_CMD"
+    log "2. Depois execute: pm2 save"
 }
 
 log "Deploy concluído com sucesso!"
