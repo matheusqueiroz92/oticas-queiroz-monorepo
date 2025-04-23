@@ -89,15 +89,20 @@ pm2 save || {
 
 # Configurar PM2 para iniciar com o sistema
 log "Configurando PM2 para iniciar com o sistema"
-# Captura o comando completo retornado pelo pm2 startup
-STARTUP_CMD=$(pm2 startup | tail -n 1)
-if [ -n "$STARTUP_CMD" ]; then
-  eval "$STARTUP_CMD" || {
+{
+    # Captura o comando de startup removendo possíveis caracteres inválidos
+    STARTUP_CMD=$(pm2 startup 2>/dev/null | grep -o "sudo.*$" | head -n 1)
+    
+    if [ -n "$STARTUP_CMD" ]; then
+        log "Executando comando de startup: $STARTUP_CMD"
+        eval "$STARTUP_CMD" && pm2 save
+    else
+        log "AVISO: Não foi possível obter o comando de startup do PM2"
+        log "AVISO: Você pode precisar configurar manualmente com: pm2 startup && pm2 save"
+    fi
+} || {
     log "AVISO: Falha ao configurar inicialização automática do PM2"
-  }
-else
-  log "AVISO: Nenhum comando de startup retornado pelo PM2"
-fi
+}
 
 log "Deploy concluído com sucesso!"
 echo "=============================================================================="
