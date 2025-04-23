@@ -1112,142 +1112,156 @@ export class PaymentService {
   }
 
   /**
- * Atualiza o status de pagamento de um pedido com base no histórico de pagamentos
- * @param orderId ID do pedido
- * @param paymentId ID do pagamento (opcional, para adicionar ou remover)
- * @param amount Valor do pagamento (opcional, necessário apenas para adicionar)
- * @param method Método de pagamento (opcional, necessário apenas para adicionar)
- * @param action Ação a ser realizada: 'add' para adicionar, 'remove' para remover, 'recalculate' para apenas recalcular
- */
-private async updateOrderPaymentStatus(
-  orderId: string,
-  paymentId?: string,
-  amount?: number,
-  method?: string,
-  action: 'add' | 'remove' | 'recalculate' = 'recalculate'
-): Promise<void> {
-  if (!orderId) {
-    console.error("ID do pedido é obrigatório para atualizar status de pagamento");
-    return;
-  }
-
-  try {
-    // Buscar o pedido atual
-    const order = await this.orderModel.findById(orderId);
-    if (!order) {
-      console.error(`Pedido ${orderId} não encontrado ao atualizar status de pagamento`);
+   * Atualiza o status de pagamento de um pedido com base no histórico de pagamentos
+   * @param orderId ID do pedido
+   * @param paymentId ID do pagamento (opcional, para adicionar ou remover)
+   * @param amount Valor do pagamento (opcional, necessário apenas para adicionar)
+   * @param method Método de pagamento (opcional, necessário apenas para adicionar)
+   * @param action Ação a ser realizada: 'add' para adicionar, 'remove' para remover, 'recalculate' para apenas recalcular
+   */
+  private async updateOrderPaymentStatus(
+    orderId: string,
+    paymentId?: string,
+    amount?: number,
+    method?: string,
+    action: 'add' | 'remove' | 'recalculate' = 'recalculate'
+  ): Promise<void> {
+    if (!orderId) {
+      console.error("ID do pedido é obrigatório para atualizar status de pagamento");
       return;
     }
 
-    // Inicializar histórico de pagamentos se não existir
-    let updatedHistory = [...(order.paymentHistory || [])];
-    
-    if (action === 'add' && paymentId && amount !== undefined && method) {
-      // Verificar se o pagamento já existe no histórico
-      const existingIndex = updatedHistory.findIndex(
-        entry => entry.paymentId.toString() === paymentId
-      );
-      
-      if (existingIndex === -1) {
-        // Adicionar novo pagamento ao histórico
-        updatedHistory.push({
-          paymentId,
-          amount,
-          date: new Date(),
-          method
-        });
-        console.log(`Pagamento ${paymentId} adicionado ao histórico do pedido ${orderId}`);
-      } else {
-        // Opcional: atualizar entrada existente
-        updatedHistory[existingIndex] = {
-          ...updatedHistory[existingIndex],
-          amount,
-          date: new Date(),
-          method
-        };
-        console.log(`Pagamento ${paymentId} atualizado no histórico do pedido ${orderId}`);
+    try {
+      // Buscar o pedido atual
+      const order = await this.orderModel.findById(orderId);
+      if (!order) {
+        console.error(`Pedido ${orderId} não encontrado ao atualizar status de pagamento`);
+        return;
       }
-    } else if (action === 'remove' && paymentId) {
-      // Remover o pagamento do histórico
-      const initialLength = updatedHistory.length;
-      updatedHistory = updatedHistory.filter(
-        entry => entry.paymentId.toString() !== paymentId
-      );
+
+      // Inicializar histórico de pagamentos se não existir
+      let updatedHistory = [...(order.paymentHistory || [])];
       
-      if (updatedHistory.length < initialLength) {
-        console.log(`Pagamento ${paymentId} removido do histórico do pedido ${orderId}`);
-      } else {
-        console.log(`Pagamento ${paymentId} não encontrado no histórico do pedido ${orderId}`);
-      }
-    }
-    
-    // Calcular o total pago
-    const totalPaid = updatedHistory.reduce((sum, entry) => sum + entry.amount, 0);
-    
-    // Determinar o novo status de pagamento
-    let newPaymentStatus: "pending" | "partially_paid" | "paid" = "pending";
-    if (totalPaid >= order.finalPrice) {
-      newPaymentStatus = "paid";
-    } else if (totalPaid > 0) {
-      newPaymentStatus = "partially_paid";
-    }
-    
-    // Atualizar o pedido apenas se algo mudou
-    if (
-      newPaymentStatus !== order.paymentStatus || 
-      JSON.stringify(updatedHistory) !== JSON.stringify(order.paymentHistory)
-    ) {
-      await this.orderModel.update(orderId, {
-        paymentStatus: newPaymentStatus,
-        paymentHistory: updatedHistory
-      });
-      
-      console.log(`Status de pagamento do pedido ${orderId} atualizado para ${newPaymentStatus}`);
-      
-      // Se este pedido for via boleto ou promissória, atualize o débito do cliente
-      if (
-        (order.paymentMethod === "bank_slip" || 
-        order.paymentMethod === "promissory_note" || 
-        order.paymentMethod === "check") && 
-        order.clientId
-      ) {
-        const clientId = typeof order.clientId === 'string' 
-          ? order.clientId 
-          : order.clientId.toString();
-          
-        // Obter o cliente
-        const client = await this.userModel.findById(clientId);
-        if (client) {
-          // Calcular o valor restante após o pagamento
-          const remainingDebt = Math.max(0, order.finalPrice - totalPaid);
-          
-          // Calcular o ajuste de débito necessário
-          // Lógica: o valor que o cliente deve por este pedido é o valor original - o valor já pago
-          const originalDebt = order.finalPrice - (order.paymentEntry || 0);
-          
-          // O ajuste é a diferença entre o débito original e o débito restante
-          // Valor positivo: aumenta o débito, valor negativo: reduz o débito
-          const adjustmentNeeded = remainingDebt - originalDebt;
-          
-          // Se houver ajuste, atualizar o débito do cliente
-          if (adjustmentNeeded !== 0) {
-            await this.updateClientDebt(
-              clientId,
-              undefined,
-              adjustmentNeeded
-            );
-          }
+      if (action === 'add' && paymentId && amount !== undefined && method) {
+        // Verificar se o pagamento já existe no histórico
+        const existingIndex = updatedHistory.findIndex(
+          entry => entry.paymentId.toString() === paymentId
+        );
+        
+        if (existingIndex === -1) {
+          // Adicionar novo pagamento ao histórico
+          updatedHistory.push({
+            paymentId,
+            amount,
+            date: new Date(),
+            method
+          });
+          console.log(`Pagamento ${paymentId} adicionado ao histórico do pedido ${orderId}`);
+        } else {
+          // Opcional: atualizar entrada existente
+          updatedHistory[existingIndex] = {
+            ...updatedHistory[existingIndex],
+            amount,
+            date: new Date(),
+            method
+          };
+          console.log(`Pagamento ${paymentId} atualizado no histórico do pedido ${orderId}`);
+        }
+      } else if (action === 'remove' && paymentId) {
+        // Remover o pagamento do histórico
+        const initialLength = updatedHistory.length;
+        updatedHistory = updatedHistory.filter(
+          entry => entry.paymentId.toString() !== paymentId
+        );
+        
+        if (updatedHistory.length < initialLength) {
+          console.log(`Pagamento ${paymentId} removido do histórico do pedido ${orderId}`);
+        } else {
+          console.log(`Pagamento ${paymentId} não encontrado no histórico do pedido ${orderId}`);
         }
       }
-    } else {
-      console.log(`Nenhuma alteração necessária no status de pagamento do pedido ${orderId}`);
+      
+      // Calcular o total pago
+      const totalPaid = updatedHistory.reduce((sum, entry) => sum + entry.amount, 0);
+      
+      // Determinar o novo status de pagamento
+      let newPaymentStatus: "pending" | "partially_paid" | "paid" = "pending";
+      
+      // Se não há pagamentos, mantém como pendente
+      if (totalPaid === 0) {
+        newPaymentStatus = "pending";
+      } 
+      // Se o total pago é igual ou maior que o valor final, considera como pago
+      else if (totalPaid >= order.finalPrice) {
+        newPaymentStatus = "paid";
+      } 
+      // Se há algum pagamento, mas não cobre o valor total, considera como parcialmente pago
+      else if (totalPaid > 0) {
+        newPaymentStatus = "partially_paid";
+      }
+      
+      console.log(`Atualizando status do pedido ${orderId}:`);
+      console.log(`- Valor final: ${order.finalPrice}`);
+      console.log(`- Total pago: ${totalPaid}`);
+      console.log(`- Valor restante: ${order.finalPrice - totalPaid}`);
+      console.log(`- Novo status: ${newPaymentStatus}`);
+      
+      // Atualizar o pedido apenas se algo mudou
+      if (
+        newPaymentStatus !== order.paymentStatus || 
+        JSON.stringify(updatedHistory) !== JSON.stringify(order.paymentHistory)
+      ) {
+        await this.orderModel.update(orderId, {
+          paymentStatus: newPaymentStatus,
+          paymentHistory: updatedHistory
+        });
+        
+        console.log(`Status de pagamento do pedido ${orderId} atualizado para ${newPaymentStatus}`);
+        
+        // Se este pedido for via boleto ou promissória, atualize o débito do cliente
+        if (
+          (order.paymentMethod === "bank_slip" || 
+          order.paymentMethod === "promissory_note" || 
+          order.paymentMethod === "check") && 
+          order.clientId
+        ) {
+          const clientId = typeof order.clientId === 'string' 
+            ? order.clientId 
+            : order.clientId.toString();
+            
+          // Obter o cliente
+          const client = await this.userModel.findById(clientId);
+          if (client) {
+            // Calcular o valor restante após o pagamento
+            const remainingDebt = Math.max(0, order.finalPrice - totalPaid);
+            
+            // Calcular o ajuste de débito necessário
+            // Lógica: o valor que o cliente deve por este pedido é o valor original - o valor já pago
+            const originalDebt = order.finalPrice - (order.paymentEntry || 0);
+            
+            // O ajuste é a diferença entre o débito original e o débito restante
+            // Valor positivo: aumenta o débito, valor negativo: reduz o débito
+            const adjustmentNeeded = remainingDebt - originalDebt;
+            
+            // Se houver ajuste, atualizar o débito do cliente
+            if (adjustmentNeeded !== 0) {
+              await this.updateClientDebt(
+                clientId,
+                undefined,
+                adjustmentNeeded
+              );
+            }
+          }
+        }
+      } else {
+        console.log(`Nenhuma alteração necessária no status de pagamento do pedido ${orderId}`);
+      }
+      
+      return;
+    } catch (error) {
+      console.error(`Erro ao atualizar status de pagamento do pedido ${orderId}:`, error);
     }
-    
-    return;
-  } catch (error) {
-    console.error(`Erro ao atualizar status de pagamento do pedido ${orderId}:`, error);
   }
-}
 
   /**
    * Atualiza o status de compensação de um cheque

@@ -10,6 +10,12 @@ export interface Order {
   serviceOrder?: string | null;
   paymentMethod: string;
   paymentStatus: "pending" | "paid" | "partially_paid";
+  paymentHistory?: Array<{
+    paymentId: string;
+    amount: number;
+    date: string | Date;
+    method: string;
+  }>;
   paymentEntry?: number;
   installments?: number;
   orderDate: string | Date;
