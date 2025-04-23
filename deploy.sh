@@ -89,9 +89,15 @@ pm2 save || {
 
 # Configurar PM2 para iniciar com o sistema
 log "Configurando PM2 para iniciar com o sistema"
-pm2 startup | tail -n 1 | bash || {
-  log "AVISO: Falha ao configurar inicialização automática do PM2"
-}
+# Captura o comando completo retornado pelo pm2 startup
+STARTUP_CMD=$(pm2 startup | tail -n 1)
+if [ -n "$STARTUP_CMD" ]; then
+  eval "$STARTUP_CMD" || {
+    log "AVISO: Falha ao configurar inicialização automática do PM2"
+  }
+else
+  log "AVISO: Nenhum comando de startup retornado pelo PM2"
+fi
 
 log "Deploy concluído com sucesso!"
 echo "=============================================================================="
