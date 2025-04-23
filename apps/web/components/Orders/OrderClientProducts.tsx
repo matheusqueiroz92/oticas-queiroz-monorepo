@@ -63,26 +63,22 @@ export default function OrderClientProducts({
   handleDiscountChange,
   calculateInstallmentValue,
 }: OrderClientProductsProps) {
-  // Estado para armazenar instituições carregadas
   const [loadedInstitutions, setLoadedInstitutions] = useState<any[]>([]);
   
-  // Hook para carregar instituições conveniadas
   const { 
     institutions, 
     isLoading: isLoadingInstitutions,
     fetchAllInstitutions
   } = useInstitutions({
-    enablePagination: false // Desabilitamos paginação para carregar todas
+    enablePagination: false
   });
 
-  // Efeito para atualizar o estado quando as instituições são carregadas
   useEffect(() => {
     if (institutions && institutions.length > 0) {
       setLoadedInstitutions(institutions);
     }
   }, [institutions]);
   
-  // Efeito para carregar instituições quando o pedido é marcado como institucional
   useEffect(() => {
     const isInstitutional = form.watch("isInstitutionalOrder");
     if (isInstitutional && loadedInstitutions.length === 0) {
@@ -300,7 +296,6 @@ export default function OrderClientProducts({
                             field.onChange(value);
                           }}
                           value={field.value === 0 ? '' : (field.value as string | number | undefined)}
-                          className="border border-gray-200 rounded text-sm h-9"
                         />
                       </FormControl>
                       <FormMessage />

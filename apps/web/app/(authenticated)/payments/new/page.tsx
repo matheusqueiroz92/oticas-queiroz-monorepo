@@ -1,9 +1,11 @@
 "use client";
 
-import { usePaymentForm } from "@/hooks/usePaymentForm";
+import { usePayments } from "@/hooks/usePayments";
 import { PaymentForm } from "@/components/Payments/PaymentForm";
 
 export default function NewPaymentPage() {
+  const { usePaymentForm } = usePayments();
+  
   const {
     form,
     currentStep,
@@ -15,7 +17,7 @@ export default function NewPaymentPage() {
     isLoadingCustomers,
     legacyClients,
     isLoadingLegacyClients,
-    orders,
+    clientOrders,
     isLoadingOrders,
     customerSearch,
     orderSearch,
@@ -44,13 +46,13 @@ export default function NewPaymentPage() {
       currentStep={currentStep}
       isCashRegisterOpen={isCashRegisterOpen}
       isLoadingCashRegister={isLoadingCashRegister}
-      cashRegister={cashRegister ?? null}
+      cashRegister={cashRegister}
       isSubmitting={isSubmitting}
       customers={customers}
       isLoadingCustomers={isLoadingCustomers}
       legacyClients={legacyClients}
       isLoadingLegacyClients={isLoadingLegacyClients}
-      orders={orders}
+      clientOrders={clientOrders}
       isLoadingOrders={isLoadingOrders}
       customerSearch={customerSearch}
       orderSearch={orderSearch}

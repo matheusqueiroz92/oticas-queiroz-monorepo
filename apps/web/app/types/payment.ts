@@ -4,7 +4,6 @@ export type PaymentMethod =
   | "cash"
   | "pix"
   | "check"
-  | "installment";
 export type PaymentType = "sale" | "debt_payment" | "expense";
 export type PaymentStatus = "pending" | "completed" | "cancelled";
 

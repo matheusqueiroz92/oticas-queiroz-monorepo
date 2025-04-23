@@ -3,7 +3,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/useToast";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   getAllPayments,
   getPaymentById,
@@ -13,17 +15,25 @@ import {
 } from "@/app/services/paymentService";
 import { checkOpenCashRegister } from "@/app/services/cashRegisterService";
 import { QUERY_KEYS } from "../app/constants/query-keys";
+import { API_ROUTES } from "../app/constants/api-routes";
+import { api } from "@/app/services/authService";
+import { paymentFormSchema } from "@/schemas/payment-schema";
+import { useCustomers } from "@/hooks/useCustomers";
+import { useOrders } from "@/hooks/useOrders";
 import type {
   CreatePaymentDTO,
   PaymentType,
   PaymentStatus,
+  PaymentMethod,
+  IPayment
 } from "@/app/types/payment";
+import { Order } from "@/app/types/order";
 
 interface PaymentFilters {
   search?: string;
   page?: number;
   type?: PaymentType;
-  paymentMethod?: string;
+  paymentMethod?: PaymentMethod;
   status?: PaymentStatus;
   startDate?: string;
   endDate?: string;
@@ -178,7 +188,10 @@ export function usePayments() {
   const { data: cashRegisterData, isLoading: isLoadingCashRegister } = useQuery(
     {
       queryKey: QUERY_KEYS.CASH_REGISTERS.CURRENT,
-      queryFn: checkForOpenCashRegisterBeforePayment,
+      queryFn: checkOpenCashRegister,
+      refetchOnWindowFocus: true,
+      refetchOnMount: true,
+      staleTime: 0,
     }
   );
 
@@ -204,6 +217,354 @@ export function usePayments() {
 
   const navigateToCreatePayment = () => {
     router.push("/payments/new");
+  };
+
+  // Hook usePaymentForm integrado ao usePayments
+  const usePaymentForm = () => {
+    const router = useRouter();
+    const [currentStep, setCurrentStep] = useState(1);
+    const [selectedEntityType, setSelectedEntityType] = useState<"customer" | "legacyClient" | null>(null);
+    const [customerSearch, setCustomerSearch] = useState("");
+    const [legacyClientSearch, setLegacyClientSearch] = useState("");
+    const [showInstallments, setShowInstallments] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+    const [showCheckFields, setShowCheckFields] = useState(false);
+    const [clientOrders, setClientOrders] = useState<Order[]>([]);
+    const [orderSearch, setOrderSearch] = useState("");
+
+    // Query para verificar se há um caixa aberto
+    const { 
+      data: formCashRegisterData, 
+      isLoading: isLoadingFormCashRegister 
+    } = useQuery({
+      queryKey: QUERY_KEYS.CASH_REGISTERS.CURRENT,
+      queryFn: checkOpenCashRegister,
+      refetchOnWindowFocus: true,
+      refetchOnMount: true,
+      staleTime: 0,
+    });
+
+    const { customers, isLoading: isLoadingCustomers, fetchAllCustomers } = useCustomers();
+
+    // Usar a função useOrders para obter pedidos e funções relacionadas
+    const ordersHook = useOrders();
+    const isLoadingOrders = ordersHook.isLoading;
+
+    // Query para buscar pedidos pelo cliente
+    const fetchClientOrders = async (clientId: string) => {
+      try {
+        if (!clientId) return;
+        console.log("Buscando pedidos para o cliente ID:", clientId);
+        
+        // Usar o endpoint de orders com API_ROUTES
+        const response = await api.get(API_ROUTES.ORDERS.CLIENT(clientId));
+        console.log("Resposta da API:", response.data);
+        
+        // Garantir que estamos sempre trabalhando com um array
+        if (Array.isArray(response.data)) {
+          setClientOrders(response.data);
+        } else if (response.data) {
+          // Se a resposta não for um array, mas tiver dados, transformar em array
+          setClientOrders([response.data]);
+        } else {
+          setClientOrders([]);
+        }
+
+      } catch (error) {
+        console.error("Erro ao buscar pedidos do cliente:", error);
+        
+        // Verificar se é um erro 404 (pedidos não encontrados)
+        if (error instanceof Error && (error as any).response && (error as any).response.status === 404) {
+          console.log("Nenhum pedido encontrado para este cliente");
+          setClientOrders([]);
+        } else {
+          // Outro tipo de erro
+          setClientOrders([]);
+        }
+      }      
+    };
+
+    // Query to fetch legacy clients
+    const { data: legacyClients = [], isLoading: isLoadingLegacyClients } =
+      useQuery({
+        queryKey: ["legacyClients", legacyClientSearch],
+        queryFn: async () => {
+          if (!legacyClientSearch || legacyClientSearch.length < 3) return [];
+          const response = await api.get(
+            `/api/legacy-clients?search=${legacyClientSearch}`
+          );
+          return response.data || [];
+        },
+        enabled: legacyClientSearch.length >= 3,
+      });
+
+    // Inicializa o formulário
+    const form = useForm({
+      resolver: zodResolver(paymentFormSchema),
+      defaultValues: {
+        amount: 0,
+        type: "sale" as PaymentType,
+        paymentMethod: "cash" as PaymentMethod,
+        paymentDate: new Date(),
+        description: "",
+        category: "",
+        installments: 1,
+        status: "completed" as PaymentStatus,
+      },
+    });
+
+    const { watch, setValue } = form;
+    const paymentMethod = watch("paymentMethod");
+    const paymentType = watch("type");
+    const selectedCustomerId = watch("customerId");
+
+    // Verificar se há um caixa aberto ao carregar a página
+    useEffect(() => {
+      const checkCashRegister = async () => {
+        const cashRegisterResult = await checkOpenCashRegister();
+        if (cashRegisterResult && cashRegisterResult.isOpen && cashRegisterResult.data) {
+          setValue("cashRegisterId", cashRegisterResult.data._id);
+        }
+      };
+      
+      checkCashRegister();
+    }, [setValue]);
+
+    // Gerenciar installments e campos do cheque com base no método de pagamento
+    useEffect(() => {
+      setShowInstallments(paymentMethod === "credit");
+      setShowCheckFields(paymentMethod === "check");
+      
+      if (paymentMethod !== "credit") {
+        setValue("installments", 1);
+      }
+      
+      if (paymentMethod !== "check") {
+        setValue("check", undefined);
+      }
+    }, [paymentMethod, setValue]);
+
+    // Limpar campos de cliente ao alterar o tipo de pagamento para despesa
+    useEffect(() => {
+      if (paymentType === "expense") {
+        setValue("customerId", undefined);
+        setValue("legacyClientId", undefined);
+        setValue("orderId", undefined);
+        setSelectedEntityType(null);
+      }
+    }, [paymentType, setValue]);
+
+    // Definir o ID do caixa quando disponível
+    useEffect(() => {
+      if (formCashRegisterData && formCashRegisterData.isOpen && formCashRegisterData.data) {
+        setValue("cashRegisterId", formCashRegisterData.data._id);
+      }
+    }, [formCashRegisterData, setValue]);
+
+    // Buscar pedidos quando um cliente é selecionado
+    useEffect(() => {
+      if (selectedCustomerId) {
+        fetchClientOrders(selectedCustomerId);
+      } else {
+        setClientOrders([]);
+      }
+    }, [selectedCustomerId]);
+
+    // Processar o envio do pagamento
+    const onSubmit = async (data: any) => {
+      if (isSubmitting) return;
+      
+      setIsSubmitting(true);
+      
+      try {
+        // Converter amount para número se for uma string
+        let amountValue: number;
+        
+        if (typeof data.amount === 'string') {
+          amountValue = parseFloat((data.amount as string).replace(',', '.'));
+        } else {
+          amountValue = data.amount as number;
+        }
+        
+        // Se não for um número válido, usar 0
+        if (isNaN(amountValue)) {
+          amountValue = 0;
+        }
+      
+        const paymentData: CreatePaymentDTO = {
+          amount: amountValue,
+          type: data.type,
+          paymentMethod: data.paymentMethod,
+          date: data.paymentDate,
+          description: data.description,
+          category: data.category,
+          cashRegisterId: data.cashRegisterId,
+          customerId: data.customerId,
+          legacyClientId: data.legacyClientId,
+          orderId: data.orderId,
+          status: "completed" as PaymentStatus,
+        };
+      
+        // Adicionar dados de parcelamento se usar cartão de crédito com múltiplas parcelas
+        if (
+          data.paymentMethod === "credit" &&
+          data.installments &&
+          data.installments > 1
+        ) {
+          paymentData.installments = {
+            current: 1,
+            total: data.installments,
+            value: amountValue / data.installments,
+          };
+        }
+
+        // Adicionar dados do cheque se o método de pagamento for cheque
+        if (data.paymentMethod === "check" && data.check) {
+          paymentData.check = {
+            bank: data.check.bank,
+            checkNumber: data.check.checkNumber,
+            checkDate: data.check.checkDate,
+            accountHolder: data.check.accountHolder,
+            branch: data.check.branch,
+            accountNumber: data.check.accountNumber,
+            presentationDate: data.check.presentationDate || data.check.checkDate,
+            compensationStatus: "pending"
+          };
+        }
+      
+        const response = await handleCreatePayment(paymentData);
+        
+        if (response && response._id) {
+          router.push(`/payments/${response._id}`);
+        } else {
+          router.push("/payments");
+        }
+      } catch (error) {
+        console.error("Erro ao criar pagamento:", error);
+        setIsSubmitting(false);
+      }
+    };
+
+    // Navegação entre etapas
+    const nextStep = () => {
+      if (currentStep === 1) {
+        const step1Fields = [
+          "amount",
+          "type",
+          "paymentMethod",
+          "paymentDate",
+          "cashRegisterId",
+        ] as const;
+        
+        const step1Valid = step1Fields.every((field) => {
+          return form.trigger(field);
+        });
+
+        if (!step1Valid) {
+          return;
+        }
+      }
+      
+      setCurrentStep(prev => prev + 1);
+    };
+
+    const prevStep = () => {
+      setCurrentStep(prev => Math.max(1, prev - 1));
+    };
+
+    // Gerenciar seleção de tipo de entidade
+    const handleEntityTypeSelect = (type: "customer" | "legacyClient" | null) => {
+      setSelectedEntityType(type);
+      
+      if (type === "customer") {
+        setValue("legacyClientId", undefined);
+      } else if (type === "legacyClient") {
+        setValue("customerId", undefined);
+      }
+    };
+
+    // Gerenciar seleção de cliente
+    const handleClientSelect = (clientId: string, name: string) => {
+      console.log("ID do cliente selecionado:", clientId);
+      setValue("customerId", clientId);
+      setCustomerSearch(name);
+      
+      // Quando um cliente é selecionado, procura os pedidos dele
+      fetchClientOrders(clientId);
+    };
+
+    // Gerenciar seleção de cliente legado
+    const handleLegacyClientSelect = (clientId: string, name: string) => {
+      setValue("legacyClientId", clientId);
+      setLegacyClientSearch(name);
+    };
+
+    // Gerenciar seleção de pedido
+    const handleOrderSelect = (orderId: string) => {
+      setValue("orderId", orderId);
+      
+      // Quando um pedido é selecionado, preenche o valor do pagamento automaticamente
+      const selectedOrder = clientOrders.find(order => order._id === orderId);
+      if (selectedOrder) {
+        // Se o pedido já estiver parcialmente pago, calcular o valor restante
+        if (selectedOrder.paymentStatus === "partially_paid") {
+          // Aqui você precisará obter o valor já pago do pedido
+          // Por simplicidade, vamos presumir que o valor restante é o valor final
+          setValue("amount", selectedOrder.finalPrice);
+        } else if (selectedOrder.paymentStatus === "pending") {
+          // Se estiver pendente, o valor é o total
+          setValue("amount", selectedOrder.finalPrice);
+        } else {
+          // Se já estiver pago, deixar o valor como 0 ou perguntar ao usuário
+          setValue("amount", 0);
+        }
+      }
+    };
+
+    // Gerenciar cancelamento (voltar para a página de pagamentos)
+    const handleCancel = () => {
+      router.push("/payments");
+    };
+
+    // Retornar todos os props e funções necessários
+    return {
+      form,
+      currentStep,
+      isCashRegisterOpen: !!(formCashRegisterData && formCashRegisterData.isOpen && formCashRegisterData.data),
+      isLoadingCashRegister: isLoadingFormCashRegister,
+      cashRegister: formCashRegisterData?.data?._id || null,
+      isSubmitting,
+      customers,
+      isLoadingCustomers,
+      legacyClients,
+      isLoadingLegacyClients,
+      clientOrders,
+      isLoadingOrders,
+      customerSearch,
+      orderSearch,
+      legacyClientSearch,
+      selectedEntityType,
+      showInstallments,
+      showCheckFields,
+      showConfirmDialog,
+      setShowCheckFields,
+      setCustomerSearch,
+      setOrderSearch,
+      setLegacyClientSearch,
+      setSelectedEntityType,
+      setShowConfirmDialog,
+      onClientSelect: handleClientSelect,
+      onLegacyClientSelect: handleLegacyClientSelect,
+      onOrderSelect: handleOrderSelect,
+      onEntityTypeSelect: handleEntityTypeSelect,
+      onNext: nextStep,
+      onPrev: prevStep,
+      onSubmit,
+      onCancel: handleCancel,
+      fetchAllCustomers,
+      fetchClientOrders
+    };
   };
 
   return {
@@ -233,5 +594,8 @@ export function usePayments() {
     navigateToCreatePayment,
     checkForOpenCashRegisterBeforePayment,
     refetch,
+    
+    // Hook integrado
+    usePaymentForm,
   };
 }

@@ -42,7 +42,7 @@ export const paymentFormSchema = z.object({
     (value) => (value === "" ? undefined : Number.parseInt(String(value), 10)),
     z.number().min(1, "Número mínimo de parcelas é 1").optional()
   ),
-  status: z.enum(["pending", "completed"] as const, {
+  status: z.enum(["pending", "completed", "cancelled"] as const, {
     required_error: "Selecione o status",
   }),
 }).refine((data) => {

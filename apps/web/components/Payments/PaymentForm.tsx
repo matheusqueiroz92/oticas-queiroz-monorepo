@@ -68,12 +68,14 @@ interface PaymentFormProps {
   clientOrders: Order[];
   isLoadingOrders: boolean;
   customerSearch: string;
+  orderSearch: string;
   legacyClientSearch: string;
   selectedEntityType: "customer" | "legacyClient" | null;
   showInstallments: boolean;
   showCheckFields: boolean;
   onShowCheckFields: (value: boolean) => void;
   onCustomerSearchChange: (value: string) => void;
+  onOrderSearchChange: (value: string) => void;
   onLegacyClientSearchChange: (value: string) => void;
   onEntityTypeSelect: (type: "customer" | "legacyClient" | null) => void;
   onClientSelect: (id: string, name: string) => void;
@@ -94,15 +96,20 @@ export function PaymentForm({
   cashRegister,
   isSubmitting,
   customers,
+  isLoadingCustomers,
   legacyClients,
   isLoadingLegacyClients,
   clientOrders,
   isLoadingOrders,
+  customerSearch,
+  orderSearch,
   legacyClientSearch,
   selectedEntityType,
   showInstallments,
   showCheckFields,
   onShowCheckFields,
+  onCustomerSearchChange,
+  onOrderSearchChange,
   onLegacyClientSearchChange,
   onEntityTypeSelect,
   onClientSelect,
@@ -465,7 +472,6 @@ export function PaymentForm({
         />
       )}
 
-      {/* Substituído select de caixa por visualização de caixa atual */}
       <FormField
         control={form.control}
         name="cashRegisterId"
@@ -494,8 +500,6 @@ export function PaymentForm({
           </FormItem>
         )}
       />
-
-      {/* Status de pagamento removido do step 1 */}
     </div>
   );
   
@@ -509,22 +513,6 @@ export function PaymentForm({
               Registrando uma despesa. Você não precisa vincular a um cliente ou
               pedido.
             </p>
-          </div>
-
-          {/* Status do pagamento como badge para despesas */}
-          <div className="space-y-2">
-            <FormLabel>Status do Pagamento</FormLabel>
-            <div>
-              <Badge className="bg-blue-100 text-blue-800 px-3 py-1 text-sm">
-                Concluído
-              </Badge>
-              <input 
-                type="hidden" 
-                name="status" 
-                value="completed" 
-                onChange={() => setValue("status", "completed")}
-              />
-            </div>
           </div>
 
           <FormField
@@ -558,6 +546,14 @@ export function PaymentForm({
                 <FormMessage />
               </FormItem>
             )}
+          />
+          
+          {/* Hidden status field - sempre completado para despesas */}
+          <input 
+            type="hidden" 
+            name="status" 
+            value="completed" 
+            onChange={() => setValue("status", "completed")}
           />
         </div>
       );
@@ -701,25 +697,13 @@ export function PaymentForm({
             </div>
           )}
 
-          {/* Mostrar status de pagamento como badge quando um cliente é selecionado */}
-          {(selectedCustomerId || watch("legacyClientId")) && (
-            <div className="space-y-2 mt-4">
-              <FormLabel>Status do Pagamento</FormLabel>
-              <div>
-                <Badge className="bg-blue-100 text-blue-800 px-3 py-1 text-sm">
-                  {selectedOrderId && getOrderPaymentStatus() ? 
-                    getOrderPaymentStatus()?.label : 
-                    "Concluído"}
-                </Badge>
-                <input 
-                  type="hidden" 
-                  name="status" 
-                  value="completed" 
-                  onChange={() => setValue("status", "completed")}
-                />
-              </div>
-            </div>
-          )}
+          {/* Status de pagamento removido daqui - só vai aparecer na lista de pedidos */}
+          <input 
+            type="hidden" 
+            name="status" 
+            value="completed" 
+            onChange={() => setValue("status", "completed")}
+          />
 
           {(selectedCustomerId || watch("legacyClientId")) &&
             paymentType === "sale" && (
@@ -735,16 +719,13 @@ export function PaymentForm({
                   <div className="flex items-center justify-center py-4">
                     <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                   </div>
-                ) : clientOrders && Array.isArray(clientOrders) ? (
+                ) : clientOrders && clientOrders.length > 0 ? (
                   <div 
                     key={`orders-list-${clientOrders.length}-${selectedCustomerId}`} 
                     className="border rounded-md p-4 max-h-80 overflow-y-auto"
                   >
                     <ul className="space-y-3">
                       {clientOrders.map((order) => {
-                        // Adicione um log para cada pedido aqui para depuração
-                        console.log("Renderizando pedido:", order);
-                        
                         const paymentStatus = order.paymentStatus === "paid" 
                           ? "Pago" 
                           : order.paymentStatus === "partially_paid" 
