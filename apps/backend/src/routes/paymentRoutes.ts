@@ -640,7 +640,7 @@ router.get(
 router.post(
   "/payments/:id/cancel",
   authenticate,
-  authorize(["admin"]),
+  authorize(["admin", "employee"]),
   validateAndUpdateRelationships,
   asyncHandler(paymentController.cancelPayment.bind(paymentController))
 );

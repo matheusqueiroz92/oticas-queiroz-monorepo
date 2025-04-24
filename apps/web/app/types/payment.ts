@@ -15,7 +15,7 @@ export interface IPayment {
   cashRegisterId: string;
   orderId?: string;
   amount: number;
-  date: Date; // Importante: no backend é 'date', não 'paymentDate'
+  date: Date;
   type: PaymentType;
   paymentMethod: PaymentMethod;
   status: PaymentStatus;
@@ -39,7 +39,7 @@ export interface IPayment {
   category?: string;
   createdAt?: Date;
   updatedAt?: Date;
-  // Campos para soft delete
+
   isDeleted?: boolean;
   deletedAt?: Date;
   deletedBy?: string;

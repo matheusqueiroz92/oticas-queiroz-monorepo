@@ -27,7 +27,10 @@ export default function OrderPaymentHistory({
     setIsLoading(true);
     try {
       // Buscar pagamentos relacionados a este pedido
-      const response = await api.get(`/api/payments?orderId=${orderId}`);
+      const response = await api.get(`/api/orders/${orderId}/payments`);
+
+      console.log(response.data);
+      
       
       let paymentData: IPayment[] = [];
       
