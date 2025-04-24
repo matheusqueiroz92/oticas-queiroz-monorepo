@@ -33,7 +33,7 @@ export class OrderModel {
           brand: product.brand,
           costPrice: product.costPrice,
           stock: typeof product.stock === 'number' ? product.stock : 
-                 (product.stock ? Number(product.stock) : undefined)
+                  (product.stock ? Number(product.stock) : undefined)
         };
         
         if (product.productType === 'lenses') {
@@ -62,7 +62,7 @@ export class OrderModel {
             shape: product.shape || "",
             reference: product.reference || "",
             stock: typeof product.stock === 'number' ? product.stock : 
-                   (product.stock ? Number(product.stock) : 0)
+                    (product.stock ? Number(product.stock) : 0)
           };
           return prescriptionFrameProduct;
         }
@@ -77,12 +77,28 @@ export class OrderModel {
             shape: product.shape || "",
             reference: product.reference || "",
             stock: typeof product.stock === 'number' ? product.stock : 
-                   (product.stock ? Number(product.stock) : 0)
+                    (product.stock ? Number(product.stock) : 0)
           };
           return sunglassesFrameProduct;
         }
         
         return baseProduct;
+      });
+    }
+    
+    // Processamento adequado do histórico de pagamentos
+    let paymentHistory = [];
+    if (order.paymentHistory && Array.isArray(order.paymentHistory)) {
+      paymentHistory = order.paymentHistory.map((entry: any) => {
+        return {
+          paymentId: entry.paymentId ? 
+            (typeof entry.paymentId === 'object' && entry.paymentId._id ? 
+              entry.paymentId._id.toString() : 
+              entry.paymentId.toString()) : "",
+          amount: typeof entry.amount === 'number' ? entry.amount : 0,
+          date: entry.date instanceof Date ? entry.date : new Date(entry.date || Date.now()),
+          method: entry.method || ""
+        };
       });
     }
     
@@ -104,6 +120,8 @@ export class OrderModel {
       paymentStatus: order.paymentStatus,
       paymentEntry: order.paymentEntry,
       installments: order.installments,
+      // Usar o paymentHistory processado
+      paymentHistory: paymentHistory.length > 0 ? paymentHistory : undefined,
       orderDate: order.orderDate,
       deliveryDate: order.deliveryDate,
       status: order.status,
@@ -338,7 +356,19 @@ export class OrderModel {
     populate = false
   ): Promise<IOrder | null> {
     if (!this.isValidId(id)) return null;
-
+  
+    if (orderData.paymentHistory) {
+      const currentOrder = await Order.findById(id);
+      if (currentOrder) {
+        orderData.paymentHistory = orderData.paymentHistory.map(entry => ({
+          paymentId: entry.paymentId,
+          amount: Number(entry.amount),
+          date: entry.date instanceof Date ? entry.date : new Date(entry.date),
+          method: entry.method
+        }));
+      }
+    }
+  
     if (orderData.totalPrice !== undefined || orderData.discount !== undefined) {
       const currentOrder = await Order.findById(id);
       if (currentOrder) {
@@ -347,13 +377,13 @@ export class OrderModel {
         orderData.finalPrice = newTotalPrice - newDiscount;
       }
     }
-
+  
     let query = Order.findByIdAndUpdate(
       id,
       { $set: orderData },
       { new: true, runValidators: true }
     );
-
+  
     if (populate) {
       query = query
         .populate("clientId", "name email role")
@@ -361,7 +391,7 @@ export class OrderModel {
         .populate("laboratoryId")
         .populate("products");
     }
-
+  
     const order = await query.exec();
     return order ? this.convertToIOrder(order) : null;
   }

@@ -403,6 +403,44 @@ const usePaymentForm = () => {
       console.log("Valores do formulário antes do processamento:", data);
       console.log("Valor do pagamento antes do processamento:", data.amount);
       
+      // Verificar novamente se o pedido já está pago (caso o status tenha mudado)
+      if (data.orderId) {
+        const order = clientOrders.find(o => o._id === data.orderId);
+        if (order && order.paymentStatus === "paid") {
+          toast({
+            variant: "destructive",
+            title: "Pedido já pago",
+            description: "Este pedido já está completamente pago. Operação cancelada."
+          });
+          setIsSubmitting(false);
+          return;
+        }
+        
+        // Verificar se o valor não excede o valor restante
+        const totalPaid = order?.paymentHistory 
+          ? order.paymentHistory.reduce((sum, entry) => sum + entry.amount, 0) 
+          : 0;
+        
+        const remainingAmount = order ? Math.max(0, order.finalPrice - totalPaid) : 0;
+        const paymentAmount = typeof data.amount === 'string' 
+          ? parseFloat(data.amount.replace(',', '.')) 
+          : data.amount;
+        
+        if (paymentAmount > remainingAmount) {
+          toast({
+            variant: "warning",
+            title: "Valor excede o restante",
+            description: `O valor inserido (${formatCurrency(paymentAmount)}) é maior que o valor restante do pedido (${formatCurrency(remainingAmount)}).`
+          });
+          
+          // Perguntar se deseja continuar
+          if (!window.confirm("O valor inserido excede o valor restante do pedido. Deseja continuar mesmo assim?")) {
+            setIsSubmitting(false);
+            return;
+          }
+        }
+      }
+      
       // Converter amount para número se for uma string
       let amountValue: number;
       
@@ -545,28 +583,46 @@ const usePaymentForm = () => {
     // Quando um pedido é selecionado, apenas notificar sobre o valor total
     const selectedOrder = clientOrders.find(order => order._id === orderId);
     if (selectedOrder) {
+      // Calcular quanto já foi pago neste pedido
+      const totalPaid = selectedOrder.paymentHistory 
+        ? selectedOrder.paymentHistory.reduce((sum, entry) => sum + entry.amount, 0) 
+        : 0;
+      
+      // Calcular o valor restante a pagar
+      const remainingAmount = Math.max(0, selectedOrder.finalPrice - totalPaid);
+      
+      // Se já estiver pago, alertar o usuário e não permitir que selecione este pedido
+      if (selectedOrder.paymentStatus === "paid" || remainingAmount <= 0) {
+        toast({
+          variant: "destructive",
+          title: "Pedido já pago",
+          description: `Este pedido já está completamente pago. Não é possível adicionar mais pagamentos a ele.`
+        });
+        
+        // Limpar a seleção de pedido
+        setValue("orderId", "");
+        return;
+      }
+      
       toast({
         title: "Pedido selecionado",
-        description: `Pedido no valor total de ${formatCurrency(selectedOrder.finalPrice)}. Informe o valor que deseja pagar.`,
+        description: `Pedido no valor total de ${formatCurrency(selectedOrder.finalPrice)}. Valor restante: ${formatCurrency(remainingAmount)}.`
       });
       
-      // Se estiver parcialmente pago, mostrar quanto já foi pago
-      if (selectedOrder.paymentStatus === "partially_paid" && selectedOrder.paymentHistory) {
-        const totalPaid = selectedOrder.paymentHistory.reduce((sum, entry) => sum + entry.amount, 0) || 0;
-        const remainingAmount = Math.max(0, selectedOrder.finalPrice - totalPaid);
-        
+      // Sugerir o valor restante para pagamento (opcional)
+      if (remainingAmount > 0) {
+        // Apenas sugerir, não definir automaticamente
         toast({
-          title: "Pagamento parcial",
-          description: `Este pedido já possui pagamentos: ${formatCurrency(totalPaid)} de ${formatCurrency(selectedOrder.finalPrice)}. Restante: ${formatCurrency(remainingAmount)}.`,
+          title: "Valor sugerido",
+          description: `Valor restante para pagamento completo: ${formatCurrency(remainingAmount)}.`
         });
       }
       
-      // Se já estiver pago, alertar o usuário
-      if (selectedOrder.paymentStatus === "paid") {
+      // Se estiver parcialmente pago, mostrar quanto já foi pago
+      if (selectedOrder.paymentStatus === "partially_paid" && totalPaid > 0) {
         toast({
-          variant: "warning",
-          title: "Pedido já pago",
-          description: "Este pedido já está marcado como pago. Confirme se realmente deseja adicionar um novo pagamento.",
+          title: "Pagamento parcial",
+          description: `Este pedido já possui pagamentos: ${formatCurrency(totalPaid)} de ${formatCurrency(selectedOrder.finalPrice)}.`
         });
       }
     }

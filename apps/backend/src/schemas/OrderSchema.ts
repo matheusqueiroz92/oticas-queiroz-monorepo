@@ -1,6 +1,27 @@
 import mongoose, { Schema } from 'mongoose';
 import { IOrder } from '../interfaces/IOrder';
 
+const paymentHistorySchema = new Schema({
+  paymentId: {
+    type: Schema.Types.ObjectId,
+    ref: 'Payment',
+    required: true
+  },
+  amount: {
+    type: Number,
+    required: true
+  },
+  date: {
+    type: Date,
+    default: Date.now,
+    required: true
+  },
+  method: {
+    type: String,
+    required: true
+  }
+}, { _id: false });
+
 const orderSchema = new Schema<IOrder>({
   clientId: { 
     type: Schema.Types.ObjectId, 
@@ -30,7 +51,7 @@ const orderSchema = new Schema<IOrder>({
   paymentMethod: {
     type: String, 
     required: true,
-    enum: ["credit", "debit", "cash", "pix", "installment", "bank_slip", "promissory_note"],
+    enum: ["credit", "debit", "cash", "pix", "installment", "bank_slip", "promissory_note", "check"],
   },
   paymentStatus: {
     type: String,
@@ -38,18 +59,7 @@ const orderSchema = new Schema<IOrder>({
     default: "pending",
     required: true
   },
-  paymentHistory: [{
-    paymentId: {
-      type: Schema.Types.ObjectId,
-      ref: 'Payment'
-    },
-    amount: Number,
-    date: {
-      type: Date,
-      default: Date.now
-    },
-    method: String
-  }],
+  paymentHistory: [paymentHistorySchema],
   paymentEntry: Number,
   installments: Number,
   orderDate: { 
@@ -186,18 +196,20 @@ orderSchema.pre('save', function(next) {
     });
   }
   
-  next();
-});
-
-// Middleware para popular produtos durante o find
-orderSchema.pre(/^find/, function(next) {
-  // Usar a abordagem mais simples aqui para evitar problemas de tipagem
-  const query = this as any;
-  
-  if (query.populate) {
-    query.populate({
-      path: 'products',
-      select: 'name description productType sellPrice image brand lensType typeFrame color shape reference modelSunglasses stock'
+  // Garantir valores numéricos corretos em paymentHistory
+  if (this.paymentHistory && Array.isArray(this.paymentHistory)) {
+    this.paymentHistory = this.paymentHistory.map(entry => {
+      if (entry && typeof entry === 'object') {
+        // Garantir que o amount seja um número
+        if ('amount' in entry && entry.amount !== undefined) {
+          entry.amount = Number(entry.amount);
+        }
+        // Garantir que a data seja um objeto Date
+        if ('date' in entry && entry.date && !(entry.date instanceof Date)) {
+          entry.date = new Date(entry.date);
+        }
+      }
+      return entry;
     });
   }
   

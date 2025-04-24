@@ -5,6 +5,13 @@ export type ProductReference = string | Types.ObjectId;
 
 export type OrderProduct = ProductReference | IProduct | ILens | ICleanLens | IPrescriptionFrame | ISunglassesFrame;
 
+export interface IPaymentHistoryEntry {
+  paymentId: string | Types.ObjectId;
+  amount: number;
+  date: Date;
+  method: string;
+}
+
 export interface IOrder {
   _id?: string;
   clientId: string | Types.ObjectId;
@@ -15,12 +22,7 @@ export interface IOrder {
   serviceOrder?: string;
   paymentMethod: string;
   paymentStatus: "pending" | "partially_paid" | "paid";
-  paymentHistory?: Array<{
-    paymentId: string | Types.ObjectId;
-    amount: number;
-    date: Date;
-    method: string;
-  }>;
+  paymentHistory?: Array<IPaymentHistoryEntry>;
   paymentEntry?: number;
   installments?: number;
   orderDate: Date;
@@ -62,4 +64,4 @@ export interface IOrder {
   updatedAt?: Date;
 }
 
-export type CreateOrderDTO = Omit<IOrder, "_id" | "createdAt" | "updatedAt" | "paymentHistory">;
+export type CreateOrderDTO = Omit<IOrder, "_id" | "createdAt" | "updatedAt">;
