@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import OrderDetailsPDF from "@/components/Orders/exports/OrderDetailsPdf";
 import OrderLaboratoryUpdate from "@/components/Orders/OrderLaboratoryUpdate";
 import OrderStatusUpdate from "@/components/Orders/OrderStatusUpdate";
+import OrderPaymentHistory from "@/components/Orders/OrderPaymentHistory";
 import { 
   Beaker, 
   FileText,
@@ -49,6 +50,7 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
   
   const { 
     getStatusBadge,
+    getPaymentStatusBadge,
     getPaymentMethodText,
     getProductTypeLabel,
     fetchOrderComplementaryDetails,
@@ -329,6 +331,10 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
                     <CardContent className="p-3 pt-0">
                       <div className="space-y-2 text-xs">
                         <div className="flex justify-between items-center">
+                          <span className="text-gray-600">Status do Pagamento:</span>
+                          <Badge className={getPaymentStatusBadge(order.paymentStatus).className}>{getPaymentStatusBadge(order.paymentStatus).label}</Badge>
+                        </div>
+                        <div className="flex justify-between items-center">
                           <span className="text-gray-600">Método:</span>
                           <span className="font-medium">{getPaymentMethodText(order.paymentMethod)}</span>
                         </div>
@@ -368,24 +374,10 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
                       </div>
                     </CardContent>
                   </Card>
-                  
-                  <div className="flex gap-2">
-                    <OrderDetailsPDF
-                      order={order}
-                      clientName={client ? client.name : "Cliente não encontrado"}
-                      employeeName={employee ? employee.name : "Vendedor não encontrado"}
-                    />
-                    
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="flex-1 text-xs h-8"
-                      onClick={onRefresh}
-                    >
-                      <RefreshCw className="h-3.5 w-3.5 mr-1" />
-                      Atualizar
-                    </Button>
-                  </div>
+                  <OrderPaymentHistory 
+                    orderId={order._id}
+                    finalPrice={order.finalPrice || order.totalPrice || 0}
+                  />
                 </div>
               </div>
             </TabsContent>
