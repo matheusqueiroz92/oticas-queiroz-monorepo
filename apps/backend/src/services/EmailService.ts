@@ -23,7 +23,7 @@ export class EmailService {
         user,
         pass,
       },
-      debug: true, // Adicione isso para ver logs detalhados
+      debug: true,
     });
   }
 
@@ -31,7 +31,6 @@ export class EmailService {
     email: string,
     resetLink: string
   ): Promise<void> {
-    // Certifique-se de que o resetLink tem o protocolo (http:// ou https://)
     const fullResetLink = resetLink.startsWith("http")
       ? resetLink
       : `http://localhost:3000${resetLink.startsWith("/") ? resetLink : `/${resetLink}`}`;
@@ -72,7 +71,6 @@ export class EmailService {
           </body>
           </html>
         `,
-        // Também incluir uma versão de texto puro para melhor compatibilidade
         text: `
           Recuperação de Senha - Óticas Queiroz
           

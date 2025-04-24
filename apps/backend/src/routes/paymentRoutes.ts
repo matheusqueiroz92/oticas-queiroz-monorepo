@@ -516,6 +516,52 @@ router.get(
   asyncHandler(paymentController.getDeletedPayments.bind(paymentController))
 );
 
+/**
+ * @swagger
+ * /api/payments/recalculate-debts:
+ *   get:
+ *     summary: Recalcula débitos dos clientes
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Payments]
+ *     description: Recalcula o total de débitos dos clientes com base nos pedidos pendentes
+ *     parameters:
+ *       - in: query
+ *         name: clientId
+ *         schema:
+ *           type: string
+ *         description: ID opcional do cliente específico (se não informado, recalcula para todos)
+ *     responses:
+ *       200:
+ *         description: Débitos recalculados com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 updated:
+ *                   type: integer
+ *                   description: Número de clientes atualizados
+ *                 clients:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                       oldDebt:
+ *                         type: number
+ *                       newDebt:
+ *                         type: number
+ *                       diff:
+ *                         type: number
+ *       401:
+ *         description: Não autorizado
+ *       403:
+ *         description: Acesso negado. Requer permissão de administrador.
+ *       500:
+ *         description: Erro interno do servidor
+ */
 router.get(
   '/api/payments/recalculate-debts',
   authenticate,

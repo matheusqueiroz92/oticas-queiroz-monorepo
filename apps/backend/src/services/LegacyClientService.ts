@@ -151,21 +151,104 @@ export class LegacyClientService {
     if (!client) {
       throw new LegacyClientError("Cliente não encontrado");
     }
-
+  
+    // MODIFICAÇÃO: Remover a verificação que impede inativação de clientes com dívidas
+    // Apenas exibir um aviso, mas permitir a inativação
     if (client.totalDebt > 0 && client.status === "active") {
-      throw new LegacyClientError(
-        "Não é possível inativar cliente com dívidas pendentes"
-      );
+      console.warn(`Cliente ${id} possui dívidas pendentes (${client.totalDebt}) mas será inativado mesmo assim.`);
+      // Não lançamos mais o erro que impedia a inativação
     }
-
+  
     const updatedClient = await this.legacyClientModel.update(id, {
       status: client.status === "active" ? "inactive" : "active",
     });
-
+  
     if (!updatedClient) {
       throw new LegacyClientError("Erro ao atualizar status do cliente");
     }
-
+  
     return updatedClient;
+  }
+
+  async recalculateClientDebts(clientId?: string): Promise<{
+    updated: number;
+    clients: Array<{ id: string; oldDebt: number; newDebt: number; diff: number }>;
+  }> {
+    try {
+      const result = {
+        updated: 0,
+        clients: [] as Array<{ id: string; oldDebt: number; newDebt: number; diff: number }>
+      };
+  
+      // Se um clientId foi fornecido, recalcular apenas para esse cliente
+      if (clientId) {
+        const client = await this.legacyClientModel.findById(clientId);
+        if (!client) {
+          throw new LegacyClientError("Cliente não encontrado");
+        }
+  
+        const oldDebt = client.totalDebt || 0;
+        
+        // Calcular o débito real com base no histórico de pagamentos
+        let newDebt = 0;
+        if (client.paymentHistory && client.paymentHistory.length > 0) {
+          // Implementar lógica para calcular o débito real
+          // Aqui precisamos da lógica específica para clientes legados
+          // que pode depender da estrutura do sistema
+          
+          // Por enquanto, apenas usamos o valor existente
+          newDebt = oldDebt;
+        }
+        
+        // Se houver diferença, atualizar o débito do cliente
+        if (newDebt !== oldDebt) {
+          await this.legacyClientModel.update(clientId, {
+            totalDebt: newDebt
+          });
+          
+          result.updated = 1;
+          result.clients.push({
+            id: clientId,
+            oldDebt,
+            newDebt,
+            diff: newDebt - oldDebt
+          });
+        }
+        
+        return result;
+      }
+      
+      // Caso contrário, buscar todos os clientes
+      const allClients = await this.legacyClientModel.findAll();
+      
+      // Para cada cliente, recalcular o débito total
+      for (const client of allClients.clients) {
+        const oldDebt = client.totalDebt || 0;
+        
+        // Calcular o débito real com base no histórico de pagamentos
+        // Usamos a mesma lógica do caso individual
+        let newDebt = oldDebt;
+        
+        // Se houver diferença, atualizar o débito do cliente
+        if (newDebt !== oldDebt && client._id) {
+          await this.legacyClientModel.update(client._id, {
+            totalDebt: newDebt
+          });
+          
+          result.updated++;
+          result.clients.push({
+            id: client._id,
+            oldDebt,
+            newDebt,
+            diff: newDebt - oldDebt
+          });
+        }
+      }
+      
+      return result;
+    } catch (error) {
+      console.error("Erro ao recalcular débitos de clientes legados:", error);
+      throw error;
+    }
   }
 }

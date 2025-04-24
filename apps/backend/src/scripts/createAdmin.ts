@@ -2,7 +2,7 @@ import { config } from "dotenv";
 import { UserModel } from "../models/UserModel";
 import connectDB from "../config/db";
 
-config(); // Carrega as variáveis de ambiente
+config();
 
 export const createAdminUser = async () => {
   try {

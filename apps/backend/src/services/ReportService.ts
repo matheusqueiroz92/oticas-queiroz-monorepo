@@ -23,38 +23,6 @@ export class ReportService {
     this.reportModel = new ReportModel();
   }
 
-  async createReport(
-    name: string,
-    type: IReport["type"],
-    filters: ReportFilters,
-    createdBy: string,
-    format: IReport["format"] = "json"
-  ): Promise<IReport> {
-    if (
-      filters.startDate &&
-      filters.endDate &&
-      filters.startDate > filters.endDate
-    ) {
-      throw new ReportError("Data inicial não pode ser maior que data final");
-    }
-
-    const report = await this.reportModel.create({
-      name,
-      type,
-      filters,
-      createdBy,
-      format,
-      status: "pending",
-      data: null,
-    });
-
-    if (report?._id) {
-      this.generateReportData(report._id).catch(console.error);
-    }
-
-    return report;
-  }
-
   private async generateReportData(reportId: string): Promise<void> {
     const report = await this.reportModel.findById(reportId);
     if (!report) return;
@@ -88,10 +56,8 @@ export class ReportService {
           break;
       }
   
-      // Armazenar em cache
       this.reportCache.set(cacheKey, data);
       
-      // Limitar o tamanho do cache
       if (this.reportCache.size > 100) {
         const oldestKey = this.reportCache.keys().next().value;
         if (oldestKey) {
@@ -142,14 +108,12 @@ export class ReportService {
       { $sort: { "_id.year": 1, "_id.month": 1 } },
     ]);
 
-    // Transformar os dados agregados para o formato desejado
     const byPeriod = salesData.map((item) => ({
       period: `${item._id.year}-${String(item._id.month).padStart(2, "0")}`,
       value: item.totalSales,
       count: item.count,
     }));
 
-    // Dados por método de pagamento
     const paymentMethodData = await Order.aggregate([
       { $match: query },
       {
@@ -165,7 +129,6 @@ export class ReportService {
       byPaymentMethod[item._id] = item.total;
     }
 
-    // Calcular totais
     const totalSales = byPeriod.reduce((sum, item) => sum + item.value, 0);
     const totalCount = byPeriod.reduce((sum, item) => sum + item.count, 0);
     const averageSale = totalCount > 0 ? totalSales / totalCount : 0;
@@ -188,7 +151,6 @@ export class ReportService {
       query.category = { $in: filters.productCategory };
     }
 
-    // Dados por categoria
     const categoryData = await Product.aggregate([
       { $match: query },
       {
@@ -207,7 +169,6 @@ export class ReportService {
       value: item.value,
     }));
 
-    // Produtos com estoque baixo
     const lowStockProducts = await Product.find({ stock: { $lt: 5 } })
       .select("_id name stock")
       .limit(10)
@@ -221,7 +182,6 @@ export class ReportService {
         stock: product.stock as number,
       }));
 
-    // Calcular totais
     const totalItems = byCategory.reduce((sum, item) => sum + item.count, 0);
     const totalValue = byCategory.reduce((sum, item) => sum + item.value, 0);
 
@@ -238,7 +198,6 @@ export class ReportService {
   ): Promise<CustomersReportData> {
     const query: Record<string, unknown> = { role: "customer" };
 
-    // Dados básicos de clientes
     const customersData = await User.aggregate([
       { $match: query },
       {
@@ -250,7 +209,6 @@ export class ReportService {
       },
     ]);
 
-    // Calcular novos clientes no período
     const newCustomersQuery: Record<string, unknown> = {
       role: "customer",
     };
@@ -272,7 +230,6 @@ export class ReportService {
 
     const newCustomers = await User.countDocuments(newCustomersQuery);
 
-    // Dados por localização (usando o endereço)
     const locationData = await User.aggregate([
       { $match: { role: "customer", address: { $exists: true, $ne: "" } } },
       {
@@ -289,10 +246,10 @@ export class ReportService {
     for (const item of locationData) {
       byLocation[item._id] = item.count;
     }
-    // Clientes recorrentes (com mais de um pedido)
+
     const recurringCustomers = await User.countDocuments({
       role: "customer",
-      "purchases.1": { $exists: true }, // Pelo menos 2 compras
+      "purchases.1": { $exists: true },
     });
 
     return {
@@ -320,7 +277,6 @@ export class ReportService {
       query.status = { $in: filters.status };
     }
 
-    // Dados por período
     const periodData = await Order.aggregate([
       { $match: query },
       {
@@ -342,7 +298,6 @@ export class ReportService {
       value: item.value,
     }));
 
-    // Dados por status
     const statusData = await Order.aggregate([
       { $match: query },
       {
@@ -358,7 +313,6 @@ export class ReportService {
       byStatus[item._id] = item.count;
     }
 
-    // Calcular totais
     const totalOrders = byPeriod.reduce((sum, item) => sum + item.count, 0);
     const totalValue = byPeriod.reduce((sum, item) => sum + item.value, 0);
     const averageValue = totalOrders > 0 ? totalValue / totalOrders : 0;
@@ -384,7 +338,6 @@ export class ReportService {
       };
     }
 
-    // Receita e despesas por período
     const periodData = await Payment.aggregate([
       { $match: query },
       {
@@ -400,7 +353,6 @@ export class ReportService {
       { $sort: { "_id.year": 1, "_id.month": 1 } },
     ]);
 
-    // Transformar os dados em formato mais usável
     const periodMap = new Map<string, { revenue: number; expenses: number }>();
     for (const item of periodData) {
       const period = `${item._id.year}-${String(item._id.month).padStart(2, "0")}`;
@@ -415,7 +367,6 @@ export class ReportService {
       periodMap.set(period, entry);
     }
 
-    // Converter para o formato final
     const byPeriod = Array.from(periodMap.entries()).map(([period, data]) => ({
       period,
       revenue: data.revenue,
@@ -423,7 +374,6 @@ export class ReportService {
       profit: data.revenue - data.expenses,
     }));
 
-    // Dados por categoria
     const categoryData = await Payment.aggregate([
       { $match: query },
       {
@@ -442,7 +392,6 @@ export class ReportService {
       }
     }
 
-    // Calcular totais
     const revenue = byPeriod.reduce((sum, item) => sum + item.revenue, 0);
     const expenses = byPeriod.reduce((sum, item) => sum + item.expenses, 0);
     const profit = revenue - expenses;
@@ -454,6 +403,38 @@ export class ReportService {
       byCategory,
       byPeriod,
     };
+  }
+
+  async createReport(
+    name: string,
+    type: IReport["type"],
+    filters: ReportFilters,
+    createdBy: string,
+    format: IReport["format"] = "json"
+  ): Promise<IReport> {
+    if (
+      filters.startDate &&
+      filters.endDate &&
+      filters.startDate > filters.endDate
+    ) {
+      throw new ReportError("Data inicial não pode ser maior que data final");
+    }
+
+    const report = await this.reportModel.create({
+      name,
+      type,
+      filters,
+      createdBy,
+      format,
+      status: "pending",
+      data: null,
+    });
+
+    if (report?._id) {
+      this.generateReportData(report._id).catch(console.error);
+    }
+
+    return report;
   }
 
   async getReport(id: string): Promise<IReport> {

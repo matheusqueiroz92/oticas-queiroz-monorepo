@@ -33,29 +33,54 @@ export class OrderService {
     this.stockService = new StockService();
   }
 
+  /**
+   * Verifica se um produto é uma referência (string ou ObjectId)
+   * @param product O produto a ser verificado
+   * @returns True se o produto for uma referência, false caso contrário
+  */
   private isProductReference(product: OrderProduct): product is string | mongoose.Types.ObjectId {
     return typeof product === 'string' || product instanceof mongoose.Types.ObjectId;
   }
 
+  /**
+   * Verifica se um produto é um objeto completo com _id
+   * @param product O produto a ser verificado
+   * @returns True se o produto for um objeto completo, false caso contrário
+  */
   private isProductComplete(product: OrderProduct): product is IProduct {
     return typeof product === 'object' && product !== null && '_id' in product;
   }
 
+  /**
+   * Verifica se um produto é do tipo lente
+   * @param product O produto a ser verificado
+   * @returns True se o produto for do tipo lente, false caso contrário
+  */
   private isLensType(product: IProduct): product is ILens {
     return product.productType === 'lenses';
   }
   
+  /**
+   * Verifica se um produto é do tipo limpa lentes
+   * @param product O produto a ser verificado
+   * @returns True se o produto for do tipo lente de limpeza, false caso contrário
+  */
   private isCleanLensType(product: IProduct): product is ICleanLens {
     return product.productType === 'clean_lenses';
   }
 
+  /**
+   * Verifica se um produto é uma lente (qualquer tipo)
+   * @param product O produto a ser verificado
+   * @returns Promise que resolve para true se o produto for uma lente, false caso contrário
+  */
   private async isLensProduct(product: OrderProduct): Promise<boolean> {
     if (this.isProductReference(product)) {
       const id = product.toString();
       const completeProduct = await this.productModel.findById(id);
       if (!completeProduct) return false;
       
-      if (completeProduct.productType === 'lenses' || completeProduct.productType === 'clean_lenses') {
+      if (completeProduct.productType === 'lenses') {
         return true;
       }
       
@@ -63,7 +88,7 @@ export class OrderService {
     } 
     
     if (this.isProductComplete(product)) {
-      if (product.productType === 'lenses' || product.productType === 'clean_lenses') {
+      if (product.productType === 'lenses') {
         return true;
       }
       
@@ -73,6 +98,11 @@ export class OrderService {
     return false;
   }
 
+  /**
+   * Valida os dados de um pedido
+   * @param orderData Dados do pedido a serem validados
+   * @throws OrderError se os dados forem inválidos
+  */
   private async validateOrder(orderData: Omit<IOrder, "_id">): Promise<void> {
     const client = await this.userModel.findById(orderData.clientId.toString());
     if (!client) {
@@ -282,6 +312,12 @@ export class OrderService {
     }
   }
 
+  /**
+   * Cria um novo pedido
+   * @param orderData Dados do pedido a ser criado
+   * @returns Pedido criado
+   * @throws OrderError se ocorrer um erro durante a criação
+  */
   async createOrder(orderData: Omit<IOrder, "_id">): Promise<IOrder> {
     const session = await mongoose.connection.startSession();
     session.startTransaction();
@@ -298,6 +334,7 @@ export class OrderService {
       const productLensChecks = await Promise.all(
         orderData.products.map(product => this.isLensProduct(product))
       );
+
       const containsLenses = productLensChecks.some(Boolean);
   
       if (!orderData.status) {
@@ -351,7 +388,6 @@ export class OrderService {
         }
       }
   
-      // INÍCIO DAS MODIFICAÇÕES: Atualizar relacionamentos
       if (order._id) {
         const orderId = order._id.toString();
         const clientId = orderData.clientId.toString();
@@ -389,26 +425,39 @@ export class OrderService {
           console.error(`Erro ao atualizar compras do cliente ${clientId}:`, error);
         }
         
-        // 3. Atualizar dívidas do cliente se necessário
-        if (orderData.paymentMethod === "bank_slip" || orderData.paymentMethod === "promissory_note") {
-          try {
-            const customer = await this.userModel.findById(clientId);
-            if (customer) {
-              const debtAmount = orderData.finalPrice - (orderData.paymentEntry || 0);
-              if (debtAmount > 0) {
-                const currentDebt = customer.debts || 0;
-                await this.userModel.update(clientId, {
-                  debts: currentDebt + debtAmount
-                });
-                console.log(`Dívida de ${debtAmount} adicionada ao cliente ${clientId}`);
-              }
-            }
-          } catch (error) {
-            console.error(`Erro ao atualizar dívidas do cliente ${clientId}:`, error);
+        // 3. Atualizar dívidas do cliente - SEMPRE o valor TOTAL do pedido
+        try {
+          // IMPORTANTE: Buscar o cliente novamente para ter certeza de que temos o valor mais recente
+          const currentCustomer = await this.userModel.findById(clientId);
+          if (!currentCustomer) {
+            throw new Error(`Cliente ${clientId} não encontrado`);
           }
+          
+          // Obter o valor atual do débito do cliente
+          const currentDebt = currentCustomer.debts || 0;
+          
+          // Calcular o débito com o novo pedido (valor TOTAL, sem subtrair a entrada)
+          const debtAmount = order.finalPrice;
+          
+          // Total do débito (atual + novo pedido)
+          const newDebt = currentDebt + debtAmount;
+          
+          // Atualizar o débito do cliente com o valor TOTAL
+          await this.userModel.update(clientId, {
+            debts: newDebt
+          });
+          
+          console.log(`Dívida de ${debtAmount} adicionada ao cliente ${clientId}. Débito total: ${newDebt}`);
+          
+          // O campo paymentEntry é apenas informativo e não deve gerar um registro no histórico
+          // de pagamentos nem afetar o débito do cliente.
+          // 
+          // O status de pagamento do pedido continua como "pending" até que um pagamento real seja registrado.
+          // Isso será feito pelo usuário manualmente através da interface de pagamentos.
+        } catch (error) {
+          console.error(`Erro ao atualizar dívidas do cliente ${clientId}:`, error);
         }
       }
-      // FIM DAS MODIFICAÇÕES
   
       // Tudo ocorreu bem, comitar a transação
       await session.commitTransaction();
@@ -431,6 +480,14 @@ export class OrderService {
     }
   }
 
+  /**
+   * Obtém todos os pedidos com base em filtros
+   * @param page Número da página
+   * @param limit Limite de itens por página
+   * @param filters Filtros a serem aplicados
+   * @returns Pedidos e total
+   * @throws OrderError se nenhum pedido for encontrado
+  */
   async getAllOrders(
     page?: number,
     limit?: number,
@@ -451,6 +508,12 @@ export class OrderService {
     return result;
   }
 
+  /**
+   * Obtém um pedido pelo ID
+   * @param id ID do pedido
+   * @returns Pedido encontrado
+   * @throws OrderError se o pedido não for encontrado
+  */
   async getOrderById(id: string): Promise<IOrder> {
     const order = await this.orderModel.findById(id, true);
     if (!order) {
@@ -460,6 +523,12 @@ export class OrderService {
     return order;
   }
 
+  /**
+   * Obtém todos os pedidos de um cliente
+   * @param clientId ID do cliente
+   * @returns Lista de pedidos do cliente
+   * @throws OrderError se nenhum pedido for encontrado
+  */
   async getOrdersByClientId(clientId: string): Promise<IOrder[]> {
     const orders = await this.orderModel.findByClientId(clientId, true);
     if (!orders.length) {
@@ -471,6 +540,15 @@ export class OrderService {
     return orders;
   }
 
+  /**
+   * Atualiza o status de um pedido
+   * @param id ID do pedido
+   * @param status Novo status
+   * @param userId ID do usuário que está atualizando
+   * @param userRole Papel do usuário que está atualizando
+   * @returns Pedido atualizado
+   * @throws OrderError se a atualização falhar ou não for permitida
+  */
   async updateOrderStatus(
     id: string,
     status: IOrder["status"],
@@ -558,6 +636,15 @@ export class OrderService {
     return updatedOrder;
   }
 
+  /**
+   * Atualiza o laboratório de um pedido
+   * @param id ID do pedido
+   * @param laboratoryId ID do laboratório
+   * @param userId ID do usuário que está atualizando
+   * @param userRole Papel do usuário que está atualizando
+   * @returns Pedido atualizado
+   * @throws OrderError se a atualização falhar ou não for permitida
+  */
   async updateOrderLaboratory(
     id: string,
     laboratoryId: IOrder["laboratoryId"],
@@ -587,6 +674,15 @@ export class OrderService {
     return updatedOrder;
   }
 
+  /**
+   * Atualiza os dados de um pedido
+   * @param id ID do pedido
+   * @param orderData Dados do pedido a serem atualizados
+   * @param userId ID do usuário que está atualizando
+   * @param userRole Papel do usuário que está atualizando
+   * @returns Pedido atualizado
+   * @throws OrderError se a atualização falhar ou não for permitida
+  */
   async updateOrder(
     id: string,
     orderData: Partial<IOrder>,
@@ -652,6 +748,14 @@ export class OrderService {
     return updatedOrder;
   }
 
+  /**
+   * Realiza exclusão lógica de um pedido
+   * @param id ID do pedido
+   * @param userId ID do usuário que está excluindo
+   * @param userRole Papel do usuário que está excluindo
+   * @returns Pedido excluído
+   * @throws OrderError se a exclusão falhar ou não for permitida
+  */
   async softDeleteOrder(
     id: string,
     userId: string,
@@ -679,6 +783,13 @@ export class OrderService {
     );
   }
 
+  /**
+   * Obtém pedidos excluídos logicamente
+   * @param page Número da página
+   * @param limit Limite de itens por página
+   * @param filters Filtros a serem aplicados
+   * @returns Pedidos excluídos e total
+  */
   async getDeletedOrders(
     page = 1,
     limit = 10,
@@ -687,6 +798,13 @@ export class OrderService {
     return this.orderModel.findDeletedOrders(page, limit, filters);
   }
 
+  /**
+   * Cancela um pedido e atualiza estoques e débitos relacionados
+   * @param id ID do pedido
+   * @param userId ID do usuário que está cancelando
+   * @param userRole Papel do usuário que está cancelando
+   * @returns Pedido cancelado
+   */
   async cancelOrder(
     id: string,
     userId: string,
@@ -700,7 +818,7 @@ export class OrderService {
       if (!order) {
         throw new OrderError("Pedido não encontrado");
       }
-  
+
       if (
         userRole !== "admin" &&
         userRole !== "employee" &&
@@ -708,26 +826,26 @@ export class OrderService {
       ) {
         throw new OrderError("Sem permissão para cancelar este pedido");
       }
-  
+
       if (order.status === "delivered") {
         throw new OrderError("Não é possível cancelar um pedido já entregue");
       }
-  
+
       if (order.status === "cancelled") {
         throw new OrderError("O pedido já está cancelado");
       }
-  
+
       // Atualizar o status com a sessão
       const updatedOrder = await this.orderModel.updateStatus(
         id,
         "cancelled",
         true
       );
-  
+
       if (!updatedOrder) {
         throw new OrderError("Erro ao cancelar pedido");
       }
-  
+
       try {
         // Processar o estoque para restaurar as quantidades
         await this.stockService.processOrderProducts(
@@ -737,11 +855,8 @@ export class OrderService {
           id
         );
         
-        // Caso o pedido tenha gerado dívida para o cliente, atualizar
-        if (
-          (order.paymentMethod === "bank_slip" || order.paymentMethod === "promissory_note") && 
-          order.clientId
-        ) {
+        // Remover o débito do cliente independente do método de pagamento
+        if (order.clientId) {
           const clientId = order.clientId.toString();
           const customer = await this.userModel.findById(clientId);
           
@@ -761,7 +876,7 @@ export class OrderService {
         await session.abortTransaction();
         throw stockError;
       }
-  
+
       // Tudo ocorreu bem, comitar a transação
       await session.commitTransaction();
       return updatedOrder;
@@ -783,6 +898,11 @@ export class OrderService {
     }
   }
 
+  /**
+   * Obtém pedidos do dia
+   * @param date Data para filtrar (padrão: data atual)
+   * @returns Lista de pedidos do dia
+  */
   async getDailyOrders(date: Date = new Date()): Promise<IOrder[]> {
     const startOfDay = new Date(date);
     startOfDay.setHours(0, 0, 0, 0);
@@ -799,6 +919,12 @@ export class OrderService {
     return orders;
   }
 
+  /**
+   * Exporta pedidos para um arquivo
+   * @param options Opções de exportação
+   * @param filters Filtros a serem aplicados
+   * @returns Buffer com dados exportados e metadados
+  */
   async exportOrders(
     options: ExportOptions,
     filters: Record<string, any> = {}
@@ -808,6 +934,12 @@ export class OrderService {
     return this.exportUtils.exportOrders(result.orders, options);
   }
 
+  /**
+   * Exporta um resumo diário dos pedidos
+   * @param date Data para filtrar
+   * @param options Opções de exportação
+   * @returns Buffer com dados exportados e metadados
+  */
   async exportDailySummary(
     date: Date,
     options: ExportOptions
@@ -850,6 +982,12 @@ export class OrderService {
     return this.exportUtils.exportOrdersSummary(summary, options);
   }
 
+  /**
+   * Exporta detalhes de um pedido específico
+   * @param id ID do pedido
+   * @param options Opções de exportação
+   * @returns Buffer com dados exportados e metadados
+  */
   async exportOrderDetails(
     id: string,
     options: ExportOptions
@@ -859,6 +997,12 @@ export class OrderService {
     return this.exportUtils.exportOrderDetails(order, options);
   }
 
+  /**
+   * Obtém pedidos por número de ordem de serviço
+   * @param serviceOrder Número da ordem de serviço
+   * @returns Lista de pedidos com o número de ordem de serviço especificado
+   * @throws OrderError se o número da ordem de serviço for inválido
+  */
   async getOrdersByServiceOrder(serviceOrder: string): Promise<IOrder[]> {
     const cleanServiceOrder = serviceOrder.replace(/\D/g, '');
     
@@ -875,6 +1019,11 @@ export class OrderService {
     return orders;
   }
 
+  /**
+   * Obtém IDs de clientes por número de ordem de serviço
+   * @param serviceOrder Número da ordem de serviço
+   * @returns Lista de IDs de clientes
+  */
   async getClientsByServiceOrder(serviceOrder: string): Promise<string[]> {
     const orders = await this.getOrdersByServiceOrder(serviceOrder);
     
@@ -883,6 +1032,11 @@ export class OrderService {
     return clientIds;
   }
 
+  /**
+   * Obtém pagamentos de um pedido
+   * @param orderId ID do pedido
+   * @returns Lista de pagamentos associados ao pedido
+  */
   async getOrderPayments(orderId: string): Promise<Array<IPayment>> {
     const order = await this.orderModel.findById(orderId);
     if (!order || !order.paymentHistory || order.paymentHistory.length === 0) {
@@ -895,6 +1049,12 @@ export class OrderService {
     return payments;
   }
   
+  /**
+   * Obtém um resumo do status de pagamento de um pedido
+   * @param orderId ID do pedido
+   * @returns Resumo com valores totais, pagos e status
+   * @throws OrderError se o pedido não for encontrado
+  */
   async getPaymentStatusSummary(orderId: string): Promise<{
     totalPrice: number;
     totalPaid: number;

@@ -3,10 +3,6 @@ import { IProduct, IPrescriptionFrame, ISunglassesFrame } from "../interfaces/IP
 import { OrderProduct } from "../interfaces/IOrder";
 import mongoose from "mongoose";
 import { StockLog, createStockLogWithSession } from "../schemas/StockLogSchema";
-import {
-  PrescriptionFrame, 
-  SunglassesFrame 
-} from "../schemas/ProductSchema";
 
 export class StockError extends Error {
   constructor(message: string) {
@@ -26,7 +22,7 @@ export class StockService {
    * Verifica se um produto é do tipo que possui controle de estoque (apenas armações)
    * @param product Produto a ser verificado
    * @returns true se for um produto com controle de estoque, false caso contrário
-   */
+  */
   private isFrameProduct(product: IProduct): product is IPrescriptionFrame | ISunglassesFrame {
     return product.productType === 'prescription_frame' || product.productType === 'sunglasses_frame';
   }
@@ -35,7 +31,7 @@ export class StockService {
    * Obtém um produto pelo ID
    * @param productId ID do produto
    * @returns Produto ou null se não encontrado
-   */
+  */
   private async getProductById(productId: string): Promise<IProduct | null> {
     try {
       return await this.productModel.findById(productId);
@@ -47,7 +43,7 @@ export class StockService {
 
   /**
    * Cria um log de alteração de estoque
-   */
+  */
   async createStockLog(
     productId: string, 
     previousStock: number, 
@@ -84,7 +80,7 @@ export class StockService {
    * @param performedBy ID do usuário que realizou a operação
    * @param orderId ID do pedido relacionado
    * @returns Produto atualizado ou null
-   */
+  */
   async decreaseStock(
     productId: string, 
     quantity = 1, 
@@ -164,7 +160,7 @@ export class StockService {
    * @param performedBy ID do usuário que realizou a operação
    * @param orderId ID do pedido relacionado
    * @returns Produto atualizado ou null
-   */
+  */
   async increaseStock(
     productId: string, 
     quantity = 1, 
@@ -238,7 +234,7 @@ export class StockService {
    * @param operation Operação (decrease para criar pedido, increase para cancelar)
    * @param performedBy ID do usuário que realizou a operação
    * @param orderId ID do pedido relacionado
-   */
+  */
   async processOrderProducts(
     products: OrderProduct[], 
     operation: 'decrease' | 'increase',
@@ -348,10 +344,10 @@ export class StockService {
   }
 
   /**
- * Obtém o histórico de estoque de um produto específico
- * @param productId ID do produto
- * @returns Array com histórico de movimentações
- */
+   * Obtém o histórico de estoque de um produto específico
+   * @param productId ID do produto
+   * @returns Array com histórico de movimentações
+  */
   async getProductStockHistory(productId: string) {
     try {
       // Verificar se o produto existe e é do tipo com estoque
@@ -384,41 +380,41 @@ export class StockService {
   }
 
   /**
- * Cria um log de alteração de estoque com uma sessão de transação
- */
-async createStockLogWithSession(
-  productId: string, 
-  previousStock: number, 
-  newStock: number, 
-  quantity: number, 
-  operation: 'increase' | 'decrease',
-  reason: string,
-  performedBy: string,
-  orderId?: string,
-  session?: mongoose.ClientSession
-): Promise<void> {
-  try {
-    const logData = {
-      productId: new mongoose.Types.ObjectId(productId),
-      orderId: orderId ? new mongoose.Types.ObjectId(orderId) : undefined,
-      previousStock,
-      newStock,
-      quantity,
-      operation,
-      reason,
-      performedBy: new mongoose.Types.ObjectId(performedBy)
-    };
-    
-    if (session) {
-      await createStockLogWithSession(logData, session);
-    } else {
-      await StockLog.create(logData);
+   * Cria um log de alteração de estoque com uma sessão de transação
+  */
+  async createStockLogWithSession(
+    productId: string, 
+    previousStock: number, 
+    newStock: number, 
+    quantity: number, 
+    operation: 'increase' | 'decrease',
+    reason: string,
+    performedBy: string,
+    orderId?: string,
+    session?: mongoose.ClientSession
+  ): Promise<void> {
+    try {
+      const logData = {
+        productId: new mongoose.Types.ObjectId(productId),
+        orderId: orderId ? new mongoose.Types.ObjectId(orderId) : undefined,
+        previousStock,
+        newStock,
+        quantity,
+        operation,
+        reason,
+        performedBy: new mongoose.Types.ObjectId(performedBy)
+      };
+      
+      if (session) {
+        await createStockLogWithSession(logData, session);
+      } else {
+        await StockLog.create(logData);
+      }
+      
+      console.log(`Log de estoque criado: ${operation} de ${quantity} unidades do produto ${productId}`);
+    } catch (error) {
+      console.error('Erro ao criar log de estoque:', error);
+      throw error;
     }
-    
-    console.log(`Log de estoque criado: ${operation} de ${quantity} unidades do produto ${productId}`);
-  } catch (error) {
-    console.error('Erro ao criar log de estoque:', error);
-    throw error;
   }
-}
 }
