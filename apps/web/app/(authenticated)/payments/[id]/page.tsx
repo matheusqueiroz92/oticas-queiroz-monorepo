@@ -13,17 +13,15 @@ import {
   getPaymentStatusClass,
 } from "@/app/utils/formatters";
 import { PaymentDetails } from "@/components/Payments/PaymentDetails";
-import type { User } from "@/app/types/user";
 import type { LegacyClient } from "@/app/types/legacy-client";
 
 export default function PaymentDetailsPage() {
   const { id } = useParams<{ id: string }>();
-  const [customer, _setCustomer] = useState<User | null>(null);
-  const [employee, _setEmployee] = useState<User | null>(null);
+  const router = useRouter();
+  
   const [legacyClient, _setLegacyClient] = useState<LegacyClient | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-
-  const router = useRouter();
+  
   const { handleCancelPayment } = usePayments();
 
   const {
@@ -37,10 +35,6 @@ export default function PaymentDetailsPage() {
     enabled: !!id,
   });
 
-  const handlePrintReceipt = () => {
-    window.print();
-  };
-
   const confirmCancelPayment = async () => {
     if (!id) return;
 
@@ -52,7 +46,7 @@ export default function PaymentDetailsPage() {
       console.error("Erro ao cancelar pagamento:", error);
     }
   };
-  
+
   const handleGoBack = () => {
     router.push("/payments");
   };
@@ -72,19 +66,16 @@ export default function PaymentDetailsPage() {
   const navigateToCashRegister = (cashRegisterId: string) => {
     router.push(`/cash-register/${cashRegisterId}`);
   };
-
+  
   return (
     <PaymentDetails
       payment={payment ?? null}
       isLoading={isLoading}
       error={error}
-      customer={customer}
-      employee={employee}
       legacyClient={legacyClient}
       showConfirmDialog={showConfirmDialog}
       setShowConfirmDialog={setShowConfirmDialog}
       onCancelPayment={confirmCancelPayment}
-      onPrintReceipt={handlePrintReceipt}
       onGoBack={handleGoBack}
       navigateToOrder={navigateToOrder}
       navigateToCustomer={navigateToCustomer}

@@ -16,8 +16,9 @@ import {
   FileText,
   DollarSign,
   Calendar,
-  Printer,
   ArrowLeft,
+  ChevronLeft,
+  Receipt,
   CheckCircle,
 } from "lucide-react";
 import {
@@ -31,24 +32,22 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import PaymentReceiptPrinter from "@/components/Payments/PaymentReceiptPrinter";
 
 import { formatCurrency, formatDate, formatDateTime } from "@/app/utils/formatters";
 import type { IPayment } from "@/app/types/payment";
-import type { User } from "@/app/types/user";
 import type { LegacyClient } from "@/app/types/legacy-client";
 import { useUsers } from "@/hooks/useUsers";
+import { useOrders } from "@/hooks/useOrders";
 
 interface PaymentDetailsProps {
   payment: IPayment | null;
   isLoading: boolean;
   error: unknown;
-  customer: User | null;
-  employee: User | null;
   legacyClient: LegacyClient | null;
   showConfirmDialog: boolean;
   setShowConfirmDialog: (show: boolean) => void;
   onCancelPayment: () => void;
-  onPrintReceipt: () => void;
   onGoBack: () => void;
   navigateToOrder?: (id: string) => void;
   navigateToCustomer?: (id: string) => void;
@@ -64,13 +63,10 @@ export function PaymentDetails({
   payment,
   isLoading,
   error,
-  customer,
-  employee,
   legacyClient,
   showConfirmDialog,
   setShowConfirmDialog,
   onCancelPayment,
-  onPrintReceipt,
   onGoBack,
   navigateToOrder,
   navigateToCustomer,
@@ -83,19 +79,9 @@ export function PaymentDetails({
 }: PaymentDetailsProps) {
   
   const { getUserName } = useUsers();
+  const { fetchOrderById } = useOrders();
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "completed":
-        return <CheckCircle className="h-5 w-5 text-green-600" />;
-      case "pending":
-        return <Loader2 className="h-5 w-5 text-yellow-600" />;
-      case "cancelled":
-        return <Ban className="h-5 w-5 text-red-600" />;
-      default:
-        return null;
-    }
-  };
+  const { data: order } = fetchOrderById(payment?.orderId as string);
 
   if (isLoading) {
     return (
@@ -120,18 +106,12 @@ export function PaymentDetails({
     <div className="space-y-6 max-w-4xl mx-auto p-4">
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onGoBack}
-          >
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Voltar
+          <Button variant="ghost" size="sm" onClick={onGoBack} className="h-8 w-8 p-0">
+            <ChevronLeft className="h-4 w-4" />
           </Button>
-          <h1 className="text-2xl font-bold">Detalhes do Pagamento</h1>
+          <h1 className="text-2xl font-bold text-primary">Detalhes do Pagamento</h1>
         </div>
         <div className="flex items-center gap-2">
-          {getStatusIcon(payment.status)}
           <Badge
             variant="outline"
             className={`text-sm px-3 py-1 ${getPaymentStatusClass(payment.status)}`}
@@ -141,15 +121,19 @@ export function PaymentDetails({
         </div>
       </div>
 
-      <Card>
+      <Card className="shadow-sm overflow-hidden">
         <CardHeader className="pb-2">
           <div className="flex justify-between items-center">
-            <CardTitle>Pagamento #{payment._id.substring(0, 8)}</CardTitle>
+            <div className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5 text-primary" />
+              <CardTitle>Pagamento #{payment._id.substring(0, 8)}</CardTitle>
+            </div>
             <div className="text-2xl font-bold text-green-700">
               {formatCurrency(payment.amount)}
             </div>
           </div>
-          <CardDescription>
+          
+          <CardDescription className="bg-gray-50 p-2">
             {payment.description ||
               `Registro de pagamento - ${translatePaymentType(payment.type)}`}
           </CardDescription>
@@ -159,7 +143,7 @@ export function PaymentDetails({
           <div className="grid md:grid-cols-2 gap-6">
             <div className="space-y-4">
               <h3 className="font-medium text-lg flex items-center gap-2">
-                <DollarSign className="h-5 w-5" /> Detalhes do Pagamento
+                <Receipt className="h-5 w-5" /> Detalhes do Pagamento
               </h3>
               <div className="space-y-2 bg-gray-50 p-3 rounded-md">
                 <div className="flex items-center justify-between">
@@ -271,21 +255,22 @@ export function PaymentDetails({
 
             <div className="space-y-4">
               <h3 className="font-medium text-lg flex items-center gap-2">
-                <FileText className="h-5 w-5" /> Informações Relacionadas
+                <FileText className="h-5 w-5" />Informações Relacionadas
               </h3>
               <div className="space-y-2 bg-gray-50 p-3 rounded-md">
-                {customer && (
+                {payment.customerId && (
                   <div className="flex items-center justify-between">
                     <span className="font-medium">Cliente:</span>
                     <Button
                       variant="link"
                       className="p-0 h-auto"
-                      onClick={() => navigateToCustomer && navigateToCustomer(customer._id)}
+                      onClick={() => navigateToCustomer && navigateToCustomer(payment.customerId as string)}
                     >
-                      {customer.name}
+                      <span>{getUserName(payment.customerId)}</span>
                     </Button>
                   </div>
                 )}
+
                 {legacyClient && (
                   <div className="flex items-center justify-between">
                     <span className="font-medium">Cliente Legado:</span>
@@ -298,12 +283,14 @@ export function PaymentDetails({
                     </Button>
                   </div>
                 )}
+
                 {payment.createdBy && (
                   <div className="flex items-center justify-between">
                     <span className="font-medium">Registrado por:</span>
-                    <span>{getUserName(employee?.name || payment.createdBy)}</span>
+                    <span>{getUserName(payment.createdBy)}</span>
                   </div>
                 )}
+
                 {payment.orderId && (
                   <div className="flex items-center justify-between">
                     <span className="font-medium">Pedido:</span>
@@ -312,10 +299,11 @@ export function PaymentDetails({
                       className="p-0 h-auto"
                       onClick={() => navigateToOrder && navigateToOrder(payment.orderId as string)}
                     >
-                      Ver Pedido
+                      Nº OS: {order?.serviceOrder ?? "OS não encontrada"}
                     </Button>
                   </div>
                 )}
+
                 {payment.cashRegisterId && (
                   <div className="flex items-center justify-between">
                     <span className="font-medium">Caixa:</span>
@@ -384,10 +372,14 @@ export function PaymentDetails({
               <ArrowLeft className="h-4 w-4 mr-2" />
               Voltar
             </Button>
-            <Button variant="outline" onClick={onPrintReceipt}>
-              <Printer className="h-4 w-4 mr-2" />
-              Imprimir
-            </Button>
+            <PaymentReceiptPrinter
+              payment={payment}
+              legacyClient={legacyClient}
+              translatePaymentStatus={translatePaymentStatus}
+              translatePaymentType={translatePaymentType}
+              translatePaymentMethod={translatePaymentMethod}
+              getUserName={getUserName}
+            />
           </div>
 
           {payment.status !== "cancelled" && (

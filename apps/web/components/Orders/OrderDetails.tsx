@@ -28,12 +28,13 @@ import {
   CalendarDays,
   CheckCircle,
   RefreshCw,
-  AlertTriangle
+  AlertTriangle,
 } from "lucide-react";
 import { useOrders } from "@/hooks/useOrders";
 import { useToast } from "@/hooks/useToast";
 import type { Order } from "@/app/types/order";
 import { formatRefractionValue } from "@/app/utils/formatters";
+import OrderReceiptPrinter from "./OrderReceiptPrint";
 
 interface OrderDetailsProps {
   order: Order;
@@ -93,89 +94,88 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
   const StatusBadge = ({ status }: { status: string }) => {
     const statusInfo = getStatusBadge(status || "");
     return (
-      <Badge className={statusInfo.className}>
+      <Badge className={statusInfo.className} style={{ pointerEvents: 'none' }} >
         {statusInfo.label}
       </Badge>
     );
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6 max-w-5xl mx-auto p-4">
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" onClick={onGoBack} className="h-8 w-8 p-0">
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <h1 className="text-lg font-bold text-primary">Detalhes do Pedido</h1>
+          <h1 className="text-2xl font-bold text-primary">Detalhes do Pedido</h1>
         </div>
-        <Badge variant="outline" className="text-xs px-2 py-0.5">
-          {formatDate(order.createdAt)}
-        </Badge>
       </div>
 
-      <Card className="shadow-sm overflow-hidden">
-        <CardHeader className="bg-gray-50 border-b p-3">
+      <Card className="shadow-md overflow-hidden">
+        <CardHeader className="pb-2 border-b">
           <div className="flex justify-between items-center">
             <div>
-              <CardTitle className="text-base flex items-center gap-2">
-                <ShoppingBag className="h-4 w-4 text-primary" />
+              <CardTitle className="text-xl flex items-center gap-2">
+                <ShoppingBag className="h-5 w-5 text-primary" />
                 Pedido #{order._id.substring(0, 8)}
               </CardTitle>
-              <CardDescription className="text-xs">
-                Criado em {formatDate(order.createdAt)} • OS: {order.serviceOrder || 'N/A'}
+              <CardDescription className="text-sm">
+                Criado em {formatDate(order.createdAt)} • Nº OS: {order.serviceOrder || 'N/A'}
               </CardDescription>
             </div>
-            <StatusBadge status={order.status} />
+            <div className="badge-container">
+              <StatusBadge status={order.status} />
+            </div>
           </div>
         </CardHeader>
         
-        <CardContent className="p-0">
+        <CardContent className="p-0 card-content">
           <Tabs defaultValue="details" className="w-full">
-            <TabsList className="w-full bg-gray-50 border-b p-0 rounded-none h-10">
-              <TabsTrigger value="details" className="text-xs flex items-center gap-1 rounded-none h-10 border-b-2 border-transparent data-[state=active]:border-primary">
-                <ShoppingBag className="h-3.5 w-3.5" />
+            <TabsList className="w-full bg-gray-50 border-b p-0 rounded-none h-12 tabs-list">
+              <TabsTrigger value="details" className="text-sm flex items-center gap-1 rounded-none h-12 border-b-2 border-transparent data-[state=active]:border-primary">
+                <ShoppingBag className="h-4 w-4" />
                 Detalhes
               </TabsTrigger>
               {hasPrescriptionData && (
-                <TabsTrigger value="prescription" className="text-xs flex items-center gap-1 rounded-none h-10 border-b-2 border-transparent data-[state=active]:border-primary">
-                  <FileText className="h-3.5 w-3.5" />
+                <TabsTrigger value="prescription" className="text-sm flex items-center gap-1 rounded-none h-12 border-b-2 border-transparent data-[state=active]:border-primary">
+                  <FileText className="h-4 w-4" />
                   Receita
                 </TabsTrigger>
               )}
-              <TabsTrigger value="laboratory" className="text-xs flex items-center gap-1 rounded-none h-10 border-b-2 border-transparent data-[state=active]:border-primary">
-                <Beaker className="h-3.5 w-3.5" />
+              <TabsTrigger value="laboratory" className="text-sm flex items-center gap-1 rounded-none h-12 border-b-2 border-transparent data-[state=active]:border-primary">
+                <Beaker className="h-4 w-4" />
                 Laboratório
               </TabsTrigger>
             </TabsList>
             
             {/* Conteúdo da aba de detalhes */}
-            <TabsContent value="details" className="p-3">
-              <div className="grid md:grid-cols-3 gap-4">
-                <div className="md:col-span-2 space-y-4">
+            <TabsContent value="details" className="p-6">
+              <div className="grid md:grid-cols-3 gap-6">
+                <div className="md:col-span-2 space-y-6">
                   {/* Informações Cliente e Vendedor */}
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-6">
                     {/* Cliente */}
-                    <Card className="shadow-none border">
-                      <CardHeader className="p-3 pb-0">
-                        <CardTitle className="text-sm flex items-center gap-1">
-                          <User className="h-3.5 w-3.5 text-primary" />
+                    <Card className="shadow-md border">
+                      <CardHeader className="p-4 pb-0">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <User className="h-4 w-4 text-primary" />
                           Cliente
                         </CardTitle>
                       </CardHeader>
-                      <CardContent className="p-3 pt-1">
-                        <div className="space-y-0.5 text-xs">
-                          <p className="font-medium">
+                      <CardContent className="p-4 pt-2">
+                        <div className="space-y-1 text-sm">
+                          <p className="font-medium text-base">
                             {client ? client.name : "Cliente não encontrado"}
                           </p>
                           {client && (
                             <>
-                              <p className="text-gray-600 flex items-center gap-1">
-                                <Mail className="h-3 w-3 text-gray-400" /> 
+                              <p className="text-gray-600 flex items-center gap-2">
+                                <Mail className="h-4 w-4 text-gray-400" /> 
                                 {client.email}
                               </p>
                               {client.phone && (
-                                <p className="text-gray-600 flex items-center gap-1">
-                                  <Phone className="h-3 w-3 text-gray-400" /> 
+                                <p className="text-gray-600 flex items-center gap-2">
+                                  <Phone className="h-4 w-4 text-gray-400" /> 
                                   {client.phone}
                                 </p>
                               )}
@@ -186,21 +186,21 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
                     </Card>
 
                     {/* Vendedor */}
-                    <Card className="shadow-none border">
-                      <CardHeader className="p-3 pb-0">
-                        <CardTitle className="text-sm flex items-center gap-1">
-                          <User className="h-3.5 w-3.5 text-primary" />
+                    <Card className="shadow-md border">
+                      <CardHeader className="p-4 pb-0">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <User className="h-4 w-4 text-primary" />
                           Vendedor
                         </CardTitle>
                       </CardHeader>
-                      <CardContent className="p-3 pt-1">
-                        <div className="space-y-0.5 text-xs">
-                          <p className="font-medium">
+                      <CardContent className="p-4 pt-2">
+                        <div className="space-y-1 text-sm">
+                          <p className="font-medium text-base">
                             {employee ? employee.name : "Vendedor não encontrado"}
                           </p>
                           {employee && (
-                            <p className="text-gray-600 flex items-center gap-1">
-                              <Mail className="h-3 w-3 text-gray-400" /> 
+                            <p className="text-gray-600 flex items-center gap-2">
+                              <Mail className="h-4 w-4 text-gray-400" /> 
                               {employee.email}
                             </p>
                           )}
@@ -210,53 +210,53 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
                   </div>
 
                   {/* Produtos */}
-                  <Card className="shadow-none border">
-                    <CardHeader className="p-3 pb-2 flex flex-row justify-between items-center">
-                      <CardTitle className="text-sm flex items-center gap-1">
-                        <ShoppingBag className="h-3.5 w-3.5 text-primary" />
+                  <Card className="shadow-md border">
+                    <CardHeader className="p-4 pb-2 flex flex-row justify-between items-center">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <ShoppingBag className="h-4 w-4 text-primary" />
                         Produtos
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="p-0">
                       <div className="overflow-hidden border-t">
                         <table className="w-full">
-                          <thead className="bg-gray-50 text-xs">
+                          <thead className="bg-gray-50 text-sm">
                             <tr className="border-b">
-                              <th className="text-left font-medium p-2">Produto</th>
-                              <th className="text-left font-medium p-2">Tipo</th>
-                              <th className="text-right font-medium p-2">Preço</th>
+                              <th className="text-left font-medium p-3">Produto</th>
+                              <th className="text-left font-medium p-3">Tipo</th>
+                              <th className="text-right font-medium p-3">Preço</th>
                             </tr>
                           </thead>
-                          <tbody className="text-xs">
+                          <tbody className="text-sm">
                             {products.map((product: any, index: number) => (
                               <tr key={product._id || index} className="border-b">
-                                <td className="p-2 font-medium">{product.name}</td>
-                                <td className="p-2 text-gray-600">{getProductTypeLabel(product.productType)}</td>
-                                <td className="p-2 text-right">{formatCurrency(product.sellPrice || 0)}</td>
+                                <td className="p-3 font-medium">{product.name}</td>
+                                <td className="p-3 text-gray-600">{getProductTypeLabel(product.productType)}</td>
+                                <td className="p-3 text-right">{formatCurrency(product.sellPrice || 0)}</td>
                               </tr>
                             ))}
                           </tbody>
                         </table>
 
-                        <div className="p-3 bg-gray-50">
-                          <div className="flex justify-between items-center text-xs">
+                        <div className="p-4 bg-gray-50">
+                          <div className="flex justify-between items-center text-sm">
                             <span className="text-gray-600">Subtotal:</span>
                             <span>{formatCurrency(order.totalPrice)}</span>
                           </div>
-                          <div className="flex justify-between items-center text-xs mt-1">
+                          <div className="flex justify-between items-center text-sm mt-1">
                             <span className="text-gray-600">Desconto:</span>
                             <span className="text-red-600">-{formatCurrency(order.discount || 0)}</span>
                           </div>
-                          <div className="flex justify-between items-center font-medium text-sm mt-2 pt-2 border-t">
+                          <div className="flex justify-between items-center font-medium text-base mt-3 pt-3 border-t">
                             <span>Total:</span>
-                            <span className="text-green-700">{formatCurrency(order.finalPrice || order.totalPrice)}</span>
+                            <span className="text-green-700 text-lg">{formatCurrency(order.finalPrice || order.totalPrice)}</span>
                           </div>
                         </div>
 
                         {order.observations && (
-                          <div className="p-3 border-t">
-                            <p className="text-xs font-medium mb-1">Observações:</p>
-                            <p className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
+                          <div className="p-4 border-t">
+                            <p className="text-sm font-medium mb-2">Observações:</p>
+                            <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
                               {order.observations}
                             </p>
                           </div>
@@ -266,10 +266,10 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
                   </Card>
 
                   {/* Status */}
-                  <Card className="shadow-none border">
-                    <CardHeader className="p-3 pb-2 flex flex-row justify-between items-center">
-                      <CardTitle className="text-sm flex items-center gap-1">
-                        <Truck className="h-3.5 w-3.5 text-primary" />
+                  <Card className="shadow-md border">
+                    <CardHeader className="p-4 pb-2 flex flex-row justify-between items-center">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Truck className="h-4 w-4 text-primary" />
                         Status do Pedido
                       </CardTitle>
                       <OrderStatusUpdate
@@ -277,9 +277,9 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
                         onUpdateSuccess={onRefresh}
                       />
                     </CardHeader>
-                    <CardContent className="p-3">
-                      <div className="text-xs space-y-2">
-                        <div className="flex items-center gap-2">
+                    <CardContent className="p-4 pt-2">
+                      <div className="text-sm space-y-3">
+                        <div className="flex items-center gap-3">
                           <StatusBadge status={order.status} />
                           <span className="text-gray-600">
                             {order.status === "pending" && "O pedido está aguardando processamento"}
@@ -291,25 +291,25 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
                         </div>
                         
                         {order.status === "pending" && !order.laboratoryId && (
-                          <div className="mt-2 p-2 bg-yellow-50 border border-yellow-100 rounded text-xs text-yellow-700 flex items-center gap-1">
-                            <AlertTriangle className="h-3.5 w-3.5 text-yellow-500" />
+                          <div className="mt-3 p-3 bg-yellow-50 border border-yellow-100 rounded text-sm text-yellow-700 flex items-center gap-2">
+                            <AlertTriangle className="h-4 w-4 text-yellow-500" />
                             <span>
                               Para mudar o status para "Em Produção", associe um laboratório a este pedido.
                             </span>
                           </div>
                         )}
                         
-                        <div className="flex items-center gap-2 mt-2">
-                          <div className="flex items-center gap-1 text-gray-600">
-                            <CalendarDays className="h-3.5 w-3.5 text-gray-400" />
+                        <div className="flex items-center gap-3 mt-3">
+                          <div className="flex items-center gap-2 text-gray-600">
+                            <CalendarDays className="h-4 w-4 text-gray-400" />
                             <span>Data do pedido:</span>
                           </div>
                           <span className="font-medium">{formatDate(order.orderDate)}</span>
                         </div>
                         
-                        <div className="flex items-center gap-2">
-                          <div className="flex items-center gap-1 text-gray-600">
-                            <CalendarDays className="h-3.5 w-3.5 text-gray-400" />
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2 text-gray-600">
+                            <CalendarDays className="h-4 w-4 text-gray-400" />
                             <span>Data de entrega:</span>
                           </div>
                           <span className="font-medium">{formatDate(order.deliveryDate)}</span>
@@ -320,19 +320,24 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
                 </div>
 
                 {/* Coluna da direita - Resumo do pagamento */}
-                <div className="space-y-4">
-                  <Card className="shadow-none border">
-                    <CardHeader className="p-3 pb-2">
-                      <CardTitle className="text-sm flex items-center gap-1">
-                        <CreditCard className="h-3.5 w-3.5 text-primary" />
+                <div className="space-y-6">
+                  <Card className="shadow-md border">
+                    <CardHeader className="p-4 pb-2">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <CreditCard className="h-4 w-4 text-primary" />
                         Pagamento
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="p-3 pt-0">
-                      <div className="space-y-2 text-xs">
+                    <CardContent className="p-4 pt-2">
+                      <div className="space-y-3 text-sm">
                         <div className="flex justify-between items-center">
                           <span className="text-gray-600">Status do Pagamento:</span>
-                          <Badge className={getPaymentStatusBadge(order.paymentStatus).className}>{getPaymentStatusBadge(order.paymentStatus).label}</Badge>
+                          <Badge
+                            className={getPaymentStatusBadge(order.paymentStatus).className}
+                            style={{ pointerEvents: 'none' }} 
+                          >
+                            {getPaymentStatusBadge(order.paymentStatus).label}
+                          </Badge>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-gray-600">Método:</span>
@@ -353,7 +358,7 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
                           </div>
                         )}
                         
-                        <div className="pt-2 mt-2 border-t">
+                        <div className="pt-3 mt-3 border-t">
                           <div className="flex justify-between items-center">
                             <span className="text-gray-600">Subtotal:</span>
                             <span>{formatCurrency(order.totalPrice || 0)}</span>
@@ -366,9 +371,9 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
                             </div>
                           )}
                           
-                          <div className="flex justify-between items-center font-medium text-sm mt-2 pt-2 border-t">
+                          <div className="flex justify-between items-center font-medium text-base mt-3 pt-3 border-t">
                             <span>Total:</span>
-                            <span className="text-green-700">{formatCurrency(order.finalPrice || order.totalPrice || 0)}</span>
+                            <span className="text-green-700 text-lg">{formatCurrency(order.finalPrice || order.totalPrice || 0)}</span>
                           </div>
                         </div>
                       </div>
@@ -384,15 +389,15 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
 
             {/* Aba de Receita Médica */}
             {hasPrescriptionData && (
-              <TabsContent value="prescription">
-                <div className="flex justify-between items-start mb-3">
-                  <h3 className="font-medium text-lg flex items-center p-4">
+              <TabsContent value="prescription" className="p-6">
+                <div className="flex justify-between items-start mb-4">
+                  <h3 className="font-medium text-xl flex items-center">
                     <FileText className="h-5 w-5 mr-2" />
                     Receita Médica
                   </h3>
                 </div>
-                <div className="bg-gray-50 p-4 rounded-md">
-                  <div className="space-y-4">
+                <div className="bg-gray-50 p-5 rounded-md border shadow-sm">
+                  <div className="space-y-5">
                     <div className="grid grid-cols-3 gap-4">
                       <p className="text-sm">
                         <span className="font-semibold">Médico:</span>{" "}
@@ -409,37 +414,37 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
                     </div>
 
                     {/* Tabela de receita */}
-                    <div className="mt-3 overflow-x-auto">
-                      <table className="min-w-full bg-white border border-gray-200 text-sm">
+                    <div className="mt-4 overflow-x-auto">
+                      <table className="min-w-full bg-white border border-gray-200 text-sm shadow-sm">
                         <thead>
                           <tr className="bg-gray-100">
-                            <th className="py-2 px-3 text-left">Olho</th>
-                            <th className="py-2 px-3 text-center">Esf.</th>
-                            <th className="py-2 px-3 text-center">Cil.</th>
-                            <th className="py-2 px-3 text-center">Eixo</th>
-                            <th className="py-2 px-3 text-center">DP</th>
+                            <th className="py-3 px-4 text-left">Olho</th>
+                            <th className="py-3 px-4 text-center">Esf.</th>
+                            <th className="py-3 px-4 text-center">Cil.</th>
+                            <th className="py-3 px-4 text-center">Eixo</th>
+                            <th className="py-3 px-4 text-center">DP</th>
                           </tr>
                         </thead>
                         <tbody>
                           {order.prescriptionData?.leftEye && (
                             <tr className="border-t border-gray-200">
-                              <td className="py-2 px-3 font-medium">
+                              <td className="py-3 px-4 font-medium">
                                 Esquerdo
                               </td>
-                              <td className="py-2 px-3 text-center">
+                              <td className="py-3 px-4 text-center">
                                 {formatRefractionValue(
                                   order.prescriptionData.leftEye.sph
                                 )}
                               </td>
-                              <td className="py-2 px-3 text-center">
+                              <td className="py-3 px-4 text-center">
                                 {formatRefractionValue(
                                   order.prescriptionData.leftEye.cyl
                                 )}
                               </td>
-                              <td className="py-2 px-3 text-center">
+                              <td className="py-3 px-4 text-center">
                                 {order.prescriptionData.leftEye.axis || "N/A"}°
                               </td>
-                              <td className="py-2 px-3 text-center">
+                              <td className="py-3 px-4 text-center">
                                 {order.prescriptionData.leftEye.pd || "N/A"}
                               </td>
                             </tr>
@@ -447,23 +452,23 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
 
                           {order.prescriptionData?.rightEye && (
                             <tr className="border-t border-gray-200">
-                              <td className="py-2 px-3 font-medium">
+                              <td className="py-3 px-4 font-medium">
                                 Direito
                               </td>
-                              <td className="py-2 px-3 text-center">
+                              <td className="py-3 px-4 text-center">
                                 {formatRefractionValue(
                                   order.prescriptionData.rightEye.sph
                                 )}
                               </td>
-                              <td className="py-2 px-3 text-center">
+                              <td className="py-3 px-4 text-center">
                                 {formatRefractionValue(
                                   order.prescriptionData.rightEye.cyl
                                 )}
                               </td>
-                              <td className="py-2 px-3 text-center">
+                              <td className="py-3 px-4 text-center">
                                 {order.prescriptionData.rightEye.axis || "N/A"}°
                               </td>
-                              <td className="py-2 px-3 text-center">
+                              <td className="py-3 px-4 text-center">
                                 {order.prescriptionData.rightEye.pd || "N/A"}
                               </td>
                             </tr>
@@ -471,49 +476,49 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
                         </tbody>
                         <tfoot>
                           <tr className="bg-gray-100">
-                            <th className="py-2 px-3 text-left" colSpan={5}>
+                            <th className="py-3 px-4 text-left" colSpan={5}>
                               Informações adicionais
                             </th>
                           </tr>
                           <tr>
-                            <td className="py-2 px-3 font-medium">D.N.P.</td>
-                            <td className="py-2 px-3 text-center" colSpan={4}>
+                            <td className="py-3 px-4 font-medium">D.N.P.</td>
+                            <td className="py-3 px-4 text-center" colSpan={4}>
                               {order.prescriptionData?.nd || "N/A"}
                             </td>
                           </tr>
                           <tr>
-                            <td className="py-2 px-3 font-medium">C.O.</td>
-                            <td className="py-2 px-3 text-center" colSpan={4}>
+                            <td className="py-3 px-4 font-medium">C.O.</td>
+                            <td className="py-3 px-4 text-center" colSpan={4}>
                               {order.prescriptionData?.oc || "N/A"}
                             </td>
                           </tr>
                           <tr>
-                            <td className="py-2 px-3 font-medium">Adição</td>
-                            <td className="py-2 px-3 text-center" colSpan={4}>
+                            <td className="py-3 px-4 font-medium">Adição</td>
+                            <td className="py-3 px-4 text-center" colSpan={4}>
                               {order.prescriptionData?.addition || "N/A"}
                             </td>
                           </tr>
                           <tr>
-                            <td className="py-2 px-3 font-medium">Ponte</td>
-                            <td className="py-2 px-3 text-center" colSpan={4}>
+                            <td className="py-3 px-4 font-medium">Ponte</td>
+                            <td className="py-3 px-4 text-center" colSpan={4}>
                               {order.prescriptionData?.bridge || "N/A"}
                             </td>
                           </tr>
                           <tr>
-                            <td className="py-2 px-3 font-medium">Aro</td>
-                            <td className="py-2 px-3 text-center" colSpan={4}>
+                            <td className="py-3 px-4 font-medium">Aro</td>
+                            <td className="py-3 px-4 text-center" colSpan={4}>
                               {order.prescriptionData?.rim || "N/A"}
                             </td>
                           </tr>
                           <tr>
-                            <td className="py-2 px-3 font-medium">AV</td>
-                            <td className="py-2 px-3 text-center" colSpan={4}>
+                            <td className="py-3 px-4 font-medium">AV</td>
+                            <td className="py-3 px-4 text-center" colSpan={4}>
                               {order.prescriptionData?.vh || "N/A"}
                             </td>
                           </tr>
                           <tr>
-                            <td className="py-2 px-3 font-medium">AM</td>
-                            <td className="py-2 px-3 text-center" colSpan={4}>
+                            <td className="py-3 px-4 font-medium">AM</td>
+                            <td className="py-3 px-4 text-center" colSpan={4}>
                               {order.prescriptionData?.sh || "N/A"}
                             </td>
                           </tr>
@@ -526,13 +531,13 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
             )}
 
             {/* Aba de Laboratório */}
-            <TabsContent value="laboratory">
-              <div className="flex justify-between items-start">
-                <h3 className="font-medium text-lg flex items-center p-4">
+            <TabsContent value="laboratory" className="p-6">
+              <div className="flex justify-between items-start mb-4">
+                <h3 className="font-medium text-xl flex items-center">
                   <Beaker className="h-5 w-5 mr-2" />
                   Laboratório Associado
                 </h3>
-                <div className="p-4">
+                <div>
                 <OrderLaboratoryUpdate
                   order={order}
                   onUpdateSuccess={onRefresh}
@@ -542,14 +547,14 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
               
               {laboratoryInfo ? (
                 <div className="p-4 rounded-md">
-                  <Card className="shadow-none border">
-                    <CardContent className="p-3">
-                      <div className="grid grid-cols-2 gap-4 text-xs">
-                        <div className="space-y-2">
+                  <Card className="shadow-md border">
+                    <CardContent className="p-4">
+                      <div className="grid grid-cols-2 gap-6 text-sm">
+                        <div className="space-y-3">
                           <div>
                             <p className="text-gray-600">Nome:</p>
-                            <p className="font-medium flex items-center gap-1">
-                              <Building className="h-3.5 w-3.5 text-gray-400" />
+                            <p className="font-medium flex items-center gap-2 text-base">
+                              <Building className="h-4 w-4 text-gray-400" />
                               {laboratoryInfo.name}
                             </p>
                           </div>
@@ -557,8 +562,8 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
                           {laboratoryInfo.contactName && (
                             <div>
                               <p className="text-gray-600">Contato:</p>
-                              <p className="font-medium flex items-center gap-1">
-                                <User className="h-3.5 w-3.5 text-gray-400" />
+                              <p className="font-medium flex items-center gap-2">
+                                <User className="h-4 w-4 text-gray-400" />
                                 {laboratoryInfo.contactName}
                               </p>
                             </div>
@@ -567,20 +572,20 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
                           {laboratoryInfo.phone && (
                             <div>
                               <p className="text-gray-600">Telefone:</p>
-                              <p className="font-medium flex items-center gap-1">
-                                <Phone className="h-3.5 w-3.5 text-gray-400" />
+                              <p className="font-medium flex items-center gap-2">
+                                <Phone className="h-4 w-4 text-gray-400" />
                                 {laboratoryInfo.phone}
                               </p>
                             </div>
                           )}
                         </div>
                         
-                        <div className="space-y-2">
+                        <div className="space-y-3">
                           {laboratoryInfo.email && (
                             <div>
                               <p className="text-gray-600">Email:</p>
-                              <p className="font-medium flex items-center gap-1">
-                                <Mail className="h-3.5 w-3.5 text-gray-400" />
+                              <p className="font-medium flex items-center gap-2">
+                                <Mail className="h-4 w-4 text-gray-400" />
                                 {laboratoryInfo.email}
                               </p>
                             </div>
@@ -588,21 +593,21 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
                           
                           <div>
                             <p className="text-gray-600">Status:</p>
-                            <p>
+                            <div>
                               <Badge
                                 variant={laboratoryInfo.isActive ? "outline" : "destructive"}
-                                className="mt-1 text-xs py-0 px-1 h-5"
+                                className="mt-1 text-sm py-0 px-2 h-6"
                               >
                                 <CheckCircle className="h-3 w-3 mr-1" />
                                 {laboratoryInfo.isActive ? "Ativo" : "Inativo"}
                               </Badge>
-                            </p>
+                            </div>
                           </div>
                           
                           <div>
                             <p className="text-gray-600">Data de entrega prevista:</p>
-                            <p className="font-medium flex items-center gap-1">
-                              <CalendarDays className="h-3.5 w-3.5 text-gray-400" />
+                            <p className="font-medium flex items-center gap-2">
+                              <CalendarDays className="h-4 w-4 text-gray-400" />
                               {formatDate(order.deliveryDate)}
                             </p>
                           </div>
@@ -612,12 +617,12 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
                   </Card>
                 </div>
               ) : (
-                <div className="bg-gray-50 p-4 rounded-md border text-sm">
+                <div className="bg-gray-50 p-5 rounded-md border shadow-sm text-sm">
                   <div className="space-y-4">
-                    <p className="text-gray-600 text-xs">
+                    <p className="text-gray-600">
                       Nenhum laboratório associado a este pedido.
                     </p>
-                    <p className="text-xs mt-1">
+                    <p className="mt-2">
                       Use o botão "Associar Laboratório" para vincular um laboratório a este pedido.
                     </p>
                   </div>
@@ -627,26 +632,33 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
           </Tabs>
         </CardContent>
         
-        <CardFooter className="border-t p-3 flex justify-between">
-          <Button variant="outline" size="sm" onClick={onGoBack} className="text-xs h-8">
-            <ChevronLeft className="h-3.5 w-3.5 mr-1" />
+        <CardFooter className="border-t p-4 flex justify-between">
+          <Button variant="outline" onClick={onGoBack} className="text-sm gap-2">
+            <ChevronLeft className="h-4 w-4" />
             Voltar para Pedidos
           </Button>
           
-          <div className="flex gap-2">
+          <div className="flex gap-3">
             <OrderDetailsPDF
               order={order}
               clientName={client ? client.name : "Cliente não encontrado"}
               employeeName={employee ? employee.name : "Vendedor não encontrado"}
             />
             
+            {/* Substituir o botão de impressão anterior por este componente */}
+            <OrderReceiptPrinter
+              order={order}
+              client={client}
+              employee={employee}
+              getStatusBadge={getStatusBadge}
+            />
+            
             <Button 
               variant="outline" 
-              size="sm" 
               onClick={onRefresh} 
-              className="text-xs h-8"
+              className="text-sm gap-2"
             >
-              <RefreshCw className="h-3.5 w-3.5 mr-1" />
+              <RefreshCw className="h-4 w-4" />
               Atualizar
             </Button>
           </div>

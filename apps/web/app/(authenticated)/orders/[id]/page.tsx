@@ -4,6 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useOrders } from "@/hooks/useOrders";
 import { useToast } from "@/hooks/useToast";
 import OrderDetails from "@/components/Orders/OrderDetails";
+import { customBadgeStyles } from "@/app/utils/custom-badge-styles";
 
 export default function OrderDetailsPage() {
   const { id } = useParams() as { id: string };
@@ -45,12 +46,13 @@ export default function OrderDetailsPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <>
+      <style jsx global>{customBadgeStyles}</style>
       <OrderDetails
         order={order}
         onGoBack={handleGoBack}
         onRefresh={handleRefreshData}
       />
-    </div>
+    </>
   );
 }

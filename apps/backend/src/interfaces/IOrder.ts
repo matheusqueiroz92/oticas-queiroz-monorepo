@@ -37,7 +37,7 @@ export interface IOrder {
       sph: number;
       cyl: number;
       axis: number;
-      pd: number;
+      pd?: number;
     };
     leftEye: {
       sph: number;

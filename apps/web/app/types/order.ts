@@ -23,28 +23,28 @@ export interface Order {
   status: "pending" | "in_production" | "ready" | "delivered" | "cancelled";
   laboratoryId?: string | null;
   prescriptionData?: {
-    doctorName: string;
-    clinicName: string;
-    appointmentDate: string | Date;
-    leftEye: {
-      sph: number;
-      cyl: number;
-      axis: number;
-      pd: number;
+    doctorName?: string;
+    clinicName?: string;
+    appointmentDate?: string | Date;
+    leftEye?: {
+      sph?: number;
+      cyl?: number;
+      axis?: number;
+      pd?: number;
     };
-    rightEye: {
-      sph: number;
-      cyl: number;
-      axis: number;
-      pd: number;
+    rightEye?: {
+      sph?: number;
+      cyl?: number;
+      axis?: number;
+      pd?: number;
     };
-    nd: number;
-    oc: number;
-    addition: number;
-    bridge: number;
-    rim: number;
-    vh: number;
-    sh: number;
+    nd?: number;
+    oc?: number;
+    addition?: number;
+    bridge?: number;
+    rim?: number;
+    vh?: number;
+    sh?: number;
   };
   observations?: string;
   totalPrice: number;

@@ -26,11 +26,7 @@ export default function OrderPaymentHistory({
     
     setIsLoading(true);
     try {
-      // Buscar pagamentos relacionados a este pedido
       const response = await api.get(`/api/orders/${orderId}/payments`);
-
-      console.log(response.data);
-      
       
       let paymentData: IPayment[] = [];
       
@@ -154,7 +150,7 @@ export default function OrderPaymentHistory({
                         </span>
                       </div>
                     </div>
-                    <Badge variant="outline" className="text-xs capitalize">
+                    <Badge variant="outline" className="text-xs capitalize" style={{ pointerEvents: 'none' }} >
                       {payment.status}
                     </Badge>
                   </div>

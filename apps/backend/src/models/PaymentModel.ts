@@ -69,40 +69,52 @@ export class PaymentModel {
   }
 
   private convertToIPayment(doc: PaymentDocument): IPayment {
-    if (!doc) {
-      console.error("Recebido documento nulo em convertToIPayment");
-      return {
-        _id: "",
-        createdBy: "",
-        cashRegisterId: "",
-        amount: 0,
-        date: new Date(),
-        type: "sale",
-        paymentMethod: "cash",
-        status: "pending"
-      } as IPayment;
-    }
-  
-    const payment = doc.toObject();
-    
+  if (!doc) {
+    console.error("Recebido documento nulo em convertToIPayment");
     return {
-      ...payment,
-      _id: doc._id ? doc._id.toString() : "",
-      orderId: doc.orderId ? doc.orderId.toString() : undefined,
-      customerId: doc.customerId ? doc.customerId.toString() : undefined,
-      legacyClientId: doc.legacyClientId ? doc.legacyClientId.toString() : undefined,
-      cashRegisterId: doc.cashRegisterId instanceof Types.ObjectId 
-        ? doc.cashRegisterId.toString() 
-        : (doc.cashRegisterId && (doc.cashRegisterId as PopulatedCashRegister)._id) 
-          ? (doc.cashRegisterId as PopulatedCashRegister)._id.toString() 
-          : "",
-      createdBy: doc.createdBy instanceof Types.ObjectId 
-        ? doc.createdBy.toString() 
-        : (doc.createdBy && (doc.createdBy as PopulatedUser)._id) 
-          ? (doc.createdBy as PopulatedUser)._id.toString() 
-          : "",
-    };
+      _id: "",
+      createdBy: "",
+      cashRegisterId: "",
+      amount: 0,
+      date: new Date(),
+      type: "sale",
+      paymentMethod: "cash",
+      status: "pending"
+    } as IPayment;
   }
+
+  const payment = doc.toObject();
+  
+  // Função auxiliar para extrair ID com segurança
+  const safeGetId = (field: any): string | undefined => {
+    if (!field) return undefined;
+    
+    // Se for ObjectId
+    if (field instanceof Types.ObjectId) {
+      return field.toString();
+    }
+    
+    // Se for objeto com _id
+    if (typeof field === 'object' && field !== null && field._id) {
+      return field._id.toString();
+    }
+    
+    // Se for string, retorna a string
+    return typeof field === 'string' ? field : undefined;
+  };
+
+  return {
+    ...payment,
+    _id: doc._id ? doc._id.toString() : "",
+    orderId: safeGetId(doc.orderId),
+    customerId: safeGetId(doc.customerId),
+    institutionId: safeGetId(doc.institutionId),
+    legacyClientId: safeGetId(doc.legacyClientId),
+    cashRegisterId: safeGetId(doc.cashRegisterId) || "",
+    createdBy: safeGetId(doc.createdBy) || "",
+    // deletedBy: safeGetId(doc.deletedBy),
+  };
+}
 
   async create(paymentData: Omit<IPayment, "_id">): Promise<IPayment> {
     const payment = new Payment(paymentData);
