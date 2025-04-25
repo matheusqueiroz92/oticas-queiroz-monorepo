@@ -136,17 +136,19 @@ export default function OrderClientProducts({
               <FormItem>
                 <FormLabel className="text-xs">Valor de Entrada</FormLabel>
                 <FormControl>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    placeholder="0,00"
-                    onChange={(e) => {
-                      const value = e.target.value ? Number.parseFloat(e.target.value) : '';
-                      field.onChange(value);
-                    }}
-                    value={field.value === 0 ? '' : (field.value as string | number | undefined)}
-                    className="border border-gray-200 rounded text-sm h-9"
-                  />
+                <Input
+                  type="number"
+                  step="0.01"
+                  placeholder="0,00"
+                  onChange={(e) => {
+                    // Se o campo estiver vazio, use null ou string vazia
+                    const value = e.target.value === '' ? '' : Number.parseFloat(e.target.value);
+                    field.onChange(value);
+                  }}
+                  // Use uma string vazia para representar campo vazio, mas nunca undefined
+                  value={field.value === null || field.value === undefined || field.value === 0 ? '' : field.value}
+                  className="border border-gray-200 rounded text-sm h-9"
+                />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -161,18 +163,18 @@ export default function OrderClientProducts({
                 <FormItem>
                   <FormLabel className="text-xs">Nº de Parcelas</FormLabel>
                   <FormControl>
-                    <Input
-                      type="number"
-                      min={1}
-                      max={12}
-                      placeholder="1"
-                      onChange={(e) => {
-                        const value = e.target.value ? Number.parseInt(e.target.value) : '';
-                        field.onChange(value);
-                      }}
-                      value={field.value === 0 ? '' : (field.value as string | number | undefined)}
-                      className="border border-gray-200 rounded text-sm h-9"
-                    />
+                  <Input
+                    type="number"
+                    min={1}
+                    max={12}
+                    placeholder="1"
+                    onChange={(e) => {
+                      const value = e.target.value === '' ? '' : Number.parseInt(e.target.value);
+                      field.onChange(value);
+                    }}
+                    value={field.value === null || field.value === undefined || field.value === 0 ? '' : field.value}
+                    className="border border-gray-200 rounded text-sm h-9"
+                  />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -288,15 +290,15 @@ export default function OrderClientProducts({
                     <FormItem>
                       <FormLabel className="text-xs">Nº da O.S.</FormLabel>
                       <FormControl>
-                        <Input
-                          type="text"
-                          placeholder="Número da O.S."
-                          onChange={(e) => {
-                            const value = e.target.value ? Number.parseInt(e.target.value) : '';
-                            field.onChange(value);
-                          }}
-                          value={field.value === 0 ? '' : (field.value as string | number | undefined)}
-                        />
+                      <Input
+                        type="text"
+                        placeholder="Número da O.S."
+                        onChange={(e) => {
+                          const value = e.target.value === '' ? '' : e.target.value;
+                          field.onChange(value);
+                        }}
+                        value={field.value === null || field.value === undefined || field.value === 0 ? '' : field.value}
+                      />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

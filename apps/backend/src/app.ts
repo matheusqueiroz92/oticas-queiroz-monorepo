@@ -35,7 +35,7 @@ class App {
   private config(): void {
     // Configuração do CORS baseada no ambiente
     const allowedOrigins = process.env.NODE_ENV === "production" 
-      ? ["https://app.oticasqueiroz.com.br"]
+      ? ["https://app.oticasqueiroz.com.br", "https://app.oticasqueiroz.com.br/api-docs"]
       : ["http://localhost:3000"];
 
     this.app.use(

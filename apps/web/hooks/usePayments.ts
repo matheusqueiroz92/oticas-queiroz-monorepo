@@ -204,9 +204,6 @@ export function usePayments() {
 
   // Funções que utilizam as mutations
   const handleCreatePayment = (data: CreatePaymentDTO) => {
-    console.log("Dados recebidos em handleCreatePayment:", data);
-    console.log("Valor final antes de enviar para o backend:", data.amount);
-    
     // VERIFICAÇÃO IMPORTANTE: Se houver um pedido selecionado, NÃO substitua o valor
     // Remova ou comente qualquer código similar a este:
     /*
@@ -271,17 +268,11 @@ const usePaymentForm = () => {
   const fetchClientOrders = async (clientId: string) => {
     try {
       if (!clientId) return;
-      console.log("Buscando pedidos para o cliente ID:", clientId);
-      
-      // Usar o endpoint de orders com API_ROUTES
       const response = await api.get(API_ROUTES.ORDERS.CLIENT(clientId));
-      console.log("Resposta da API:", response.data);
-      
-      // Garantir que estamos sempre trabalhando com um array
+
       if (Array.isArray(response.data)) {
         setClientOrders(response.data);
       } else if (response.data) {
-        // Se a resposta não for um array, mas tiver dados, transformar em array
         setClientOrders([response.data]);
       } else {
         setClientOrders([]);
@@ -292,7 +283,6 @@ const usePaymentForm = () => {
       
       // Verificar se é um erro 404 (pedidos não encontrados)
       if (error instanceof Error && (error as any).response && (error as any).response.status === 404) {
-        console.log("Nenhum pedido encontrado para este cliente");
         setClientOrders([]);
       } else {
         // Outro tipo de erro
@@ -387,12 +377,6 @@ const usePaymentForm = () => {
     }
   }, [selectedCustomerId]);
 
-  const amountValue = watch('amount');
-  // Monitorar o valor do pagamento
-  useEffect(() => {
-    console.log('Valor do pagamento monitorado:', amountValue);
-  }, [amountValue]);
-
   // Processar o envio do pagamento
   const onSubmit = async (data: any) => {
     if (isSubmitting) return;
@@ -400,9 +384,6 @@ const usePaymentForm = () => {
     setIsSubmitting(true);
     
     try {
-      console.log("Valores do formulário antes do processamento:", data);
-      console.log("Valor do pagamento antes do processamento:", data.amount);
-      
       // Verificar novamente se o pedido já está pago (caso o status tenha mudado)
       if (data.orderId) {
         const order = clientOrders.find(o => o._id === data.orderId);
@@ -454,8 +435,6 @@ const usePaymentForm = () => {
       if (isNaN(amountValue)) {
         amountValue = 0;
       }
-      
-      console.log("Valor de pagamento processado:", amountValue);
     
       const paymentData: CreatePaymentDTO = {
         amount: amountValue,
@@ -470,10 +449,6 @@ const usePaymentForm = () => {
         orderId: data.orderId,
         status: "completed" as PaymentStatus,
       };
-      
-      // IMPORTANTE: Verificar se o valor ainda é o correto após criar o objeto
-      console.log("Dados de pagamento construídos:", paymentData);
-      console.log("Verificação final do valor de pagamento:", paymentData.amount);
     
       // Adicionar dados de parcelamento se usar cartão de crédito com múltiplas parcelas
       if (
@@ -502,12 +477,7 @@ const usePaymentForm = () => {
         };
       }
       
-      console.log("Dados de pagamento finais antes do envio:", paymentData);
-      console.log("Verificação final do valor de pagamento antes do envio:", paymentData.amount);
-      
       const response = await handleCreatePayment(paymentData);
-      
-      console.log("Resposta do servidor após criar pagamento:", response);
       
       if (response && response._id) {
         router.push(`/payments/${response._id}`);
@@ -560,7 +530,6 @@ const usePaymentForm = () => {
 
   // Gerenciar seleção de cliente
   const handleClientSelect = (clientId: string, name: string) => {
-    console.log("ID do cliente selecionado:", clientId);
     setValue("customerId", clientId);
     setCustomerSearch(name);
     

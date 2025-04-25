@@ -67,8 +67,6 @@ export default function ProductSearch({
         : 0
     };
     
-    console.log("Produto normalizado para adição:", productWithPrice);
-    
     onProductAdd(productWithPrice);
     setProductSearch("");
     setShowResults(false);
