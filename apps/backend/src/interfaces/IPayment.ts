@@ -20,6 +20,9 @@ export interface IPayment {
     | "check";
   status: "pending" | "completed" | "cancelled";
 
+  mercadoPagoId?: string;
+  mercadoPagoData?: Record<string, any>;
+
   creditCardInstallments?: {
     current?: number;
     total: number;

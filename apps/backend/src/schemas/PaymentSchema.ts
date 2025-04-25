@@ -20,12 +20,13 @@ const paymentSchema = new Schema(
       enum: ["sale", "debt_payment", "expense"],
       required: true,
     },
-    // Método de pagamento
     paymentMethod: {
       type: String,
       enum: ["credit", "debit", "cash", "pix", "bank_slip", "promissory_note", "check"],
       required: true,
     },
+    mercadoPagoId: { type: String },
+    mercadoPagoData: { type: Schema.Types.Mixed },
     status: {
       type: String,
       enum: ["pending", "completed", "cancelled"],

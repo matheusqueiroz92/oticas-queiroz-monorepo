@@ -28,9 +28,5 @@ const swaggerSpec = swaggerJsdoc(options);
 
 // biome-ignore lint/suspicious/noExplicitAny: <explanation>
 export const setupSwagger = (app: any) => {
-  app.get('/api-docs', (_req: any, res: { redirect: (arg0: string) => void; }) => {
-    res.redirect('/api-docs/');
-  });
-  
   app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 };

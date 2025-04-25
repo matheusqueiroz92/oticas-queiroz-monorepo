@@ -12,11 +12,13 @@ import paymentRoutes from "./routes/paymentRoutes";
 import cashRegisterRoutes from "./routes/cashRegisterRoutes";
 import legacyClientRoutes from "./routes/legacyClientRoutes";
 import reportRoutes from "./routes/reportRoutes";
+import mercadoPagoRoutes from "./routes/mercadoPagoRoutes";
 
 import connectDB from "./config/db";
 import cors from "cors";
 import path from "node:path";
 import dotenv from "dotenv";
+import { initMercadoPago } from "./config/mercadoPago";
 
 dotenv.config();
 
@@ -29,11 +31,11 @@ class App {
     this.routes();
     this.database();
     this.swagger();
+    this.mercadoPago();
     this.errorHandling();
   }
 
   private config(): void {
-    // Configuração do CORS baseada no ambiente
     const allowedOrigins = process.env.NODE_ENV === "production" 
       ? ["https://app.oticasqueiroz.com.br", "https://app.oticasqueiroz.com.br/api-docs"]
       : ["http://localhost:3000"];
@@ -41,13 +43,12 @@ class App {
     this.app.use(
       cors({
         origin: allowedOrigins,
-        credentials: true, // Permite o envio de cookies
+        credentials: true,
       })
     );
 
     this.app.use(express.json());
 
-    // Servir arquivos estáticos da pasta 'public/images'
     const imagesPath = path.join(__dirname, "../../public/images");
     this.app.use("/images", express.static(imagesPath));
   }
@@ -71,6 +72,7 @@ class App {
     this.app.use("/api", cashRegisterRoutes);
     this.app.use("/api", legacyClientRoutes);
     this.app.use("/api", reportRoutes);
+    this.app.use("/api", mercadoPagoRoutes);
   }
 
   private database(): void {
@@ -79,6 +81,10 @@ class App {
 
   private swagger(): void {
     setupSwagger(this.app);
+  }
+  
+  private mercadoPago(): void {
+    initMercadoPago();
   }
 
   private errorHandling(): void {

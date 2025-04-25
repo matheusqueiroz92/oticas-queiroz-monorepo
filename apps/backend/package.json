@@ -62,6 +62,7 @@
     "json2csv": "^6.0.0-alpha.2",
     "jsoncsv": "^0.1.2",
     "jsonwebtoken": "^9.0.2",
+    "mercadopago": "^2.5.0",
     "mongoose": "^8.9.7",
     "multer": "^1.4.5-lts.1",
     "node-cache": "^5.1.2",
