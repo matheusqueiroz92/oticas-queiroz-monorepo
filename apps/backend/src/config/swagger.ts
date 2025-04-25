@@ -1,8 +1,6 @@
 import swaggerJsdoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
 import dotenv from "dotenv";
-import express from "express";
-import path from "path";
 
 dotenv.config();
 
@@ -29,21 +27,10 @@ const options: swaggerJsdoc.Options = {
 const swaggerSpec = swaggerJsdoc(options);
 
 // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-// export const setupSwagger = (app: any) => {
-//   app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-// };
-
 export const setupSwagger = (app: any) => {
-  // Configuração para servir arquivos estáticos do Swagger UI
-  app.use('/api-docs', express.static('node_modules/swagger-ui-dist'));
-  
-  // Rota principal do Swagger UI
-  app.get('/api-docs', (req: any, res: { sendFile: (arg0: string) => void; }) => {
-    res.sendFile(path.join(__dirname, '../node_modules/swagger-ui-dist/index.html'));
+  app.get('/api-docs', (_req: any, res: { redirect: (arg0: string) => void; }) => {
+    res.redirect('/api-docs/');
   });
   
-  // Especificação OpenAPI
-  app.get('/api-docs.json', (req: any, res: { json: (arg0: object) => void; }) => {
-    res.json(swaggerSpec);
-  });
+  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 };
