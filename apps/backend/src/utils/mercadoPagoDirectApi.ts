@@ -6,9 +6,26 @@ dotenv.config();
 const baseURL = 'https://api.mercadopago.com';
 const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
 
+// Verificação mais robusta do token
 if (!accessToken) {
-  console.error('ERRO: Token do Mercado Pago não configurado!');
-  console.error('Defina MERCADO_PAGO_ACCESS_TOKEN no arquivo .env');
+  console.error('\x1b[31m%s\x1b[0m', '--------------------------------------------------------------');
+  console.error('\x1b[31m%s\x1b[0m', 'ERRO CRÍTICO: TOKEN DO MERCADO PAGO NÃO CONFIGURADO!');
+  console.error('\x1b[31m%s\x1b[0m', 'Defina MERCADO_PAGO_ACCESS_TOKEN no arquivo .env');
+  console.error('\x1b[31m%s\x1b[0m', 'A integração com o Mercado Pago não funcionará sem este token.');
+  console.error('\x1b[31m%s\x1b[0m', '--------------------------------------------------------------');
+}
+
+// Testar o token ao inicializar
+if (accessToken) {
+  axios.get(`${baseURL}/v1/payment_methods`, {
+    headers: { 'Authorization': `Bearer ${accessToken}` }
+  }).then(() => {
+    console.log('\x1b[32m%s\x1b[0m', 'Conexão com Mercado Pago estabelecida com sucesso!');
+  }).catch(error => {
+    console.error('\x1b[31m%s\x1b[0m', 'ERRO AO CONECTAR COM MERCADO PAGO:');
+    console.error('\x1b[31m%s\x1b[0m', error.response?.data?.message || error.message);
+    console.error('\x1b[31m%s\x1b[0m', 'Verifique se o token está correto e tem as permissões necessárias.');
+  });
 }
 
 const api = axios.create({

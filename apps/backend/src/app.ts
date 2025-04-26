@@ -15,6 +15,7 @@ import connectDB from "./config/db";
 import cors from "cors";
 import path from "node:path";
 import dotenv from "dotenv";
+import { initMercadoPago } from "./config/mercadoPago";
 
 dotenv.config();
 
@@ -28,6 +29,7 @@ class App {
     this.database();
     this.swagger();
     this.errorHandling();
+    this.initPaymentGateways()
   }
 
   private config(): void {
@@ -72,6 +74,10 @@ class App {
 
   private database(): void {
     connectDB();
+  }
+
+  private initPaymentGateways(): void {
+    initMercadoPago();
   }
 
   private swagger(): void {

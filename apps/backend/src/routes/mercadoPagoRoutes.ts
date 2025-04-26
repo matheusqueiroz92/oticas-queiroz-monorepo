@@ -116,4 +116,28 @@ router.get(
   asyncHandler(mercadoPagoController.getPaymentInfo.bind(mercadoPagoController))
 );
 
+/**
+ * @swagger
+ * /api/mercadopago/test-payment:
+ *   get:
+ *     summary: Página para testar pagamentos via Mercado Pago
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [MercadoPago]
+ *     description: Retorna uma página HTML para testar pagamentos via Mercado Pago
+ *     responses:
+ *       200:
+ *         description: Página HTML
+ *         content:
+ *           text/html:
+ *             schema:
+ *               type: string
+ */
+router.get(
+  "/mercadopago/test-payment",
+  authenticate,
+  authorize(["admin"]),
+  asyncHandler(mercadoPagoController.getTestPaymentPage.bind(mercadoPagoController))
+);
+
 export default router;
