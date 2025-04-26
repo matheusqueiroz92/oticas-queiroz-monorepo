@@ -1,14 +1,15 @@
-import mercadopago from "../config/mercadoPago";
+import { MercadoPagoAPI } from "../utils/mercadoPagoDirectApi";
 import type { 
   IMercadoPagoPreference, 
   IMercadoPagoPreferenceResponse,
   IMercadoPagoPaymentInfo
 } from "../interfaces/IMercadoPago";
-import type { IOrder } from "../interfaces/IOrder";
+import type { IOrder, IPaymentHistoryEntry } from "../interfaces/IOrder";
 import { IPayment } from "../interfaces/IPayment";
 import { PaymentModel } from "../models/PaymentModel";
 import { OrderModel } from "../models/OrderModel";
 import { CashRegisterModel } from "../models/CashRegisterModel";
+import mongoose from "mongoose";
 
 export class MercadoPagoError extends Error {
   constructor(message: string) {
@@ -45,38 +46,50 @@ export class MercadoPagoService {
         throw new MercadoPagoError("Não há caixa aberto para registrar pagamentos");
       }
 
+      // Verificar se o pedido tem _id
+      if (!order._id) {
+        throw new MercadoPagoError("Pedido sem ID válido");
+      }
+
       // Preparar os items do pedido para o Mercado Pago
       const items = order.products.map((product, index) => {
-        // Se o produto for um ID (string), não temos informações detalhadas
-        // Neste caso vamos usar informações genéricas
-        if (typeof product === 'string' || product instanceof Object) {
-          const productObj = typeof product === 'object' ? product : { _id: product };
+        // Se o produto for um objeto com nome e preço
+        if (typeof product === 'object' && 
+            product !== null && 
+            '_id' in product && 
+            'name' in product && 
+            'sellPrice' in product) {
           return {
-            id: productObj._id?.toString() || `product-${index}`,
-            title: productObj.name || `Produto #${index + 1}`,
-            description: productObj.description || `Produto do pedido ${order._id}`,
+            id: product._id.toString(),
+            title: product.name,
+            description: (product.description || `Item do pedido ${order._id}`).toString(),
             quantity: 1,
             currency_id: "BRL",
-            unit_price: typeof productObj.sellPrice === 'number' ? productObj.sellPrice : 0
+            unit_price: Number(product.sellPrice)
           };
         }
         
+        // Caso contrário, usa uma representação genérica
         return {
-          id: product._id,
-          title: product.name,
-          description: product.description || `Produto do pedido ${order._id}`,
+          id: typeof product === 'object' && product && '_id' in product ? 
+              product._id.toString() : 
+              typeof product === 'string' ? 
+                  product : 
+                  `unknown-${index}`,
+          title: `Produto #${index + 1}`,
+          description: `Item do pedido ${order._id}`,
           quantity: 1,
           currency_id: "BRL",
-          unit_price: product.sellPrice
+          unit_price: order.finalPrice / order.products.length // Divide o valor igualmente
         };
       });
 
       // Criar uma preferência de pagamento
       const preference: IMercadoPagoPreference = {
         items,
-        external_reference: order._id,
+        external_reference: order._id.toString(),
         payment_methods: {
-          excluded_payment_methods: [], // Aqui você pode excluir métodos de pagamento
+          excluded_payment_methods: [],
           installments: order.installments || 1
         },
         back_urls: {
@@ -89,7 +102,8 @@ export class MercadoPagoService {
         statement_descriptor: "Óticas Queiroz"
       };
 
-      const response = await mercadopago.preferences.create(preference);
+      // Usar a API direta para criar a preferência
+      const response = await MercadoPagoAPI.createPreference(preference);
       
       return {
         id: response.body.id,
@@ -122,7 +136,7 @@ export class MercadoPagoService {
       }
       
       // Buscar o pedido relacionado
-      const orderId = paymentInfo.external_reference || paymentInfo.metadata?.order_id;
+      const orderId = paymentInfo.metadata?.order_id || paymentInfo.external_reference;
       if (!orderId) {
         throw new MercadoPagoError("Referência do pedido não encontrada no pagamento");
       }
@@ -132,10 +146,20 @@ export class MercadoPagoService {
         throw new MercadoPagoError(`Pedido ${orderId} não encontrado`);
       }
       
+      // Verificar se o pedido tem _id
+      if (!order._id) {
+        throw new MercadoPagoError(`Pedido encontrado não possui ID válido`);
+      }
+      
       // Verificar se há caixa aberto
       const openRegister = await this.cashRegisterModel.findOpenRegister();
       if (!openRegister) {
         throw new MercadoPagoError("Não há caixa aberto para registrar pagamentos");
+      }
+      
+      // Verificar se o caixa aberto tem _id
+      if (!openRegister._id) {
+        throw new MercadoPagoError("Caixa encontrado não possui ID válido");
       }
       
       // Mapear o tipo de pagamento do Mercado Pago para o tipo de pagamento do sistema
@@ -162,8 +186,8 @@ export class MercadoPagoService {
       const payment: Omit<IPayment, "_id"> = {
         createdBy: order.employeeId.toString(),
         customerId: order.clientId.toString(),
-        cashRegisterId: openRegister._id,
-        orderId: order._id,
+        cashRegisterId: openRegister._id.toString(),
+        orderId: order._id.toString(),
         amount: paymentInfo.transaction_amount,
         date: new Date(),
         type: "sale",
@@ -184,18 +208,28 @@ export class MercadoPagoService {
       // Criar o pagamento no sistema
       const createdPayment = await this.paymentModel.create(payment);
       
+      // Verificar se o pagamento criado tem _id
+      if (!createdPayment._id) {
+        throw new MercadoPagoError("Erro ao criar pagamento: ID não gerado");
+      }
+      
+      // Preparar o histórico de pagamento
+      const newPaymentHistory: IPaymentHistoryEntry[] = [
+        ...(order.paymentHistory || []),
+      ];
+      
+      // Adicionar o novo pagamento ao histórico
+      newPaymentHistory.push({
+        paymentId: createdPayment._id,
+        amount: createdPayment.amount,
+        date: createdPayment.date,
+        method: createdPayment.paymentMethod
+      });
+      
       // Atualizar o status de pagamento do pedido
-      const updatedOrder = await this.orderModel.update(order._id, {
+      await this.orderModel.update(order._id.toString(), {
         paymentStatus: "paid",
-        paymentHistory: [
-          ...(order.paymentHistory || []),
-          {
-            paymentId: createdPayment._id,
-            amount: createdPayment.amount,
-            date: createdPayment.date,
-            method: createdPayment.paymentMethod
-          }
-        ]
+        paymentHistory: newPaymentHistory
       });
       
       return createdPayment;
@@ -216,7 +250,8 @@ export class MercadoPagoService {
    */
   async getPaymentInfo(paymentId: string): Promise<IMercadoPagoPaymentInfo> {
     try {
-      const response = await mercadopago.payment.get(paymentId);
+      // Usar a API direta para obter informações do pagamento
+      const response = await MercadoPagoAPI.getPayment(paymentId);
       return response.body as IMercadoPagoPaymentInfo;
     } catch (error) {
       console.error("Erro ao obter informações do pagamento:", error);

@@ -1,8 +1,6 @@
 import express from "express";
-
 import { setupSwagger } from "./config/swagger";
 import { errorMiddleware } from "./middlewares/errorMiddleware";
-
 import authRoutes from "./routes/authRoutes";
 import userRoutes from "./routes/userRoutes";
 import productRoutes from "./routes/productRoutes";
@@ -13,12 +11,10 @@ import cashRegisterRoutes from "./routes/cashRegisterRoutes";
 import legacyClientRoutes from "./routes/legacyClientRoutes";
 import reportRoutes from "./routes/reportRoutes";
 import mercadoPagoRoutes from "./routes/mercadoPagoRoutes";
-
 import connectDB from "./config/db";
 import cors from "cors";
 import path from "node:path";
 import dotenv from "dotenv";
-import { initMercadoPago } from "./config/mercadoPago";
 
 dotenv.config();
 
@@ -31,7 +27,6 @@ class App {
     this.routes();
     this.database();
     this.swagger();
-    this.mercadoPago();
     this.errorHandling();
   }
 
@@ -83,10 +78,6 @@ class App {
     setupSwagger(this.app);
   }
   
-  private mercadoPago(): void {
-    initMercadoPago();
-  }
-
   private errorHandling(): void {
     this.app.use(errorMiddleware);
   }
