@@ -85,4 +85,13 @@ export const API_ROUTES = {
     VALIDATE_RESET_TOKEN: (token: string) =>
       `/api/auth/validate-reset-token/${token}`,
   },
+
+  MERCADO_PAGO: {
+    BASE: "/api/mercadopago",
+    PREFERENCE: (orderId: string) => `/api/mercadopago/preference/${orderId}`,
+    WEBHOOK: "/api/mercadopago/webhook",
+    PAYMENT: (paymentId: string) => `/api/mercadopago/payment/${paymentId}`,
+    PROCESS_PAYMENT: (paymentId: string) => `/api/mercadopago/process/${paymentId}`,
+    PAYMENT_INFO: (preferenceId: string) => `/api/mercadopago/payment-info/${preferenceId}`,
+  }
 };

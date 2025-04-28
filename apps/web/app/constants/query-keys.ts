@@ -96,4 +96,10 @@ export const QUERY_KEYS = {
     ],
     DETAIL: (id: string) => ["reports", "detail", id],
   },
+
+  MERCADO_PAGO: {
+    PREFERENCE: (orderId: string) => ["mercadopago", "preference", orderId],
+    PAYMENT_INFO: (preferenceId: string) => ["mercadopago", "payment-info", preferenceId],
+    PROCESS_PAYMENT: (paymentId: string) => ["mercadopago", "process", paymentId],
+  },
 };
