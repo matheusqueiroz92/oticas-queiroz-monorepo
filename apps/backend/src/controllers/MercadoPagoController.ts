@@ -216,21 +216,43 @@ async getTestPaymentPage(req: Request, res: Response): Promise<void> {
           document.getElementById('result').style.display = 'none';
           
           try {
+            // Obter o token do localStorage
+            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+            
             const response = await fetch(\`/api/mercadopago/preference/\${orderId}\`, {
               method: 'POST',
               headers: {
-                'Authorization': \`Bearer \${localStorage.getItem('token')}\`,
+                'Authorization': \`Bearer \${token}\`,
                 'Content-Type': 'application/json'
               }
             });
             
+            if (!response.ok) {
+              throw new Error(\`Erro HTTP: \${response.status}\`);
+            }
+            
             const data = await response.json();
             
+            // Verificar se o data.id existe antes de exibi-lo
+            if (!data.id) {
+              throw new Error('ID da preferência não retornado pelo servidor');
+            }
+            
+            // Atualizar o texto para exibir o ID
             document.getElementById('preference-id').textContent = \`ID: \${data.id}\`;
-            document.getElementById('payment-link').href = data.init_point;
+            
+            // Usar o sandbox_init_point para ambiente de teste
+            const paymentLink = data.sandbox_init_point || data.init_point;
+            
+            // Atualizar o link
+            const paymentLinkElement = document.getElementById('payment-link');
+            paymentLinkElement.href = paymentLink;
+            paymentLinkElement.textContent = 'Abrir Página de Pagamento (' + paymentLink + ')';
+            
             document.getElementById('result').style.display = 'block';
           } catch (error) {
             alert(\`Erro ao gerar link de pagamento: \${error.message}\`);
+            console.error('Erro detalhado:', error);
           } finally {
             document.getElementById('loading').style.display = 'none';
           }

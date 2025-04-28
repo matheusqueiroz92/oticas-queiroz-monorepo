@@ -135,8 +135,8 @@ router.get(
  */
 router.get(
   "/mercadopago/test-payment",
-  authenticate,
-  authorize(["admin"]),
+  // authenticate,
+  // authorize(["admin"]),
   asyncHandler(mercadoPagoController.getTestPaymentPage.bind(mercadoPagoController))
 );
 

@@ -18,7 +18,6 @@ async function testMercadoPago() {
         pending: 'http://localhost:3333/pending',
         failure: 'http://localhost:3333/failure'
       },
-      auto_return: 'approved',
       statement_descriptor: 'Teste'
     };
     

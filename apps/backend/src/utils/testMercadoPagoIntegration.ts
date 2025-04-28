@@ -4,20 +4,25 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Para executar testes
 async function testMercadoPagoIntegration() {
   try {
     console.log('Iniciando teste de integração com Mercado Pago...');
+    
+    // Buscar pedidos disponíveis
+    const orderId = await listOrders();
+    if (!orderId) {
+      throw new Error("Nenhum pedido encontrado no banco de dados");
+    }
+    
     const mpService = new MercadoPagoService();
     const orderService = new OrderService();
     
-    // 1. Buscar um pedido existente
-    const orderId = '65c6f7a0e6dc2f001e7893c2'; // Substitua por um ID válido do seu sistema
+    // Buscar o pedido selecionado
     console.log(`Buscando pedido ${orderId}...`);
     const order = await orderService.getOrderById(orderId);
     console.log('Pedido encontrado:', order._id);
     
-    // 2. Criar uma preferência de pagamento
+    // Criar uma preferência de pagamento
     console.log('Criando preferência de pagamento...');
     const baseUrl = process.env.API_URL || 'http://localhost:3333';
     const preference = await mpService.createPaymentPreference(order, baseUrl);
@@ -30,7 +35,24 @@ async function testMercadoPagoIntegration() {
   } catch (error) {
     console.error('Erro durante o teste:', error);
   } finally {
-    process.exit(0);
+    setTimeout(() => process.exit(0), 1000);
+  }
+}
+
+async function listOrders() {
+  try {
+    const orderService = new OrderService();
+    const result = await orderService.getAllOrders(1, 5); // Lista 5 pedidos
+    
+    console.log('Pedidos disponíveis:');
+    result.orders.forEach(order => {
+      console.log(`- ID: ${order._id}, Cliente: ${order.clientId}, Valor: ${order.finalPrice}`);
+    });
+    
+    return result.orders.length > 0 ? result.orders[0]._id : null;
+  } catch (error) {
+    console.error('Erro ao listar pedidos:', error);
+    return null;
   }
 }
 

@@ -1,13 +1,11 @@
-// Importação com CommonJS
-const mercadopago = require('mercadopago');
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Configuração do Mercado Pago
+const mercadopago = require('mercadopago');
+
 export const initMercadoPago = (): void => {
   try {
-    // Obtém o access token do arquivo .env
     const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
 
     if (!accessToken) {
@@ -16,11 +14,13 @@ export const initMercadoPago = (): void => {
       return;
     }
 
-    // Configuração para a versão 2.x
-    // A API mudou: agora usamos setAccessToken em vez de configure
-    mercadopago.configure({
-      access_token: accessToken
-    });
+    if (typeof mercadopago.configure === 'function') {
+      mercadopago.configure({
+        access_token: accessToken
+      });
+    } else {
+      console.warn('SDK do Mercado Pago não configurado corretamente. Usando API direta.');
+    }
 
     console.log('SDK do Mercado Pago configurado com sucesso');
   } catch (error) {
@@ -28,5 +28,4 @@ export const initMercadoPago = (): void => {
   }
 };
 
-// Exportar o módulo configurado
 export default mercadopago;

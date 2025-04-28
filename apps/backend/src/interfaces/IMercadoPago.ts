@@ -1,4 +1,3 @@
-// Interface para representar uma preferência de pagamento do Mercado Pago
 export interface IMercadoPagoPreference {
   items: Array<{
     id: string;
