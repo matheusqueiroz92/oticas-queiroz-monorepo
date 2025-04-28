@@ -22,7 +22,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -37,7 +36,6 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
-  ArrowLeft,
   Calendar as CalendarIcon,
   DollarSign,
   Loader2,
@@ -46,7 +44,6 @@ import {
   ClipboardCheck,
   ChevronRight,
   CreditCard,
-  File,
 } from "lucide-react";
 import ClientSearch from "@/components/Orders/ClientSearch";
 import { formatCurrency, formatDate } from "@/app/utils/formatters";
@@ -81,6 +78,8 @@ interface PaymentFormProps {
   selectedEntityType: "customer" | "legacyClient" | null;
   showInstallments: boolean;
   showCheckFields: boolean;
+  showMercadoPagoOption?: boolean;
+  onSelectMercadoPago?: () => void;
   onShowCheckFields: (value: boolean) => void;
   onCustomerSearchChange: (value: string) => void;
   onOrderSearchChange: (value: string) => void;
