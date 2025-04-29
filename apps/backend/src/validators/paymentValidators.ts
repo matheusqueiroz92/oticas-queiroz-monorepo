@@ -72,6 +72,11 @@ const checkSchema = z.object({
     .optional(),
 })
 
+const mercadoPagoSchema = z.object({
+  mercadoPagoId: z.string().optional(),
+  mercadoPagoData: z.record(z.any()).optional(),
+});
+
 // Esquema base do pagamento
 const basePaymentSchema = z.object({
   amount: z.number().positive("Valor deve ser positivo"),
@@ -79,7 +84,7 @@ const basePaymentSchema = z.object({
     errorMap: () => ({ message: "Tipo de pagamento inválido" }),
   }),
   paymentMethod: z.enum(
-    ["credit", "debit", "cash", "pix", "bank_slip", "promissory_note", "check"] as const,
+    ["credit", "debit", "cash", "pix", "bank_slip", "promissory_note", "check", "mercado_pago"] as const,
     {
       errorMap: () => ({ message: "Método de pagamento inválido" }),
     }
@@ -132,10 +137,17 @@ const paymentSchema = z.discriminatedUnion("paymentMethod", [
   
   // Cheque
   basePaymentSchema
-  .extend({
-    paymentMethod: z.literal("check"),
-  })
-  .merge(checkSchema),
+    .extend({
+      paymentMethod: z.literal("check"),
+    })
+    .merge(checkSchema),
+  
+  // Mercado Pago
+  basePaymentSchema
+    .extend({
+      paymentMethod: z.literal("mercado_pago"),
+    })
+    .merge(mercadoPagoSchema),
 ]);
 
 export const validatedPaymentSchema = paymentSchema.refine(

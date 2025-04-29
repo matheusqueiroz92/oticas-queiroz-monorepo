@@ -22,7 +22,7 @@ const paymentSchema = new Schema(
     },
     paymentMethod: {
       type: String,
-      enum: ["credit", "debit", "cash", "pix", "bank_slip", "promissory_note", "check"],
+      enum: ["credit", "debit", "cash", "pix", "bank_slip", "promissory_note", "check", "mercado_pago"],
       required: true,
     },
     mercadoPagoId: { type: String },
@@ -83,6 +83,7 @@ const paymentSchema = new Schema(
   },
   { timestamps: true }
 );
+
 
 // Validação pré-salvamento
 paymentSchema.pre("validate", function (next) {

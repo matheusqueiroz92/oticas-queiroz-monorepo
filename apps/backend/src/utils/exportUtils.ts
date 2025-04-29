@@ -345,6 +345,7 @@ export class ExportUtils {
       pix: "PIX",
       bank_slip: "Boleto",
       promissory_note: "Promissória",
+      mercado_pago: "Mercado Pago",
       check: "check"
     };
     return methods[method] || method;

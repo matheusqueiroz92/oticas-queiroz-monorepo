@@ -434,6 +434,7 @@ export class PaymentService {
       case "bank_slip":
       case "promissory_note":
       case "check":
+      case "mercado_pago":
         // Para boleto e promissória ou cheque, registramos como "cash" no caixa
         // Ou escolha outro tipo que faça mais sentido para o negócio
         registerMethod = "cash";

@@ -17,7 +17,8 @@ export interface IPayment {
     | "pix"
     | "bank_slip"
     | "promissory_note"
-    | "check";
+    | "check"
+    | "mercado_pago";
   status: "pending" | "completed" | "cancelled";
 
   mercadoPagoId?: string;

@@ -69,5 +69,21 @@ export const MercadoPagoAPI = {
       console.error('Erro ao obter informações do pagamento:', error);
       throw error;
     }
+  },
+
+  /**
+   * Obtém os métodos de pagamento disponíveis
+   * Útil para verificar se a conexão está funcionando
+   */
+  getPaymentMethods: async (): Promise<any> => {
+    try {
+      const response = await api.get('/v1/payment_methods');
+      return {
+        body: response.data
+      };
+    } catch (error) {
+      console.error('Erro ao obter métodos de pagamento:', error);
+      throw error;
+    }
   }
 };

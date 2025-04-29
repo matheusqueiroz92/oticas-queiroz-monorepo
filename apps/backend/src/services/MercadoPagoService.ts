@@ -9,7 +9,6 @@ import { IPayment } from "../interfaces/IPayment";
 import { PaymentModel } from "../models/PaymentModel";
 import { OrderModel } from "../models/OrderModel";
 import { CashRegisterModel } from "../models/CashRegisterModel";
-import mongoose from "mongoose";
 
 export class MercadoPagoError extends Error {
   constructor(message: string) {
@@ -45,53 +44,28 @@ export class MercadoPagoService {
       if (!openRegister) {
         throw new MercadoPagoError("Não há caixa aberto para registrar pagamentos");
       }
-
+  
       // Verificar se o pedido tem _id
       if (!order._id) {
         throw new MercadoPagoError("Pedido sem ID válido");
       }
-
-      // Preparar os items do pedido para o Mercado Pago
-      const items = order.products.map((product, index) => {
-        // Se o produto for um objeto com nome e preço
-        if (typeof product === 'object' && 
-            product !== null && 
-            '_id' in product && 
-            'name' in product && 
-            'sellPrice' in product) {
-          return {
-            id: product._id.toString(),
-            title: product.name,
-            description: (product.description || `Item do pedido ${order._id}`).toString(),
-            quantity: 1,
-            currency_id: "BRL",
-            unit_price: Number(product.sellPrice)
-          };
-        }
-        
-        // Caso contrário, usa uma representação genérica
-        return {
-          id: typeof product === 'object' && product && '_id' in product ? 
-              product._id.toString() : 
-              typeof product === 'string' ? 
-                  product : 
-                  `unknown-${index}`,
-          title: `Produto #${index + 1}`,
-          description: `Item do pedido ${order._id}`,
-          quantity: 1,
-          currency_id: "BRL",
-          unit_price: order.finalPrice / order.products.length // Divide o valor igualmente
-        };
-      });
-
-      // Criar uma preferência de pagamento
+  
+      // Abordagem simplificada: criar apenas um item para o pedido inteiro
+      const items = [{
+        id: order._id.toString(),
+        title: `Pedido Óticas Queiroz #${order._id.toString().substring(0, 8)}`,
+        description: `Pedido de produtos Óticas Queiroz`,
+        quantity: 1,
+        currency_id: "BRL",
+        unit_price: Number(order.finalPrice) || 100 // Fallback para um valor padrão se finalPrice não estiver definido
+      }];
+  
+      console.log("Items para Mercado Pago:", JSON.stringify(items, null, 2));
+  
+      // Criar uma preferência de pagamento simplificada
       const preference: IMercadoPagoPreference = {
         items,
         external_reference: order._id.toString(),
-        payment_methods: {
-          excluded_payment_methods: [],
-          installments: order.installments || 1
-        },
         back_urls: {
           success: `${baseUrl}/payment/success`,
           pending: `${baseUrl}/payment/pending`,
@@ -101,9 +75,13 @@ export class MercadoPagoService {
         auto_return: "approved",
         statement_descriptor: "Óticas Queiroz"
       };
-
+  
+      console.log("Preferência a ser enviada:", JSON.stringify(preference, null, 2));
+  
       // Usar a API direta para criar a preferência
       const response = await MercadoPagoAPI.createPreference(preference);
+      
+      console.log("Resposta do Mercado Pago:", JSON.stringify(response, null, 2));
       
       return {
         id: response.body.id,
@@ -111,7 +89,7 @@ export class MercadoPagoService {
         sandbox_init_point: response.body.sandbox_init_point
       };
     } catch (error) {
-      console.error("Erro ao criar preferência de pagamento:", error);
+      console.error("Erro detalhado ao criar preferência de pagamento:", error);
       throw new MercadoPagoError(
         error instanceof Error
           ? error.message

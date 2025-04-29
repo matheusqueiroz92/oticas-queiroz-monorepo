@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Teste do Mercado Pago - Óticas Queiroz</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      line-height: 1.6;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      color: #333;
+    }
+    h1 {
+      color: #0066cc;
+      border-bottom: 2px solid #eee;
+      padding-bottom: 10px;
+    }
+    h2 {
+      color: #444;
+      margin-top: 30px;
+    }
+    .card {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      background-color: #f9f9f9;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    button {
+      background-color: #0066cc;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover {
+      background-color: #0055aa;
+    }
+    .alert {
+      padding: 15px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+    }
+    .alert-success {
+      background-color: #d4edda;
+      border: 1px solid #c3e6cb;
+      color: #155724;
+    }
+    .alert-danger {
+      background-color: #f8d7da;
+      border: 1px solid #f5c6cb;
+      color: #721c24;
+    }
+    .result {
+      margin-top: 20px;
+      display: none;
+    }
+    .loader {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #0066cc;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      animation: spin 2s linear infinite;
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: 10px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <h1>Teste do Mercado Pago - Óticas Queiroz</h1>
+  
+  <div class="card">
+    <h2>Configuração</h2>
+    <div class="form-group">
+      <label for="token">Token do Mercado Pago</label>
+      <input type="text" id="token" placeholder="Digite o token ACCESS_TOKEN do Mercado Pago">
+    </div>
+    <button onclick="testConnection()">Testar Conexão</button>
+    <div id="connectionResult" class="result"></div>
+  </div>
+  
+  <div class="card">
+    <h2>Criar Preferência de Pagamento</h2>
+    <div class="form-group">
+      <label for="amount">Valor (R$)</label>
+      <input type="number" id="amount" value="100" min="1" step="0.01">
+    </div>
+    <div class="form-group">
+      <label for="description">Descrição</label>
+      <input type="text" id="description" value="Teste Óticas Queiroz">
+    </div>
+    <button onclick="createPreference()">Criar Preferência</button>
+    <div id="preferenceResult" class="result"></div>
+  </div>
+  
+  <div id="paymentLinks" class="card" style="display: none;">
+    <h2>Links de Pagamento</h2>
+    <div class="form-group">
+      <label>ID da Preferência</label>
+      <input type="text" id="preferenceId" readonly>
+    </div>
+    <div class="form-group">
+      <label>Link de Sandbox (Teste)</label>
+      <input type="text" id="sandboxLink" readonly>
+    </div>
+    <button onclick="openPaymentPage()">Abrir Página de Pagamento</button>
+  </div>
+  
+  <script>
+    // Função para testar a conexão com o Mercado Pago
+    async function testConnection() {
+      const token = document.getElementById('token').value.trim();
+      
+      if (!token) {
+        showAlert('connectionResult', 'Por favor, digite um token válido.', 'danger');
+        return;
+      }
+      
+      showLoader('connectionResult', 'Testando conexão...');
+      
+      try {
+        const response = await fetch('https://api.mercadopago.com/v1/payment_methods', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+          showAlert('connectionResult', `Conexão bem-sucedida! ${data.length} métodos de pagamento disponíveis.`, 'success');
+        } else {
+          showAlert('connectionResult', `Erro: ${data.message || 'Falha na conexão'}`, 'danger');
+        }
+      } catch (error) {
+        showAlert('connectionResult', `Erro: ${error.message}`, 'danger');
+      }
+    }
+    
+    // Função para criar uma preferência de pagamento
+    async function createPreference() {
+      const token = document.getElementById('token').value.trim();
+      const amount = parseFloat(document.getElementById('amount').value);
+      const description = document.getElementById('description').value.trim();
+      
+      if (!token) {
+        showAlert('preferenceResult', 'Por favor, digite um token válido.', 'danger');
+        return;
+      }
+      
+      if (isNaN(amount) || amount <= 0) {
+        showAlert('preferenceResult', 'Por favor, digite um valor válido.', 'danger');
+        return;
+      }
+      
+      showLoader('preferenceResult', 'Criando preferência...');
+      
+      try {
+        const preference = {
+          items: [
+            {
+              id: `test-${Date.now()}`,
+              title: 'Produto de Teste',
+              description: description || 'Teste Óticas Queiroz',
+              quantity: 1,
+              currency_id: 'BRL',
+              unit_price: amount
+            }
+          ],
+          back_urls: {
+            success: 'https://app.oticasqueiroz.com.br/payment/success',
+            pending: 'https://app.oticasqueiroz.com.br/payment/pending',
+            failure: 'https://app.oticasqueiroz.com.br/payment/failure'
+          },
+          notification_url: 'https://app.oticasqueiroz.com.br/api/mercadopago/webhook',
+          auto_return: 'approved',
+          statement_descriptor: 'Óticas Queiroz'
+        };
+        
+        const response = await fetch('https://api.mercadopago.com/checkout/preferences', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(preference)
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+          showAlert('preferenceResult', 'Preferência criada com sucesso!', 'success');
+          
+          // Mostrar links de pagamento
+          document.getElementById('paymentLinks').style.display = 'block';
+          document.getElementById('preferenceId').value = data.id;
+          document.getElementById('sandboxLink').value = data.sandbox_init_point;
+          
+          // Armazenar o link para uso posterior
+          window.paymentUrl = data.sandbox_init_point;
+        } else {
+          showAlert('preferenceResult', `Erro: ${data.message || 'Falha ao criar preferência'}`, 'danger');
+        }
+      } catch (error) {
+        showAlert('preferenceResult', `Erro: ${error.message}`, 'danger');
+      }
+    }
+    
+    // Função para abrir a página de pagamento
+    function openPaymentPage() {
+      if (window.paymentUrl) {
+        window.open(window.paymentUrl, '_blank');
+      } else {
+        alert('Nenhum link de pagamento disponível.');
+      }
+    }
+    
+    // Função para mostrar alertas
+    function showAlert(elementId, message, type) {
+      const element = document.getElementById(elementId);
+      element.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+      element.style.display = 'block';
+    }
+    
+    // Função para mostrar o loader
+    function showLoader(elementId, message) {
+      const element = document.getElementById(elementId);
+      element.innerHTML = `<div class="alert"><span class="loader"></span> ${message}</div>`;
+      element.style.display = 'block';
+    }
+  </script>
+</body>
+</html>

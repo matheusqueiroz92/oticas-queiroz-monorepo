@@ -26,6 +26,93 @@ const mercadoPagoController = new MercadoPagoController();
 
 /**
  * @swagger
+ * /api/mercadopago/test-connection:
+ *   get:
+ *     summary: Testa a conexão com o Mercado Pago
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [MercadoPago]
+ *     description: Verifica se as credenciais do Mercado Pago estão funcionando
+ *     responses:
+ *       200:
+ *         description: Conexão estabelecida com sucesso
+ *       500:
+ *         description: Erro ao conectar com o Mercado Pago
+ */
+router.get(
+  "/mercadopago/test-connection",
+  authenticate,
+  authorize(["admin", "employee"]),
+  asyncHandler(mercadoPagoController.testConnection.bind(mercadoPagoController))
+);
+
+/**
+ * @swagger
+ * /api/mercadopago/test-payment:
+ *   get:
+ *     summary: Página para testar pagamentos via Mercado Pago
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [MercadoPago]
+ *     description: Retorna uma página HTML para testar pagamentos via Mercado Pago
+ *     responses:
+ *       200:
+ *         description: Página HTML
+ *         content:
+ *           text/html:
+ *             schema:
+ *               type: string
+ */
+router.get(
+  "/mercadopago/test-payment",
+  authenticate,
+  authorize(["admin", "employee"]),
+  asyncHandler(mercadoPagoController.getTestPaymentPage.bind(mercadoPagoController))
+);
+
+/**
+ * @swagger
+ * /api/mercadopago/test-preference:
+ *   post:
+ *     summary: Cria uma preferência de teste para o Mercado Pago
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [MercadoPago]
+ *     description: Cria uma preferência de teste sem precisar de um pedido existente
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               amount:
+ *                 type: number
+ *                 description: Valor do teste
+ *                 default: 100
+ *               description:
+ *                 type: string
+ *                 description: Descrição do teste
+ *                 default: "Teste Óticas Queiroz"
+ *     responses:
+ *       200:
+ *         description: Preferência de teste criada com sucesso
+ *       400:
+ *         description: Erro ao criar preferência de teste
+ *       401:
+ *         description: Não autorizado
+ *       500:
+ *         description: Erro interno do servidor
+ */
+router.post(
+  "/mercadopago/test-preference",
+  authenticate,
+  authorize(["admin", "employee"]),
+  asyncHandler(mercadoPagoController.createTestPreference.bind(mercadoPagoController))
+);
+
+/**
+ * @swagger
  * /api/mercadopago/preference/{orderId}:
  *   post:
  *     summary: Cria uma preferência de pagamento no Mercado Pago
@@ -114,30 +201,6 @@ router.get(
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler(mercadoPagoController.getPaymentInfo.bind(mercadoPagoController))
-);
-
-/**
- * @swagger
- * /api/mercadopago/test-payment:
- *   get:
- *     summary: Página para testar pagamentos via Mercado Pago
- *     security:
- *       - bearerAuth: []
- *     tags: [MercadoPago]
- *     description: Retorna uma página HTML para testar pagamentos via Mercado Pago
- *     responses:
- *       200:
- *         description: Página HTML
- *         content:
- *           text/html:
- *             schema:
- *               type: string
- */
-router.get(
-  "/mercadopago/test-payment",
-  // authenticate,
-  // authorize(["admin"]),
-  asyncHandler(mercadoPagoController.getTestPaymentPage.bind(mercadoPagoController))
 );
 
 export default router;
