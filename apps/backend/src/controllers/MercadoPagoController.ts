@@ -40,25 +40,42 @@ export class MercadoPagoController {
       
       // Obter o pedido
       const order = await this.orderService.getOrderById(orderId);
-      
-      // Construir a URL base
-      const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
-      const host = process.env.HOST_URL || req.get('host') || 'localhost:3333';
-      const baseUrl = `${protocol}://${host}`;
-      
-      // Criar a preferência de pagamento
-      const preference = await this.mercadoPagoService.createPaymentPreference(
-        order,
-        baseUrl
-      );
-      
-      res.status(200).json(preference);
-    } catch (error) {
-      if (error instanceof MercadoPagoError) {
-        res.status(400).json({ message: error.message });
+      if (!order) {
+        res.status(404).json({ message: "Pedido não encontrado" });
         return;
       }
       
+      // Construir a URL base - IMPORTANTE: verificar se está correto
+      const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+      
+      // Use HOST_URL se definido ou obtenha da requisição
+      let host = process.env.HOST_URL;
+      if (!host) {
+        host = req.get('host') || 'localhost:3333';
+      }
+      
+      // Certifique-se de não ter barras duplicadas
+      const baseUrl = `${protocol}://${host.replace(/\/$/, '')}`;
+      
+      console.log(`URL base para retornos: ${baseUrl}`);
+      
+      // Criar a preferência de pagamento usando o service
+      try {
+        const preference = await this.mercadoPagoService.createPaymentPreference(
+          order,
+          baseUrl
+        );
+        
+        res.status(200).json(preference);
+      } catch (error: any) {
+        if (error instanceof MercadoPagoError) {
+          res.status(400).json({ message: error.message });
+          return;
+        }
+        
+        throw error; // Relançar para tratamento global
+      }
+    } catch (error: any) {
       console.error("Erro ao criar preferência de pagamento:", error);
       res.status(500).json({ 
         message: "Erro interno do servidor", 
@@ -78,24 +95,48 @@ export class MercadoPagoController {
     try {
       console.log("[MercadoPagoController] Webhook recebido:", JSON.stringify(req.body, null, 2));
       
-      // Verificar se é uma notificação válida
-      if (!req.body || (!req.body.type && !req.body.action)) {
-        console.log("[MercadoPagoController] Webhook inválido, ignorando");
-        res.status(200).send("OK");
+      // Verificação mais robusta da estrutura da notificação
+      if (!req.body) {
+        console.log("[MercadoPagoController] Webhook sem corpo de requisição");
+        res.status(200).send("OK"); // Retornar 200 para não gerar reenvios
         return;
       }
       
-      // Processar o webhook
-      await this.mercadoPagoService.processWebhook(req.body);
+      // Verificar se é uma notificação de pagamento
+      if (req.body.type === "payment" || 
+        (req.body.action === "payment.created" || req.body.action === "payment.updated")) {
+        
+        // Verificar ID do pagamento
+        const paymentId = req.body.data?.id;
+        
+        if (!paymentId) {
+          console.error("[MercadoPagoController] ID do pagamento não encontrado na notificação", req.body);
+          res.status(200).send("OK");
+          return;
+        }
+        
+        console.log(`[MercadoPagoController] Processando notificação de pagamento ID: ${paymentId}`);
+        
+        // Processar o pagamento
+        try {
+          await this.mercadoPagoService.processPayment(paymentId);
+          console.log(`[MercadoPagoController] Pagamento ${paymentId} processado com sucesso`);
+        } catch (paymentError) {
+          // Apenas logamos o erro, não retornamos erro para o Mercado Pago
+          console.error(`[MercadoPagoController] Erro ao processar pagamento ${paymentId}:`, paymentError);
+        }
+      } else {
+        console.log(`[MercadoPagoController] Tipo de notificação não processada: ${req.body.type || req.body.action}`);
+      }
       
-      // Responder com sucesso
+      // Sempre responder com sucesso para o Mercado Pago
       res.status(200).send("OK");
     } catch (error) {
       console.error("[MercadoPagoController] Erro ao processar webhook:", error);
       
       // Mercado Pago espera um status 200 mesmo em caso de erro
       // para evitar que tente novamente
-      res.status(200).send("Error");
+      res.status(200).send("Error but acknowledged");
     }
   }
 
@@ -328,6 +369,15 @@ export class MercadoPagoController {
       // Obter parâmetros da requisição
       const { amount = 100, description = "Teste Óticas Queiroz" } = req.body;
       
+      // Verificar se o valor é um número válido
+      const numericAmount = Number(amount);
+      if (isNaN(numericAmount) || numericAmount <= 0) {
+        res.status(400).json({ 
+          message: "Valor inválido para o pagamento" 
+        });
+        return;
+      }
+      
       // Construir a URL base
       const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
       const host = process.env.HOST_URL || req.get('host') || 'localhost:3333';
@@ -337,20 +387,20 @@ export class MercadoPagoController {
       
       // Criar uma preferência simples
       try {
-        // Verificar se há caixa aberto
+        // Verificar se há caixa aberto (manter isso)
         const openRegister = await this.cashRegisterModel.findOpenRegister();
         if (!openRegister) {
           throw new MercadoPagoError("Não há caixa aberto para registrar pagamentos");
         }
         
-        // Criar item para a preferência
+        // Criar item para a preferência com validação de tipos
         const testItem = {
           id: `test-${Date.now()}`,
           title: `Teste Óticas Queiroz`,
-          description: description,
+          description: String(description || "Pagamento de teste"),
           quantity: 1,
           currency_id: 'BRL',
-          unit_price: Number(amount)
+          unit_price: numericAmount
         };
         
         console.log("Item para Mercado Pago:", JSON.stringify(testItem, null, 2));
@@ -365,7 +415,7 @@ export class MercadoPagoController {
             failure: `${baseUrl}/payment/failure`
           },
           notification_url: `${baseUrl}/api/mercadopago/webhook`,
-          auto_return: "approved",
+          // auto_return: "approved",
           statement_descriptor: "Óticas Queiroz"
         };
         
@@ -382,17 +432,22 @@ export class MercadoPagoController {
           init_point: response.body.init_point,
           sandbox_init_point: response.body.sandbox_init_point
         });
-      } catch (error) {
-        console.error("Erro ao criar preferência de teste:", error);
-        throw error;
+      } catch (error: any) { // Tipando como any para evitar erro
+        console.error("Erro detalhado ao criar preferência de teste:", error);
+        
+        if (error.response) {
+          console.error("Resposta de erro da API do Mercado Pago:", error.response.data);
+        }
+        
+        if (error instanceof MercadoPagoError) {
+          res.status(400).json({ message: error.message });
+          return;
+        }
+        
+        throw error;  // Relançar para o tratamento global
       }
-    } catch (error) {
+    } catch (error: any) { // Tipando como any para evitar erro
       console.error("Erro ao criar preferência de teste:", error);
-      
-      if (error instanceof MercadoPagoError) {
-        res.status(400).json({ message: error.message });
-        return;
-      }
       
       res.status(500).json({ 
         message: "Erro interno do servidor", 
@@ -401,5 +456,5 @@ export class MercadoPagoController {
           : undefined
       });
     }
-  }  
+  }
 }

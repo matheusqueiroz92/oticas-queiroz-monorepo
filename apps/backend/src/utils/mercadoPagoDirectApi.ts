@@ -42,7 +42,38 @@ export const MercadoPagoAPI = {
    */
   createPreference: async (preference: any): Promise<any> => {
     try {
+      console.log('[MercadoPagoAPI] Enviando preferência para o Mercado Pago...');
+      
+      // Verificação básica dos dados mínimos necessários
+      if (!preference.items || preference.items.length === 0) {
+        throw new Error('Preferência inválida: items são obrigatórios');
+      }
+      
+      // Verificar cada item
+      for (const item of preference.items) {
+        if (!item.title || !item.id) {
+          throw new Error('Item inválido: title e id são obrigatórios');
+        }
+        
+        // Garantir que unit_price seja um número
+        if (!item.unit_price || typeof item.unit_price !== 'number' || isNaN(item.unit_price) || item.unit_price <= 0) {
+          throw new Error(`Valor inválido para o item ${item.id}: ${item.unit_price}`);
+        }
+      }
+      
+      // Log do tipo de token usado (produção ou teste)
+      const tokenType = process.env.NODE_ENV === 'production' 
+        ? 'produção' 
+        : 'teste';
+      console.log(`[MercadoPagoAPI] Usando token de ${tokenType}`);
+      
       const response = await api.post('/checkout/preferences', preference);
+      console.log('[MercadoPagoAPI] Preferência criada com sucesso:', response.data);
+      
+      if (!response.data || !response.data.id) {
+        throw new Error('Resposta inválida da API do Mercado Pago: ID não encontrado');
+      }
+      
       return {
         body: {
           id: response.data.id,
@@ -50,8 +81,20 @@ export const MercadoPagoAPI = {
           sandbox_init_point: response.data.sandbox_init_point
         }
       };
-    } catch (error) {
-      console.error('Erro ao criar preferência:', error);
+    } catch (error: any) {
+      console.error('[MercadoPagoAPI] Erro detalhado ao criar preferência:', error);
+      
+      // Extrair mensagem de erro mais detalhada
+      if (error.response) {
+        console.error('[MercadoPagoAPI] Status do erro:', error.response.status);
+        console.error('[MercadoPagoAPI] Cabeçalhos da resposta:', error.response.headers);
+        console.error('[MercadoPagoAPI] Resposta de erro da API:', error.response.data);
+        
+        if (error.response.data && error.response.data.cause) {
+          console.error('[MercadoPagoAPI] Causa do erro:', error.response.data.cause);
+        }
+      }
+      
       throw error;
     }
   },

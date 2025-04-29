@@ -10,9 +10,17 @@ export async function createPaymentPreference(orderId: string) {
   try {
     console.log(`Criando preferência de pagamento para o pedido: ${orderId}`);
     
+    if (!orderId) {
+      throw new Error("ID do pedido é obrigatório");
+    }
+    
     const response = await api.post(API_ROUTES.MERCADO_PAGO.PREFERENCE(orderId));
     
     console.log(`Preferência criada com sucesso:`, response.data);
+    
+    if (!response.data || !response.data.id) {
+      throw new Error("Resposta inválida da API: ID da preferência não foi retornado");
+    }
     
     return response.data;
   } catch (error) {

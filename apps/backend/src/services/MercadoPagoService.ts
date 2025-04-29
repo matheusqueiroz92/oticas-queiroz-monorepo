@@ -6,6 +6,7 @@ import type {
 } from "../interfaces/IMercadoPago";
 import type { IOrder, IPaymentHistoryEntry } from "../interfaces/IOrder";
 import { IPayment } from "../interfaces/IPayment";
+import { OrderService } from "./OrderService";
 import { PaymentModel } from "../models/PaymentModel";
 import { OrderModel } from "../models/OrderModel";
 import { CashRegisterModel } from "../models/CashRegisterModel";
@@ -21,11 +22,13 @@ export class MercadoPagoService {
   private paymentModel: PaymentModel;
   private orderModel: OrderModel;
   private cashRegisterModel: CashRegisterModel;
+  private orderService: OrderService;
 
   constructor() {
     this.paymentModel = new PaymentModel();
     this.orderModel = new OrderModel();
     this.cashRegisterModel = new CashRegisterModel();
+    this.orderService = new OrderService();
   }
 
   /**
@@ -39,57 +42,116 @@ export class MercadoPagoService {
     baseUrl: string
   ): Promise<IMercadoPagoPreferenceResponse> {
     try {
-      // Verificar se há caixa aberto
+      // Validação robusta
+      if (!order || !order._id) {
+        throw new MercadoPagoError("Pedido inválido ou sem ID");
+      }
+
+      // Validar valor
+      if (!order.finalPrice || order.finalPrice <= 0) {
+        throw new MercadoPagoError("Valor do pedido inválido ou não definido");
+      }
+
+      // Verificar caixa
       const openRegister = await this.cashRegisterModel.findOpenRegister();
       if (!openRegister) {
         throw new MercadoPagoError("Não há caixa aberto para registrar pagamentos");
       }
-  
-      // Verificar se o pedido tem _id
-      if (!order._id) {
-        throw new MercadoPagoError("Pedido sem ID válido");
-      }
-  
-      // Abordagem simplificada: criar apenas um item para o pedido inteiro
+
+      console.log(`[MercadoPagoService] Criando preferência para pedido ${order._id} com valor ${order.finalPrice}`);
+      console.log(`[MercadoPagoService] URL base para callbacks: ${baseUrl}`);
+
+      // Items simplificados e validados
       const items = [{
         id: order._id.toString(),
         title: `Pedido Óticas Queiroz #${order._id.toString().substring(0, 8)}`,
-        description: `Pedido de produtos Óticas Queiroz`,
+        description: `Pagamento de produtos e serviços - OS: ${order.serviceOrder || order._id.toString().substring(0, 8)}`,
         quantity: 1,
         currency_id: "BRL",
-        unit_price: Number(order.finalPrice) || 100 // Fallback para um valor padrão se finalPrice não estiver definido
+        unit_price: Number(order.finalPrice)
       }];
-  
-      console.log("Items para Mercado Pago:", JSON.stringify(items, null, 2));
-  
-      // Criar uma preferência de pagamento simplificada
-      const preference: IMercadoPagoPreference = {
+
+      console.log("[MercadoPagoService] Items para Mercado Pago:", JSON.stringify(items, null, 2));
+
+      // Configuração básica da preferência
+      let preferenceConfig: IMercadoPagoPreference = {
         items,
         external_reference: order._id.toString(),
+        statement_descriptor: "Óticas Queiroz",
         back_urls: {
+          success: "",
+          pending: undefined,
+          failure: undefined
+        }
+      };
+      
+      // Diferenciação por ambiente
+      if (process.env.NODE_ENV === 'production') {
+        // Em produção, incluir URLs completas e auto_return
+        preferenceConfig.back_urls = {
           success: `${baseUrl}/payment/success`,
           pending: `${baseUrl}/payment/pending`,
           failure: `${baseUrl}/payment/failure`
-        },
-        notification_url: `${baseUrl}/api/mercadopago/webhook`,
-        auto_return: "approved",
-        statement_descriptor: "Óticas Queiroz"
-      };
-  
-      console.log("Preferência a ser enviada:", JSON.stringify(preference, null, 2));
-  
-      // Usar a API direta para criar a preferência
-      const response = await MercadoPagoAPI.createPreference(preference);
-      
-      console.log("Resposta do Mercado Pago:", JSON.stringify(response, null, 2));
-      
-      return {
-        id: response.body.id,
-        init_point: response.body.init_point,
-        sandbox_init_point: response.body.sandbox_init_point
-      };
+        };
+        preferenceConfig.notification_url = `${baseUrl}/api/mercadopago/webhook`;
+        preferenceConfig.auto_return = "approved";
+        
+        console.log("[MercadoPagoService] Ambiente de produção: URLs completas configuradas");
+      } else {
+        // Em desenvolvimento, usar apenas URLs sem auto_return
+        preferenceConfig.back_urls = {
+          success: `${baseUrl}/payment/success`,
+          pending: `${baseUrl}/payment/pending`,
+          failure: `${baseUrl}/payment/failure`
+        };
+        preferenceConfig.notification_url = `${baseUrl}/api/mercadopago/webhook`;
+        
+        console.log("[MercadoPagoService] Ambiente de desenvolvimento: auto_return omitido");
+      }
+
+      console.log("[MercadoPagoService] Preferência a ser enviada:", JSON.stringify(preferenceConfig, null, 2));
+
+      try {
+        const response = await MercadoPagoAPI.createPreference(preferenceConfig);
+        console.log("[MercadoPagoService] Resposta do Mercado Pago:", JSON.stringify(response.body, null, 2));
+        
+        return {
+          id: response.body.id,
+          init_point: response.body.init_point,
+          sandbox_init_point: response.body.sandbox_init_point
+        };
+      } catch (error: any) {
+        console.error("[MercadoPagoService] Erro detalhado da API do Mercado Pago:", error);
+        
+        // Extrair mensagem de erro mais detalhada
+        let errorMessage = "Erro desconhecido na API do Mercado Pago";
+        
+        if (error.response) {
+          console.error('Status do erro:', error.response.status);
+          console.error('Cabeçalhos da resposta:', error.response.headers);
+          console.error('Resposta de erro da API:', error.response.data);
+          
+          if (error.response.data && typeof error.response.data === 'object') {
+            if (error.response.data.cause && Array.isArray(error.response.data.cause)) {
+              // Muitas vezes o Mercado Pago retorna um array de causas de erro
+              errorMessage = error.response.data.cause.map((c: any) => c.description || c.code).join(', ');
+            } else {
+              errorMessage = error.response.data.message || error.response.data.error || errorMessage;
+            }
+          } else if (typeof error.response.data === 'string') {
+            errorMessage = error.response.data;
+          }
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+        
+        throw new MercadoPagoError(`Falha na API do Mercado Pago: ${errorMessage}`);
+      }
     } catch (error) {
-      console.error("Erro detalhado ao criar preferência de pagamento:", error);
+      console.error("[MercadoPagoService] Erro detalhado ao criar preferência de pagamento:", error);
+      if (error instanceof MercadoPagoError) {
+        throw error;
+      }
       throw new MercadoPagoError(
         error instanceof Error
           ? error.message
@@ -105,91 +167,72 @@ export class MercadoPagoService {
    */
   async processPayment(paymentId: string): Promise<IPayment> {
     try {
-      console.log(`[MercadoPagoService] Processando pagamento: ${paymentId}`);
+      console.log(`[MercadoPagoService] Iniciando processamento do pagamento: ${paymentId}`);
       
-      // Verificar se já processamos este pagamento antes
-      const existingPayments = await this.paymentModel.findAllWithMongoFilters(1, 10, {
-        description: new RegExp(`Pagamento via Mercado Pago.*${paymentId}`)
+      // Verificar se já processamos este pagamento antes (idempotência)
+      const existingPayments = await this.paymentModel.findAllWithMongoFilters(1, 1, {
+        mercadoPagoId: paymentId,
+        status: "completed"
       });
       
       if (existingPayments.total > 0) {
-        console.log(`[MercadoPagoService] Pagamento ${paymentId} já foi processado anteriormente`);
+        console.log(`[MercadoPagoService] Pagamento ${paymentId} já foi processado anteriormente. ID interno: ${existingPayments.payments[0]._id}`);
         return existingPayments.payments[0];
       }
       
       // Buscar informações do pagamento no Mercado Pago
-      console.log(`[MercadoPagoService] Buscando informações do pagamento ${paymentId} no Mercado Pago`);
+      console.log(`[MercadoPagoService] Buscando informações detalhadas do pagamento ${paymentId}`);
       const paymentInfo = await this.getPaymentInfo(paymentId);
-      console.log(`[MercadoPagoService] Status do pagamento: ${paymentInfo.status}`);
       
       // Log detalhado das informações do pagamento
-      console.log(`[MercadoPagoService] Detalhes do pagamento:
-        - Método: ${paymentInfo.payment_method_id}
-        - Tipo: ${paymentInfo.payment_type_id}
-        - Status: ${paymentInfo.status}
-        - Valor: ${paymentInfo.transaction_amount}
-        - Referência externa: ${paymentInfo.external_reference}
-      `);
+      console.log(`[MercadoPagoService] Detalhes do pagamento ${paymentId}:`);
+      console.log(`- Status: ${paymentInfo.status}`);
+      console.log(`- Método: ${paymentInfo.payment_method_id}`);
+      console.log(`- Valor: ${paymentInfo.transaction_amount}`);
+      console.log(`- Referência: ${paymentInfo.external_reference}`);
+      console.log(`- Data: ${paymentInfo.date_approved || paymentInfo.date_created}`);
       
       // Verificar se o pagamento foi aprovado
       if (paymentInfo.status !== "approved") {
-        console.log(`[MercadoPagoService] Pagamento não aprovado. Status: ${paymentInfo.status}`);
+        console.log(`[MercadoPagoService] Pagamento ${paymentId} não aprovado. Status: ${paymentInfo.status}`);
         throw new MercadoPagoError(`Pagamento não aprovado. Status: ${paymentInfo.status}`);
       }
       
-      // Buscar o pedido relacionado
-      const orderId = paymentInfo.metadata?.order_id || paymentInfo.external_reference;
+      // Buscar o pedido relacionado usando external_reference
+      const orderId = paymentInfo.external_reference || paymentInfo.metadata?.order_id;
+      
       if (!orderId) {
+        console.error(`[MercadoPagoService] Referência do pedido não encontrada no pagamento ${paymentId}`);
         throw new MercadoPagoError("Referência do pedido não encontrada no pagamento");
       }
       
-      const order = await this.orderModel.findById(orderId);
+      console.log(`[MercadoPagoService] Buscando pedido relacionado: ${orderId}`);
+      const order = await this.orderService.getOrderById(orderId);
+      
       if (!order) {
+        console.error(`[MercadoPagoService] Pedido ${orderId} não encontrado`);
         throw new MercadoPagoError(`Pedido ${orderId} não encontrado`);
       }
       
-      // Verificar se o pedido tem _id
-      if (!order._id) {
-        throw new MercadoPagoError(`Pedido encontrado não possui ID válido`);
-      }
+      console.log(`[MercadoPagoService] Pedido ${orderId} encontrado`);
       
       // Verificar se há caixa aberto
+      console.log(`[MercadoPagoService] Verificando caixa aberto`);
       const openRegister = await this.cashRegisterModel.findOpenRegister();
       if (!openRegister) {
+        console.error(`[MercadoPagoService] Não há caixa aberto para registrar pagamento ${paymentId}`);
         throw new MercadoPagoError("Não há caixa aberto para registrar pagamentos");
       }
       
-      // Verificar se o caixa aberto tem _id
-      if (!openRegister._id) {
-        throw new MercadoPagoError("Caixa encontrado não possui ID válido");
-      }
-      
       // Mapear o tipo de pagamento do Mercado Pago para o tipo de pagamento do sistema
-      let paymentMethod: IPayment["paymentMethod"];
-      switch (paymentInfo.payment_method_id) {
-        case "pix":
-          paymentMethod = "pix";
-          break;
-        case "credit_card":
-          paymentMethod = "credit";
-          break;
-        case "debit_card":
-          paymentMethod = "debit";
-          break;
-        case "ticket":
-        case "bank_transfer":
-          paymentMethod = "bank_slip";
-          break;
-        default:
-          paymentMethod = "cash"; // Fallback
-      }
+      let paymentMethod: IPayment["paymentMethod"] = "mercado_pago";
       
       // Criar o pagamento no sistema
       const payment: Omit<IPayment, "_id"> = {
         createdBy: order.employeeId.toString(),
         customerId: order.clientId.toString(),
-        cashRegisterId: openRegister._id.toString(),
-        orderId: order._id.toString(),
+        cashRegisterId: openRegister._id ? openRegister._id.toString() : (() => { throw new MercadoPagoError("ID do caixa aberto é indefinido"); })(),
+        orderId: order._id?.toString() ?? (() => { throw new MercadoPagoError("Order ID is undefined"); })(),
         amount: paymentInfo.transaction_amount,
         date: new Date(),
         type: "sale",
@@ -201,11 +244,11 @@ export class MercadoPagoService {
       };
       
       // Se for cartão de crédito com parcelamento, adicionar informações
-      if (paymentMethod === "credit" && paymentInfo.installments > 1) {
+      if (paymentInfo.payment_method_id === "credit_card" && paymentInfo.installments > 1) {
         payment.creditCardInstallments = {
           current: 1,
           total: paymentInfo.installments,
-          value: paymentInfo.transaction_details.installment_amount
+          value: paymentInfo.transaction_details?.installment_amount || (paymentInfo.transaction_amount / paymentInfo.installments)
         };
       }
       
@@ -216,97 +259,24 @@ export class MercadoPagoService {
       
       // Verificar se o pagamento criado tem _id
       if (!createdPayment._id) {
+        console.error(`[MercadoPagoService] Erro ao criar pagamento: ID não gerado`);
         throw new MercadoPagoError("Erro ao criar pagamento: ID não gerado");
       }
       
       console.log(`[MercadoPagoService] Pagamento registrado com ID: ${createdPayment._id}`);
       
-      // Preparar o histórico de pagamento
-      const newPaymentHistory: IPaymentHistoryEntry[] = [
-        ...(order.paymentHistory || []),
-      ];
-      
-      // Adicionar o novo pagamento ao histórico
-      newPaymentHistory.push({
-        paymentId: createdPayment._id,
-        amount: createdPayment.amount,
-        date: createdPayment.date,
-        method: createdPayment.paymentMethod
-      });
-      
-      // Calcular o total pago
-      const totalPaid = newPaymentHistory.reduce((sum, entry) => sum + entry.amount, 0);
-      
-      // Determinar o novo status de pagamento
-      let paymentStatus: "pending" | "partially_paid" | "paid" = "pending";
-      if (totalPaid >= order.finalPrice) {
-        paymentStatus = "paid";
-      } else if (totalPaid > 0) {
-        paymentStatus = "partially_paid";
-      }
-      
-      console.log(`[MercadoPagoService] Atualizando status de pagamento do pedido ${order._id}:
-        - Valor total: ${order.finalPrice}
-        - Total pago: ${totalPaid}
-        - Novo status: ${paymentStatus}
-      `);
-      
       // Atualizar o status de pagamento do pedido
-      const updatedOrder = await this.orderModel.update(order._id.toString(), {
-        paymentStatus,
-        paymentHistory: newPaymentHistory
-      });
+      console.log(`[MercadoPagoService] Atualizando status de pagamento do pedido ${order._id}`);
       
-      if (!updatedOrder) {
-        console.warn(`[MercadoPagoService] Falha ao atualizar o pedido ${order._id}, mas o pagamento foi registrado`);
-      } else {
-        console.log(`[MercadoPagoService] Pedido ${order._id} atualizado com sucesso`);
-      }
-      
-      // Atualizar o caixa com o valor do pagamento
-      try {
-        // Mapear o método de pagamento para o tipo aceito pelo caixa
-        let registerMethod: "credit" | "debit" | "cash" | "pix";
-        switch (paymentMethod) {
-          case "credit":
-            registerMethod = "credit";
-            break;
-          case "debit":
-            registerMethod = "debit";
-            break;
-          case "cash":
-            registerMethod = "cash";
-            break;
-          case "pix":
-            registerMethod = "pix";
-            break;
-          default:
-            // Para outros métodos, registrar como "cash"
-            registerMethod = "cash";
-        }
-        
-        await this.cashRegisterModel.updateSalesAndPayments(
-          openRegister._id.toString(),
-          "sale",
-          payment.amount,
-          registerMethod
-        );
-        
-        console.log(`[MercadoPagoService] Caixa ${openRegister._id} atualizado com o pagamento`);
-      } catch (error) {
-        console.error(`[MercadoPagoService] Erro ao atualizar o caixa:`, error);
-        // Não lançar erro aqui, pois o pagamento já foi processado
-      }
+      await this.updateOrderPaymentStatus(order._id.toString(), createdPayment);
       
       console.log(`[MercadoPagoService] Processamento de pagamento ${paymentId} concluído com sucesso`);
       return createdPayment;
     } catch (error) {
-      console.error(`[MercadoPagoService] Erro ao processar pagamento:`, error);
-      throw new MercadoPagoError(
-        error instanceof Error
-          ? error.message
-          : "Erro desconhecido ao processar pagamento"
-      );
+      console.error(`[MercadoPagoService] Erro ao processar pagamento ${paymentId}:`, error);
+      throw error instanceof MercadoPagoError 
+        ? error 
+        : new MercadoPagoError(error instanceof Error ? error.message : "Erro desconhecido ao processar pagamento");
     }
   }
 
@@ -317,16 +287,48 @@ export class MercadoPagoService {
    */
   async getPaymentInfo(paymentId: string): Promise<IMercadoPagoPaymentInfo> {
     try {
+      console.log(`[MercadoPagoService] Obtendo informações do pagamento: ${paymentId}`);
+      
+      if (!paymentId) {
+        throw new MercadoPagoError("ID do pagamento é obrigatório");
+      }
+      
       // Usar a API direta para obter informações do pagamento
-      const response = await MercadoPagoAPI.getPayment(paymentId);
-      return response.body as IMercadoPagoPaymentInfo;
+      try {
+        const response = await MercadoPagoAPI.getPayment(paymentId);
+        
+        if (!response || !response.body) {
+          throw new MercadoPagoError("Resposta vazia da API do Mercado Pago");
+        }
+        
+        console.log(`[MercadoPagoService] Informações obtidas para pagamento ${paymentId}`);
+        return response.body;
+      } catch (error: any) {
+        console.error(`[MercadoPagoService] Erro ao obter informações do pagamento ${paymentId}:`, error);
+        
+        // Extrair mensagem de erro mais detalhada
+        let errorMessage = "Erro desconhecido ao obter informações do pagamento";
+        
+        if (error.response) {
+          console.error('Status do erro:', error.response.status);
+          console.error('Dados do erro:', error.response.data);
+          
+          if (error.response.data && typeof error.response.data === 'object') {
+            errorMessage = error.response.data.message || error.response.data.error || errorMessage;
+          } else if (typeof error.response.data === 'string') {
+            errorMessage = error.response.data;
+          }
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+        
+        throw new MercadoPagoError(`Erro ao obter informações do pagamento: ${errorMessage}`);
+      }
     } catch (error) {
-      console.error("Erro ao obter informações do pagamento:", error);
-      throw new MercadoPagoError(
-        error instanceof Error
-          ? error.message
-          : "Erro desconhecido ao obter informações do pagamento"
-      );
+      console.error(`[MercadoPagoService] Erro ao obter informações do pagamento:`, error);
+      throw error instanceof MercadoPagoError 
+        ? error 
+        : new MercadoPagoError(error instanceof Error ? error.message : "Erro desconhecido");
     }
   }
 
@@ -358,6 +360,86 @@ export class MercadoPagoService {
           ? error.message
           : "Erro desconhecido ao processar webhook"
       );
+    }
+  }
+
+    /**
+   * Atualiza o status de pagamento de um pedido
+   * @param orderId ID do pedido
+   * @param payment Pagamento realizado
+   */
+  private async updateOrderPaymentStatus(orderId: string, payment: IPayment): Promise<void> {
+    try {
+      console.log(`[MercadoPagoService] Atualizando status de pagamento do pedido ${orderId}`);
+      
+      // Buscar o pedido atual
+      const order = await this.orderService.getOrderById(orderId);
+      if (!order) {
+        console.error(`[MercadoPagoService] Pedido ${orderId} não encontrado ao atualizar status`);
+        return;
+      }
+      
+      // Preparar o histórico de pagamento
+      const paymentHistory = Array.isArray(order.paymentHistory) ? [...order.paymentHistory] : [];
+      
+      // Verificar se este pagamento já está no histórico
+      const existingIndex = paymentHistory.findIndex(
+        entry => entry.paymentId && entry.paymentId.toString() === (payment._id?.toString() ?? "")
+      );
+      
+      if (existingIndex === -1) {
+        // Adicionar o novo pagamento ao histórico
+        paymentHistory.push({
+          paymentId: payment._id!,
+          amount: payment.amount,
+          date: payment.date,
+          method: payment.paymentMethod
+        });
+        
+        console.log(`[MercadoPagoService] Pagamento ${payment._id} adicionado ao histórico do pedido ${orderId}`);
+      } else {
+        console.log(`[MercadoPagoService] Pagamento ${payment._id} já existe no histórico do pedido ${orderId}`);
+      }
+      
+      // Calcular o total pago
+      const totalPaid = paymentHistory.reduce((sum, entry) => sum + entry.amount, 0);
+      console.log(`[MercadoPagoService] Total pago: ${totalPaid} / ${order.finalPrice}`);
+      
+      // Determinar o novo status de pagamento
+      let paymentStatus: "pending" | "partially_paid" | "paid" = "pending";
+      if (totalPaid >= order.finalPrice) {
+        paymentStatus = "paid";
+      } else if (totalPaid > 0) {
+        paymentStatus = "partially_paid";
+      }
+      
+      console.log(`[MercadoPagoService] Novo status de pagamento: ${paymentStatus}`);
+      
+      // Verificar se o status mudou
+      if (paymentStatus !== order.paymentStatus || 
+          existingIndex === -1) { // Atualizamos se o status mudou ou se adicionamos um novo pagamento
+        
+        // Usar o método update do OrderModel
+        // Enviamos apenas as propriedades que queremos atualizar
+        const updated = await this.orderModel.update(
+          orderId,
+          {
+            paymentStatus: paymentStatus,
+            paymentHistory: paymentHistory
+          }
+        );
+        
+        if (updated) {
+          console.log(`[MercadoPagoService] Pedido ${orderId} atualizado para status de pagamento: ${paymentStatus}`);
+        } else {
+          console.error(`[MercadoPagoService] Falha ao atualizar pedido ${orderId}`);
+        }
+      } else {
+        console.log(`[MercadoPagoService] Status de pagamento do pedido ${orderId} não alterado (${paymentStatus})`);
+      }
+    } catch (error) {
+      console.error(`[MercadoPagoService] Erro ao atualizar status de pagamento do pedido ${orderId}:`, error);
+      // Não relançamos o erro para não interromper o fluxo principal
     }
   }
 }

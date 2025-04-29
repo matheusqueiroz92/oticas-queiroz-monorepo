@@ -33,8 +33,8 @@ export interface IMercadoPagoPreference {
     installments?: number;
   };
   external_reference?: string;
-  back_urls?: {
-    success?: string;
+  back_urls: {        // Alterado de '?' opcional para obrigatório
+    success: string;  // Obrigatório se auto_return estiver definido
     pending?: string;
     failure?: string;
   };
@@ -45,7 +45,6 @@ export interface IMercadoPagoPreference {
   expiration_date_from?: string;
   expiration_date_to?: string;
 }
-
 // Interface para resposta de criação de preferência
 export interface IMercadoPagoPreferenceResponse {
   id: string;
