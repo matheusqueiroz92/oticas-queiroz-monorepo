@@ -19,7 +19,8 @@ import {
   ArrowLeft,
   ChevronLeft,
   Receipt,
-  CheckCircle,
+  CreditCard,
+  ExternalLink,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -229,6 +230,83 @@ export function PaymentDetails({
                             <p className="text-red-600">{payment.check.rejectionReason}</p>
                           </div>
                         )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {payment.paymentMethod === "mercado_pago" && payment.mercadoPagoId && (
+                  <div className="mt-4 p-3 bg-blue-50 rounded-md border border-blue-200">
+                    <h3 className="font-medium mb-2 flex items-center">
+                      <CreditCard className="h-4 w-4 mr-2 text-blue-600" />
+                      Dados do Pagamento Mercado Pago
+                    </h3>
+                    <div className="space-y-2 text-sm">
+                      <div>
+                        <span className="font-medium">ID do Pagamento:</span>
+                        <p className="text-blue-700">{payment.mercadoPagoId}</p>
+                      </div>
+                      
+                      {payment.mercadoPagoData && (
+                        <>
+                          {payment.mercadoPagoData.status && (
+                            <div>
+                              <span className="font-medium">Status:</span>
+                              <Badge className={`ml-2 ${getPaymentStatusClass(payment.mercadoPagoData.status)}`}>
+                                {translatePaymentStatus(payment.mercadoPagoData.status)}
+                              </Badge>
+                            </div>
+                          )}
+                          
+                          {payment.mercadoPagoData.payment_method_id && (
+                            <div>
+                              <span className="font-medium">Método:</span>
+                              <p>{
+                                payment.mercadoPagoData.payment_method_id === "credit_card" ? "Cartão de Crédito" :
+                                payment.mercadoPagoData.payment_method_id === "debit_card" ? "Cartão de Débito" :
+                                payment.mercadoPagoData.payment_method_id === "pix" ? "PIX" :
+                                payment.mercadoPagoData.payment_method_id === "ticket" ? "Boleto" :
+                                payment.mercadoPagoData.payment_method_id
+                              }</p>
+                            </div>
+                          )}
+                          
+                          {payment.mercadoPagoData.installments && payment.mercadoPagoData.installments > 1 && (
+                            <div>
+                              <span className="font-medium">Parcelas:</span>
+                              <p>{payment.mercadoPagoData.installments}x de {
+                                payment.mercadoPagoData.transaction_details?.installment_amount ? 
+                                formatCurrency(payment.mercadoPagoData.transaction_details.installment_amount) : 
+                                formatCurrency(payment.amount / payment.mercadoPagoData.installments)
+                              }</p>
+                            </div>
+                          )}
+                          
+                          {payment.mercadoPagoData.date_approved && (
+                            <div>
+                              <span className="font-medium">Data de Aprovação:</span>
+                              <p>{new Date(payment.mercadoPagoData.date_approved).toLocaleString()}</p>
+                            </div>
+                          )}
+                          
+                          {payment.mercadoPagoData.payer?.email && (
+                            <div>
+                              <span className="font-medium">Email do Pagador:</span>
+                              <p>{payment.mercadoPagoData.payer.email}</p>
+                            </div>
+                          )}
+                        </>
+                      )}
+                      
+                      <div className="pt-2">
+                        <Button 
+                          variant="link" 
+                          size="sm" 
+                          className="p-0 h-auto text-blue-600"
+                          onClick={() => window.open("https://www.mercadopago.com.br", "_blank")}
+                        >
+                          Ver no Mercado Pago <ExternalLink className="h-3 w-3 ml-1" />
+                        </Button>
                       </div>
                     </div>
                   </div>

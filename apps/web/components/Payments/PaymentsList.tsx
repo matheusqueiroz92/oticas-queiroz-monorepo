@@ -92,19 +92,26 @@ export function PaymentsList({
   const getIconMethod = (method: string) => {
     switch (method) {
       case "credit_card":
+      case "credit":
         return <CreditCard className="h-4 w-4 mr-1 text-muted-foreground" />;
       case "cash":
         return <Banknote className="h-4 w-4 mr-1 text-muted-foreground" />;
       case "debit_card":
+      case "debit":
         return <CreditCard className="h-4 w-4 mr-1 text-muted-foreground" />;
       case "bank_slip":
         return <BookText className="h-4 w-4 mr-1 text-muted-foreground" />;
       case "promissor_note":
+      case "promissory_note":
         return <NotepadText className="h-4 w-4 mr-1 text-muted-foreground" />;
       case "pix":
         return <Repeat className="h-4 w-4 mr-1 text-muted-foreground" />;
       case "check":
         return <TicketsPlane className="h-4 w-4 mr-1 text-muted-foreground" />;
+      case "mercado_pago":
+        return <CreditCard className="h-4 w-4 mr-1 text-blue-500" />;
+      default:
+        return <CreditCard className="h-4 w-4 mr-1 text-muted-foreground" />;
     }
   }
 
@@ -263,6 +270,17 @@ export function PaymentsList({
                         >
                           <Ban className="h-4 w-4 mr-1" />
                           Cancelar
+                        </Button>
+                      )}
+                      {payment.paymentMethod === "mercado_pago" && payment.mercadoPagoId && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-blue-600"
+                          onClick={() => window.open("https://www.mercadopago.com.br", "_blank")}
+                        >
+                          <CreditCard className="h-4 w-4 mr-1" />
+                          MP
                         </Button>
                       )}
                     </div>

@@ -114,6 +114,8 @@ export function PaymentForm({
   selectedEntityType,
   showInstallments,
   showCheckFields,
+  showMercadoPagoOption,
+  onSelectMercadoPago,
   onShowCheckFields,
   onCustomerSearchChange,
   onOrderSearchChange,
@@ -276,6 +278,8 @@ export function PaymentForm({
                     field.onChange(value);
                     if (value === "check") {
                       onShowCheckFields(true);
+                    } else if (value === "mercado_pago" && onSelectMercadoPago) {
+                      onSelectMercadoPago();
                     } else {
                       onShowCheckFields(false);
                     }
@@ -291,6 +295,14 @@ export function PaymentForm({
                       <SelectItem value="debit">Cartão de Débito</SelectItem>
                       <SelectItem value="pix">PIX</SelectItem>
                       <SelectItem value="check">Cheque</SelectItem>
+                      {showMercadoPagoOption && (
+                        <SelectItem value="mercado_pago">
+                          <div className="flex items-center">
+                            <CreditCard className="h-4 w-4 mr-2" />
+                            Mercado Pago
+                          </div>
+                        </SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -890,6 +902,19 @@ export function PaymentForm({
                       ? "PIX"
                       : "Cheque"}
             </div>
+
+            {watch("paymentMethod") === "mercado_pago" && (
+              <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-md">
+                <h4 className="text-sm font-medium text-blue-800 flex items-center">
+                  <CreditCard className="h-4 w-4 mr-2" />
+                  Pagamento via Mercado Pago
+                </h4>
+                <p className="text-sm text-blue-700 mt-1">
+                  Após registrar o pagamento, você será redirecionado para a plataforma do Mercado Pago
+                  para finalizar a transação. Múltiplas opções de pagamento estarão disponíveis.
+                </p>
+              </div>
+            )}
 
             <div className="text-blue-700 font-medium">Data:</div>
             <div className="text-blue-900">

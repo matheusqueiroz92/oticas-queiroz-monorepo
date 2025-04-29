@@ -93,5 +93,10 @@ export const API_ROUTES = {
     PAYMENT: (paymentId: string) => `/api/mercadopago/payment/${paymentId}`,
     PROCESS_PAYMENT: (paymentId: string) => `/api/mercadopago/process/${paymentId}`,
     PAYMENT_INFO: (preferenceId: string) => `/api/mercadopago/payment-info/${preferenceId}`,
+    CHECK_STATUS: (preferenceId: string) => `/api/mercadopago/status/${preferenceId}`,
+    TEST_PAGE: "/api/mercadopago/test-payment",
+    TEST_CONNECTION: "/api/mercadopago/test-connection",
+    TEST_PREFERENCE: "/api/mercadopago/test-preference",
+
   }
 };

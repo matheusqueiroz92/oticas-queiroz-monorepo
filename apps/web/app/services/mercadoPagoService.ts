@@ -7,8 +7,32 @@ import { api } from "./authService";
  * @returns Preferência de pagamento com links
  */
 export async function createPaymentPreference(orderId: string) {
-  const response = await api.post(API_ROUTES.MERCADO_PAGO.PREFERENCE(orderId));
-  return response.data;
+  try {
+    console.log(`Criando preferência de pagamento para o pedido: ${orderId}`);
+    
+    const response = await api.post(API_ROUTES.MERCADO_PAGO.PREFERENCE(orderId));
+    
+    console.log(`Preferência criada com sucesso:`, response.data);
+    
+    return response.data;
+  } catch (error) {
+    console.error(`Erro ao criar preferência de pagamento:`, error);
+    
+    // Extrair mensagem de erro mais específica se disponível
+    let errorMessage = "Falha ao criar preferência de pagamento";
+    
+    if (error && typeof error === 'object' && 'response' in error) {
+      const responseError = error.response as any;
+      
+      if (responseError?.data?.message) {
+        errorMessage = responseError.data.message;
+      } else if (responseError?.data?.details) {
+        errorMessage = responseError.data.details;
+      }
+    }
+    
+    throw new Error(errorMessage);
+  }
 }
 
 /**
@@ -17,8 +41,19 @@ export async function createPaymentPreference(orderId: string) {
  * @returns Informações detalhadas do pagamento
  */
 export async function getPaymentInfo(paymentId: string) {
-  const response = await api.get(API_ROUTES.MERCADO_PAGO.PAYMENT(paymentId));
-  return response.data;
+  try {
+    console.log(`Obtendo informações do pagamento: ${paymentId}`);
+    
+    const response = await api.get(API_ROUTES.MERCADO_PAGO.PAYMENT(paymentId));
+    
+    console.log(`Informações do pagamento obtidas:`, response.data);
+    
+    return response.data;
+  } catch (error) {
+    console.error(`Erro ao obter informações do pagamento:`, error);
+    
+    throw new Error("Falha ao obter informações do pagamento");
+  }
 }
 
 /**
@@ -27,6 +62,75 @@ export async function getPaymentInfo(paymentId: string) {
  * @returns Status do processamento
  */
 export async function processPayment(paymentId: string) {
-  const response = await api.post(API_ROUTES.MERCADO_PAGO.PROCESS_PAYMENT(paymentId));
-  return response.data;
+  try {
+    console.log(`Processando pagamento: ${paymentId}`);
+    
+    const response = await api.post(API_ROUTES.MERCADO_PAGO.PROCESS_PAYMENT(paymentId));
+    
+    console.log(`Pagamento processado:`, response.data);
+    
+    return response.data;
+  } catch (error) {
+    console.error(`Erro ao processar pagamento:`, error);
+    
+    throw new Error("Falha ao processar pagamento");
+  }
+}
+
+/**
+ * Teste de conexão com o Mercado Pago
+ * @returns Resultado do teste
+ */
+export async function testConnection() {
+  try {
+    console.log('Testando conexão com Mercado Pago...');
+    
+    const response = await api.get(API_ROUTES.MERCADO_PAGO.TEST_CONNECTION);
+    
+    console.log('Resultado do teste:', response.data);
+    
+    return response.data;
+  } catch (error) {
+    console.error('Erro ao testar conexão com Mercado Pago:', error);
+    
+    throw new Error("Falha ao testar conexão com Mercado Pago");
+  }
+}
+
+/**
+ * Cria uma preferência de teste direto
+ * @param amount Valor do teste
+ * @param description Descrição do teste
+ * @returns Preferência de pagamento criada
+ */
+export async function createTestPreference(amount: number = 100, description: string = "Teste Óticas Queiroz") {
+  try {
+    console.log(`Criando preferência de teste com valor ${amount} e descrição "${description}"`);
+    
+    const response = await api.post(API_ROUTES.MERCADO_PAGO.TEST_PREFERENCE, {
+      amount,
+      description
+    });
+    
+    console.log(`Preferência de teste criada com sucesso:`, response.data);
+    
+    return response.data;
+  } catch (error) {
+    console.error(`Erro ao criar preferência de teste:`, error);
+    
+    // Extrair mensagem de erro mais específica se disponível
+    let errorMessage = "Falha ao criar preferência de teste";
+    
+    if (error && typeof error === 'object' && 'response' in error) {
+      const responseError = error.response as any;
+      
+      if (responseError?.data?.message) {
+        errorMessage = responseError.data.message;
+      } else if (responseError?.data?.details) {
+        errorMessage = responseError.data.details;
+      }
+    }
+    
+    throw new Error(errorMessage);
+  }
 }

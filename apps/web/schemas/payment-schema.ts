@@ -13,7 +13,16 @@ export const paymentFormSchema = z.object({
   type: z.enum(["sale", "debt_payment", "expense"] as const, {
     required_error: "Selecione o tipo de pagamento",
   }),
-  paymentMethod: z.enum(["credit", "debit", "cash", "pix", "check"] as const, {
+  paymentMethod: z.enum([
+    "credit",
+    "debit",
+    "cash",
+    "pix",
+    "check",
+    "bank_slip",
+    "promissory_note",
+    "mercado_pago"
+  ] as const, {
     required_error: "Selecione o método de pagamento",
   }),
   check: z.object({

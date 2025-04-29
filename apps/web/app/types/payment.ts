@@ -4,6 +4,9 @@ export type PaymentMethod =
   | "cash"
   | "pix"
   | "check"
+  | "bank_slip"
+  | "promissory_note"
+  | "mercado_pago"
 export type PaymentType = "sale" | "debt_payment" | "expense";
 export type PaymentStatus = "pending" | "completed" | "cancelled";
 
@@ -19,6 +22,8 @@ export interface IPayment {
   type: PaymentType;
   paymentMethod: PaymentMethod;
   status: PaymentStatus;
+  mercadoPagoId?: string;
+  mercadoPagoData?: Record<string, any>;
   installments?: {
     current: number;
     total: number;

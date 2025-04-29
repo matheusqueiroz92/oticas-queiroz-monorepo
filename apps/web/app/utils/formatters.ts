@@ -67,45 +67,69 @@ export function formatDateTime(date: Date | string | undefined): string {
 /**
  * Traduz o tipo de pagamento
  */
-export function translatePaymentType(type: PaymentType | string): string {
-  const types: Record<string, string> = {
-    sale: "Venda",
-    debt_payment: "Pagamento de Dívida",
-    expense: "Despesa",
-  };
-
-  return types[type] || type;
+export function translatePaymentType(type: string): string {
+  switch (type) {
+    case "sale":
+      return "Venda";
+    case "debt_payment":
+      return "Pagamento de Débito";
+    case "expense":
+      return "Despesa";
+    default:
+      return type;
+  }
 }
 
 /**
  * Traduz o método de pagamento
  */
-export function translatePaymentMethod(method: PaymentMethod | string): string {
-  const methods: Record<string, string> = {
-    credit: "Cartão de Crédito",
-    debit: "Cartão de Débito",
-    cash: "Dinheiro",
-    pix: "PIX",
-    installment: "Parcelado",
-    bank_slip: "Boleto",
-    promissory_note: "Promissória",
-    check: "Cheque",
-  };
-
-  return methods[method] || method;
+export function translatePaymentMethod(method: string): string {
+  switch (method) {
+    case "credit":
+      return "Cartão de Crédito";
+    case "debit":
+      return "Cartão de Débito";
+    case "cash":
+      return "Dinheiro";
+    case "pix":
+      return "PIX";
+    case "bank_slip":
+      return "Boleto Bancário";
+    case "promissory_note":
+      return "Nota Promissória";
+    case "check":
+      return "Cheque";
+    case "mercado_pago":
+      return "Mercado Pago";
+    default:
+      return method;
+  }
 }
 
 /**
  * Traduz o status do pagamento
  */
-export function translatePaymentStatus(status: PaymentStatus | string): string {
-  const statuses: Record<string, string> = {
-    pending: "Pendente",
-    completed: "Concluído",
-    cancelled: "Cancelado",
-  };
-
-  return statuses[status] || status;
+export function translatePaymentStatus(status: string): string {
+  switch (status) {
+    case "pending":
+      return "Pendente";
+    case "completed":
+      return "Concluído";
+    case "cancelled":
+      return "Cancelado";
+    case "approved":
+      return "Aprovado"; // Status do Mercado Pago
+    case "in_process":
+      return "Em Processamento"; // Status do Mercado Pago
+    case "rejected":
+      return "Rejeitado"; // Status do Mercado Pago
+    case "refunded":
+      return "Reembolsado"; // Status do Mercado Pago
+    case "charged_back":
+      return "Estornado"; // Status do Mercado Pago
+    default:
+      return status;
+  }
 }
 
 /**
@@ -157,13 +181,18 @@ export function formatRefractionValue(value?: number): string {
 /**
  * Obtém a classe CSS para o status do pagamento
  */
-export function getPaymentStatusClass(status: PaymentStatus | string): string {
+export function getPaymentStatusClass(status: string): string {
   switch (status) {
     case "completed":
+    case "approved":
       return "bg-green-100 text-green-800";
     case "pending":
+    case "in_process":
       return "bg-yellow-100 text-yellow-800";
     case "cancelled":
+    case "rejected":
+    case "refunded":
+    case "charged_back":
       return "bg-red-100 text-red-800";
     default:
       return "bg-gray-100 text-gray-800";
@@ -173,7 +202,7 @@ export function getPaymentStatusClass(status: PaymentStatus | string): string {
 /**
  * Obtém a classe CSS para o tipo de pagamento
  */
-export function getPaymentTypeClass(type: PaymentType | string): string {
+export function getPaymentTypeClass(type: string): string {
   switch (type) {
     case "sale":
       return "bg-green-100 text-green-800";

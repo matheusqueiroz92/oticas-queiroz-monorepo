@@ -129,6 +129,27 @@ const PaymentReceiptPrinter: React.FC<PaymentReceiptPrinterProps> = ({
       content += `Titular: ${payment.check.accountHolder}\n`;
     }
     
+    // Informações do Mercado Pago
+    if (payment.paymentMethod === "mercado_pago" && payment.mercadoPagoId) {
+      content += `ID Mercado Pago: ${payment.mercadoPagoId}\n`;
+      
+      if (payment.mercadoPagoData) {
+        if (payment.mercadoPagoData.payment_method_id) {
+          content += `Método MP: ${
+            payment.mercadoPagoData.payment_method_id === "credit_card" ? "Cartão de Crédito" :
+            payment.mercadoPagoData.payment_method_id === "debit_card" ? "Cartão de Débito" :
+            payment.mercadoPagoData.payment_method_id === "pix" ? "PIX" :
+            payment.mercadoPagoData.payment_method_id === "ticket" ? "Boleto" :
+            payment.mercadoPagoData.payment_method_id
+          }\n`;
+        }
+        
+        if (payment.mercadoPagoData.installments && payment.mercadoPagoData.installments > 1) {
+          content += `Parcelas MP: ${payment.mercadoPagoData.installments}x\n`;
+        }
+      }
+    }
+    
     content += separator + "\n";
     
     // Valor

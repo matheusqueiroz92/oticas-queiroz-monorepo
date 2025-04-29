@@ -245,6 +245,14 @@ const usePaymentForm = () => {
   const [showCheckFields, setShowCheckFields] = useState(false);
   const [clientOrders, setClientOrders] = useState<Order[]>([]);
   const [orderSearch, setOrderSearch] = useState("");
+  const [showMercadoPagoFlow, setShowMercadoPagoFlow] = useState(false);
+  const [orderIdForMercadoPago, setOrderIdForMercadoPago] = useState<string | null>(null);
+  const [orderAmountForMercadoPago, setOrderAmountForMercadoPago] = useState<number>(0);
+
+  const handleSelectMercadoPago = () => {
+    // Este será chamado quando o usuário selecionar Mercado Pago como método de pagamento
+    console.log("Mercado Pago selecionado como método de pagamento");
+  };
 
   // Query para verificar se há um caixa aberto
   const { 
@@ -435,6 +443,27 @@ const usePaymentForm = () => {
       if (isNaN(amountValue)) {
         amountValue = 0;
       }
+
+      // Se o método de pagamento for Mercado Pago, iniciar o fluxo do Mercado Pago
+      if (data.paymentMethod === "mercado_pago") {
+        // Se tiver orderId, usar este para o fluxo do Mercado Pago
+        if (data.orderId) {
+          setOrderIdForMercadoPago(data.orderId);
+          setOrderAmountForMercadoPago(amountValue);
+          setShowMercadoPagoFlow(true);
+          setIsSubmitting(false);
+          return;
+        } else {
+          // Se não tiver orderId, criar um pagamento normal e depois iniciar o fluxo
+          toast({
+            variant: "warning",
+            title: "Sem pedido associado",
+            description: "Para pagamentos via Mercado Pago, é necessário selecionar um pedido."
+          });
+          setIsSubmitting(false);
+          return;
+        }
+      }
     
       const paymentData: CreatePaymentDTO = {
         amount: amountValue,
@@ -602,6 +631,56 @@ const usePaymentForm = () => {
     router.push("/payments");
   };
 
+  const handleMercadoPagoSuccess = async () => {
+    try {
+      // Após o pagamento bem-sucedido, criar o registro local
+      if (orderIdForMercadoPago) {
+        const paymentData: CreatePaymentDTO = {
+          amount: orderAmountForMercadoPago,
+          type: "sale",
+          paymentMethod: "mercado_pago",
+          date: new Date(),
+          description: "Pagamento via Mercado Pago",
+          cashRegisterId: form.getValues("cashRegisterId"),
+          customerId: form.getValues("customerId"),
+          legacyClientId: form.getValues("legacyClientId"),
+          orderId: orderIdForMercadoPago,
+          status: "completed" as PaymentStatus,
+        };
+        
+        // Criar o pagamento no sistema local
+        const response = await handleCreatePayment(paymentData);
+        
+        if (response && response._id) {
+          setShowMercadoPagoFlow(false);
+          router.push(`/payments/${response._id}`);
+        } else {
+          router.push("/payments");
+        }
+      }
+    } catch (error) {
+      console.error("Erro ao registrar pagamento do Mercado Pago:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao registrar pagamento",
+        description: "O pagamento foi concluído no Mercado Pago, mas houve um erro ao registrá-lo no sistema."
+      });
+    }
+  };
+  
+  const handleMercadoPagoFailure = () => {
+    setShowMercadoPagoFlow(false);
+    toast({
+      variant: "destructive",
+      title: "Pagamento não concluído",
+      description: "O pagamento no Mercado Pago não foi concluído ou foi rejeitado."
+    });
+  };
+  
+  const handleMercadoPagoCancel = () => {
+    setShowMercadoPagoFlow(false);
+  };
+
   return {
     form,
     currentStep,
@@ -622,6 +701,13 @@ const usePaymentForm = () => {
     showInstallments,
     showCheckFields,
     showConfirmDialog,
+    showMercadoPagoFlow,
+    orderIdForMercadoPago,
+    orderAmountForMercadoPago,
+    handleSelectMercadoPago,
+    handleMercadoPagoSuccess,
+    handleMercadoPagoFailure,
+    handleMercadoPagoCancel,
     setShowCheckFields,
     setCustomerSearch,
     setOrderSearch,
