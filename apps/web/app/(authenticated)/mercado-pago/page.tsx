@@ -353,7 +353,7 @@ export default function MercadoPagoSettingsPage() {
               <Button 
                 variant="outline" 
                 className="w-full"
-                onClick={() => window.open("https://www.mercadopago.com.br/developers/pt/docs/checkout-api/integration-test/test-cards", "_blank")}
+                onClick={() => router.push("https://www.mercadopago.com.br/developers/pt/docs/checkout-api/integration-test/test-cards")}
               >
                 <ExternalLink className="h-4 w-4 mr-2" />
                 Ver mais cartões de teste
