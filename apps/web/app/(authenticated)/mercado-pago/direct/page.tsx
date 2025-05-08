@@ -137,7 +137,15 @@ export default function MercadoPagoDirectPage() {
           <Button 
             variant="outline" 
             className="w-full"
-            onClick={() => window.open("https://www.mercadopago.com.br/developers/pt/docs/checkout-api/integration-test/test-cards", "_blank")}
+            onClick={() => {
+              if (typeof window !== 'undefined') {
+                window.open(
+                  "https://www.mercadopago.com.br/developers/pt/docs/checkout-api/integration-test/test-cards", 
+                  "_blank",
+                  "noopener,noreferrer"
+                );
+              }
+            }}
           >
             Ver mais cartões de teste
           </Button>

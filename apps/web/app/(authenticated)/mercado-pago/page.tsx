@@ -149,7 +149,8 @@ export default function MercadoPagoSettingsPage() {
             </div>
             </CardContent>
             <CardFooter className="flex justify-between">
-              <Button variant="outline" onClick={() => router.push("/dashboard")}>
+              <Button
+                variant="outline" onClick={() => router.push("/dashboard")}>
                 Voltar
               </Button>
               <Button onClick={resetTest} disabled={connectionStatus === "idle"}>
@@ -175,7 +176,15 @@ export default function MercadoPagoSettingsPage() {
                   <Button 
                     variant="outline" 
                     className="w-fit"
-                    onClick={() => router.push("https://www.mercadopago.com.br/developers/panel")}
+                    onClick={() => {
+                      if (typeof window !== 'undefined') {
+                        window.open(
+                          "https://www.mercadopago.com.br/developers/panel",
+                          "_blank",
+                          "noopener,noreferrer"
+                        );
+                      }
+                    }}
                   >
                     <ExternalLink className="h-4 w-4 mr-2" />
                     Acessar Dashboard
@@ -190,7 +199,15 @@ export default function MercadoPagoSettingsPage() {
                   <Button 
                     variant="outline"
                     className="w-fit"
-                    onClick={() => router.push("https://www.mercadopago.com.br/developers/pt/docs/checkout-api/landing")}
+                    onClick={() => {
+                      if (typeof window !== 'undefined') {
+                        window.open(
+                          "https://www.mercadopago.com.br/developers/pt/docs/checkout-api/landing",
+                          "_blank",
+                          "noopener,noreferrer"
+                        );
+                      }
+                    }}
                   >
                     <ExternalLink className="h-4 w-4 mr-2" />
                     Ver Documentação
@@ -235,7 +252,7 @@ export default function MercadoPagoSettingsPage() {
                   <div className="flex items-center mt-1">
                     <Input 
                       readOnly 
-                      value={`${window.location.origin}/api/mercadopago/webhook`} 
+                      value={typeof window !== 'undefined' ? `${window.location.origin}/api/mercadopago/webhook` : ''}
                       className="flex-1 bg-gray-50"
                     />
                     <Button 
@@ -353,7 +370,15 @@ export default function MercadoPagoSettingsPage() {
               <Button 
                 variant="outline" 
                 className="w-full"
-                onClick={() => router.push("https://www.mercadopago.com.br/developers/pt/docs/checkout-api/integration-test/test-cards")}
+                onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    window.open(
+                      "https://www.mercadopago.com.br/developers/pt/docs/checkout-api/integration-test/test-cards", 
+                      "_blank",
+                      "noopener,noreferrer"
+                    );
+                  }
+                }}
               >
                 <ExternalLink className="h-4 w-4 mr-2" />
                 Ver mais cartões de teste
