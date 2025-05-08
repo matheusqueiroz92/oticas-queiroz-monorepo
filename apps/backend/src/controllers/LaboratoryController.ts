@@ -61,6 +61,7 @@ export class LaboratoryController {
       res.status(500).json({ message: "Erro interno do servidor" });
     }
   }
+  
   async getAllLaboratories(req: Request, res: Response): Promise<void> {
     try {
       const page = Number(req.query.page) || 1;

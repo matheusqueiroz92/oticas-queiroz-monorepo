@@ -86,14 +86,14 @@ const orderSchema = new Schema<IOrder>({
     clinicName: { type: String },
     appointmentDate: { type: Date },
     rightEye: {
-      sph: Number,
-      cyl: Number,
+      sph: String,
+      cyl: String,
       axis: Number,
       pd: Number,
     },
     leftEye: {
-      sph: Number,
-      cyl: Number,
+      sph: String,
+      cyl: String,
       axis: Number,
       pd: Number,
     },

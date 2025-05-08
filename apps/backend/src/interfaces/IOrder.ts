@@ -34,14 +34,14 @@ export interface IOrder {
     clinicName: string;
     appointmentDate: Date;
     rightEye: {
-      sph: number;
-      cyl: number;
+      sph: string;
+      cyl: string;
       axis: number;
       pd?: number;
     };
     leftEye: {
-      sph: number;
-      cyl: number;
+      sph: string;
+      cyl: string;
       axis: number;
       pd: number;
     };

@@ -1,4 +1,3 @@
-// src/services/PasswordResetService.ts
 import { UserService } from "./UserService";
 import { EmailService } from "./EmailService";
 import { PasswordReset } from "../models/PasswordResetModel";
@@ -58,10 +57,6 @@ export class PasswordResetService {
       // Se o usuário não for encontrado, tratamos como erro mas não informamos ao cliente
       if (error instanceof NotFoundError) {
         // Registrar o evento por segurança
-        console.log(
-          `Tentativa de redefinição de senha para email não cadastrado: ${email}`
-        );
-
         // Retornar um token falso para não revelar que o email não existe
         return randomBytes(32).toString("hex");
       }

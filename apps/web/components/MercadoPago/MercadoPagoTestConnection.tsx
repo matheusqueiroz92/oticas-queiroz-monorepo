@@ -161,7 +161,15 @@ export default function MercadoPagoTestPage() {
                   <Button 
                     variant="link" 
                     className="text-blue-600 p-0 h-auto"
-                    onClick={() => window.open(paymentUrl!, '_blank')}
+                    onClick={() => {
+                      if (typeof window !== 'undefined') {
+                        window.open(
+                          paymentUrl!,
+                          "_blank",
+                          "noopener,noreferrer"
+                        );
+                      }
+                    }}
                   >
                     Abrir página de pagamento <ExternalLink className="h-3 w-3 ml-1" />
                   </Button>

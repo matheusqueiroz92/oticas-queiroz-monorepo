@@ -57,8 +57,6 @@ export class MercadoPagoController {
       // Certifique-se de não ter barras duplicadas
       const baseUrl = `${protocol}://${host.replace(/\/$/, '')}`;
       
-      console.log(`URL base para retornos: ${baseUrl}`);
-      
       // Criar a preferência de pagamento usando o service
       try {
         const preference = await this.mercadoPagoService.createPaymentPreference(
@@ -93,11 +91,8 @@ export class MercadoPagoController {
    */
   async webhook(req: Request, res: Response): Promise<void> {
     try {
-      console.log("[MercadoPagoController] Webhook recebido:", JSON.stringify(req.body, null, 2));
-      
       // Verificação mais robusta da estrutura da notificação
       if (!req.body) {
-        console.log("[MercadoPagoController] Webhook sem corpo de requisição");
         res.status(200).send("OK"); // Retornar 200 para não gerar reenvios
         return;
       }
@@ -114,19 +109,14 @@ export class MercadoPagoController {
           res.status(200).send("OK");
           return;
         }
-        
-        console.log(`[MercadoPagoController] Processando notificação de pagamento ID: ${paymentId}`);
-        
         // Processar o pagamento
         try {
           await this.mercadoPagoService.processPayment(paymentId);
-          console.log(`[MercadoPagoController] Pagamento ${paymentId} processado com sucesso`);
         } catch (paymentError) {
           // Apenas logamos o erro, não retornamos erro para o Mercado Pago
           console.error(`[MercadoPagoController] Erro ao processar pagamento ${paymentId}:`, paymentError);
         }
       } else {
-        console.log(`[MercadoPagoController] Tipo de notificação não processada: ${req.body.type || req.body.action}`);
       }
       
       // Sempre responder com sucesso para o Mercado Pago
@@ -364,8 +354,6 @@ export class MercadoPagoController {
    */
   async createTestPreference(req: Request, res: Response): Promise<void> {
     try {
-      console.log("Criando preferência de teste direto...");
-      
       // Obter parâmetros da requisição
       const { amount = 100, description = "Teste Óticas Queiroz" } = req.body;
       
@@ -382,9 +370,7 @@ export class MercadoPagoController {
       const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
       const host = process.env.HOST_URL || req.get('host') || 'localhost:3333';
       const baseUrl = `${protocol}://${host}`;
-      
-      console.log(`URL base para callbacks: ${baseUrl}`);
-      
+
       // Criar uma preferência simples
       try {
         // Verificar se há caixa aberto (manter isso)
@@ -403,8 +389,6 @@ export class MercadoPagoController {
           unit_price: numericAmount
         };
         
-        console.log("Item para Mercado Pago:", JSON.stringify(testItem, null, 2));
-        
         // Criar preferência
         const preference = {
           items: [testItem],
@@ -419,12 +403,8 @@ export class MercadoPagoController {
           statement_descriptor: "Óticas Queiroz"
         };
         
-        console.log("Preferência a ser enviada:", JSON.stringify(preference, null, 2));
-        
         // Usar a API direta para criar a preferência
         const response = await MercadoPagoAPI.createPreference(preference);
-        
-        console.log("Resposta do Mercado Pago:", JSON.stringify(response.body, null, 2));
         
         // Retornar a preferência criada
         res.status(200).json({

@@ -84,9 +84,6 @@ export class EmailService {
           Se você não solicitou esta recuperação, ignore este email.
         `,
       });
-
-      console.log(`Email de recuperação enviado para: ${email}`);
-      console.log(`Link enviado: ${fullResetLink}`);
     } catch (error) {
       console.error("Erro ao enviar email:", error);
       throw error;

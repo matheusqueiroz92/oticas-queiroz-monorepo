@@ -34,7 +34,6 @@ export const validateAndUpdateRelationships = async (req: Request, res: Response
                   await userModel.update(order.employeeId.toString(), {
                     sales: Array.from(salesSet)
                   });
-                  console.log(`Middleware: Venda ${order._id} adicionada ao funcionário ${order.employeeId}`);
                 }
               }
               
@@ -49,7 +48,6 @@ export const validateAndUpdateRelationships = async (req: Request, res: Response
                   await userModel.update(order.clientId.toString(), {
                     purchases: Array.from(purchasesSet)
                   });
-                  console.log(`Middleware: Compra ${order._id} adicionada ao cliente ${order.clientId}`);
                 }
               }
               
@@ -62,7 +60,6 @@ export const validateAndUpdateRelationships = async (req: Request, res: Response
                     await userModel.update(order.clientId.toString(), {
                       debts: currentDebt + debtAmount
                     });
-                    console.log(`Middleware: Dívida de ${debtAmount} adicionada ao cliente ${order.clientId}`);
                   }
                 }
               }

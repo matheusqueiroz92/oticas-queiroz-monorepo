@@ -6,14 +6,14 @@ const prescriptionDataSchema = z.object({
   clinicName: z.string().min(2, "Nome da clínica deve ter no mínimo 2 caracteres"),
   appointmentDate: z.coerce.date(),
   rightEye: z.object({
-    sph: z.number().default(0),
-    cyl: z.number().default(0),
+    sph: z.string().default('0'),
+    cyl: z.string().default('0'),
     axis: z.number().default(0),
     pd: z.number().default(0),
   }),
   leftEye: z.object({
-    sph: z.number().default(0),
-    cyl: z.number().default(0),
+    sph: z.string().default('0'),
+    cyl: z.string().default('0'),
     axis: z.number().default(0),
     pd: z.number().default(0),
   }),

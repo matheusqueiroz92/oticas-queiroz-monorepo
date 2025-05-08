@@ -77,8 +77,6 @@ export class ProductModel {
 
    private async updateStockDirectly(id: string, stockValue: number): Promise<boolean> {
     try {
-      console.log(`Tentando atualizar estoque para ${stockValue} usando operação direta no MongoDB`);
-      
       // Obter a conexão direta com o MongoDB
       const db = mongoose.connection.db;
       const collection = db?.collection('products');
@@ -88,8 +86,7 @@ export class ProductModel {
         { _id: new mongoose.Types.ObjectId(id) },
         { $set: { stock: stockValue } }
       );
-      
-      console.log(`Resultado da operação direta MongoDB: ${JSON.stringify(result)}`);
+
       return (result?.modifiedCount ?? 0) > 0;
     } catch (error) {
       console.error(`Erro ao atualizar estoque diretamente: ${error}`);
@@ -168,9 +165,7 @@ export class ProductModel {
       // Tratar o estoque separadamente
       const stockValue = productData.stock !== undefined ? Number(productData.stock) : undefined;
       delete productData.stock; // Remover do objeto principal
-      
-      console.log(`Atualizando produto ${id} com dados:`, JSON.stringify(productData));
-      
+
       // 1. Primeiro atualize os outros campos
       await Product.findByIdAndUpdate(
         id,
@@ -184,12 +179,6 @@ export class ProductModel {
       
       // 3. Buscar o produto atualizado para confirmar
       const updatedProduct = await Product.findById(id);
-      
-      // 4. Log com todos os detalhes do produto atualizado
-      if (updatedProduct) {
-        console.log(`PRODUTO ATUALIZADO [ID: ${id}]:`, JSON.stringify(updatedProduct));
-        console.log(`STOCK FINAL: ${(updatedProduct as any).stock}`);
-      }
       
       return updatedProduct ? this.convertToIProduct(updatedProduct) : null;
     } catch (error) {
@@ -211,8 +200,6 @@ export class ProductModel {
     session.startTransaction();
   
     try {
-      console.log(`[ProductModel] Atualizando estoque do produto ${id} com alteração: ${stockChange}`);
-      
       // 1. Buscar o produto com sessão ativa
       const product = await Product.findById(id).session(session);
       if (!product) {
@@ -245,7 +232,7 @@ export class ProductModel {
       }
   
       await session.commitTransaction();
-      console.log(`[ProductModel] Estoque atualizado com sucesso para: ${newStock}`);
+      
       return this.convertToIProduct(verifiedProduct);
     } catch (error) {
       await session.abortTransaction();

@@ -24,12 +24,12 @@ export default function VisionSection({ eye, form }: VisionSectionProps) {
   // Inicializar os valores dos inputs baseados nos valores do formulário
   useEffect(() => {
     const sph = form.getValues(`prescriptionData.${eye}Eye.sph`);
-    if (sph !== 0 && sph !== undefined) {
+    if (sph !== '' && sph !== '0' && sph !== undefined ) {
       setSphInput(sph.toString());
     }
 
     const cyl = form.getValues(`prescriptionData.${eye}Eye.cyl`);
-    if (cyl !== 0 && cyl !== undefined) {
+    if (cyl !== '' && cyl !== '0' && cyl !== undefined) {
       setCylInput(cyl.toString());
     }
 
@@ -66,6 +66,30 @@ export default function VisionSection({ eye, form }: VisionSectionProps) {
     }
   };
 
+  // Função para tratar inputs de dioptria
+  const handleDioptriaInput = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    onChange: (value: string) => void,
+    setInputState: React.Dispatch<React.SetStateAction<string>>
+  ) => {
+    const inputValue = e.target.value;
+    setInputState(inputValue);
+    
+    console.log("Input value:", inputValue); // Log para depuração
+    
+    // Se o campo estiver vazio, definimos como string vazia
+    if (inputValue === "") {
+      onChange("");
+      return;
+    }
+    
+    // Validar formato: permite +, -, números e ponto decimal
+    if (/^[+-]?\d*\.?\d*$/.test(inputValue)) {
+      console.log("Valid dioptria value:", inputValue); // Log para depuração
+      onChange(inputValue); // Passa o valor diretamente como string
+    }
+  };
+
   // Função específica para o campo de eixo que tem validação de min/max
   const handleAxisInput = (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -90,6 +114,8 @@ export default function VisionSection({ eye, form }: VisionSectionProps) {
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+
+      {/* Campo Esférico */}
       <FormField
         control={form.control}
         name={`prescriptionData.${eye}Eye.sph`}
@@ -101,7 +127,7 @@ export default function VisionSection({ eye, form }: VisionSectionProps) {
                 type="text"
                 inputMode="decimal"
                 value={sphInput}
-                onChange={(e) => handleNumericInput(e, field.onChange, setSphInput)}
+                onChange={(e) => handleDioptriaInput(e, field.onChange, setSphInput)}
                 aria-label={`Esférico do olho ${eye === "left" ? "esquerdo" : "direito"}`}
               />
             </FormControl>
@@ -110,6 +136,7 @@ export default function VisionSection({ eye, form }: VisionSectionProps) {
         )}
       />
 
+      {/* Campo Cilíndrico */}
       <FormField
         control={form.control}
         name={`prescriptionData.${eye}Eye.cyl`}
@@ -121,7 +148,7 @@ export default function VisionSection({ eye, form }: VisionSectionProps) {
                 type="text"
                 inputMode="decimal"
                 value={cylInput}
-                onChange={(e) => handleNumericInput(e, field.onChange, setCylInput)}
+                onChange={(e) => handleDioptriaInput(e, field.onChange, setCylInput)}
                 aria-label={`Cilíndrico do olho ${eye === "left" ? "esquerdo" : "direito"}`}
               />
             </FormControl>
@@ -130,6 +157,7 @@ export default function VisionSection({ eye, form }: VisionSectionProps) {
         )}
       />
 
+      {/* Campo Eixo */}
       <FormField
         control={form.control}
         name={`prescriptionData.${eye}Eye.axis`}
@@ -150,6 +178,7 @@ export default function VisionSection({ eye, form }: VisionSectionProps) {
         )}
       />
 
+      {/* Campo D.P. */}
       <FormField
         control={form.control}
         name={`prescriptionData.${eye}Eye.pd`}

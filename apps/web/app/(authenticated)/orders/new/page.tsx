@@ -46,6 +46,12 @@ export default function NewOrderPage() {
   const form = createOrderform();
 
   const submitOrderForm = async (formData: OrderFormValues) => {
+    console.log("Form data before submission:", formData);
+    console.log("Left eye sph:", formData.prescriptionData.leftEye.sph);
+    console.log("Left eye cyl:", formData.prescriptionData.leftEye.cyl);
+    console.log("Right eye sph:", formData.prescriptionData.rightEye.sph);
+    console.log("Right eye cyl:", formData.prescriptionData.rightEye.cyl);
+    
     if (selectedProducts.length === 0) {
       toast({
         variant: "destructive",
@@ -56,13 +62,32 @@ export default function NewOrderPage() {
     }
   
     try {
+      console.log("Prescription data before processing:", formData.prescriptionData);
+
       const containsLenses = selectedProducts.some(product => 
         product.productType === 'lenses' || 
         (product.name && product.name.toLowerCase().includes('lente'))
       );
   
       const initialStatus = containsLenses ? 'pending' : 'ready';
+
+      // Função auxiliar que preserva valores válidos e trata strings vazias
+      const preserveDioptriaValue = (value: string | undefined | null): string => {
+          // Se for um valor vazio ou undefined/null, retorna string vazia
+          if (value === undefined || value === null || value === "") {
+            return "";
+          }
+        
+        // Se for um valor que consiste apenas de sinais ou zeros, como "+0", "-0", "0"
+        if (/^[+-]?0*$/.test(value)) {
+          return "";
+        }
+        
+        // Caso contrário, retorna o valor como está
+        return value;
+      };
   
+      // Criar o objeto de dados para envio, preservando valores de prescrição
       const orderData = {
         clientId: formData.clientId,
         employeeId: formData.employeeId,
@@ -85,30 +110,33 @@ export default function NewOrderPage() {
           clinicName: formData.prescriptionData.clinicName || "Não aplicável",
           appointmentDate: formData.prescriptionData.appointmentDate || new Date().toISOString().split("T")[0],
           leftEye: {
-            sph: formData.prescriptionData.leftEye.sph,
-            cyl: formData.prescriptionData.leftEye.cyl,
-            axis: formData.prescriptionData.leftEye.axis,
-            pd: formData.prescriptionData.leftEye.pd,
+            sph: preserveDioptriaValue(formData.prescriptionData.leftEye.sph),
+            cyl: preserveDioptriaValue(formData.prescriptionData.leftEye.cyl),
+            axis: formData.prescriptionData.leftEye.axis || 0,
+            pd: formData.prescriptionData.leftEye.pd || 0,
           },
           rightEye: {
-            sph: formData.prescriptionData.rightEye.sph,
-            cyl: formData.prescriptionData.rightEye.cyl,
-            axis: formData.prescriptionData.rightEye.axis,
-            pd: formData.prescriptionData.rightEye.pd,
+            sph: preserveDioptriaValue(formData.prescriptionData.rightEye.sph),
+            cyl: preserveDioptriaValue(formData.prescriptionData.rightEye.cyl),
+            axis: formData.prescriptionData.rightEye.axis || 0,
+            pd: formData.prescriptionData.rightEye.pd || 0,
           },
-          nd: formData.prescriptionData.nd,
-          oc: formData.prescriptionData.oc,
-          addition: formData.prescriptionData.addition,
-          bridge: formData.prescriptionData.bridge,
-          rim: formData.prescriptionData.rim,
-          vh: formData.prescriptionData.vh,
-          sh: formData.prescriptionData.sh,
+          nd: formData.prescriptionData.nd || 0,
+          oc: formData.prescriptionData.oc || 0,
+          addition: formData.prescriptionData.addition || 0,
+          bridge: formData.prescriptionData.bridge || 0,
+          rim: formData.prescriptionData.rim || 0,
+          vh: formData.prescriptionData.vh || 0,
+          sh: formData.prescriptionData.sh || 0,
         },
         observations: formData.observations,
         totalPrice: formData.totalPrice,
         discount: formData.discount,
         finalPrice: formData.finalPrice,
       };
+    
+      // Log para depuração dos dados processados
+      console.log("Processed prescription data:", orderData.prescriptionData);
   
       const newOrder = await handleCreateOrder(orderData as any);
       

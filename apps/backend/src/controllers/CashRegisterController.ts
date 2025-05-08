@@ -170,7 +170,6 @@ export class CashRegisterController {
 
   async getRegisterSummary(req: Request, res: Response): Promise<void> {
     try {
-      console.log(`Buscando resumo do caixa: ${req.params.id}`);
       const summary = await this.cashRegisterService.getRegisterSummary(
         req.params.id
       );

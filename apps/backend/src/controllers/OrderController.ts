@@ -30,6 +30,8 @@ export class OrderController {
 
   async createOrder(req: AuthRequest, res: Response): Promise<void> {
     try {
+      console.log("Received order data:", JSON.stringify(req.body, null, 2));
+      console.log("Prescription data:", JSON.stringify(req.body.prescriptionData, null, 2));
       if (!req.user?.id) {
         res.status(401).json({ message: "Usuário não autenticado" });
         return;
@@ -388,8 +390,6 @@ export class OrderController {
       const orders = await this.orderService.getOrdersByClientId(
         req.params.clientId
       );
-      console.log(orders, "Orders Controller");
-      
       res.status(200).json(orders);
     } catch (error) {
       if (error instanceof OrderError) {

@@ -226,7 +226,6 @@ export class PaymentService {
           paymentData.paymentMethod === "promissory_note" ||
           paymentData.paymentMethod === "check"
         )) {
-        console.log(`Detectado pagamento parcelado para venda. Método: ${paymentData.paymentMethod}, Pedido: ${paymentData.orderId}`);
       }
     }
 
@@ -250,7 +249,6 @@ export class PaymentService {
         break;
 
       case "bank_slip":
-        console.log("Validando pagamento com boleto bancário");
         // Validar dados de boleto
         if (!paymentData.bank_slip || !paymentData.bank_slip.code) {
           throw new PaymentError("Código do boleto é obrigatório");
@@ -258,13 +256,11 @@ export class PaymentService {
 
         // Se gerar débito, validar parcelamento
         if (paymentData.clientDebt?.generateDebt) {
-          console.log("Boleto com geração de débito para o cliente");
           this.validateClientDebtData(paymentData.clientDebt);
         }
         break;
 
       case "promissory_note":
-        console.log("Validando pagamento com nota promissória");
         // Validar dados de promissória
         if (!paymentData.promissoryNote || !paymentData.promissoryNote.number) {
           throw new PaymentError("Número da promissória é obrigatório");
@@ -272,12 +268,10 @@ export class PaymentService {
 
         // Se gerar débito, validar parcelamento
         if (paymentData.clientDebt?.generateDebt) {
-          console.log("Nota promissória com geração de débito para o cliente");
           this.validateClientDebtData(paymentData.clientDebt);
         }
         
         case "check":
-          console.log("Validando pagamento com cheque");
           // Validar dados do cheque
           if (!paymentData.check || 
               !paymentData.check.bank || 
@@ -291,7 +285,6 @@ export class PaymentService {
         
           // Se gerar débito, validar parcelamento
           if (paymentData.clientDebt?.generateDebt) {
-            console.log("Cheque com geração de débito para o cliente");
             this.validateClientDebtData(paymentData.clientDebt);
           }
         break;
@@ -334,7 +327,6 @@ export class PaymentService {
     institutionId?: string
   ): Promise<void> {
     if (!debtAmount) {
-      console.log("Nenhuma alteração na dívida do cliente necessária");
       return;
     }
   
@@ -356,8 +348,6 @@ export class PaymentService {
         await this.userModel.update(institutionId, {
           debts: newDebt,
         });
-        
-        console.log(`Dívida da instituição ${institutionId} ${operation} em ${absAmount.toFixed(2)}`);
         return;
       } catch (error) {
         console.error(`Erro ao atualizar dívida da instituição ${institutionId}:`, error);
@@ -377,14 +367,10 @@ export class PaymentService {
         const currentDebt = user.debts || 0;
         const newDebt = Math.max(0, currentDebt + debtAmount); // Evita dívidas negativas
         
-        console.log(`Atualizando débito do cliente ${customerId}: ${currentDebt.toFixed(2)} → ${newDebt.toFixed(2)} (${debtAmount > 0 ? '+' : '-'}${absAmount.toFixed(2)})`);
-        
         // MODIFICAÇÃO IMPORTANTE: Agora atualizamos diretamente o campo debts
         await this.userModel.update(customerId, {
           debts: newDebt,
         });
-        
-        console.log(`Dívida do cliente ${customerId} ${operation} em ${absAmount.toFixed(2)}`);
       } catch (error) {
         console.error(`Erro ao atualizar dívida do cliente ${customerId}:`, error);
       }
@@ -397,7 +383,6 @@ export class PaymentService {
           debtAmount,
           paymentId
         );
-        console.log(`Dívida do cliente legado ${legacyClientId} ${operation} em ${absAmount.toFixed(2)}`);
       } catch (error) {
         console.error(`Erro ao atualizar dívida do cliente legado ${legacyClientId}:`, error);
       }
@@ -460,8 +445,6 @@ export class PaymentService {
     session.startTransaction();
     
     try {
-      console.log("Dados de pagamento recebidos no serviço:", paymentData);
-      
       // Validar os dados do pagamento e obter o ID do caixa
       const cashRegisterId = await this.validatePayment(paymentData);
     
@@ -476,7 +459,6 @@ export class PaymentService {
         });
         
         if (existingPayments.payments.length > 0) {
-          console.log(`Pagamento similar já existe para o pedido ${paymentData.orderId}. Retornando existente.`);
           return existingPayments.payments[0];
         }
       }
@@ -493,9 +475,6 @@ export class PaymentService {
             cashRegisterId: cashRegisterId,
             status: "completed", // Marcar como concluído imediatamente
           });
-          
-          console.log("Pagamento criado com sucesso:", payment);
-          console.log(`Valor final do pagamento criado: ${payment.amount}`);
         } catch (error) {
           retryCount++;
           console.error(`Erro ao criar pagamento (tentativa ${retryCount}/${maxRetries}):`, error);
@@ -539,9 +518,6 @@ export class PaymentService {
       // Se o pagamento está relacionado a um pedido, atualizar o status de pagamento
       if (payment.orderId) {
         try {
-          console.log(`Atualizando status de pagamento do pedido ${payment.orderId}`);
-          console.log(`Usando valor de pagamento: ${payment.amount}`);
-          
           // IMPORTANTE: Passamos 'add' como ação para garantir que o pagamento seja adicionado ao histórico
           await this.updateOrderPaymentStatus(
             payment.orderId.toString(),
@@ -550,8 +526,6 @@ export class PaymentService {
             payment.paymentMethod,
             'add'  // Adicionamos esta ação explicitamente
           );
-          
-          console.log(`Status de pagamento do pedido ${payment.orderId} atualizado`);
         } catch (error) {
           console.error(`Erro ao atualizar status de pagamento do pedido ${payment.orderId}:`, error);
           // Continuamos o fluxo mesmo com erro na atualização do pedido
@@ -572,8 +546,6 @@ export class PaymentService {
             debtAmount,
             payment._id
           );
-          
-          console.log(`Débito do cliente reduzido em ${Math.abs(debtAmount)}`);
         } catch (error) {
           console.error(`Erro ao atualizar débito do cliente:`, error);
         }
@@ -590,7 +562,6 @@ export class PaymentService {
             payment._id, 
             payment.institutionId
           );
-          console.log(`Dívida da instituição ${payment.institutionId} reduzida em ${Math.abs(debtAmount)}`);
         } catch (error) {
           console.error(`Erro ao atualizar dívida da instituição:`, error);
         }
@@ -1362,11 +1333,6 @@ export class PaymentService {
     // Calcular o valor restante
     const remainingDebt = order.finalPrice - totalPaid;
     
-    console.log(`Recalculando pagamento do pedido ${orderId}:`);
-    console.log(`- Preço final: ${order.finalPrice}`);
-    console.log(`- Total pago: ${totalPaid}`);
-    console.log(`- Valor restante: ${remainingDebt}`);
-    
     let newPaymentStatus: "pending" | "partially_paid" | "paid" = "pending";
     
     if (totalPaid >= order.finalPrice) {
@@ -1380,7 +1346,6 @@ export class PaymentService {
       await this.orderModel.update(orderId, {
         paymentStatus: newPaymentStatus
       });
-      console.log(`Status de pagamento do pedido ${orderId} atualizado para: ${newPaymentStatus}`);
     }
     
     // Se o cliente foi informado, atualizar o débito total do cliente
@@ -1413,7 +1378,6 @@ export class PaymentService {
             await this.userModel.update(customerId, {
               debts: totalDebt
             });
-            console.log(`Débito do cliente ${customerId} recalculado: ${totalDebt}`);
           }
         }
       } catch (error) {

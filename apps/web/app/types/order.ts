@@ -71,8 +71,8 @@ export interface OrderColumn {
 
 // Interface para os dados de olho da receita
 export interface EyeData {
-  sph: number;
-  cyl: number;
+  sph: string;
+  cyl: string;
   axis: number;
   pd: number;
 }

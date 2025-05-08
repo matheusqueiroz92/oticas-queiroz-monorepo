@@ -100,6 +100,20 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
     );
   };
 
+  const formatDioptriaDisplay = (value: string | null | undefined): string => {
+    if (!value || value === "" || value === "0" || value === "+0" || value === "-0") {
+      return "0.00"; // Ou outro valor de exibição padrão
+    }
+    
+    // Formatar valor para exibição
+    const numValue = parseFloat(value);
+    
+    // Formata com sinal e 2 casas decimais
+    return numValue > 0 
+      ? `+${numValue.toFixed(2)}` 
+      : numValue.toFixed(2);
+  };
+
   return (
     <div className="space-y-6 max-w-5xl mx-auto p-4">
       <div className="flex justify-between items-center">
@@ -432,14 +446,10 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
                                 Esquerdo
                               </td>
                               <td className="py-3 px-4 text-center">
-                                {formatRefractionValue(
-                                  order.prescriptionData.leftEye.sph
-                                )}
+                                {formatDioptriaDisplay(order.prescriptionData.leftEye.sph?.toString()) || "N/A"}
                               </td>
                               <td className="py-3 px-4 text-center">
-                                {formatRefractionValue(
-                                  order.prescriptionData.leftEye.cyl
-                                )}
+                                {formatDioptriaDisplay(order.prescriptionData.leftEye.cyl?.toString()) || "N/A"}
                               </td>
                               <td className="py-3 px-4 text-center">
                                 {order.prescriptionData.leftEye.axis || "N/A"}°
@@ -456,14 +466,10 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
                                 Direito
                               </td>
                               <td className="py-3 px-4 text-center">
-                                {formatRefractionValue(
-                                  order.prescriptionData.rightEye.sph
-                                )}
+                                {formatDioptriaDisplay(order.prescriptionData.rightEye.sph?.toString()) || "N/A"}
                               </td>
                               <td className="py-3 px-4 text-center">
-                                {formatRefractionValue(
-                                  order.prescriptionData.rightEye.cyl
-                                )}
+                                {formatDioptriaDisplay(order.prescriptionData.rightEye.cyl?.toString()) || "N/A"}
                               </td>
                               <td className="py-3 px-4 text-center">
                                 {order.prescriptionData.rightEye.axis || "N/A"}°

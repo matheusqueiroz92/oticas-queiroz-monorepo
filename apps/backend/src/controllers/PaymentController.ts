@@ -24,12 +24,8 @@ export class PaymentController {
         return;
       }
 
-      console.log("Corpo da requisição recebido:", req.body);
-
       // Validar os dados de acordo com o method
       const validatedData = validatedPaymentSchema.parse(req.body);
-
-      console.log("Dados validados:", validatedData);
 
       // Criar o objeto de pagamento
       const paymentData = {
@@ -40,11 +36,7 @@ export class PaymentController {
         cashRegisterId: "", // Será preenchido pelo PaymentService
       };
 
-      console.log("Dados do pagamento antes de chamar o serviço:", paymentData);
-
       const payment = await this.paymentService.createPayment(paymentData);
-
-      console.log("Pagamento criado:", payment);
 
       res.status(201).json(payment);
     } catch (error) {

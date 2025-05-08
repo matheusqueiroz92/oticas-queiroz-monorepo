@@ -58,9 +58,6 @@ export class MercadoPagoService {
         throw new MercadoPagoError("Não há caixa aberto para registrar pagamentos");
       }
 
-      console.log(`[MercadoPagoService] Criando preferência para pedido ${order._id} com valor ${order.finalPrice}`);
-      console.log(`[MercadoPagoService] URL base para callbacks: ${baseUrl}`);
-
       // Items simplificados e validados
       const items = [{
         id: order._id.toString(),
@@ -70,8 +67,6 @@ export class MercadoPagoService {
         currency_id: "BRL",
         unit_price: Number(order.finalPrice)
       }];
-
-      console.log("[MercadoPagoService] Items para Mercado Pago:", JSON.stringify(items, null, 2));
 
       // Configuração básica da preferência
       let preferenceConfig: IMercadoPagoPreference = {
@@ -95,8 +90,6 @@ export class MercadoPagoService {
         };
         preferenceConfig.notification_url = `${baseUrl}/api/mercadopago/webhook`;
         preferenceConfig.auto_return = "approved";
-        
-        console.log("[MercadoPagoService] Ambiente de produção: URLs completas configuradas");
       } else {
         // Em desenvolvimento, usar apenas URLs sem auto_return
         preferenceConfig.back_urls = {
@@ -105,15 +98,10 @@ export class MercadoPagoService {
           failure: `${baseUrl}/payment/failure`
         };
         preferenceConfig.notification_url = `${baseUrl}/api/mercadopago/webhook`;
-        
-        console.log("[MercadoPagoService] Ambiente de desenvolvimento: auto_return omitido");
       }
-
-      console.log("[MercadoPagoService] Preferência a ser enviada:", JSON.stringify(preferenceConfig, null, 2));
 
       try {
         const response = await MercadoPagoAPI.createPreference(preferenceConfig);
-        console.log("[MercadoPagoService] Resposta do Mercado Pago:", JSON.stringify(response.body, null, 2));
         
         return {
           id: response.body.id,
@@ -167,8 +155,6 @@ export class MercadoPagoService {
    */
   async processPayment(paymentId: string): Promise<IPayment> {
     try {
-      console.log(`[MercadoPagoService] Iniciando processamento do pagamento: ${paymentId}`);
-      
       // Verificar se já processamos este pagamento antes (idempotência)
       const existingPayments = await this.paymentModel.findAllWithMongoFilters(1, 1, {
         mercadoPagoId: paymentId,
@@ -176,25 +162,16 @@ export class MercadoPagoService {
       });
       
       if (existingPayments.total > 0) {
-        console.log(`[MercadoPagoService] Pagamento ${paymentId} já foi processado anteriormente. ID interno: ${existingPayments.payments[0]._id}`);
         return existingPayments.payments[0];
       }
       
       // Buscar informações do pagamento no Mercado Pago
-      console.log(`[MercadoPagoService] Buscando informações detalhadas do pagamento ${paymentId}`);
       const paymentInfo = await this.getPaymentInfo(paymentId);
       
       // Log detalhado das informações do pagamento
-      console.log(`[MercadoPagoService] Detalhes do pagamento ${paymentId}:`);
-      console.log(`- Status: ${paymentInfo.status}`);
-      console.log(`- Método: ${paymentInfo.payment_method_id}`);
-      console.log(`- Valor: ${paymentInfo.transaction_amount}`);
-      console.log(`- Referência: ${paymentInfo.external_reference}`);
-      console.log(`- Data: ${paymentInfo.date_approved || paymentInfo.date_created}`);
       
       // Verificar se o pagamento foi aprovado
       if (paymentInfo.status !== "approved") {
-        console.log(`[MercadoPagoService] Pagamento ${paymentId} não aprovado. Status: ${paymentInfo.status}`);
         throw new MercadoPagoError(`Pagamento não aprovado. Status: ${paymentInfo.status}`);
       }
       
@@ -205,8 +182,7 @@ export class MercadoPagoService {
         console.error(`[MercadoPagoService] Referência do pedido não encontrada no pagamento ${paymentId}`);
         throw new MercadoPagoError("Referência do pedido não encontrada no pagamento");
       }
-      
-      console.log(`[MercadoPagoService] Buscando pedido relacionado: ${orderId}`);
+
       const order = await this.orderService.getOrderById(orderId);
       
       if (!order) {
@@ -214,10 +190,7 @@ export class MercadoPagoService {
         throw new MercadoPagoError(`Pedido ${orderId} não encontrado`);
       }
       
-      console.log(`[MercadoPagoService] Pedido ${orderId} encontrado`);
-      
       // Verificar se há caixa aberto
-      console.log(`[MercadoPagoService] Verificando caixa aberto`);
       const openRegister = await this.cashRegisterModel.findOpenRegister();
       if (!openRegister) {
         console.error(`[MercadoPagoService] Não há caixa aberto para registrar pagamento ${paymentId}`);
@@ -251,9 +224,7 @@ export class MercadoPagoService {
           value: paymentInfo.transaction_details?.installment_amount || (paymentInfo.transaction_amount / paymentInfo.installments)
         };
       }
-      
-      console.log(`[MercadoPagoService] Criando registro de pagamento no sistema:`, JSON.stringify(payment, null, 2));
-      
+
       // Criar o pagamento no sistema
       const createdPayment = await this.paymentModel.create(payment);
       
@@ -263,14 +234,10 @@ export class MercadoPagoService {
         throw new MercadoPagoError("Erro ao criar pagamento: ID não gerado");
       }
       
-      console.log(`[MercadoPagoService] Pagamento registrado com ID: ${createdPayment._id}`);
-      
       // Atualizar o status de pagamento do pedido
-      console.log(`[MercadoPagoService] Atualizando status de pagamento do pedido ${order._id}`);
       
       await this.updateOrderPaymentStatus(order._id.toString(), createdPayment);
-      
-      console.log(`[MercadoPagoService] Processamento de pagamento ${paymentId} concluído com sucesso`);
+
       return createdPayment;
     } catch (error) {
       console.error(`[MercadoPagoService] Erro ao processar pagamento ${paymentId}:`, error);
@@ -286,9 +253,7 @@ export class MercadoPagoService {
    * @returns Informações detalhadas do pagamento
    */
   async getPaymentInfo(paymentId: string): Promise<IMercadoPagoPaymentInfo> {
-    try {
-      console.log(`[MercadoPagoService] Obtendo informações do pagamento: ${paymentId}`);
-      
+    try {      
       if (!paymentId) {
         throw new MercadoPagoError("ID do pagamento é obrigatório");
       }
@@ -300,8 +265,7 @@ export class MercadoPagoService {
         if (!response || !response.body) {
           throw new MercadoPagoError("Resposta vazia da API do Mercado Pago");
         }
-        
-        console.log(`[MercadoPagoService] Informações obtidas para pagamento ${paymentId}`);
+
         return response.body;
       } catch (error: any) {
         console.error(`[MercadoPagoService] Erro ao obter informações do pagamento ${paymentId}:`, error);
@@ -341,7 +305,6 @@ export class MercadoPagoService {
     try {
       // Verificar se é uma notificação de pagamento
       if (data.type !== "payment") {
-        console.log(`Notificação ignorada: ${data.type}`);
         return null;
       }
       
@@ -370,8 +333,6 @@ export class MercadoPagoService {
    */
   private async updateOrderPaymentStatus(orderId: string, payment: IPayment): Promise<void> {
     try {
-      console.log(`[MercadoPagoService] Atualizando status de pagamento do pedido ${orderId}`);
-      
       // Buscar o pedido atual
       const order = await this.orderService.getOrderById(orderId);
       if (!order) {
@@ -395,15 +356,11 @@ export class MercadoPagoService {
           date: payment.date,
           method: payment.paymentMethod
         });
-        
-        console.log(`[MercadoPagoService] Pagamento ${payment._id} adicionado ao histórico do pedido ${orderId}`);
       } else {
-        console.log(`[MercadoPagoService] Pagamento ${payment._id} já existe no histórico do pedido ${orderId}`);
       }
       
       // Calcular o total pago
       const totalPaid = paymentHistory.reduce((sum, entry) => sum + entry.amount, 0);
-      console.log(`[MercadoPagoService] Total pago: ${totalPaid} / ${order.finalPrice}`);
       
       // Determinar o novo status de pagamento
       let paymentStatus: "pending" | "partially_paid" | "paid" = "pending";
@@ -412,8 +369,6 @@ export class MercadoPagoService {
       } else if (totalPaid > 0) {
         paymentStatus = "partially_paid";
       }
-      
-      console.log(`[MercadoPagoService] Novo status de pagamento: ${paymentStatus}`);
       
       // Verificar se o status mudou
       if (paymentStatus !== order.paymentStatus || 
@@ -430,12 +385,10 @@ export class MercadoPagoService {
         );
         
         if (updated) {
-          console.log(`[MercadoPagoService] Pedido ${orderId} atualizado para status de pagamento: ${paymentStatus}`);
         } else {
           console.error(`[MercadoPagoService] Falha ao atualizar pedido ${orderId}`);
         }
       } else {
-        console.log(`[MercadoPagoService] Status de pagamento do pedido ${orderId} não alterado (${paymentStatus})`);
       }
     } catch (error) {
       console.error(`[MercadoPagoService] Erro ao atualizar status de pagamento do pedido ${orderId}:`, error);

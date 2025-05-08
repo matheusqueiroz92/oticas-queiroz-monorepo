@@ -151,8 +151,6 @@ export class ProductController {
     try {
       const updateData: any = {};
       const data = req.body;
-
-      console.log(data, "Req. body");
   
       if (data.name !== undefined) updateData.name = data.name;
       if (data.description !== undefined) updateData.description = data.description;
@@ -176,9 +174,6 @@ export class ProductController {
       if (data.stock !== undefined) {
         newStock = Number(data.stock);
         updateData.stock = newStock;
-        
-        // Log para debug
-        console.log(`Atualizando estoque do produto ${req.params.id} de ${originalStock} para ${newStock}`);
       }
       
       // Atualizar campos específicos de cada tipo de produto
@@ -236,8 +231,6 @@ export class ProductController {
             reason,
             req.user?.id || 'system',
           );
-          
-          console.log(`Log de estoque criado para produto ${req.params.id}: ${originalStock} → ${newStock}`);
         } catch (stockError) {
           console.error('Erro ao registrar log de estoque:', stockError);
           // Não impedir a atualização do produto se o log falhar

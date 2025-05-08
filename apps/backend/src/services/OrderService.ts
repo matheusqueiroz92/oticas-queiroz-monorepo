@@ -213,7 +213,6 @@ export class OrderService {
         await this.userModel.update(employeeId, {
           sales: [...sales, orderId]
         });
-        console.log(`Venda ${orderId} adicionada ao funcionário ${employeeId}`);
       }
     } catch (error) {
       console.error(`Erro ao atualizar vendas do funcionário ${employeeId}:`, error);
@@ -402,7 +401,6 @@ export class OrderService {
               await this.userModel.update(employeeId, {
                 sales: [...sales, orderId]
               });
-              console.log(`Venda ${orderId} adicionada ao funcionário ${employeeId}`);
             }
           }
         } catch (error) {
@@ -418,7 +416,6 @@ export class OrderService {
               await this.userModel.update(clientId, {
                 purchases: [...purchases, orderId]
               });
-              console.log(`Compra ${orderId} adicionada ao cliente ${clientId}`);
             }
           }
         } catch (error) {
@@ -446,8 +443,6 @@ export class OrderService {
           await this.userModel.update(clientId, {
             debts: newDebt
           });
-          
-          console.log(`Dívida de ${debtAmount} adicionada ao cliente ${clientId}. Débito total: ${newDebt}`);
           
           // O campo paymentEntry é apenas informativo e não deve gerar um registro no histórico
           // de pagamentos nem afetar o débito do cliente.
@@ -867,7 +862,6 @@ export class OrderService {
               await this.userModel.update(clientId, {
                 debts: newDebt
               });
-              console.log(`Dívida reduzida em ${Math.abs(debtAmount)} para o cliente ${clientId} após cancelamento do pedido`);
             }
           }
         }

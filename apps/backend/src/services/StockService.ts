@@ -65,9 +65,7 @@ export class StockService {
         reason,
         performedBy: new mongoose.Types.ObjectId(performedBy)
       });
-      
-      console.log(`Log de estoque criado: ${operation} de ${quantity} unidades do produto ${productId}`);
-    } catch (error) {
+      } catch (error) {
       console.error('Erro ao criar log de estoque:', error);
     }
   }
@@ -100,7 +98,6 @@ export class StockService {
       
       // Se não for um produto de armação, não mexer no estoque
       if (!this.isFrameProduct(product)) {
-        console.log(`Produto ${productId} (${product.name}) não é uma armação, ignorando atualização de estoque.`);
         await session.commitTransaction();
         return product;
       }
@@ -112,9 +109,7 @@ export class StockService {
       }
       
       const newStock = currentStock - quantity;
-      
-      console.log(`Atualizando estoque do produto ${productId} (${product.name}) de ${currentStock} para ${newStock}`);
-      
+
       // Atualizar o estoque dentro da transação
       const updatedProduct = await this.productModel.decreaseStockWithSession(productId, quantity, session);
       
@@ -180,15 +175,12 @@ export class StockService {
       
       // Se não for um produto de armação, não mexer no estoque
       if (!this.isFrameProduct(product)) {
-        console.log(`Produto ${productId} (${product.name}) não é uma armação, ignorando atualização de estoque.`);
         await session.commitTransaction();
         return product;
       }
       
       const currentStock = product.stock || 0;
       const newStock = currentStock + quantity;
-      
-      console.log(`Atualizando estoque do produto ${productId} (${product.name}) de ${currentStock} para ${newStock}`);
       
       // Atualizar o estoque dentro da transação
       const updatedProduct = await this.productModel.increaseStockWithSession(productId, quantity, session);
@@ -241,8 +233,6 @@ export class StockService {
     performedBy: string = 'system',
     orderId?: string
   ): Promise<void> {
-    console.log(`Processando estoque para ${products.length} produtos. Operação: ${operation}`);
-    
     // Iniciar uma sessão de transação
     const session = await mongoose.connection.startSession();
     session.startTransaction();
@@ -272,12 +262,9 @@ export class StockService {
         
         // Se não for uma armação, pular
         if (!productDetails || !this.isFrameProduct(productDetails)) {
-          console.log(`Produto ${productId} não é uma armação, ignorando estoque.`);
           ignorados++;
           continue;
         }
-        
-        console.log(`Processando estoque para armação ${productId} (${productDetails.name})`);
         
         // Realizar a operação adequada
         let updatedProduct;
@@ -331,7 +318,6 @@ export class StockService {
       
       // Se chegou aqui, tudo ocorreu bem, então comita a transação
       await session.commitTransaction();
-      console.log(`Processamento de estoque concluído com sucesso. Armações atualizadas: ${atualizados}, Ignorados (não armações): ${ignorados}`);
     } catch (error) {
       // Algo deu errado, aborta a transação
       await session.abortTransaction();
@@ -410,8 +396,6 @@ export class StockService {
       } else {
         await StockLog.create(logData);
       }
-      
-      console.log(`Log de estoque criado: ${operation} de ${quantity} unidades do produto ${productId}`);
     } catch (error) {
       console.error('Erro ao criar log de estoque:', error);
       throw error;
