@@ -175,7 +175,7 @@ export default function MercadoPagoSettingsPage() {
                   <Button 
                     variant="outline" 
                     className="w-fit"
-                    onClick={() => window.open("https://www.mercadopago.com.br/developers/panel", "_blank")}
+                    onClick={() => router.push("https://www.mercadopago.com.br/developers/panel")}
                   >
                     <ExternalLink className="h-4 w-4 mr-2" />
                     Acessar Dashboard
@@ -190,7 +190,7 @@ export default function MercadoPagoSettingsPage() {
                   <Button 
                     variant="outline"
                     className="w-fit"
-                    onClick={() => window.open("https://www.mercadopago.com.br/developers/pt/docs/checkout-api/landing", "_blank")}
+                    onClick={() => router.push("https://www.mercadopago.com.br/developers/pt/docs/checkout-api/landing")}
                   >
                     <ExternalLink className="h-4 w-4 mr-2" />
                     Ver Documentação
