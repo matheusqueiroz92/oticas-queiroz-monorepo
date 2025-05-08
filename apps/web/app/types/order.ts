@@ -1,3 +1,4 @@
+import { UseFormReturn } from "react-hook-form";
 import type { Product } from "./product";
 
 export interface Order {
@@ -67,3 +68,64 @@ export interface OrderColumn {
   header: string;
   render?: (data: Order) => React.ReactNode;
 }
+
+// Interface para os dados de olho da receita
+export interface EyeData {
+  sph: number;
+  cyl: number;
+  axis: number;
+  pd: number;
+}
+
+// Interface para os dados de prescrição
+export interface PrescriptionData {
+  doctorName: string;
+  clinicName: string;
+  appointmentDate: string;
+  leftEye: EyeData;
+  rightEye: EyeData;
+  nd: number;
+  oc: number;
+  addition: number;
+  bridge: number;
+  rim: number;
+  vh: number;
+  sh: number;
+}
+
+export interface OrderFormValues {
+  clientId: string;
+  employeeId: string;
+  institutionId: string;
+  isInstitutionalOrder: boolean;
+  products: Product[];
+  serviceOrder: number;
+  paymentMethod: string;
+  paymentEntry: number;
+  installments?: number;
+  orderDate: string;
+  deliveryDate?: string;
+  status: string;
+  laboratoryId?: string;
+  observations?: string;
+  totalPrice: number;
+  discount: number;
+  finalPrice: number;
+  prescriptionData: {
+    doctorName: string;
+    clinicName: string;
+    appointmentDate: string;
+    leftEye: EyeData;
+    rightEye: EyeData;
+    nd: number;
+    oc: number;
+    addition: number;
+    bridge: number;
+    rim: number;
+    vh: number;
+    sh: number;
+  };
+  [key: string]: unknown;
+}
+
+export type OrderFormReturn = UseFormReturn<OrderFormValues, any, undefined>;

@@ -60,7 +60,7 @@ export default function ProductRegisterForm({ title, description }: ProductRegis
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const { handleCreateProduct } = useProducts();
-  const [selectedProductType, setSelectedProductType] = useState<Product['productType']>("clean_lenses");
+  const [selectedProductType, setSelectedProductType] = useState<Product['productType']>("lenses");
   const [currentStep, setCurrentStep] = useState(0);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -371,7 +371,6 @@ export default function ProductRegisterForm({ title, description }: ProductRegis
                           accept="image/jpeg,image/png,image/webp"
                           onChange={(e) => {
                             handleFileChange(e);
-                            // Aqui, não precisamos usar field.onChange porque vamos gerenciar o arquivo separadamente
                           }}
                           className="h-10"
                         />

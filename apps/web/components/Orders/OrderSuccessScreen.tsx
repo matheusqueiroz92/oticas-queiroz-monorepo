@@ -1,6 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { CheckCircle2 } from "lucide-react";
 import OrderPdfGenerator from "@/components/Orders/exports/OrderPdfGenerator";
+import OrderCompactPdfGenerator from "@/components/Orders/exports/OrderCompactPdfGenerator";
+import OrderPrintButton from "@/components/Orders/exports/OrderPrintButton";
+import { Separator } from "@/components/ui/separator";
 import type { Customer } from "@/app/types/customer";
 
 interface OrderSuccessScreenProps {
@@ -45,13 +48,44 @@ export default function OrderSuccessScreen({
       </div>
       
       <div className="space-y-4">
-        <OrderPdfGenerator
-          formData={{
-            ...form.getValues(),
-            _id: submittedOrder?._id
-          }}
-          customer={selectedCustomer}
-        />
+        {/* Opções de exportação e impressão */}
+        <div className="bg-white p-3 rounded border shadow-sm">
+          <h4 className="text-sm font-medium mb-3">Exportar/Imprimir Pedido</h4>
+          
+          <div className="grid grid-cols-1 gap-3 mb-3">
+            {/* Novo botão de PDF compacto (2 vias) */}
+            <OrderCompactPdfGenerator
+              formData={{
+                ...form.getValues(),
+                _id: submittedOrder?._id
+              }}
+              customer={selectedCustomer}
+            />
+            
+            {/* Botão de impressão direta */}
+            <OrderPrintButton
+              formData={{
+                ...form.getValues(),
+                _id: submittedOrder?._id
+              }}
+              customer={selectedCustomer}
+            />
+          </div>
+          
+          <Separator className="my-3" />
+          
+          <div className="grid grid-cols-1">
+            {/* PDF completo original */}
+            <div className="text-xs text-gray-500 mb-2">Versão completa detalhada:</div>
+            <OrderPdfGenerator
+              formData={{
+                ...form.getValues(),
+                _id: submittedOrder?._id
+              }}
+              customer={selectedCustomer}
+            />
+          </div>
+        </div>
         
         <div className="grid grid-cols-3 gap-3 mt-4">
           <Button 
@@ -79,7 +113,7 @@ export default function OrderSuccessScreen({
             onClick={onCreateNewOrder}
             size="sm"
             className="text-sm h-9"
-          >
+                      >
             Criar Novo Pedido
           </Button>
         </div>
