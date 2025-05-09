@@ -201,6 +201,33 @@ export function useCustomers(options: UseCustomersOptions = {}) {
     setCurrentPage(newPage);
   }, []);
 
+  const fetchCustomerById = useCallback(async (id: string) => {
+    if (!id) return null;
+    
+    try {
+      // Primeiro verificar no cache do React Query
+      const cachedCustomer = queryClient.getQueryData<Customer>(
+        QUERY_KEYS.USERS.DETAIL(id)
+      );
+      
+      if (cachedCustomer) {
+        return cachedCustomer;
+      }
+      
+      // Se não existir no cache, buscar da API
+      const response = await api.get(API_ROUTES.USERS.BY_ID(id));
+      const customer = response.data;
+      
+      // Salvar no cache para uso futuro
+      queryClient.setQueryData(QUERY_KEYS.USERS.DETAIL(id), customer);
+      
+      return customer;
+    } catch (error) {
+      console.error(`Erro ao buscar cliente ${id}:`, error);
+      return null;
+    }
+  }, [queryClient]);
+
   return {
     customers,
     isLoading,
@@ -213,6 +240,7 @@ export function useCustomers(options: UseCustomersOptions = {}) {
     navigateToNewCustomer,
     getUserImageUrl,
     fetchAllCustomers,
+    fetchCustomerById,
     limit: pagination.limit,
     currentPage: pagination.currentPage,
     totalPages: pagination.totalPages,

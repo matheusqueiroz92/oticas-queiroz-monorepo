@@ -448,10 +448,10 @@ const OrderSection = ({ data, customer, isFirstVia = true }: OrderPDFProps & { i
             <View style={styles.prescriptionTableRow}>
               <Text style={[styles.prescriptionTableCell, { width: 40, fontWeight: "bold" }]}>ESQ</Text>
               <Text style={styles.prescriptionTableCell}>
-                {formatRefractionValue(data.prescriptionData.leftEye.sph)}
+                {data.prescriptionData.leftEye.sph}
               </Text>
               <Text style={styles.prescriptionTableCell}>
-                {formatRefractionValue(data.prescriptionData.leftEye.cyl)}
+                {data.prescriptionData.leftEye.cyl}
               </Text>
               <Text style={styles.prescriptionTableCell}>
                 {data.prescriptionData.leftEye.axis}°
@@ -464,10 +464,10 @@ const OrderSection = ({ data, customer, isFirstVia = true }: OrderPDFProps & { i
             <View style={styles.prescriptionTableRow}>
               <Text style={[styles.prescriptionTableCell, { width: 40, fontWeight: "bold" }]}>DIR</Text>
               <Text style={styles.prescriptionTableCell}>
-                {formatRefractionValue(data.prescriptionData.rightEye.sph)}
+                {data.prescriptionData.rightEye.sph}
               </Text>
               <Text style={styles.prescriptionTableCell}>
-                {formatRefractionValue(data.prescriptionData.rightEye.cyl)}
+                {data.prescriptionData.rightEye.cyl}
               </Text>
               <Text style={styles.prescriptionTableCell}>
                 {data.prescriptionData.rightEye.axis}°

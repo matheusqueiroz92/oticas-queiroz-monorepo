@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog";
 
 // Importamos o componente de PDF compacto e sua interface
-import OrderPDF, { OrderPDFProps } from './OrderCompactPdf';
+import { OrderCompactPDF, OrderPDFProps } from './OrderCompactPdf';
 
 interface OrderPrintButtonProps {
   formData: OrderFormValues & { _id?: string };
@@ -70,7 +70,7 @@ const OrderPrintButton: React.FC<OrderPrintButtonProps> = ({
           </DialogHeader>
           <div className="h-full w-full">
             <PDFViewer style={{ width: '100%', height: '100%', border: 'none' }}>
-              <OrderPDF data={formData} customer={customer} />
+              <OrderCompactPDF data={formData} customer={customer} />
             </PDFViewer>
           </div>
           <div className="flex justify-end gap-2 mt-4">
@@ -81,7 +81,7 @@ const OrderPrintButton: React.FC<OrderPrintButtonProps> = ({
               Fechar
             </Button>
             <PDFDownloadLink
-              document={<OrderPDF data={formData} customer={customer} />}
+              document={<OrderCompactPDF data={formData} customer={customer} />}
               fileName={`pedido-${formData._id || new Date().toISOString().split("T")[0]}.pdf`}
             >
               {({ loading, error }) => (

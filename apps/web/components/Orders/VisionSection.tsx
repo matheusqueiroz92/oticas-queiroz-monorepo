@@ -23,14 +23,17 @@ export default function VisionSection({ eye, form }: VisionSectionProps) {
 
   // Inicializar os valores dos inputs baseados nos valores do formulário
   useEffect(() => {
+    // Para campos numéricos, verificamos se não são undefined, null ou zero
     const sph = form.getValues(`prescriptionData.${eye}Eye.sph`);
-    if (sph !== '' && sph !== '0' && sph !== undefined ) {
-      setSphInput(sph.toString());
+    if (sph) {
+      // Converter formato do backend (com ponto) para formato de exibição (com vírgula)
+      setSphInput(String(sph).replace('.', ','));
     }
 
     const cyl = form.getValues(`prescriptionData.${eye}Eye.cyl`);
-    if (cyl !== '' && cyl !== '0' && cyl !== undefined) {
-      setCylInput(cyl.toString());
+    if (cyl) {
+      // Converter formato do backend (com ponto) para formato de exibição (com vírgula)
+      setCylInput(String(cyl).replace('.', ','));
     }
 
     const axis = form.getValues(`prescriptionData.${eye}Eye.axis`);
@@ -75,18 +78,18 @@ export default function VisionSection({ eye, form }: VisionSectionProps) {
     const inputValue = e.target.value;
     setInputState(inputValue);
     
-    console.log("Input value:", inputValue); // Log para depuração
-    
     // Se o campo estiver vazio, definimos como string vazia
     if (inputValue === "") {
       onChange("");
       return;
     }
     
-    // Validar formato: permite +, -, números e ponto decimal
-    if (/^[+-]?\d*\.?\d*$/.test(inputValue)) {
-      console.log("Valid dioptria value:", inputValue); // Log para depuração
-      onChange(inputValue); // Passa o valor diretamente como string
+    // Validar formato: permite +, -, números e tanto vírgula quanto ponto decimal
+    if (/^[+-]?\d*[.,]?\d*$/.test(inputValue)) {
+      // Normalizar para formato consistente (substituir vírgula por ponto para armazenamento)
+      const normalizedValue = inputValue.replace(',', '.');
+      
+      onChange(normalizedValue); // Passa o valor normalizado para armazenamento
     }
   };
 

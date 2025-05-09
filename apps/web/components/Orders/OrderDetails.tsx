@@ -33,7 +33,6 @@ import {
 import { useOrders } from "@/hooks/useOrders";
 import { useToast } from "@/hooks/useToast";
 import type { Order } from "@/app/types/order";
-import { formatRefractionValue } from "@/app/utils/formatters";
 import OrderReceiptPrinter from "./OrderReceiptPrint";
 
 interface OrderDetailsProps {

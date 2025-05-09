@@ -1,11 +1,12 @@
-import {
-  PDFDownloadLink,
-} from "@react-pdf/renderer";
+import { useEffect, useState } from "react";
+import { PDFDownloadLink } from "@react-pdf/renderer";
 import { Button } from "@/components/ui/button";
 import { FileDown } from "lucide-react";
-import type { Customer } from "../../../app/types/customer";
+import type { Customer } from "@/app/types/customer";
 import type { OrderFormValues } from "@/app/types/order";
-import OrderPDF from "./OrderCompactPdf";
+import { OrderCompactPDF } from "./OrderCompactPdf";
+import { api } from "@/app/services/authService";
+import { API_ROUTES } from "@/app/constants/api-routes";
 
 interface OrderCompactPdfGeneratorProps {
   formData: OrderFormValues & { _id?: string };
@@ -16,9 +17,39 @@ export default function OrderCompactPdfGenerator({
   formData,
   customer,
 }: OrderCompactPdfGeneratorProps) {
+  const [customerData, setCustomerData] = useState<Customer | null>(customer);
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // Fetch customer data if not provided
+  useEffect(() => {
+    const fetchCustomer = async () => {
+      // Só buscar se não tiver cliente e tiver um clientId
+      if (!customer && formData.clientId) {
+        try {
+          setIsLoading(true);
+          console.log("Buscando cliente pelo ID:", formData.clientId);
+          
+          const response = await api.get(API_ROUTES.USERS.BY_ID(formData.clientId));
+          
+          console.log("Dados do cliente recebidos:", response.data);
+          
+          if (response.data) {
+            setCustomerData(response.data);
+          }
+        } catch (error) {
+          console.error("Erro ao buscar dados do cliente:", error);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+    
+    fetchCustomer();
+  }, [customer, formData.clientId]);
+  
   return (
     <PDFDownloadLink
-      document={<OrderPDF data={formData} customer={customer} />}
+      document={<OrderCompactPDF data={formData} customer={customerData} />}
       fileName={`pedido-compacto-${formData._id || new Date().toISOString().split("T")[0]}.pdf`}
       className="block w-full"
     >
@@ -26,11 +57,11 @@ export default function OrderCompactPdfGenerator({
         <Button
           type="button"
           className="w-full"
-          disabled={loading || !!error}
+          disabled={loading || !!error || isLoading}
           variant="outline"
         >
           <FileDown className="mr-2 h-4 w-4" />
-          {loading ? "Gerando PDF..." : "Baixar PDF (2 vias)"}
+          {loading || isLoading ? "Carregando dados..." : "Baixar PDF (2 vias)"}
         </Button>
       )}
     </PDFDownloadLink>

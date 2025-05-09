@@ -408,14 +408,10 @@ const OrderPDFDocument = ({
                     <View style={styles.tableRow}>
                       <Text style={styles.tableCell}>Esquerdo</Text>
                       <Text style={styles.tableCell}>
-                        {formatRefractionValue(
-                          order.prescriptionData.leftEye.sph
-                        )}
+                        {order.prescriptionData.leftEye.sph}
                       </Text>
                       <Text style={styles.tableCell}>
-                        {formatRefractionValue(
-                          order.prescriptionData.leftEye.cyl
-                        )}
+                        {order.prescriptionData.leftEye.cyl}
                       </Text>
                       <Text style={styles.tableCell}>
                         {order.prescriptionData.leftEye.axis || "N/A"}°
@@ -429,14 +425,10 @@ const OrderPDFDocument = ({
                     <View style={styles.tableRow}>
                       <Text style={styles.tableCell}>Direito</Text>
                       <Text style={styles.tableCell}>
-                        {formatRefractionValue(
-                          order.prescriptionData.rightEye.sph
-                        )}
+                        {order.prescriptionData.rightEye.sph}
                       </Text>
                       <Text style={styles.tableCell}>
-                        {formatRefractionValue(
-                          order.prescriptionData.rightEye.cyl
-                        )}
+                        {order.prescriptionData.rightEye.cyl}
                       </Text>
                       <Text style={styles.tableCell}>
                         {order.prescriptionData.rightEye.axis || "N/A"}°

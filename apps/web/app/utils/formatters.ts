@@ -167,15 +167,22 @@ export function getOrderStatusClass(status: string): string {
 /**
  * Formata valores de grau
  */
-export function formatRefractionValue(value?: number): string {
-  if (value === undefined || value === null) return "N/A";
+// Em formatters.ts ou no componente onde formatRefractionValue está definido
+export function formatRefractionValue(value?: string | number): string {
+  if (value === undefined || value === null || value === "") return "N/A";
 
   // Se o valor for exatamente zero, mostrar como "Neutro"
-  if (value === 0) return "Neutro";
+  if (value === 0 || value === "0" || value === "+0" || value === "-0") return "Neutro";
+
+  // Para string, primeiro converter para número
+  const numValue = typeof value === 'string' ? parseFloat(value) : value;
+  
+  // Se não foi possível converter, retornar o valor original
+  if (isNaN(numValue)) return String(value);
 
   // Para outros valores, mostrar sinal de + para positivos
-  const prefix = value > 0 ? "+" : "";
-  return `${prefix}${value.toFixed(2).replace(".", ",")}`;
+  const prefix = numValue > 0 ? "+" : "";
+  return `${prefix}${numValue.toFixed(2).replace(".", ",")}`;
 }
 
 /**

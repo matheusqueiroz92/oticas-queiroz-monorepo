@@ -1,9 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { CheckCircle2 } from "lucide-react";
-import OrderPdfGenerator from "@/components/Orders/exports/OrderPdfGenerator";
 import OrderCompactPdfGenerator from "@/components/Orders/exports/OrderCompactPdfGenerator";
 import OrderPrintButton from "@/components/Orders/exports/OrderPrintButton";
-import { Separator } from "@/components/ui/separator";
 import type { Customer } from "@/app/types/customer";
 
 interface OrderSuccessScreenProps {
@@ -23,6 +21,7 @@ export default function OrderSuccessScreen({
   onViewOrderDetails,
   onCreateNewOrder,
 }: OrderSuccessScreenProps) {
+  console.log("Customer data in OrderSuccessScreen:", selectedCustomer);
   return (
     <div className="bg-green-50 rounded-lg border border-green-100 p-4">
       <div className="flex flex-col items-center text-center mb-4">
@@ -59,7 +58,7 @@ export default function OrderSuccessScreen({
                 ...form.getValues(),
                 _id: submittedOrder?._id
               }}
-              customer={selectedCustomer}
+              customer={submittedOrder?.customer || selectedCustomer}
             />
             
             {/* Botão de impressão direta */}
@@ -70,21 +69,7 @@ export default function OrderSuccessScreen({
               }}
               customer={selectedCustomer}
             />
-          </div>
-          
-          <Separator className="my-3" />
-          
-          <div className="grid grid-cols-1">
-            {/* PDF completo original */}
-            <div className="text-xs text-gray-500 mb-2">Versão completa detalhada:</div>
-            <OrderPdfGenerator
-              formData={{
-                ...form.getValues(),
-                _id: submittedOrder?._id
-              }}
-              customer={selectedCustomer}
-            />
-          </div>
+          </div>          
         </div>
         
         <div className="grid grid-cols-3 gap-3 mt-4">

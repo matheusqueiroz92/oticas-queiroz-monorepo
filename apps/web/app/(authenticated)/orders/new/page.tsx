@@ -40,18 +40,14 @@ export default function NewOrderPage() {
 
   const { 
     customers: customersData,
-    isLoading: isLoadingCustomers
+    isLoading: isLoadingCustomers,
+    fetchCustomerById
   } = useCustomers();
+  
 
   const form = createOrderform();
 
-  const submitOrderForm = async (formData: OrderFormValues) => {
-    console.log("Form data before submission:", formData);
-    console.log("Left eye sph:", formData.prescriptionData.leftEye.sph);
-    console.log("Left eye cyl:", formData.prescriptionData.leftEye.cyl);
-    console.log("Right eye sph:", formData.prescriptionData.rightEye.sph);
-    console.log("Right eye cyl:", formData.prescriptionData.rightEye.cyl);
-    
+  const submitOrderForm = async (formData: OrderFormValues) => {    
     if (selectedProducts.length === 0) {
       toast({
         variant: "destructive",
@@ -62,8 +58,7 @@ export default function NewOrderPage() {
     }
   
     try {
-      console.log("Prescription data before processing:", formData.prescriptionData);
-
+      console.log("Selected customer before API call:", selectedCustomer);
       const containsLenses = selectedProducts.some(product => 
         product.productType === 'lenses' || 
         (product.name && product.name.toLowerCase().includes('lente'))
@@ -71,20 +66,28 @@ export default function NewOrderPage() {
   
       const initialStatus = containsLenses ? 'pending' : 'ready';
 
-      // Função auxiliar que preserva valores válidos e trata strings vazias
-      const preserveDioptriaValue = (value: string | undefined | null): string => {
-          // Se for um valor vazio ou undefined/null, retorna string vazia
-          if (value === undefined || value === null || value === "") {
-            return "";
-          }
-        
-        // Se for um valor que consiste apenas de sinais ou zeros, como "+0", "-0", "0"
-        if (/^[+-]?0*$/.test(value)) {
+      // Função auxiliar para normalizar valores de dioptria
+      const normalizeDioptriaValue = (value: string | undefined | null): string => {
+        if (value === undefined || value === null || value === "") {
           return "";
         }
         
-        // Caso contrário, retorna o valor como está
-        return value;
+        // Garantir que vírgulas são convertidas para pontos
+        const normalizedValue = value.replace(',', '.');
+        
+        // Verificar se é um valor numérico válido
+        const numValue = parseFloat(normalizedValue);
+        if (isNaN(numValue)) {
+          return "";
+        }
+        
+        // Se for zero, retornar string vazia
+        if (numValue === 0) {
+          return "";
+        }
+        
+        // Retornar com sinal explícito
+        return numValue > 0 ? `+${numValue}` : `${numValue}`;
       };
   
       // Criar o objeto de dados para envio, preservando valores de prescrição
@@ -110,14 +113,14 @@ export default function NewOrderPage() {
           clinicName: formData.prescriptionData.clinicName || "Não aplicável",
           appointmentDate: formData.prescriptionData.appointmentDate || new Date().toISOString().split("T")[0],
           leftEye: {
-            sph: preserveDioptriaValue(formData.prescriptionData.leftEye.sph),
-            cyl: preserveDioptriaValue(formData.prescriptionData.leftEye.cyl),
+            sph: normalizeDioptriaValue(formData.prescriptionData.leftEye.sph),
+            cyl: normalizeDioptriaValue(formData.prescriptionData.leftEye.cyl),
             axis: formData.prescriptionData.leftEye.axis || 0,
             pd: formData.prescriptionData.leftEye.pd || 0,
           },
           rightEye: {
-            sph: preserveDioptriaValue(formData.prescriptionData.rightEye.sph),
-            cyl: preserveDioptriaValue(formData.prescriptionData.rightEye.cyl),
+            sph: normalizeDioptriaValue(formData.prescriptionData.rightEye.sph),
+            cyl: normalizeDioptriaValue(formData.prescriptionData.rightEye.cyl),
             axis: formData.prescriptionData.rightEye.axis || 0,
             pd: formData.prescriptionData.rightEye.pd || 0,
           },
@@ -134,14 +137,14 @@ export default function NewOrderPage() {
         discount: formData.discount,
         finalPrice: formData.finalPrice,
       };
-    
-      // Log para depuração dos dados processados
-      console.log("Processed prescription data:", orderData.prescriptionData);
   
       const newOrder = await handleCreateOrder(orderData as any);
       
       if (newOrder) {
-        setSubmittedOrder(newOrder);
+        setSubmittedOrder({
+          ...newOrder,
+          customer: selectedCustomer
+        });
   
         toast({
           title: "Pedido criado com sucesso",
@@ -334,10 +337,16 @@ export default function NewOrderPage() {
     form.setValue("finalPrice", finalPrice);
   };
 
-  const handleClientSelect = (clientId: string, name: string) => {
+  const handleClientSelect = async (clientId: string, name: string) => {
     form.setValue("clientId", clientId);
-    const customer = customersData?.find((c: Customer) => c._id === clientId);
-    setSelectedCustomer(customer || null);
+    
+    try {
+      const customer = await fetchCustomerById(clientId);
+      setSelectedCustomer(customer);
+    } catch (error) {
+      console.error("Erro ao buscar detalhes do cliente:", error);
+      setSelectedCustomer({ _id: clientId, name, role: "customer" } as Customer);
+    }
   };
 
   const calculateInstallmentValue = () => {
