@@ -33,14 +33,15 @@ export default function CloseCashRegisterPage() {
 
   const form = createCloseCashRegisterForm();
   
+  const closingBalance = form.watch("closingBalance");
+  
   useEffect(() => {
     if (cashRegister && cashRegister.status === "open") {
       form.setValue("closingBalance", cashRegister.currentBalance);
       setDifference(0);
     }
   }, [cashRegister, form]);
-
-  const closingBalance = form.watch("closingBalance");
+  
 
   useEffect(() => {
     if (cashRegister && typeof closingBalance === "number") {
@@ -72,6 +73,11 @@ export default function CloseCashRegisterPage() {
     });
   };
 
+  const handleCancel = () => {
+    router.push("/cash-register");
+  };
+
+  {/* Mensagem de erro */}
   if (cashRegisterError) {
     const errorMessage =
       cashRegisterError instanceof Error
@@ -97,6 +103,7 @@ export default function CloseCashRegisterPage() {
     );
   }
 
+  {/* Mensagem de caixa já fechado */}
   if (cashRegister && cashRegister.status !== "open") {
     return (
       <div className="max-w-3xl mx-auto p-4">
@@ -117,6 +124,7 @@ export default function CloseCashRegisterPage() {
     );
   }
 
+  {/* Loading */}
   if (isLoading || !cashRegister) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -124,10 +132,6 @@ export default function CloseCashRegisterPage() {
       </div>
     );
   }
-
-  const handleCancel = () => {
-    router.push("/cash-register");
-  };
 
   return (
     <div className="max-w-3xl mx-auto p-4 space-y-6">

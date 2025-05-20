@@ -1,5 +1,3 @@
-"use client";
-
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,7 +27,7 @@ import {
 } from "@/components/ui/card";
 import { 
   Loader2, 
-  ShoppingBag, 
+  ShoppingBag,
   Tag, 
   DollarSign, 
   ChevronRight, 
