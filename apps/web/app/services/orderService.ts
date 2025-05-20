@@ -2,6 +2,7 @@ import { api } from "./authService";
 import type { Order } from "../types/order";
 import { normalizeOrder, normalizeOrders } from "../utils/data-normalizers";
 import { API_ROUTES } from "../constants/api-routes"
+import axios from "axios";
 
 export interface OrderFilters {
   search?: string;
@@ -138,6 +139,61 @@ export async function getOrdersByClient(clientId: string): Promise<Order[] | nul
   } catch (error) {
     console.error("Erro ao buscar pedidos do cliente:", error);
     return [];
+  }
+}
+
+/**
+ * Atualiza os dados de um pedido existente
+ * @param id ID do pedido
+ * @param orderData Dados do pedido a serem atualizados
+ * @returns Pedido atualizado
+ * @throws Error se a atualização falhar
+ */
+export async function updateOrder(
+  id: string,
+  orderData: Partial<Order>
+): Promise<Order | null> {
+  try {
+    // Garante que o ID fornecido seja válido
+    if (!id || typeof id !== 'string') {
+      throw new Error("ID do pedido inválido");
+    }
+    
+    // Valida dados essenciais
+    if (!orderData) {
+      throw new Error("Dados do pedido ausentes");
+    }
+    
+    // Faz a requisição PUT para a API
+    const response = await api.put(API_ROUTES.ORDERS.UPDATE(id), orderData);
+    
+    // Normaliza os dados do pedido retornado
+    return normalizeOrder(response.data);
+  } catch (error) {
+    console.error(`Erro ao atualizar pedido ${id}:`, error);
+    
+    // Extrai mensagem de erro da resposta da API
+    if (axios.isAxiosError(error)) {
+      if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      }
+      
+      // Erros específicos baseados no status da resposta
+      if (error.response?.status === 400) {
+        throw new Error("Dados inválidos para atualização do pedido");
+      }
+      
+      if (error.response?.status === 404) {
+        throw new Error("Pedido não encontrado");
+      }
+      
+      if (error.response?.status === 403) {
+        throw new Error("Sem permissão para atualizar este pedido");
+      }
+    }
+    
+    // Erro genérico
+    throw new Error("Erro ao atualizar pedido. Tente novamente.");
   }
 }
 

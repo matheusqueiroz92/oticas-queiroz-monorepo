@@ -11,6 +11,7 @@ import {
   updateOrderLaboratory,
   createOrder,
   getOrdersByClient,
+  updateOrder,
 } from "@/app/services/orderService";
 import { QUERY_KEYS } from "../app/constants/query-keys";
 import type { Order } from "@/app/types/order";
@@ -227,6 +228,45 @@ export function useOrders(options: UseOrdersOptions = {}) {
     });
   };
 
+  const updateOrderMutation = useMutation({
+    mutationFn: async ({ id, orderData }: { id: string, orderData: Partial<Order> }) => {
+      try {
+        // Use the service function instead of directly calling the API
+        return await updateOrder(id, orderData);
+      } catch (error) {
+        console.error(`Error updating order ${id}:`, error);
+        throw error;
+      }
+    },
+    onSuccess: (data, { id }) => {
+      toast({
+        title: "Pedido atualizado",
+        description: `O pedido #${id.substring(0, 8)} foi atualizado com sucesso.`,
+      });
+
+      // Invalidate multiple related queries
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS.ALL] });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.ORDERS.DETAIL(id) });
+      
+      // Refresh dashboard stats if they exist
+      queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
+    },
+    onError: (error) => {
+      console.error("Erro ao atualizar pedido:", error);
+      
+      // Display more specific error message
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : "Não foi possível atualizar o pedido.";
+      
+      toast({
+        variant: "destructive",
+        title: "Erro ao atualizar pedido",
+        description: errorMessage,
+      });
+    }
+  });
+
   const updateOrderStatusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: string }) =>
       updateOrderStatus(id, status),
@@ -294,6 +334,18 @@ export function useOrders(options: UseOrdersOptions = {}) {
       });
     }
   });
+
+  const handleUpdateOrder = useCallback(async (id: string, orderData: Partial<Order>) => {
+    if (!id || typeof id !== 'string') {
+      throw new Error("ID do pedido inválido");
+    }
+    
+    if (!orderData.clientId || !orderData.products || orderData.products.length === 0) {
+      throw new Error("Dados do pedido incompletos");
+    }
+    
+    return updateOrderMutation.mutateAsync({ id, orderData });
+  }, [updateOrderMutation]);
    
   const handleUpdateOrderStatus = useCallback((id: string, status: string) => {
     return updateOrderStatusMutation.mutateAsync({ id, status });
@@ -527,6 +579,7 @@ export function useOrders(options: UseOrdersOptions = {}) {
   return {
     orders,
     isLoading,
+    isUpdating: updateOrderMutation.isPending,
     error: error ? String(error) : null,
     currentPage,
     totalPages,
@@ -543,6 +596,7 @@ export function useOrders(options: UseOrdersOptions = {}) {
     updateFilters,
     fetchOrderById,
     useClientOrders,
+    handleUpdateOrder,
     handleUpdateOrderStatus,
     handleUpdateOrderLaboratory,
     handleCreateOrder,

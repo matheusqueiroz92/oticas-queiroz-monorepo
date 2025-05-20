@@ -29,11 +29,13 @@ import {
   CheckCircle,
   RefreshCw,
   AlertTriangle,
+  PencilIcon,
 } from "lucide-react";
 import { useOrders } from "@/hooks/useOrders";
 import { useToast } from "@/hooks/useToast";
 import type { Order } from "@/app/types/order";
 import OrderReceiptPrinter from "./OrderReceiptPrint";
+import { useRouter } from "next/navigation";
 
 interface OrderDetailsProps {
   order: Order;
@@ -47,6 +49,7 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
   const [laboratoryInfo, setLaboratoryInfo] = useState<any>(null);
   
   const { toast } = useToast();
+  const router = useRouter();
   
   const { 
     getStatusBadge,
@@ -641,6 +644,15 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
           <Button variant="outline" onClick={onGoBack} className="text-sm gap-2">
             <ChevronLeft className="h-4 w-4" />
             Voltar para Pedidos
+          </Button>
+
+          <Button 
+            variant="outline" 
+            onClick={() => router.push(`/orders/${order._id}/edit`)} 
+            className="text-sm gap-2"
+          >
+            <PencilIcon className="h-4 w-4" />
+            Editar
           </Button>
           
           <div className="flex gap-3">

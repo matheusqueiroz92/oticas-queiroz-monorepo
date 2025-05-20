@@ -710,6 +710,55 @@ router.get(
 
 /**
  * @swagger
+ * /api/orders/{id}:
+ *   put:
+ *     summary: Atualiza o pedido
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Orders]
+ *     description: Permite que administradores e funcionários atualizem o pedido
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID do pedido
+ *         example: "60d21b4667d0d8992e610c85"
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Pedido atualizado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Order'
+ *       400:
+ *         description: Pedido inválido ou transição não permitida
+ *       404:
+ *         description: Pedido não encontrado
+ *       401:
+ *         description: Não autorizado
+ *       403:
+ *         description: Acesso negado. Requer permissão de administrador ou funcionário.
+ *       500:
+ *         description: Erro interno do servidor
+ */
+router.put(
+  "/orders/:id",
+  authenticate,
+  authorize(["admin", "employee"]),
+  validateAndUpdateRelationships,
+  asyncHandler(orderController.updateOrder.bind(orderController))
+);
+
+/**
+ * @swagger
  * /api/orders/{id}/status:
  *   put:
  *     summary: Atualiza o status de um pedido
