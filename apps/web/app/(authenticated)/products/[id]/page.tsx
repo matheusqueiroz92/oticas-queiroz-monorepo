@@ -32,6 +32,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/useToast";
+import { getImageUrl } from "@/app/utils/image-utils";
 
 export default function ProductDetailsPage() {
   const { id } = useParams<{ id: string }>();
@@ -452,7 +453,7 @@ export default function ProductDetailsPage() {
             <div className="h-[300px] bg-gray-50 flex items-center justify-center">
               {currentProduct.image ? (
                 <img
-                  src={process.env.NEXT_PUBLIC_API_URL+currentProduct.image}
+                  src={getImageUrl(currentProduct.image, 'product')}
                   alt={currentProduct.name}
                   className="w-full h-full object-contain"
                 />

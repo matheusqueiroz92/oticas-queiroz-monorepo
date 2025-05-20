@@ -35,6 +35,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Product } from "@/app/types/product";
 import { PaginationItems } from "@/components/PaginationItems";
+// import { getImageUrl } from "@/app/utils/image-utils";
+// import { ImageWithFallback } from "@/components/ImageWithFallback";
+import { MultiSourceImage } from "@/components/MultiSourceImage";
 
 export default function ProductsPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -157,11 +160,12 @@ export default function ProductsPage() {
           <div className="aspect-square relative bg-gray-50">
             {renderStockBadge(product)}
             {product.image ? (
-              <img
-              src={process.env.NEXT_PUBLIC_API_URL+product.image}
-              alt={product.name}
-              className="w-full h-full object-contain p-2"
-            />
+              <MultiSourceImage
+                imagePath={product.image}
+                alt={product.name}
+                type="product"
+                className="w-full h-full object-contain p-2"
+              />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
               <Package className="h-16 w-16 opacity-20" />
@@ -220,107 +224,108 @@ export default function ProductsPage() {
       </Card>
     ))}
   </div>
-);
+  );
 
-const renderTableView = () => (
-  <div className="border rounded-md overflow-auto">
-    <table className="min-w-full divide-y divide-gray-200">
-      <thead className="bg-gray-50">
-        <tr>
-          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Produto
-          </th>
-          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Tipo
-          </th>
-          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Preço
-          </th>
-          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Estoque
-          </th>
-          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Ações
-          </th>
-        </tr>
-      </thead>
-      <tbody className="bg-white divide-y divide-gray-200">
-        {filteredProducts.map((product) => (
-          <tr key={product._id} className="hover:bg-gray-50">
-            <td className="px-6 py-4 whitespace-nowrap">
-              <div className="flex items-center">
-                <div className="h-10 w-10 flex-shrink-0 bg-gray-100 rounded-md mr-4 overflow-hidden">
-                  {product.image ? (
-                    <img
-                      src={process.env.NEXT_PUBLIC_API_URL+product.image}
-                      alt={product.name}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex items-center justify-center h-full">
-                      <Package className="h-5 w-5 text-gray-400" />
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <div className="font-medium text-gray-900">{product.name}</div>
-                  <div className="text-xs text-gray-500">{product.brand || "-"}</div>
-                </div>
-              </div>
-            </td>
-            <td className="px-6 py-4 whitespace-nowrap">
-              <Badge variant="outline" className="flex items-center gap-1 w-fit">
-                {getProductTypeIcon(product.productType)}
-                <span className="text-xs">{getProductTypeName(product.productType)}</span>
-              </Badge>
-            </td>
-            <td className="px-6 py-4 whitespace-nowrap">
-              <div className="text-sm font-medium text-primary">{formatCurrency(product.sellPrice)}</div>
-              {product.costPrice !== undefined && (
-                <div className="text-xs text-gray-500">Custo: {formatCurrency(product.costPrice)}</div>
-              )}
-            </td>
-            <td className="px-6 py-4 whitespace-nowrap">
-              {(product.productType === 'prescription_frame' || product.productType === 'sunglasses_frame') ? (
-                <div>
-                  {(product as any).stock === 0 ? (
-                    <Badge variant="destructive" className="font-normal">Sem estoque</Badge>
-                  ) : (product as any).stock <= 5 ? (
-                    <Badge variant="outline" className="font-normal bg-amber-500 hover:bg-amber-600">Baixo: {(product as any).stock}</Badge>
-                  ) : (
-                    <Badge variant="outline" className="font-normal bg-green-50 text-green-700 border-green-200">{(product as any).stock} unidades</Badge>
-                  )}
-                </div>
-              ) : (
-                <span className="text-xs text-gray-500">N/A</span>
-              )}
-            </td>
-            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm">
-                    <span className="sr-only">Abrir menu</span>
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => navigateToProductDetails(product._id)}>
-                    <Eye className="h-4 w-4 mr-2" />
-                    Ver detalhes
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigateToEditProduct(product._id)}>
-                    <Edit className="h-4 w-4 mr-2" />
-                    Editar
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </td>
+  const renderTableView = () => (
+    <div className="border rounded-md overflow-auto">
+      <table className="min-w-full divide-y divide-gray-200">
+        <thead className="bg-gray-50">
+          <tr>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Produto
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Tipo
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Preço
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Estoque
+            </th>
+            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Ações
+            </th>
           </tr>
-        ))}
-      </tbody>
-    </table>
-  </div>
-);
+        </thead>
+        <tbody className="bg-white divide-y divide-gray-200">
+          {filteredProducts.map((product) => (
+            <tr key={product._id} className="hover:bg-gray-50">
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="flex items-center">
+                  <div className="h-10 w-10 flex-shrink-0 bg-gray-100 rounded-md mr-4 overflow-hidden">
+                    {product.image ? (
+                      <MultiSourceImage
+                        imagePath={product.image}
+                        alt={product.name}
+                        type="product"
+                        className="w-full h-full object-contain p-2"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+                        <Package className="h-16 w-16 opacity-20" />
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <div className="font-medium text-gray-900">{product.name}</div>
+                    <div className="text-xs text-gray-500">{product.brand || "-"}</div>
+                  </div>
+                </div>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <Badge variant="outline" className="flex items-center gap-1 w-fit">
+                  {getProductTypeIcon(product.productType)}
+                  <span className="text-xs">{getProductTypeName(product.productType)}</span>
+                </Badge>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="text-sm font-medium text-primary">{formatCurrency(product.sellPrice)}</div>
+                {product.costPrice !== undefined && (
+                  <div className="text-xs text-gray-500">Custo: {formatCurrency(product.costPrice)}</div>
+                )}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                {(product.productType === 'prescription_frame' || product.productType === 'sunglasses_frame') ? (
+                  <div>
+                    {(product as any).stock === 0 ? (
+                      <Badge variant="destructive" className="font-normal">Sem estoque</Badge>
+                    ) : (product as any).stock <= 5 ? (
+                      <Badge variant="outline" className="font-normal bg-amber-500 hover:bg-amber-600">Baixo: {(product as any).stock}</Badge>
+                    ) : (
+                      <Badge variant="outline" className="font-normal bg-green-50 text-green-700 border-green-200">{(product as any).stock} unidades</Badge>
+                    )}
+                  </div>
+                ) : (
+                  <span className="text-xs text-gray-500">N/A</span>
+                )}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm">
+                      <span className="sr-only">Abrir menu</span>
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => navigateToProductDetails(product._id)}>
+                      <Eye className="h-4 w-4 mr-2" />
+                      Ver detalhes
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigateToEditProduct(product._id)}>
+                      <Edit className="h-4 w-4 mr-2" />
+                      Editar
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 
 return (
   <div className="space-y-2 max-w-auto mx-auto p-1 md:p-2">

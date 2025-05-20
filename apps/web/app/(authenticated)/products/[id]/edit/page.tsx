@@ -27,6 +27,7 @@ import { useProducts } from "@/hooks/useProducts";
 import { Product } from "@/app/types/product";
 import { getProductTypeName } from "@/app/utils/product-utils";
 import { toast } from "@/hooks/useToast";
+import { getImageUrl } from "@/app/utils/image-utils";
 
 export default function EditProductPage() {
   const { id } = useParams<{ id: string }>();
@@ -73,7 +74,7 @@ export default function EditProductPage() {
       setSelectedProductType(currentProduct.productType);
       
       if (currentProduct.image) {
-        setPreviewUrl(`${process.env.NEXT_PUBLIC_API_URL}${currentProduct.image}`);
+        setPreviewUrl(getImageUrl(currentProduct.image, 'product'));
       }
 
       if (currentProduct.productType === "lenses") {

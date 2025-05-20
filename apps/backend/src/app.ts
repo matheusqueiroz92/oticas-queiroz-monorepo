@@ -46,7 +46,33 @@ class App {
 
     this.app.use(express.json());
 
+    // Log do caminho das imagens para depuração
     const imagesPath = path.join(__dirname, "../../public/images");
+    console.log("Configuração de servidor: Diretório de imagens =", imagesPath);
+    
+    // Verificar se o diretório existe
+    const fs = require('fs');
+    if (fs.existsSync(imagesPath)) {
+      console.log("✅ Diretório de imagens encontrado com sucesso");
+      // Listar os subdiretórios para confirmar a estrutura
+      try {
+        const subdirs = fs.readdirSync(imagesPath)
+          .filter((item: string) => fs.statSync(path.join(imagesPath, item)).isDirectory());
+        console.log("📁 Subdiretórios de imagens:", subdirs);
+      } catch (err) {
+        console.error("❌ Erro ao listar subdiretórios:", err);
+      }
+    } else {
+      console.error("❌ AVISO: Diretório de imagens não encontrado:", imagesPath);
+      // Tentar criar o diretório se não existir
+      try {
+        fs.mkdirSync(imagesPath, { recursive: true });
+        console.log("✅ Diretório de imagens criado com sucesso");
+      } catch (err) {
+        console.error("❌ Erro ao criar diretório de imagens:", err);
+      }
+    }
+
     this.app.use("/images", express.static(imagesPath));
   }
 
@@ -70,6 +96,46 @@ class App {
     this.app.use("/api", legacyClientRoutes);
     this.app.use("/api", reportRoutes);
     this.app.use("/api", mercadoPagoRoutes);
+    
+    // Adicione a rota de diagnóstico aqui
+    this.app.get("/api/debug/images-path", (_req, res) => {
+      const fs = require('fs');
+      const imagesPath = path.join(__dirname, "../../public/images");
+      
+      try {
+        // Verificar se o diretório existe
+        const exists = fs.existsSync(imagesPath);
+        
+        // Se existir, listar arquivos e subdiretórios
+        let files = [];
+        let subdirectories = [];
+        
+        if (exists) {
+          files = fs.readdirSync(imagesPath)
+            .filter((item: string) => !fs.statSync(path.join(imagesPath, item)).isDirectory())
+            .slice(0, 10); // Limitamos a 10 arquivos para não sobrecarregar
+            
+          subdirectories = fs.readdirSync(imagesPath)
+            .filter((item: string) => fs.statSync(path.join(imagesPath, item)).isDirectory());
+        }
+        
+        res.status(200).json({
+          path: imagesPath,
+          exists,
+          files,
+          subdirectories,
+          env: process.env.NODE_ENV,
+          serverBaseUrl: process.env.API_URL || 'não definido',
+        });
+      } catch (error) {
+        res.status(500).json({
+          path: imagesPath,
+          exists: false,
+          error: error instanceof Error ? error.message : "Unknown error",
+          stack: error instanceof Error ? error.stack : "Stack not available"
+        });
+      }
+    });
   }
 
   private database(): void {
