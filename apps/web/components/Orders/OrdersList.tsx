@@ -10,6 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PaginationItems } from "../PaginationItems";
+import { Eye, Pencil } from "lucide-react";
 
 interface OrderTableProps {
   data: Order[];
@@ -19,6 +20,7 @@ interface OrderTableProps {
     render?: (item: Order) => React.ReactNode;
   }[];
   onDetailsClick: (id: string) => void;
+  onEditClick: (id: string) => void;
   currentPage: number;
   totalPages: number;
   setCurrentPage: (page: number) => void;
@@ -31,6 +33,7 @@ export const OrdersList: React.FC<OrderTableProps> = ({
   data,
   columns,
   onDetailsClick,
+  onEditClick,
   currentPage,
   totalPages,
   setCurrentPage,
@@ -102,7 +105,14 @@ export const OrdersList: React.FC<OrderTableProps> = ({
                   variant="outline"
                   onClick={() => onDetailsClick(item._id)}
                 >
-                  Detalhes
+                  <Eye className="h-4 w-4 mr-1" />
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  onClick={() => onEditClick(item._id)}
+                >
+                  <Pencil className="h-4 w-4 mr-1" />
                 </Button>
               </TableCell>
             </TableRow>

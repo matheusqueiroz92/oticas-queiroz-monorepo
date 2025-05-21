@@ -96,7 +96,7 @@ export interface PrescriptionData {
 export interface OrderFormValues {
   clientId: string;
   employeeId: string;
-  institutionId: string;
+  institutionId: string | undefined;
   isInstitutionalOrder: boolean;
   products: Product[];
   serviceOrder: number;

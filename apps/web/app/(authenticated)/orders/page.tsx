@@ -42,6 +42,7 @@ export default function OrdersPage() {
     setCurrentPage,
     updateFilters,
     navigateToOrderDetails,
+    navigateToEditOrder,
     navigateToCreateOrder,
     refreshOrdersList,
     getClientName,
@@ -285,6 +286,7 @@ export default function OrdersPage() {
             data={orders}
             columns={orderColumns}
             onDetailsClick={navigateToOrderDetails}
+            onEditClick={navigateToEditOrder}
             currentPage={currentPage}
             totalPages={totalPages}
             setCurrentPage={setCurrentPage}

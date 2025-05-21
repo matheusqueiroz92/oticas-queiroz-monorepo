@@ -19,7 +19,7 @@ import { OrderEditHistory } from "@/components/Orders/OrderEditHistory";
 import { api } from "@/app/services/authService";
 import { OrderStatusAlert } from "@/components/Orders/OrderStatusAlert";
 import { useProducts } from "@/hooks/useProducts";
-import { useUsers } from "@/hooks/useUsers";
+import { useOrders } from "@/hooks/useOrders";
 
 export default function EditOrderPage() {
   const { id } = useParams() as { id: string };
@@ -36,8 +36,6 @@ export default function EditOrderPage() {
   const [showInstallments, setShowInstallments] = useState(false);
   const [submittedOrder, setSubmittedOrder] = useState<any>(null);
   const [hasLenses, setHasLenses] = useState(false);
-  const [loadingInitialData, setLoadingInitialData] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
   const [changeNote, setChangeNote] = useState("");
   const [orderStatus, setOrderStatus] = useState<string>("pending");
   
@@ -52,121 +50,13 @@ export default function EditOrderPage() {
     fetchCustomerById
   } = useCustomers();
 
-//   const { useUserQuery } = useUsers();
-//   const { data: user, isLoading, error } = useUserQuery(id as string);
+  // Usar o hook useOrders corretamente para buscar o pedido
+  const { fetchOrderById } = useOrders();
+  const { data: order, isLoading: loadingOrder, error: orderError } = fetchOrderById(id);
   
   const form = createOrderform();
 
-  // Fetch order data when component mounts
-  useEffect(() => {
-    const loadOrderData = async () => {
-      try {
-        setLoadingInitialData(true);
-        
-        // Fetch the order details directly via API
-        const response = await api.get(`/api/orders/${id}`);
-        const order = response.data;
-        
-        if (!order) {
-          setLoadError("Não foi possível carregar os dados do pedido");
-          setLoadingInitialData(false);
-          return;
-        }
-        
-        // Set status
-        if (order.status) {
-          setOrderStatus(order.status);
-        }
-        
-        // Process products
-        const orderProducts = Array.isArray(order.products) ? order.products : [order.products];
-        setSelectedProducts(orderProducts.map((p: any) => normalizeProduct(p)));
-        
-        // Check if order contains lenses
-        const containsLenses = checkForLenses(orderProducts);
-        setHasLenses(containsLenses);
-        
-        // Set payment method and installments
-        if (order.paymentMethod === "credit" || 
-            order.paymentMethod === "bank_slip" || 
-            order.paymentMethod === "promissory_note" || 
-            order.paymentMethod === "check") {
-          setShowInstallments(true);
-        }
-        
-        // Set customer
-        if (typeof order.clientId === 'object' && order.clientId?.name) {
-          setSelectedCustomer(order.clientId as Customer);
-        } else {
-          // This is simplified - we're just using basic data
-          setSelectedCustomer({
-            _id: typeof order.clientId === 'string' ? order.clientId : String(order.clientId),
-            name: typeof order.clientId === 'object' && order.clientId?.name 
-              ? order.clientId.name 
-              : "Cliente",
-            role: "customer"
-          } as Customer);
-        }
-        
-        // Populate form with order data
-        form.reset({
-          clientId: typeof order.clientId === 'string' ? order.clientId : String(order.clientId),
-          employeeId: typeof order.employeeId === 'string' ? order.employeeId : String(order.employeeId),
-          institutionId: order.institutionId ? (typeof order.institutionId === 'string' ? order.institutionId : String(order.institutionId)) : undefined,
-          isInstitutionalOrder: !!order.isInstitutionalOrder,
-          products: orderProducts.map((p: any) => normalizeProduct(p)),
-          serviceOrder: typeof order.serviceOrder === "number" ? order.serviceOrder : parseInt(order.serviceOrder || "0", 10),
-          paymentMethod: order.paymentMethod,
-          paymentEntry: order.paymentEntry || 0,
-          installments: order.installments || undefined,
-          orderDate: typeof order.orderDate === 'string' ? order.orderDate.split('T')[0] : new Date(order.orderDate).toISOString().split('T')[0],
-          deliveryDate: order.deliveryDate ? (typeof order.deliveryDate === 'string' ? order.deliveryDate.split('T')[0] : new Date(order.deliveryDate).toISOString().split('T')[0]) : undefined,
-          status: order.status,
-          laboratoryId: order.laboratoryId ? (typeof order.laboratoryId === 'string' ? order.laboratoryId : String(order.laboratoryId)) : "",
-          observations: order.observations || "",
-          totalPrice: order.totalPrice,
-          discount: order.discount || 0,
-          finalPrice: order.finalPrice,
-          prescriptionData: {
-            doctorName: order.prescriptionData?.doctorName || "",
-            clinicName: order.prescriptionData?.clinicName || "",
-            appointmentDate: order.prescriptionData?.appointmentDate ? 
-              (typeof order.prescriptionData.appointmentDate === 'string' ? 
-                order.prescriptionData.appointmentDate.split('T')[0] : 
-                new Date(order.prescriptionData.appointmentDate).toISOString().split('T')[0]) : 
-              new Date().toISOString().split('T')[0],
-            leftEye: {
-              sph: order.prescriptionData?.leftEye?.sph !== undefined ? String(order.prescriptionData.leftEye.sph) : "",
-              cyl: order.prescriptionData?.leftEye?.cyl !== undefined ? String(order.prescriptionData.leftEye.cyl) : "",
-              axis: order.prescriptionData?.leftEye?.axis || 0,
-              pd: order.prescriptionData?.leftEye?.pd || 0,
-            },
-            rightEye: {
-              sph: order.prescriptionData?.rightEye?.sph !== undefined ? String(order.prescriptionData.rightEye.sph) : "",
-              cyl: order.prescriptionData?.rightEye?.cyl !== undefined ? String(order.prescriptionData.rightEye.cyl) : "",
-              axis: order.prescriptionData?.rightEye?.axis || 0,
-              pd: order.prescriptionData?.rightEye?.pd || 0,
-            },
-            nd: order.prescriptionData?.nd || 0,
-            oc: order.prescriptionData?.oc || 0,
-            addition: order.prescriptionData?.addition || 0,
-            bridge: order.prescriptionData?.bridge || 0,
-            rim: order.prescriptionData?.rim || 0,
-            vh: order.prescriptionData?.vh || 0,
-            sh: order.prescriptionData?.sh || 0,
-          }
-        });
-      } catch (error) {
-        console.error("Error loading order data:", error);
-        setLoadError("Erro ao carregar dados do pedido. Tente novamente.");
-      } finally {
-        setLoadingInitialData(false);
-      }
-    };
-    
-    loadOrderData();
-  }, [id, form]);
-
+  // Carregar dados do funcionário logado
   useEffect(() => {
     const userId = Cookies.get("userId");
     const name = Cookies.get("name");
@@ -183,18 +73,147 @@ export default function EditOrderPage() {
     }
   }, []);
 
+  // Processar dados do pedido quando ele for carregado
+  useEffect(() => {
+    const processOrderData = async () => {
+      if (!order) return;
+      
+      try {
+        console.log("Processando dados do pedido:", order);
+        
+        // Set status
+        if (order.status) {
+          setOrderStatus(order.status);
+        }
+        
+        // Process products
+        const orderProducts = Array.isArray(order.products) ? order.products : [order.products];
+        const normalizedProducts = orderProducts.map((p: any) => normalizeProduct(p));
+        setSelectedProducts(normalizedProducts);
+        
+        // Check if order contains lenses
+        const containsLenses = checkForLenses(normalizedProducts);
+        setHasLenses(containsLenses);
+        
+        // Set payment method and installments
+        if (order.paymentMethod === "credit" || 
+            order.paymentMethod === "bank_slip" || 
+            order.paymentMethod === "promissory_note" || 
+            order.paymentMethod === "check") {
+          setShowInstallments(true);
+        }
+        
+        // Set customer - buscar dados completos do cliente
+        let customerData: Customer | null = null;
+        
+        if (typeof order.clientId === 'object' && 'name' in order.clientId) {
+          customerData = order.clientId as Customer;
+        } else if (typeof order.clientId === 'string') {
+          try {
+            customerData = await fetchCustomerById(order.clientId);
+          } catch (error) {
+            console.error("Erro ao buscar cliente:", error);
+            // Fallback básico
+            customerData = {
+              _id: order.clientId,
+              name: "Cliente",
+              role: "customer"
+            } as Customer;
+          }
+        }
+        
+        setSelectedCustomer(customerData);
+        
+        // Converter serviceOrder para string se necessário
+        const serviceOrderValue = order.serviceOrder ? String(order.serviceOrder) : "";
+        
+        // Populate form with order data
+        form.reset({
+          clientId: typeof order.clientId === 'string' ? order.clientId : String(order.clientId),
+          employeeId: typeof order.employeeId === 'string' ? order.employeeId : String(order.employeeId),
+          institutionId: order.institutionId ? String(order.institutionId) : undefined,
+          isInstitutionalOrder: !!order.isInstitutionalOrder,
+          products: normalizedProducts,
+          serviceOrder: serviceOrderValue ? Number(serviceOrderValue) : undefined,
+          paymentMethod: order.paymentMethod,
+          paymentEntry: order.paymentEntry || 0,
+          installments: order.installments || undefined,
+          orderDate: typeof order.orderDate === 'string' ? 
+            order.orderDate.split('T')[0] : 
+            new Date(order.orderDate).toISOString().split('T')[0],
+          deliveryDate: order.deliveryDate ? 
+            (typeof order.deliveryDate === 'string' ? 
+              order.deliveryDate.split('T')[0] : 
+              new Date(order.deliveryDate).toISOString().split('T')[0]) : 
+            undefined,
+          status: order.status,
+          laboratoryId: order.laboratoryId ? String(order.laboratoryId) : "",
+          observations: order.observations || "",
+          totalPrice: order.totalPrice,
+          discount: order.discount || 0,
+          finalPrice: order.finalPrice,
+          prescriptionData: {
+            doctorName: order.prescriptionData?.doctorName || "",
+            clinicName: order.prescriptionData?.clinicName || "",
+            appointmentDate: order.prescriptionData?.appointmentDate ? 
+              (typeof order.prescriptionData.appointmentDate === 'string' ? 
+                order.prescriptionData.appointmentDate.split('T')[0] : 
+                new Date(order.prescriptionData.appointmentDate).toISOString().split('T')[0]) : 
+              new Date().toISOString().split('T')[0],
+            leftEye: {
+              sph: order.prescriptionData?.leftEye?.sph !== undefined ? 
+                String(order.prescriptionData.leftEye.sph) : "",
+              cyl: order.prescriptionData?.leftEye?.cyl !== undefined ? 
+                String(order.prescriptionData.leftEye.cyl) : "",
+              axis: order.prescriptionData?.leftEye?.axis || 0,
+              pd: order.prescriptionData?.leftEye?.pd || 0,
+            },
+            rightEye: {
+              sph: order.prescriptionData?.rightEye?.sph !== undefined ? 
+                String(order.prescriptionData.rightEye.sph) : "",
+              cyl: order.prescriptionData?.rightEye?.cyl !== undefined ? 
+                String(order.prescriptionData.rightEye.cyl) : "",
+              axis: order.prescriptionData?.rightEye?.axis || 0,
+              pd: order.prescriptionData?.rightEye?.pd || 0,
+            },
+            nd: order.prescriptionData?.nd || 0,
+            oc: order.prescriptionData?.oc || 0,
+            addition: order.prescriptionData?.addition || 0,
+            bridge: order.prescriptionData?.bridge || 0,
+            rim: order.prescriptionData?.rim || 0,
+            vh: order.prescriptionData?.vh || 0,
+            sh: order.prescriptionData?.sh || 0,
+          }
+        });
+        
+        console.log("Customer data após processamento:", customerData);
+        
+      } catch (error) {
+        console.error("Erro ao processar dados do pedido:", error);
+        toast({
+          variant: "destructive",
+          title: "Erro",
+          description: "Erro ao processar dados do pedido."
+        });
+      }
+    };
+    
+    if (order && !loadingOrder) {
+      processOrderData();
+    }
+  }, [order, loadingOrder, form, fetchCustomerById, toast]);
+
   const handleChangeNoteSubmit = (note: string) => {
     setChangeNote(note);
   };
 
   const updateOrderData = async (formData: OrderFormValues) => {
     try {
-      // Simplify the update to avoid issues
+      // Converter serviceOrder para string se necessário
       const orderData = {
         ...formData,
-        // Make sure institutionId is a string or null
+        serviceOrder: formData.serviceOrder ? String(formData.serviceOrder) : null, // Converter para string
         institutionId: formData.institutionId ? String(formData.institutionId) : null,
-        // Include a change note if provided
         changeNote: changeNote || undefined,
       };
       
@@ -206,14 +225,13 @@ export default function EditOrderPage() {
           description: `O pedido #${id.substring(0, 8)} foi atualizado com sucesso.`,
         });
         
-        // Navigate back to order details
         router.push(`/orders/${id}`);
       }
     } catch (error: any) {
       console.error("Erro ao atualizar pedido:", error);
       let errorMessage = "Erro ao atualizar pedido. Tente novamente.";
       
-      if (error.response && error.response.data && error.response.data.message) {
+      if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
       } else if (error.message) {
         errorMessage = error.message;
@@ -353,7 +371,8 @@ export default function EditOrderPage() {
     router.push("/orders/new");
   };  
 
-  if (loadingInitialData || isLoadingProducts || isLoadingCustomers) {
+  // Estados de loading
+  if (loadingOrder || isLoadingProducts || isLoadingCustomers) {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="flex flex-col items-center">
@@ -364,12 +383,15 @@ export default function EditOrderPage() {
     );
   }
 
-  if (loadError) {
+  // Estado de erro
+  if (orderError || !order) {
     return (
       <div className="max-w-3xl mx-auto p-4">
         <Alert variant="destructive" className="mb-4">
           <AlertCircle className="h-4 w-4 mr-2" />
-          <span>{loadError}</span>
+          <span>
+            {orderError ? "Erro ao carregar dados do pedido" : "Pedido não encontrado"}
+          </span>
         </Alert>
         <div className="flex justify-center mt-4">
           <Button onClick={() => router.back()}>Voltar</Button>
@@ -377,8 +399,6 @@ export default function EditOrderPage() {
       </div>
     );
   }
-
-  console.log("Selected Customer:", selectedCustomer);
 
   return (
     <div className="max-w-6xl mx-auto p-3">
@@ -399,7 +419,8 @@ export default function EditOrderPage() {
           showInstallments={showInstallments}
           setShowInstallments={setShowInstallments}
           submittedOrder={submittedOrder}
-          isCreating={false}
+          isCreating={false} // false para edição
+          isEditing={true} // Nova prop para indicar que é edição
           customersData={customersData || []}
           productsData={productsData || []}
           loggedEmployee={loggedEmployee}

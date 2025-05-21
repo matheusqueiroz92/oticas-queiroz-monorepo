@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { CheckCircle2 } from "lucide-react";
-import OrderCompactPdfGenerator from "@/components/Orders/exports/OrderCompactPdfGenerator";
+import OrderPdfExporter from "@/components/Orders/exports/OrderPdfExporter";
 import OrderPrintButton from "@/components/Orders/exports/OrderPrintButton";
 import type { Customer } from "@/app/types/customer";
 
@@ -22,6 +22,7 @@ export default function OrderSuccessScreen({
   onCreateNewOrder,
 }: OrderSuccessScreenProps) {
   console.log("Customer data in OrderSuccessScreen:", selectedCustomer);
+  
   return (
     <div className="bg-green-50 rounded-lg border border-green-100 p-4">
       <div className="flex flex-col items-center text-center mb-4">
@@ -52,13 +53,15 @@ export default function OrderSuccessScreen({
           <h4 className="text-sm font-medium mb-3">Exportar/Imprimir Pedido</h4>
           
           <div className="grid grid-cols-1 gap-3 mb-3">
-            {/* Novo botão de PDF compacto (2 vias) */}
-            <OrderCompactPdfGenerator
+            {/* Usar o componente unificado */}
+            <OrderPdfExporter
               formData={{
                 ...form.getValues(),
                 _id: submittedOrder?._id
               }}
               customer={submittedOrder?.customer || selectedCustomer}
+              buttonText="Baixar PDF (2 vias)"
+              variant="outline"
             />
             
             {/* Botão de impressão direta */}
@@ -98,7 +101,7 @@ export default function OrderSuccessScreen({
             onClick={onCreateNewOrder}
             size="sm"
             className="text-sm h-9"
-                      >
+          >
             Criar Novo Pedido
           </Button>
         </div>

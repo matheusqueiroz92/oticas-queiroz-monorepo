@@ -37,7 +37,7 @@ export default function ClientSearch({
 
   // Adicionar este useEffect para atualizar o campo quando o cliente selecionado mudar
   useEffect(() => {
-    if (selectedCustomer?.name) {
+    if (selectedCustomer?.name && selectedCustomer.name !== "Cliente") {
       setCustomerSearch(selectedCustomer.name);
     }
   }, [selectedCustomer]);

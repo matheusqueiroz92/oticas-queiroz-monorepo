@@ -225,6 +225,8 @@ export function useOrders(options: UseOrdersOptions = {}) {
       queryKey: QUERY_KEYS.ORDERS.DETAIL(id),
       queryFn: () => getOrderById(id),
       enabled: enableQueries && !!id,
+      staleTime: 0,
+      refetchOnMount: true,
     });
   };
 
@@ -361,6 +363,10 @@ export function useOrders(options: UseOrdersOptions = {}) {
    
   const navigateToOrderDetails = useCallback((id: string) => {
     router.push(`/orders/${id}`);
+  }, [router]);
+
+  const navigateToEditOrder = useCallback((id: string) => {
+    router.push(`/orders/${id}/edit`);
   }, [router]);
    
   const navigateToCreateOrder = useCallback(() => {
@@ -601,6 +607,7 @@ export function useOrders(options: UseOrdersOptions = {}) {
     handleUpdateOrderLaboratory,
     handleCreateOrder,
     navigateToOrderDetails,
+    navigateToEditOrder,
     navigateToCreateOrder,
     translateOrderStatus,
     getOrderStatusClass,

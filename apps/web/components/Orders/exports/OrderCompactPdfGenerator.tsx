@@ -20,18 +20,13 @@ export default function OrderCompactPdfGenerator({
   const [customerData, setCustomerData] = useState<Customer | null>(customer);
   const [isLoading, setIsLoading] = useState(false);
   
-  // Fetch customer data if not provided
   useEffect(() => {
     const fetchCustomer = async () => {
-      // Só buscar se não tiver cliente e tiver um clientId
       if (!customer && formData.clientId) {
         try {
           setIsLoading(true);
-          console.log("Buscando cliente pelo ID:", formData.clientId);
           
           const response = await api.get(API_ROUTES.USERS.BY_ID(formData.clientId));
-          
-          console.log("Dados do cliente recebidos:", response.data);
           
           if (response.data) {
             setCustomerData(response.data);

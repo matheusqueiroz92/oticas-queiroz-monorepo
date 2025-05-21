@@ -392,7 +392,7 @@ export default function NewOrderPage() {
           </div>
         </div>
       ) : (
-        <OrderForm 
+       <OrderForm 
           form={form}
           selectedProducts={selectedProducts}
           setSelectedProducts={setSelectedProducts}
@@ -404,6 +404,7 @@ export default function NewOrderPage() {
           setShowInstallments={setShowInstallments}
           submittedOrder={submittedOrder}
           isCreating={isCreating}
+          isEditing={false} // Nova prop para indicar que é criação (ou pode omitir já que o padrão é false)
           customersData={customersData || []}
           productsData={productsData || []}
           loggedEmployee={loggedEmployee}

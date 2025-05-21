@@ -67,6 +67,8 @@ interface OrderFormProps {
   handleClientSelect: (clientId: string, name: string) => void;
   updateFinalPrice: (total: number, discount: number) => void;
   calculateInstallmentValue: () => number;
+  // Nova prop para indicar se é edição
+  isEditing?: boolean;
 }
 
 export function OrderForm({
@@ -81,6 +83,7 @@ export function OrderForm({
   customersData,
   productsData,
   loggedEmployee,
+  isEditing = false, // Nova prop com valor padrão false
   onSubmit,
   onCancel,
   onViewOrdersList,
@@ -159,6 +162,24 @@ export function OrderForm({
     }
   };
 
+  // Função para obter o texto do botão baseado no contexto
+  const getSubmitButtonText = () => {
+    if (isCreating) {
+      return isEditing ? "Atualizando..." : "Processando...";
+    }
+    return isEditing ? "Atualizar Pedido" : "Finalizar Pedido";
+  };
+
+  // Função para obter o título do formulário
+  const getFormTitle = () => {
+    return isEditing ? "Editar Pedido" : "Novo Pedido";
+  };
+
+  // Função para obter a descrição do formulário
+  const getFormDescription = () => {
+    return isEditing ? "Atualize os dados do pedido" : "Cadastre um novo pedido";
+  };
+
   const renderStepContent = () => {
     switch (currentStep) {
       case 0:
@@ -218,8 +239,10 @@ export function OrderForm({
               <File className="h-5 w-5 text-[var(--secondary-red)]" />
             </div>
             <div>
-              <CardTitle className="text-xl text-[var(--secondary-red)]">Novo Pedido</CardTitle>
-              <CardDescription>Cadastre um novo pedido</CardDescription>
+              <CardTitle className="text-xl text-[var(--secondary-red)]">
+                {getFormTitle()}
+              </CardTitle>
+              <CardDescription>{getFormDescription()}</CardDescription>
             </div>
           </div>
           {loggedEmployee && (
@@ -297,10 +320,10 @@ export function OrderForm({
                         {isCreating ? (
                           <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Processando...
+                            {getSubmitButtonText()}
                           </>
                         ) : (
-                          "Finalizar Pedido"
+                          getSubmitButtonText()
                         )}
                       </Button>
                     )}

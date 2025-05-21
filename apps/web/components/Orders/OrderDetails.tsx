@@ -10,7 +10,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import OrderDetailsPDF from "@/components/Orders/exports/OrderDetailsPdf";
 import OrderLaboratoryUpdate from "@/components/Orders/OrderLaboratoryUpdate";
 import OrderStatusUpdate from "@/components/Orders/OrderStatusUpdate";
 import OrderPaymentHistory from "@/components/Orders/OrderPaymentHistory";
@@ -34,8 +33,8 @@ import {
 import { useOrders } from "@/hooks/useOrders";
 import { useToast } from "@/hooks/useToast";
 import type { Order } from "@/app/types/order";
-import OrderReceiptPrinter from "./OrderReceiptPrint";
 import { useRouter } from "next/navigation";
+import OrderPdfExporter from "./exports/OrderPdfExporter";
 
 interface OrderDetailsProps {
   order: Order;
@@ -646,37 +645,22 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
             Voltar para Pedidos
           </Button>
 
-          <Button 
-            variant="outline" 
-            onClick={() => router.push(`/orders/${order._id}/edit`)} 
-            className="text-sm gap-2"
-          >
-            <PencilIcon className="h-4 w-4" />
-            Editar
-          </Button>
-          
           <div className="flex gap-3">
-            <OrderDetailsPDF
+            <OrderPdfExporter
               order={order}
-              clientName={client ? client.name : "Cliente não encontrado"}
-              employeeName={employee ? employee.name : "Vendedor não encontrado"}
-            />
-            
-            {/* Substituir o botão de impressão anterior por este componente */}
-            <OrderReceiptPrinter
-              order={order}
-              client={client}
-              employee={employee}
-              getStatusBadge={getStatusBadge}
+              customer={client}
+              buttonText="Exportar PDF"
+              variant="outline"
+              size="default"
             />
             
             <Button 
               variant="outline" 
-              onClick={onRefresh} 
+              onClick={() => router.push(`/orders/${order._id}/edit`)} 
               className="text-sm gap-2"
             >
-              <RefreshCw className="h-4 w-4" />
-              Atualizar
+              <PencilIcon className="h-4 w-4" />
+              Editar
             </Button>
           </div>
         </CardFooter>
