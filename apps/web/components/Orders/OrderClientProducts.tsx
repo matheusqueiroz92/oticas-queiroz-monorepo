@@ -279,6 +279,7 @@ export default function OrderClientProducts({
                   form={form}
                   onClientSelect={handleClientSelect}
                   fetchAllCustomers={fetchAllCustomers}
+                  selectedCustomer={selectedCustomer}
                 />
               </div>
 

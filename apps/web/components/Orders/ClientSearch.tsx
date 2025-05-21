@@ -18,6 +18,7 @@ interface ClientSearchProps {
   form: UseFormReturn<OrderFormValues, any, undefined>;
   onClientSelect: (clientId: string, name: string) => void;
   fetchAllCustomers: (searchQuery?: string) => Promise<Customer[]>;
+  selectedCustomer?: Customer | null;
 }
 
 export default function ClientSearch({
@@ -25,13 +26,21 @@ export default function ClientSearch({
   form,
   onClientSelect,
   fetchAllCustomers,
+  selectedCustomer,
 }: ClientSearchProps) {
-  const [customerSearch, setCustomerSearch] = useState("");
+  const [customerSearch, setCustomerSearch] = useState(selectedCustomer?.name || "");
   const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+
+  // Adicionar este useEffect para atualizar o campo quando o cliente selecionado mudar
+  useEffect(() => {
+    if (selectedCustomer?.name) {
+      setCustomerSearch(selectedCustomer.name);
+    }
+  }, [selectedCustomer]);
 
   // Efeito para buscar clientes quando o usuário digita
   useEffect(() => {
@@ -85,7 +94,7 @@ export default function ClientSearch({
     }, 300);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [customerSearch, customers, toast]);
+  }, [customerSearch, customers, toast, fetchAllCustomers]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
