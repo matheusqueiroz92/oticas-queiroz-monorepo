@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, FileText } from "lucide-react";
 import OrderPdfExporter from "@/components/Orders/exports/OrderPdfExporter";
 import OrderPrintButton from "@/components/Orders/exports/OrderPrintButton";
 import type { Customer } from "@/app/_types/customer";
@@ -32,9 +32,21 @@ export default function OrderSuccessScreen({
         <h3 className="text-lg font-semibold text-green-800 mb-1">
           Pedido criado com sucesso!
         </h3>
-        <p className="text-green-600 text-sm">
-          ID do pedido: {submittedOrder?._id.substring(0, 8)}
-        </p>
+        
+        {/* Exibir informações do pedido criado */}
+        <div className="space-y-1 text-green-600 text-sm">
+          <p className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            <span>ID do pedido: {submittedOrder?._id.substring(0, 8)}</span>
+          </p>
+          
+          {submittedOrder?.serviceOrder && (
+            <p className="flex items-center gap-2 font-medium">
+              <FileText className="h-4 w-4" />
+              <span>Nº da O.S.: {submittedOrder.serviceOrder}</span>
+            </p>
+          )}
+        </div>
         
         {submittedOrder?.status === 'ready' ? (
           <div className="mt-2 px-3 py-1 bg-green-200 text-green-800 rounded-full text-xs font-medium">
@@ -48,6 +60,21 @@ export default function OrderSuccessScreen({
       </div>
       
       <div className="space-y-4">
+        {/* Informações adicionais sobre o serviceOrder */}
+        {submittedOrder?.serviceOrder && (
+          <div className="bg-white p-3 rounded border shadow-sm">
+            <h4 className="text-sm font-medium mb-2 text-gray-700">Informações da Ordem de Serviço</h4>
+            <div className="text-sm text-gray-600 space-y-1">
+              <p>
+                <span className="font-medium">Número gerado:</span> {submittedOrder.serviceOrder}
+              </p>
+              <p className="text-xs text-gray-500">
+                Este número foi gerado automaticamente pelo sistema e é único para este pedido.
+              </p>
+            </div>
+          </div>
+        )}
+        
         {/* Opções de exportação e impressão */}
         <div className="bg-white p-3 rounded border shadow-sm">
           <h4 className="text-sm font-medium mb-3">Exportar/Imprimir Pedido</h4>
@@ -57,7 +84,8 @@ export default function OrderSuccessScreen({
             <OrderPdfExporter
               formData={{
                 ...form.getValues(),
-                _id: submittedOrder?._id
+                _id: submittedOrder?._id,
+                serviceOrder: submittedOrder?.serviceOrder
               }}
               customer={submittedOrder?.customer || selectedCustomer}
               buttonText="Baixar PDF (2 vias)"
@@ -68,7 +96,8 @@ export default function OrderSuccessScreen({
             <OrderPrintButton
               formData={{
                 ...form.getValues(),
-                _id: submittedOrder?._id
+                _id: submittedOrder?._id,
+                serviceOrder: submittedOrder?.serviceOrder
               }}
               customer={selectedCustomer}
             />

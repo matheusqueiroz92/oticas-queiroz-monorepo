@@ -44,7 +44,8 @@ const baseOrderSchema = z.object({
   institutionId: z.string().nullable().optional(),
   isInstitutionalOrder: z.boolean().default(false),
   products: z.array(orderProductSchema).min(1, "Pelo menos um produto é obrigatório"),
-  serviceOrder: z.string().optional(),
+  // REMOVIDO: serviceOrder não é mais obrigatório pois será gerado automaticamente
+  serviceOrder: z.string().optional(), // Opcional para permitir atualizações manuais se necessário
   paymentMethod: z.string().min(1, "Método de pagamento é obrigatório"),
   paymentStatus: z.enum(["pending", "partially_paid", "paid"]),
   paymentEntry: z.number().min(0).optional(),
@@ -75,7 +76,7 @@ export const orderQuerySchema = z.object({
   employeeId: z.string().optional(),
   clientId: z.string().optional(),
   laboratoryId: z.string().optional(),
-  serviceOrder: z.string().optional(),
+  serviceOrder: z.string().optional(), // Agora aceita string direta
   paymentMethod: z.string().optional(),
   paymentStatus: z.string().optional(),
   startDate: z.string().optional(),
@@ -90,10 +91,8 @@ export const orderQuerySchema = z.object({
     .transform(val => Number(val))
     .optional(),
   search: z.string().optional(),
-  // Adicionar suporte para CPF
   cpf: z.string().optional(),
-  // Adicionar suporte explícito para o campo sort
-  sort: z.string().optional().default("-createdAt") // Definir ordenação padrão
+  sort: z.string().optional().default("-createdAt")
 });
 
 // Schema para validar atualização de status

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ProfileEditForm } from "@/components/Users/ProfileEditForm";
+import { ProfileEditForm } from "@/components/Profile/ProfileEditForm";
 import { updateUserForm, UserUpdateData } from "@/schemas/user-schema";
 import { PageTitle } from "@/components/PageTitle";
 import { ArrowLeft, Loader2 } from "lucide-react";

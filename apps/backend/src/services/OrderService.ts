@@ -348,7 +348,6 @@ export class OrderService {
         clientId: new mongoose.Types.ObjectId(orderData.clientId.toString()),
         employeeId: new mongoose.Types.ObjectId(orderData.employeeId.toString()),
         products: orderData.products,
-        serviceOrder: orderData.serviceOrder,
         paymentMethod: orderData.paymentMethod,
         paymentStatus: orderData.paymentStatus || "pending",
         paymentEntry: orderData.paymentEntry,
@@ -367,9 +366,9 @@ export class OrderService {
   
       await this.validateOrder(orderData);
       
-      // Criar o pedido usando a sessão
+      // Criar o pedido usando a sessão - serviceOrder será gerado automaticamente
       const order = await this.orderModel.createWithSession(orderDTO, session);
-  
+      
       if (order.status !== 'cancelled') {
         try {
           // Processar o estoque usando a mesma sessão
@@ -998,13 +997,12 @@ export class OrderService {
    * @throws OrderError se o número da ordem de serviço for inválido
   */
   async getOrdersByServiceOrder(serviceOrder: string): Promise<IOrder[]> {
-    const cleanServiceOrder = serviceOrder.replace(/\D/g, '');
-    
-    if (cleanServiceOrder.length < 4 || cleanServiceOrder.length > 7) {
-      throw new OrderError("Número de ordem de serviço deve ter entre 4 e 7 dígitos");
+    // Agora aceita a string diretamente, sem limpeza
+    if (!serviceOrder || serviceOrder.trim().length === 0) {
+      throw new OrderError("Número de ordem de serviço é obrigatório");
     }
     
-    const orders = await this.orderModel.findByServiceOrder(cleanServiceOrder);
+    const orders = await this.orderModel.findByServiceOrder(serviceOrder.trim());
     
     if (!orders.length) {
       return [];

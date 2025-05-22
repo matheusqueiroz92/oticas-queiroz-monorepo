@@ -1,18 +1,16 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
 import { useCashRegister } from "@/hooks/useCashRegister";
 import { CashRegisterOpenForm } from "@/components/CashRegister/CashRegisterOpenForm";
 import { 
   createOpenCashRegisterForm, 
   type OpenCashRegisterFormValues 
 } from "@/schemas/cash-register-schema";
+import { BackButton } from "@/components/ui/back-button";
 
 export default function OpenCashRegisterPage() {
-  const router = useRouter();
-  
+  const { navigateToCashRegister } = useCashRegister();
+
   const { 
     hasCashRegisterOpen,
     isOpening,
@@ -36,21 +34,13 @@ export default function OpenCashRegisterPage() {
     });
   };
 
-  const handleCancel = () => {
-    router.push("/cash-register");
-  };
-
   return (
     <div className="max-w-3xl mx-auto p-4 space-y-6">
       <div className="flex items-center space-x-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => router.push("/cash-register")}
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Voltar
-        </Button>
+        <BackButton
+          onClick={navigateToCashRegister}
+          label="Voltar"        
+        />
         <h1 className="text-2xl font-bold">Abrir Caixa</h1>
       </div>
 
@@ -58,7 +48,7 @@ export default function OpenCashRegisterPage() {
         form={form}
         isSubmitting={isOpening}
         onSubmit={onSubmit}
-        onCancel={handleCancel}
+        onCancel={navigateToCashRegister}
         hasCashRegisterOpen={hasCashRegisterOpen}
       />
     </div>

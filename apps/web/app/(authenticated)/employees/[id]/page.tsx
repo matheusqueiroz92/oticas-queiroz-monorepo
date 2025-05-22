@@ -1,6 +1,6 @@
 "use client";
 
-import UserDetailsPage from "@/components/Users/UserDetailsPage";
+import UserDetailsPage from "@/components/Profile/UserDetailsPage";
 import type { Employee } from "@/app/_types/employee";
 import { Mail, Phone, MapPin, Briefcase, ShoppingCart, Info, Activity } from "lucide-react";
 

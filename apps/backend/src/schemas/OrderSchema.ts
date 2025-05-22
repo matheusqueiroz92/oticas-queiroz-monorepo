@@ -1,5 +1,6 @@
 import mongoose, { Schema } from 'mongoose';
 import { IOrder } from '../interfaces/IOrder';
+import { CounterService } from '../services/CounterService';
 
 const paymentHistorySchema = new Schema({
   paymentId: {
@@ -47,6 +48,8 @@ const orderSchema = new Schema<IOrder>({
   }],
   serviceOrder: {
     type: String,
+    unique: true, // Garantir que não haja duplicatas
+    index: true   // Indexar para busca rápida
   },
   paymentMethod: {
     type: String, 
@@ -132,6 +135,23 @@ const orderSchema = new Schema<IOrder>({
     ref: 'User',
   },
 }, { timestamps: true });
+
+// Middleware pre-save para gerar serviceOrder automaticamente
+orderSchema.pre("save", async function(next) {
+  try {
+    // Se é um novo documento e não tem serviceOrder definido
+    if (this.isNew && !this.serviceOrder) {
+      // Obter o próximo número da sequência
+      const nextNumber = await CounterService.getNextSequence('serviceOrder');
+      this.serviceOrder = nextNumber.toString();
+    }
+    
+    next();
+  } catch (error) {
+    console.error('Erro ao gerar serviceOrder:', error);
+    next(error instanceof Error ? error : new Error('Erro ao gerar número de ordem de serviço'));
+  }
+});
 
 // Middleware para validar e preparar dados antes de salvar
 orderSchema.pre("validate", function(next) {

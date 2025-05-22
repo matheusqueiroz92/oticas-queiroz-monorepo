@@ -1119,4 +1119,39 @@ router.get(
   asyncHandler(orderController.getPaymentStatusSummary.bind(orderController))
 );
 
+/**
+ * @swagger
+ * /api/orders/next-service-order:
+ *   get:
+ *     summary: Obtém o próximo número de ordem de serviço
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Orders]
+ *     description: Retorna o próximo número de ordem de serviço que será gerado automaticamente
+ *     responses:
+ *       200:
+ *         description: Próximo número de ordem de serviço
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 nextServiceOrder:
+ *                   type: string
+ *                   description: Próximo número de ordem de serviço
+ *                   example: "300001"
+ *       401:
+ *         description: Não autorizado
+ *       403:
+ *         description: Acesso negado. Requer permissão de administrador ou funcionário.
+ *       500:
+ *         description: Erro interno do servidor
+ */
+router.get(
+  "/orders/next-service-order",
+  authenticate,
+  authorize(["admin", "employee"]),
+  asyncHandler(orderController.getNextServiceOrder.bind(orderController))
+);
+
 export default router;

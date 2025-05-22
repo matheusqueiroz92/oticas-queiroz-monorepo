@@ -1,6 +1,6 @@
 "use client";
 
-import UserDetailsPage from "@/components/Users/UserDetailsPage";
+import UserDetailsPage from "@/components/Profile/UserDetailsPage";
 import type { Customer } from "@/app/_types/customer";
 import { Phone, MapPin, CreditCard, ShoppingBag, Info, Activity } from "lucide-react";
 

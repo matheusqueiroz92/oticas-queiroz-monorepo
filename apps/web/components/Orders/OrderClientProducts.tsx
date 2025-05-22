@@ -20,9 +20,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { formatCurrency } from "@/app/_utils/formatters";
 import type { Customer } from "@/app/_types/customer";
 import type { Product } from "@/app/_types/product";
-import { Loader2 } from "lucide-react";
+import { Loader2, Lock, RefreshCw } from "lucide-react";
 
 import { useInstitutions } from "@/hooks/useInstitutions";
+import { useOrders } from "@/hooks/useOrders"; // Hook integrado
 import ClientSearch from "@/components/Orders/ClientSearch";
 import ProductSearch from "@/components/Orders/ProductSearch";
 import SelectedProductsList from "@/components/Orders/SelectedProductList";
@@ -72,6 +73,15 @@ export default function OrderClientProducts({
   } = useInstitutions({
     enablePagination: false
   });
+
+  // Usar o hook integrado para buscar o próximo serviceOrder
+  const {
+    nextServiceOrder,
+    isLoadingNextServiceOrder,
+    nextServiceOrderError,
+    fetchNextServiceOrder,
+    getServiceOrderDisplayValue
+  } = useOrders({ enableQueries: true });
 
   useEffect(() => {
     if (institutions && institutions.length > 0) {
@@ -141,11 +151,9 @@ export default function OrderClientProducts({
                   step="0.01"
                   placeholder="0,00"
                   onChange={(e) => {
-                    // Se o campo estiver vazio, use null ou string vazia
                     const value = e.target.value === '' ? '' : Number.parseFloat(e.target.value);
                     field.onChange(value);
                   }}
-                  // Use uma string vazia para representar campo vazio, mas nunca undefined
                   value={field.value === null || field.value === undefined || field.value === 0 ? '' : field.value}
                   className="border border-gray-200 rounded text-sm h-9"
                 />
@@ -289,18 +297,49 @@ export default function OrderClientProducts({
                   name="serviceOrder"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs">Nº da O.S.</FormLabel>
+                      <FormLabel className="text-xs flex items-center gap-1">
+                        Nº da O.S.
+                        <Lock className="h-3 w-3 text-gray-400" />
+                        {!isLoadingNextServiceOrder && (
+                          <button
+                            type="button"
+                            onClick={fetchNextServiceOrder}
+                            className="ml-1 p-0.5 hover:bg-gray-100 rounded"
+                            title="Atualizar próximo número"
+                          >
+                            <RefreshCw className="h-3 w-3 text-gray-400 hover:text-gray-600" />
+                          </button>
+                        )}
+                      </FormLabel>
                       <FormControl>
-                      <Input
-                        type="text"
-                        placeholder="Número da O.S."
-                        onChange={(e) => {
-                          const value = e.target.value === '' ? '' : e.target.value;
-                          field.onChange(value);
-                        }}
-                        value={field.value === null || field.value === undefined || field.value === 0 ? '' : field.value}
-                      />
+                        <div className="relative">
+                          <Input
+                            type="text"
+                            placeholder={getServiceOrderDisplayValue()}
+                            value={getServiceOrderDisplayValue()}
+                            readOnly
+                            disabled
+                            className={`bg-gray-100 cursor-not-allowed border border-gray-200 rounded text-sm h-9 ${
+                              nextServiceOrder && !isLoadingNextServiceOrder 
+                                ? 'text-green-700 font-medium' 
+                                : 'text-gray-600'
+                            }`}
+                          />
+                          <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center gap-1">
+                            {isLoadingNextServiceOrder ? (
+                              <Loader2 className="h-3 w-3 animate-spin text-blue-500" />
+                            ) : (
+                              <Lock className="h-3 w-3 text-gray-400" />
+                            )}
+                          </div>
+                        </div>
                       </FormControl>
+                      <FormDescription className="text-xs text-gray-500">
+                        {nextServiceOrderError 
+                          ? "Erro ao carregar o próximo número" 
+                          : "Este número será gerado automaticamente pelo sistema"
+                        }
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -422,7 +461,6 @@ export default function OrderClientProducts({
                   checked={field.value}
                   onCheckedChange={(checked) => {
                     field.onChange(checked);
-                    // Carregar instituições quando a checkbox for marcada
                     if (checked && loadedInstitutions.length === 0) {
                       fetchAllInstitutions();
                     }
@@ -450,7 +488,6 @@ export default function OrderClientProducts({
                   onValueChange={field.onChange} 
                   value={field.value}
                   onOpenChange={(open) => {
-                    // Garantir que temos instituições carregadas quando o select é aberto
                     if (open && loadedInstitutions.length === 0 && !isLoadingInstitutions) {
                       fetchAllInstitutions();
                     }

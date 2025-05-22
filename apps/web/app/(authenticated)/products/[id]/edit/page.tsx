@@ -2,11 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { ChevronLeft } from "lucide-react";
 import { useProducts } from "@/hooks/useProducts";
 import { useToast } from "@/hooks/useToast";
 import { ProductEditForm } from "@/components/Products/ProductEditForm";
+import { BackButton } from "@/components/ui/back-button";
 
 export default function EditProductPage() {
   const { id } = useParams<{ id: string }>();
@@ -19,6 +18,7 @@ export default function EditProductPage() {
     loading,
     fetchProductById,
     handleUpdateProduct,
+    navigateToProducts,
   } = useProducts();
 
   useEffect(() => {
@@ -26,10 +26,6 @@ export default function EditProductPage() {
       fetchProductById(id as string);
     }
   }, [id, fetchProductById]);
-
-  const handleGoBack = () => {
-    router.push("/products");
-  };
 
   const handleSubmit = async (data: any) => {
     if (!id || !currentProduct) return;
@@ -90,9 +86,10 @@ export default function EditProductPage() {
   return (
     <div className="max-w-4xl mx-auto p-4">
       <div className="mb-4 flex items-center gap-2">
-        <Button variant="ghost" size="icon" onClick={handleGoBack}>
-          <ChevronLeft className="h-5 w-5" />
-        </Button>
+        <BackButton
+          onClick={navigateToProducts}
+          label="Voltar para Produtos"
+        />
         <h1 className="text-2xl font-bold">Editar Produto</h1>
       </div>
 
@@ -101,7 +98,7 @@ export default function EditProductPage() {
         loading={loading}
         isSubmitting={isSubmitting}
         onSubmit={handleSubmit}
-        onCancel={handleGoBack}
+        onCancel={navigateToProducts}
       />
     </div>
   );

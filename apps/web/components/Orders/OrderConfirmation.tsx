@@ -1,4 +1,4 @@
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Info } from "lucide-react";
 import type { Customer } from "@/app/_types/customer";
 import type { Product } from "@/app/_types/product";
 import { formatCurrency } from "@/app/_utils/formatters";
@@ -27,7 +27,9 @@ export default function OrderConfirmation({
       case "debit": return "Cartão de Débito";
       case "cash": return "Dinheiro";
       case "pix": return "PIX";
-      case "installment": return "Parcelado";
+      case "bank_slip": return "Boleto Bancário";
+      case "promissory_note": return "Nota Promissória";
+      case "check": return "Cheque";
       default: return "Não especificado";
     }
   };
@@ -37,6 +39,20 @@ export default function OrderConfirmation({
       <div className="lg:col-span-2 space-y-4">
         <div className="space-y-3">
           <h3 className="text-sm font-medium border-b pb-1">Confirmação do Pedido</h3>
+          
+          {/* Aviso sobre número de O.S. */}
+          <div className="p-3 bg-blue-50 rounded border border-blue-100">
+            <div className="flex">
+              <Info className="h-4 w-4 text-blue-500 mr-2 flex-shrink-0 mt-0.5" />
+              <div className="text-sm text-blue-700">
+                <p className="font-medium">Número da Ordem de Serviço</p>
+                <p className="mt-1">
+                  O número da O.S. será gerado automaticamente pelo sistema após a criação do pedido, 
+                  começando em 300000 e incrementando sequencialmente.
+                </p>
+              </div>
+            </div>
+          </div>
           
           <div className="bg-gray-50 p-3 rounded border border-gray-200">
             <h4 className="font-medium text-sm mb-2">Resumo das Informações</h4>
@@ -77,12 +93,7 @@ export default function OrderConfirmation({
                 <p>{form.getValues("deliveryDate")}</p>
               </div>
 
-              {form && (form.getValues("serviceOrder") as string | undefined) && (
-                <div>
-                  <h5 className="font-medium text-gray-600">Ordem de Serviço</h5>
-                  <p>{form.getValues("serviceOrder") as string}</p>
-                </div>
-              )}
+              {/* Removido a exibição do serviceOrder aqui, pois ainda não foi gerado */}
             </div>
             
             <div className="mt-3">
@@ -110,6 +121,7 @@ export default function OrderConfirmation({
               <CheckCircle2 className="h-4 w-4 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
               <p className="text-sm text-green-700">
                 Todas as informações foram preenchidas. Você pode revisar o pedido e clicar em "Finalizar Pedido" para concluir.
+                O número da O.S. será gerado automaticamente após a confirmação.
               </p>
             </div>
           </div>

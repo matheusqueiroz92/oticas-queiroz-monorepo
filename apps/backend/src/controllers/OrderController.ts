@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import { OrderService, OrderError } from "../services/OrderService";
 import { UserService } from "../services/UserService";
+import { CounterService } from "../services/CounterService";
 import { z } from "zod";
 import type { CreateOrderDTO, IOrder } from "../interfaces/IOrder";
 import type { JwtPayload } from "jsonwebtoken";
@@ -70,6 +71,7 @@ export class OrderController {
         employeeId: new Types.ObjectId(validatedData.employeeId),
         laboratoryId: validatedData.laboratoryId ? new Types.ObjectId(validatedData.laboratoryId) : null,
         products: validProducts as IProduct[],
+        // REMOVIDO: Não definimos serviceOrder - será gerado automaticamente
       };
 
       const order = await this.orderService.createOrder(orderData);
@@ -97,7 +99,7 @@ export class OrderController {
   async getAllOrders(req: Request, res: Response): Promise<void> {
     try {
       const queryParams = orderQuerySchema.parse(req.query);
-  
+
       const {
         page,
         limit,
@@ -116,9 +118,9 @@ export class OrderController {
         cpf,
         sort
       } = queryParams;
-  
+
       const filters: Record<string, any> = {};
-  
+
       if (cpf) {
         try {
           const client = await this.userService.getUserByCpf(cpf as string);
@@ -151,8 +153,7 @@ export class OrderController {
       }
       
       if (serviceOrder) {
-        const cleanServiceOrder = serviceOrder.replace(/\D/g, '');
-        filters.serviceOrder = cleanServiceOrder;
+        filters.serviceOrder = serviceOrder;
       }
       
       if (status) {
@@ -678,6 +679,25 @@ export class OrderController {
         return;
       }
       res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  }
+
+  async getNextServiceOrder(req: Request, res: Response): Promise<void> {
+    try {
+      const currentSequence = await CounterService.getCurrentSequence("serviceOrder");
+      // Se não existe contador ainda, o próximo será 300000
+      // Se já existe, o próximo será o atual + 1
+      const nextServiceOrder = currentSequence ? currentSequence + 1 : 300000;
+      
+      res.status(200).json({
+        nextServiceOrder: nextServiceOrder.toString()
+      });
+    } catch (error) {
+      console.error("Error getting next service order:", error);
+      res.status(500).json({ 
+        message: "Erro interno do servidor",
+        details: error instanceof Error ? error.message : String(error)
+      });
     }
   }
 }

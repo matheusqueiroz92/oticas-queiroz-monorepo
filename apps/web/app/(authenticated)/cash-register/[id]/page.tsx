@@ -1,6 +1,6 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useCashRegister } from "@/hooks/useCashRegister";
 import {
   translatePaymentType,
@@ -11,11 +11,12 @@ import { CashRegisterDetails } from "@/components/CashRegister/CashRegisterDetai
 
 export default function CashRegisterDetailsPage() {
   const { id } = useParams<{ id: string }>();
-  const router = useRouter();
   
   const { 
     useCashRegisterDetails, 
-    navigateToCloseRegister 
+    navigateToCashRegister,
+    navigateToCloseRegister,
+    handlePrint
   } = useCashRegister();
 
   const { 
@@ -26,14 +27,6 @@ export default function CashRegisterDetailsPage() {
     error 
   } = useCashRegisterDetails(id as string);
 
-  const handleGoBack = () => {
-    router.push("/cash-register");
-  };
-
-  const handlePrint = () => {
-    window.print();
-  };
-
   return (
     <CashRegisterDetails
       register={register!}
@@ -41,7 +34,7 @@ export default function CashRegisterDetailsPage() {
       payments={payments}
       isLoading={isLoading}
       error={error}
-      onGoBack={handleGoBack}
+      onGoBack={navigateToCashRegister}
       onPrint={handlePrint}
       onCloseCashRegister={navigateToCloseRegister}
       translatePaymentType={translatePaymentType}

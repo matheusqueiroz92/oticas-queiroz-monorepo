@@ -16,8 +16,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { InfoSection } from "@/components/Users/InfoSection";
-import { InfoField } from "@/components/Users/InfoField";
+import { InfoSection } from "@/components/Profile/InfoSection";
+import { InfoField } from "@/components/Profile/InfoField";
 import type { Laboratory } from "@/app/_types/laboratory";
 import { PageTitle } from "../PageTitle";
 

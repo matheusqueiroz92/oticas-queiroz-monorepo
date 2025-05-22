@@ -18,7 +18,8 @@ export const API_ROUTES = {
     EXPORT_DETAILS: (id: string) => `/api/orders/${id}/export`,
     EXPORT_DAILY: "api/orders/export/daily",
     CLIENT: (id: string) => `/api/orders/client/${id}`,
-    PARAMS: (params: string) => `/api/orders?${params}`
+    PARAMS: (params: string) => `/api/orders?${params}`,
+    NEXT_SERVICE_ORDER: "/api/orders/next-service-order",
   },
   CASH_REGISTERS: {
     BASE: "/api/cash-registers",

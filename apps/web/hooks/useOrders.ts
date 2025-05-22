@@ -14,13 +14,13 @@ import {
   updateOrder,
 } from "@/app/_services/orderService";
 import { QUERY_KEYS } from "../app/_constants/query-keys";
+import { API_ROUTES } from "@/app/_constants/api-routes";
 import type { Order } from "@/app/_types/order";
 import { useUsers } from "@/hooks/useUsers";
 import { useLaboratories } from "@/hooks/useLaboratories";
 import { formatCurrency, formatDate } from "@/app/_utils/formatters";
 import debounce from 'lodash/debounce';
 import { api } from "@/app/_services/authService";
-import { API_ROUTES } from "@/app/_constants/api-routes";
 
 interface OrderFilters {
   search?: string;
@@ -40,6 +40,10 @@ interface UseOrdersOptions {
   enableQueries?: boolean;
 }
 
+interface NextServiceOrderResponse {
+  nextServiceOrder: string;
+}
+
 export function useOrders(options: UseOrdersOptions = {}) {
   const { enableQueries = true } = options;
   const [filters, setFilters] = useState<OrderFilters>({ sort: "-createdAt" });
@@ -53,6 +57,51 @@ export function useOrders(options: UseOrdersOptions = {}) {
   const { getLaboratoryName } = useLaboratories();
 
   const filterKey = JSON.stringify(filters);
+
+  // Query para buscar o próximo serviceOrder
+  const {
+    data: nextServiceOrderData,
+    isLoading: isLoadingNextServiceOrder,
+    error: nextServiceOrderError,
+    refetch: refetchNextServiceOrder,
+  } = useQuery<NextServiceOrderResponse>({
+    queryKey: QUERY_KEYS.ORDERS.NEXT_SERVICE_ORDER,
+    queryFn: async () => {
+      const response = await api.get(API_ROUTES.ORDERS.NEXT_SERVICE_ORDER);
+      return response.data;
+    },
+    enabled: enableQueries,
+    staleTime: 1000 * 30, // 30 segundos - dados ficam "frescos" por esse tempo
+    gcTime: 1000 * 60 * 5, // 5 minutos no cache
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
+  });
+
+  // Função para buscar manualmente o próximo serviceOrder
+  const fetchNextServiceOrder = useCallback(async () => {
+    try {
+      await refetchNextServiceOrder();
+    } catch (error) {
+      console.error("Erro ao buscar próximo serviceOrder:", error);
+    }
+  }, [refetchNextServiceOrder]);
+
+  // Função para obter o valor de exibição do serviceOrder
+  const getServiceOrderDisplayValue = useCallback(() => {
+    if (isLoadingNextServiceOrder) {
+      return "Carregando...";
+    }
+    
+    if (nextServiceOrderError) {
+      return "Erro ao carregar";
+    }
+    
+    if (nextServiceOrderData?.nextServiceOrder) {
+      return `Próximo número: ${nextServiceOrderData.nextServiceOrder}`;
+    }
+    
+    return "Será gerado automaticamente";
+  }, [isLoadingNextServiceOrder, nextServiceOrderError, nextServiceOrderData]);
 
   const processSearch = useCallback((value: string) => {
     const newFilters: OrderFilters = { 
@@ -233,7 +282,6 @@ export function useOrders(options: UseOrdersOptions = {}) {
   const updateOrderMutation = useMutation({
     mutationFn: async ({ id, orderData }: { id: string, orderData: Partial<Order> }) => {
       try {
-        // Use the service function instead of directly calling the API
         return await updateOrder(id, orderData);
       } catch (error) {
         console.error(`Error updating order ${id}:`, error);
@@ -246,17 +294,13 @@ export function useOrders(options: UseOrdersOptions = {}) {
         description: `O pedido #${id.substring(0, 8)} foi atualizado com sucesso.`,
       });
 
-      // Invalidate multiple related queries
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS.ALL] });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.ORDERS.DETAIL(id) });
-      
-      // Refresh dashboard stats if they exist
       queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
     },
     onError: (error) => {
       console.error("Erro ao atualizar pedido:", error);
       
-      // Display more specific error message
       const errorMessage = error instanceof Error 
         ? error.message 
         : "Não foi possível atualizar o pedido.";
@@ -324,7 +368,12 @@ export function useOrders(options: UseOrdersOptions = {}) {
           description: "O pedido foi criado com sucesso.",
         });
    
+        // Invalidar queries relacionadas
         queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS.ALL] });
+        
+        // Atualizar o próximo serviceOrder após criar um pedido
+        queryClient.invalidateQueries({ queryKey: QUERY_KEYS.ORDERS.NEXT_SERVICE_ORDER });
+        fetchNextServiceOrder();
       }
     },
     onError: (error) => {
@@ -360,6 +409,10 @@ export function useOrders(options: UseOrdersOptions = {}) {
   const handleCreateOrder = useCallback((orderData: Omit<Order, "_id">) => {
     return createOrderMutation.mutateAsync(orderData);
   }, [createOrderMutation]);
+
+  const navigateToOrders = useCallback(() => {
+    router.push("/orders");
+  }, [router]);
    
   const navigateToOrderDetails = useCallback((id: string) => {
     router.push(`/orders/${id}`);
@@ -373,7 +426,7 @@ export function useOrders(options: UseOrdersOptions = {}) {
     router.push("/orders/new");
   }, [router]);
 
-    const navigateToMyOrders = useCallback((id: string) => {
+  const navigateToMyOrders = useCallback((id: string) => {
     router.push(`/orders/${id}/my-orders`);
   }, [router]);
    
@@ -601,7 +654,6 @@ export function useOrders(options: UseOrdersOptions = {}) {
     isCreating: createOrderMutation?.isPending,
     isUpdatingStatus: updateOrderStatusMutation?.isPending,
     isUpdatingLaboratory: updateOrderLaboratoryMutation?.isPending,
-   
     setCurrentPage: handlePageChange,
     updateFilters,
     fetchOrderById,
@@ -610,6 +662,7 @@ export function useOrders(options: UseOrdersOptions = {}) {
     handleUpdateOrderStatus,
     handleUpdateOrderLaboratory,
     handleCreateOrder,
+    navigateToOrders,
     navigateToOrderDetails,
     navigateToEditOrder,
     navigateToCreateOrder,
@@ -627,6 +680,13 @@ export function useOrders(options: UseOrdersOptions = {}) {
     refreshOrdersList,
     formatCurrency,
     formatDate,
-    fetchOrderComplementaryDetails
+    fetchOrderComplementaryDetails,
+    
+    // Funcionalidades do próximo serviceOrder
+    nextServiceOrder: nextServiceOrderData?.nextServiceOrder || null,
+    isLoadingNextServiceOrder,
+    nextServiceOrderError: nextServiceOrderError ? String(nextServiceOrderError) : null,
+    fetchNextServiceOrder,
+    getServiceOrderDisplayValue,
   };
 }

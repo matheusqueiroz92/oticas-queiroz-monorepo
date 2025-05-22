@@ -2,6 +2,7 @@ import { Order } from "../schemas/OrderSchema";
 import type { IOrder } from "../interfaces/IOrder";
 import type { IProduct, ILens, ICleanLens, IPrescriptionFrame, ISunglassesFrame } from "../interfaces/IProduct";
 import mongoose, { Types, type FilterQuery } from "mongoose";
+import { CounterService } from "../services/CounterService";
 
 export class OrderModel {
   private isValidId(id: string): boolean {
@@ -115,12 +116,11 @@ export class OrderModel {
               : order.employeeId.toString())
           : "",
       products: convertedProducts,
-      serviceOrder: order.serviceOrder,
+      serviceOrder: order.serviceOrder, // Agora será sempre uma string gerada automaticamente
       paymentMethod: order.paymentMethod,
       paymentStatus: order.paymentStatus,
       paymentEntry: order.paymentEntry,
       installments: order.installments,
-      // Usar o paymentHistory processado
       paymentHistory: paymentHistory.length > 0 ? paymentHistory : undefined,
       orderDate: order.orderDate,
       deliveryDate: order.deliveryDate,
@@ -164,8 +164,8 @@ export class OrderModel {
     }
 
     if (filters.serviceOrder) {
-      const cleanServiceOrder = filters.serviceOrder.replace(/\D/g, '');
-      query.serviceOrder = cleanServiceOrder;
+      // Agora serviceOrder é uma string direta (não precisa limpar)
+      query.serviceOrder = filters.serviceOrder.toString();
     }
 
     if (filters.status) {
@@ -236,11 +236,13 @@ export class OrderModel {
   }
   
   async create(orderData: Omit<IOrder, "_id">): Promise<IOrder> {
+    // Não precisamos mais gerar serviceOrder aqui, pois será feito automaticamente no middleware
     const order = new Order(orderData);
     const savedOrder = await order.save();
     return this.convertToIOrder(savedOrder);
   }
 
+  // Resto dos métodos permanecem iguais...
   async findAll(
     page = 1,
     limit = 10,
@@ -321,6 +323,28 @@ export class OrderModel {
     };
   }
 
+  // Método para criar com sessão (usado em transações)
+  async createWithSession(
+    orderData: Omit<IOrder, "_id">,
+    session: mongoose.ClientSession
+  ): Promise<IOrder> {
+    try {
+      // Gerar o serviceOrder usando a sessão para manter consistência
+      if (!orderData.serviceOrder) {
+        const nextNumber = await CounterService.getNextSequenceWithSession('serviceOrder', session);
+        orderData.serviceOrder = nextNumber.toString();
+      }
+  
+      const order = new Order(orderData);
+      const savedOrder = await order.save({ session });
+      return this.convertToIOrder(savedOrder);
+    } catch (error) {
+      console.error('Erro ao criar pedido com sessão:', error);
+      throw error;
+    }
+  }
+
+  // Outros métodos continuam iguais...
   async findById(
     id: string,
     populate = false,
@@ -543,10 +567,8 @@ export class OrderModel {
     populate = false,
     includeDeleted = false
   ): Promise<IOrder[]> {
-    const cleanServiceOrder = serviceOrder.trim().replace(/\D/g, '');
-    
     const query: FilterQuery<any> = { 
-      serviceOrder: cleanServiceOrder
+      serviceOrder: serviceOrder.toString() // Busca direta pela string
     };
   
     if (!includeDeleted) {
@@ -569,23 +591,5 @@ export class OrderModel {
   
     const orders = await orderQuery.exec();
     return orders.map((order) => this.convertToIOrder(order));
-  }
-
-  async createWithSession(
-    orderData: Omit<IOrder, "_id">,
-    session: mongoose.ClientSession
-  ): Promise<IOrder> {
-    // Gerar um número de ordem de serviço se não for fornecido
-    if (!orderData.serviceOrder) {
-      const date = new Date();
-      const year = date.getFullYear().toString().slice(2);
-      const month = (date.getMonth() + 1).toString().padStart(2, '0');
-      const randomNum = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-      orderData.serviceOrder = `${year}${month}${randomNum}`;
-    }
-  
-    const order = new Order(orderData);
-    const savedOrder = await order.save({ session });
-    return this.convertToIOrder(savedOrder);
   }
 }

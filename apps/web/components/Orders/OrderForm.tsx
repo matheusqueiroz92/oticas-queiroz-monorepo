@@ -67,7 +67,6 @@ interface OrderFormProps {
   handleClientSelect: (clientId: string, name: string) => void;
   updateFinalPrice: (total: number, discount: number) => void;
   calculateInstallmentValue: () => number;
-  // Nova prop para indicar se é edição
   isEditing?: boolean;
 }
 
@@ -83,7 +82,7 @@ export function OrderForm({
   customersData,
   productsData,
   loggedEmployee,
-  isEditing = false, // Nova prop com valor padrão false
+  isEditing = false,
   onSubmit,
   onCancel,
   onViewOrdersList,

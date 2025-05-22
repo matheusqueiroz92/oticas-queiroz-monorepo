@@ -36,6 +36,7 @@ export const QUERY_KEYS = {
     DETAIL: (id: string) => ['orders', 'detail', id],
     CLIENT: (clientId: string) => ["orders", "client", clientId],
     DAILY: ["orders", "daily"],
+    NEXT_SERVICE_ORDER: ["orders", "next-service-order"],
   },
 
   PRODUCTS: {

@@ -21,7 +21,7 @@ import {
   Loader2,
   Save
 } from "lucide-react";
-import { ProfileSection } from "@/components/Users/ProfileSection";
+import { ProfileSection } from "@/components/Profile/ProfileSection";
 
 const profileFormSchema = z.object({
   name: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),

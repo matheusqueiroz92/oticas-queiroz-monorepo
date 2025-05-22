@@ -2,7 +2,7 @@
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { UserTable } from "@/components/Users/UserTable";
+import { UserTable } from "@/components/Profile/UserTable";
 import { Loader2, UserX } from "lucide-react";
 import { useEmployees } from "@/hooks/useEmployees";
 import type { Column } from "@/app/_types/user";

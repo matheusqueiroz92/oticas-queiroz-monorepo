@@ -2,9 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/useToast";
 import { useCashRegister } from "@/hooks/useCashRegister";
 import { CashRegisterCloseForm } from "@/components/CashRegister/CashRegisterCloseForm";
@@ -14,14 +12,20 @@ import {
   createCloseCashRegisterForm, 
   type CloseCashRegisterFormValues 
 } from "@/schemas/cash-register-schema";
+import { BackButton } from "@/components/ui/back-button";
+import { CloseCashRegisterMessageCard } from "@/components/CashRegister/CloseCashRegisterMessageCard";
+import { ErrorCashRegisterCard } from "@/components/CashRegister/ErrorCashRegisterCard";
 
 export default function CloseCashRegisterPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [difference, setDifference] = useState<number | null>(null);
+  const [isClosingSuccessful, setIsClosingSuccessful] = useState(false);
 
   const { toast } = useToast();
+
+  const { navigateToCashRegister } = useCashRegister();
   
   const { 
     register: cashRegister, 
@@ -35,6 +39,7 @@ export default function CloseCashRegisterPage() {
   
   const closingBalance = form.watch("closingBalance");
   
+  // Efeito para verificar se existe um caixa aberto
   useEffect(() => {
     if (cashRegister && cashRegister.status === "open") {
       form.setValue("closingBalance", cashRegister.currentBalance);
@@ -42,13 +47,25 @@ export default function CloseCashRegisterPage() {
     }
   }, [cashRegister, form]);
   
-
+  // Efeito para calcular a diferença entre o saldo de fechamento e o saldo atual
   useEffect(() => {
     if (cashRegister && typeof closingBalance === "number") {
       setDifference(closingBalance - cashRegister.currentBalance);
     }
   }, [closingBalance, cashRegister]);
 
+  // Efeito para redirecionar após fechamento bem-sucedido do caixa
+  useEffect(() => {
+    if (isClosingSuccessful) {
+      const timer = setTimeout(() => {
+        router.push("/cash-register");
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isClosingSuccessful, router]);
+
+  // Função para lidar com o envio do formulário
   const onSubmit = (_data: CloseCashRegisterFormValues) => {
     if (!cashRegister || cashRegister.status !== "open") {
       toast({
@@ -62,20 +79,53 @@ export default function CloseCashRegisterPage() {
     setShowConfirmDialog(true);
   };
 
-  const confirmClose = () => {
+  // Função para lidar com o fechamento do caixa
+  const confirmClose = async () => {
     if (!cashRegister || !id) return;
 
     const data = form.getValues();
 
-    closeRegister({
-      closingBalance: data.closingBalance,
-      observations: data.observations,
-    });
+    try {
+      // Executa o fechamento do caixa
+      await closeRegister({
+        closingBalance: data.closingBalance,
+        observations: data.observations,
+      });
+      
+      // Fechar o dialog de confirmação
+      setShowConfirmDialog(false);
+      
+      // Mostrar toast de sucesso
+      toast({
+        title: "Caixa fechado",
+        description: "O caixa foi fechado com sucesso.",
+      });
+      
+      // Marcar como fechamento bem-sucedido para acionar o redirecionamento
+      setIsClosingSuccessful(true);
+      
+    } catch (error) {
+      // Em caso de erro, o toast já será exibido pelo mutation
+      console.error("Erro ao fechar caixa:", error);
+      setShowConfirmDialog(false);
+      
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível fechar o caixa. Tente novamente.",
+      });
+    }
   };
 
-  const handleCancel = () => {
-    router.push("/cash-register");
-  };
+  // Se está redirecionando após fechamento bem-sucedido, mostrar loading
+  if (isClosingSuccessful) {
+    return (
+      <div className="flex flex-col justify-center items-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin mb-4" />
+        <p className="text-muted-foreground">Redirecionando...</p>
+      </div>
+    );
+  }
 
   {/* Mensagem de erro */}
   if (cashRegisterError) {
@@ -86,19 +136,10 @@ export default function CloseCashRegisterPage() {
 
     return (
       <div className="max-w-3xl mx-auto p-4">
-        <Card className="bg-red-50 border-red-200">
-          <CardHeader>
-            <CardTitle className="text-red-800">Erro</CardTitle>
-            <CardDescription className="text-red-700">
-              {errorMessage}
-            </CardDescription>
-          </CardHeader>
-          <CardFooter>
-            <Button onClick={() => router.push("/cash-register")}>
-              Voltar para Caixas
-            </Button>
-          </CardFooter>
-        </Card>
+        <ErrorCashRegisterCard
+          errorMessage={errorMessage}
+          navigateToCashRegister={navigateToCashRegister}
+        />
       </div>
     );
   }
@@ -107,19 +148,7 @@ export default function CloseCashRegisterPage() {
   if (cashRegister && cashRegister.status !== "open") {
     return (
       <div className="max-w-3xl mx-auto p-4">
-        <Card className="bg-yellow-50 border-yellow-200">
-          <CardHeader>
-            <CardTitle className="text-yellow-800">Caixa já fechado</CardTitle>
-            <CardDescription className="text-yellow-700">
-              Este caixa já foi fechado e não pode ser fechado novamente.
-            </CardDescription>
-          </CardHeader>
-          <CardFooter>
-            <Button onClick={() => router.push("/cash-register")}>
-              Voltar para Caixas
-            </Button>
-          </CardFooter>
-        </Card>
+        <CloseCashRegisterMessageCard />
       </div>
     );
   }
@@ -136,14 +165,10 @@ export default function CloseCashRegisterPage() {
   return (
     <div className="max-w-3xl mx-auto p-4 space-y-6">
       <div className="flex items-center space-x-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => router.push("/cash-register")}
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Voltar
-        </Button>
+        <BackButton
+          onClick={navigateToCashRegister}
+          label="Voltar"
+        />
         <h1 className="text-2xl font-bold">Fechar Caixa</h1>
       </div>
 
@@ -161,7 +186,7 @@ export default function CloseCashRegisterPage() {
         setShowConfirmDialog={setShowConfirmDialog}
         onSubmit={onSubmit}
         onConfirmClose={confirmClose}
-        onCancel={handleCancel}
+        onCancel={navigateToCashRegister}
       />
     </div>
   );

@@ -193,6 +193,10 @@ export function useProducts() {
     setCurrentPage(1);
   };
 
+  const navigateToProducts = () => {
+    router.push("/products");
+  }
+
   const navigateToProductDetails = (id: string) => {
     router.push(`/products/${id}`);
   };
@@ -239,11 +243,9 @@ export function useProducts() {
     totalProducts,
     filters,
     currentPage,
-
     isCreating: createProductMutation.isPending,
     isUpdating: updateProductMutation.isPending,
     isDeleting: deleteProductMutation.isPending,
-
     setCurrentPage,
     updateFilters,
     fetchProductById,
@@ -251,6 +253,7 @@ export function useProducts() {
     handleUpdateProduct,
     handleDeleteProduct,
     handleUpdateStock,
+    navigateToProducts,
     navigateToProductDetails,
     navigateToCreateProduct,
     navigateToEditProduct,

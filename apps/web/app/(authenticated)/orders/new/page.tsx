@@ -31,7 +31,14 @@ export default function NewOrderPage() {
   const [submittedOrder, setSubmittedOrder] = useState<any>(null);
   const [hasLenses, setHasLenses] = useState(false);
 
-  const { handleCreateOrder, isCreating } = useOrders();
+  const { 
+    handleCreateOrder,
+    isCreating,
+    navigateToOrders,
+    navigateToOrderDetails,
+    fetchNextServiceOrder
+  } = useOrders();
+
   const {
     products: productsData,
     loading: isLoadingProducts,
@@ -56,14 +63,13 @@ export default function NewOrderPage() {
       });
       return;
     }
-  
+
     try {
-      console.log("Selected customer before API call:", selectedCustomer);
       const containsLenses = selectedProducts.some(product => 
         product.productType === 'lenses' || 
         (product.name && product.name.toLowerCase().includes('lente'))
       );
-  
+
       const initialStatus = containsLenses ? 'pending' : 'ready';
 
       // Função auxiliar para normalizar valores de dioptria
@@ -89,7 +95,7 @@ export default function NewOrderPage() {
         // Retornar com sinal explícito
         return numValue > 0 ? `+${numValue}` : `${numValue}`;
       };
-  
+
       // Criar o objeto de dados para envio, preservando valores de prescrição
       const orderData = {
         clientId: formData.clientId,
@@ -97,7 +103,7 @@ export default function NewOrderPage() {
         institutionId: formData.instituionId || null,
         isInstitutionalOrder: formData.isInstitutionalOrder,
         products: formData.products,
-        serviceOrder: formData.serviceOrder,
+        // REMOVIDO: serviceOrder - será gerado automaticamente pela API
         paymentMethod: formData.paymentMethod,
         paymentStatus: "pending",
         paymentEntry: formData.paymentEntry,
@@ -137,7 +143,7 @@ export default function NewOrderPage() {
         discount: formData.discount,
         finalPrice: formData.finalPrice,
       };
-  
+
       const newOrder = await handleCreateOrder(orderData as any);
       
       if (newOrder) {
@@ -145,10 +151,13 @@ export default function NewOrderPage() {
           ...newOrder,
           customer: selectedCustomer
         });
-  
+
+        // Atualizar o próximo número de serviceOrder após criar um pedido
+        await fetchNextServiceOrder();
+
         toast({
           title: "Pedido criado com sucesso",
-          description: `O pedido foi registrado com o ID: ${newOrder._id.substring(0, 8)}`,
+          description: `O pedido foi registrado com o número de OS: ${newOrder.serviceOrder}`,
         });
       }
     } catch (error: any) {
@@ -362,24 +371,13 @@ export default function NewOrderPage() {
     return remainingAmount <= 0 ? 0 : remainingAmount / installments;
   };
 
-  const handleCancel = () => {
-    router.back();
-  };
-
-  const handleViewOrdersList = () => {
-    router.push("/orders");
-  };
-
-  const handleViewOrderDetails = (orderId: string) => {
-    router.push(`/orders/${orderId}`);
-  };
-
   const resetOrderForm = () => {
     form.reset();
     setSelectedProducts([]);
     setSelectedCustomer(null);
     setSubmittedOrder(null);
     setHasLenses(false);
+    fetchNextServiceOrder();
   };  
 
   return (
@@ -404,14 +402,14 @@ export default function NewOrderPage() {
           setShowInstallments={setShowInstallments}
           submittedOrder={submittedOrder}
           isCreating={isCreating}
-          isEditing={false} // Nova prop para indicar que é criação (ou pode omitir já que o padrão é false)
+          isEditing={false}
           customersData={customersData || []}
           productsData={productsData || []}
           loggedEmployee={loggedEmployee}
           onSubmit={onSubmit}
-          onCancel={handleCancel}
-          onViewOrdersList={handleViewOrdersList}
-          onViewOrderDetails={handleViewOrderDetails}
+          onCancel={navigateToOrders}
+          onViewOrdersList={navigateToOrders}
+          onViewOrderDetails={navigateToOrderDetails}
           onCreateNewOrder={resetOrderForm}
           handleAddProduct={handleAddProduct}
           handleRemoveProduct={handleRemoveProduct}

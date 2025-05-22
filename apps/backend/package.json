@@ -20,7 +20,9 @@
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix",
     "create-admin": "ts-node src/scripts/createAdmin.ts",
-    "fix-relationships": "ts-node -r tsconfig-paths/register src/scripts/fixRelationships.ts"
+    "fix-relationships": "ts-node -r tsconfig-paths/register src/scripts/fixRelationships.ts",
+    "migrate:service-order": "ts-node src/scripts/migrateServiceOrder.ts",
+    "migrate:service-order:rollback": "ts-node src/scripts/migrateServiceOrder.ts --rollback"
   },
   "keywords": [],
   "author": "",

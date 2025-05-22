@@ -131,14 +131,18 @@ export function useProfile() {
     return `${baseUrl}/images/users/${imagePath}`;
   };
 
+  // Função para lidar com o redirecionamento
+  const handleBack = () => {
+    router.push("/profile");
+  };
+
   return {
     profile,
     isLoadingProfile,
     profileError,
-
     isChangingPassword: changePasswordMutation.isPending,
     isUpdatingProfile: updateProfileMutation.isPending,
-
+    handleBack,
     handleChangePassword,
     handleUpdateProfile,
     refetchProfile,

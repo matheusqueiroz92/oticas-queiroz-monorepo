@@ -28,8 +28,8 @@ export function useCashRegister() {
   const [currentPage, setCurrentPage] = useState(1);
 
   const router = useRouter();
-  const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: QUERY_KEYS.CASH_REGISTERS.PAGINATED(currentPage, filters),
@@ -45,6 +45,7 @@ export function useCashRegister() {
     queryKey: QUERY_KEYS.CASH_REGISTERS.OPEN,
     queryFn: checkOpenCashRegister,
     refetchOnWindowFocus: true,
+    retry: false, // Não tentar novamente em caso de erro 404
   });
 
   const {
@@ -54,11 +55,15 @@ export function useCashRegister() {
   } = useQuery({
     queryKey: QUERY_KEYS.CASH_REGISTERS.CURRENT,
     queryFn: getCurrentCashRegister,
+    retry: false, // Não tentar novamente em caso de erro 404
   });
 
   const cashRegisters = data?.registers || [];
+  
   const totalPages = data?.pagination?.totalPages || 1;
+  
   const totalRegisters = data?.pagination?.total || 0;
+  
   const activeRegister =
     openCurrentCashRegister?.isOpen && openCurrentCashRegister?.data
       ? openCurrentCashRegister.data
@@ -108,6 +113,9 @@ export function useCashRegister() {
       queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.CASH_REGISTERS.ALL,
       });
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.CASH_REGISTERS.OPEN,
+      });
 
       return result;
     },
@@ -128,6 +136,7 @@ export function useCashRegister() {
       queryKey: QUERY_KEYS.CASH_REGISTERS.DETAIL(id),
       queryFn: () => getCashRegisterById(id),
       enabled: !!id,
+      retry: false,
     });
   };
 
@@ -136,6 +145,7 @@ export function useCashRegister() {
       queryKey: QUERY_KEYS.CASH_REGISTERS.SUMMARY(id),
       queryFn: () => getCashRegisterSummary(id),
       enabled: !!id,
+      retry: false,
     });
   };
 
@@ -144,6 +154,7 @@ export function useCashRegister() {
       queryKey: QUERY_KEYS.PAYMENTS.BY_CASH_REGISTER(id),
       queryFn: () => getPaymentsByCashRegister(id),
       enabled: !!id,
+      retry: false,
     });
   };
 
@@ -152,18 +163,21 @@ export function useCashRegister() {
       queryKey: QUERY_KEYS.CASH_REGISTERS.DETAIL(id as string),
       queryFn: () => getCashRegisterById(id as string),
       enabled: !!id,
+      retry: false,
     });
 
     const summaryQuery = useQuery({
       queryKey: QUERY_KEYS.CASH_REGISTERS.SUMMARY(id as string),
       queryFn: () => getCashRegisterSummary(id as string),
       enabled: !!id,
+      retry: false,
     });
 
     const paymentsQuery = useQuery({
       queryKey: QUERY_KEYS.PAYMENTS.BY_CASH_REGISTER(id as string),
       queryFn: () => getPaymentsByCashRegister(id as string),
       enabled: !!id,
+      retry: false,
     });
 
     return {
@@ -184,6 +198,7 @@ export function useCashRegister() {
     return useQuery({
       queryKey: QUERY_KEYS.CASH_REGISTERS.CURRENT,
       queryFn: () => getCurrentCashRegister(),
+      retry: false,
     });
   };
 
@@ -205,47 +220,33 @@ export function useCashRegister() {
     return closeCashRegisterMutation.mutateAsync({ id, data });
   };
   
-  const useCloseCashRegister = (id: string | null, onSuccess?: () => void) => {
-    const router = useRouter();
-    const { toast } = useToast();
-    
+  const useCloseCashRegister = (id: string | null) => {
     const registerQuery = useQuery({
       queryKey: QUERY_KEYS.CASH_REGISTERS.DETAIL(id as string),
       queryFn: () => getCashRegisterById(id as string),
       enabled: !!id,
+      retry: false,
     });
     
     const closeCashRegisterMut = useMutation({
       mutationFn: ({ id, data }: { id: string; data: CloseCashRegisterDTO }) =>
         closeCashRegister(id, data),
       onSuccess: (result) => {
-        toast({
-          title: "Caixa fechado",
-          description: "O caixa foi fechado com sucesso.",
-        });
-        
+        // Invalidar todas as queries relacionadas ao caixa
         queryClient.invalidateQueries({
           queryKey: QUERY_KEYS.CASH_REGISTERS.CURRENT,
         });
         queryClient.invalidateQueries({
           queryKey: QUERY_KEYS.CASH_REGISTERS.ALL,
         });
-        
-        if (onSuccess) {
-          onSuccess();
-        } else {
-          router.push("/cash-register");
-        }
+        queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.CASH_REGISTERS.OPEN,
+        });
         
         return result;
       },
       onError: (error) => {
         console.error("Erro ao fechar caixa:", error);
-        toast({
-          variant: "destructive",
-          title: "Erro",
-          description: "Não foi possível fechar o caixa. Tente novamente.",
-        });
         throw error;
       },
     });
@@ -430,6 +431,10 @@ export function useCashRegister() {
     };
   };
 
+  const navigateToCashRegister = () => {
+    router.push("/cash-register");
+  }
+  
   const navigateToRegisterDetails = (id: string) => {
     router.push(`/cash-register/${id}`);
   };
@@ -440,6 +445,10 @@ export function useCashRegister() {
 
   const navigateToCloseRegister = (id: string) => {
     router.push(`/cash-register/close/${id}`);
+  };
+
+  const handlePrint = () => {
+    window.print();
   };
 
   return {
@@ -466,12 +475,14 @@ export function useCashRegister() {
     useCashRegisterList,
     handleOpenCashRegister,
     handleCloseCashRegister,
+    navigateToCashRegister,
     navigateToRegisterDetails,
     navigateToOpenRegister,
     navigateToCloseRegister,
     checkForOpenRegister,
     refetch,
     refetchOpenCurrentCashRegister,
-    refetchCurrentCashRegister
+    refetchCurrentCashRegister,
+    handlePrint
   };
 }
