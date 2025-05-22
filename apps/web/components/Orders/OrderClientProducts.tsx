@@ -23,7 +23,7 @@ import type { Product } from "@/app/_types/product";
 import { Loader2, Lock, RefreshCw } from "lucide-react";
 
 import { useInstitutions } from "@/hooks/useInstitutions";
-import { useOrders } from "@/hooks/useOrders"; // Hook integrado
+import { useOrders } from "@/hooks/useOrders";
 import ClientSearch from "@/components/Orders/ClientSearch";
 import ProductSearch from "@/components/Orders/ProductSearch";
 import SelectedProductsList from "@/components/Orders/SelectedProductList";
@@ -280,7 +280,7 @@ export default function OrderClientProducts({
         <div className="lg:col-span-2 space-y-4">
           <div className="space-y-3">
             <h3 className="text-sm font-medium border-b pb-1">Informações do Cliente</h3>
-            <div className="grid grid-cols-4 gap-3">
+            <div className="grid grid-cols-4 gap-3"> {/* Adicionado items-end */}
               <div className="col-span-3">
                 <ClientSearch
                   customers={customersData || []}
@@ -296,10 +296,9 @@ export default function OrderClientProducts({
                   control={form.control}
                   name="serviceOrder"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="h-full mt-2">
                       <FormLabel className="text-xs flex items-center gap-1">
                         Nº da O.S.
-                        <Lock className="h-3 w-3 text-gray-400" />
                         {!isLoadingNextServiceOrder && (
                           <button
                             type="button"
@@ -321,7 +320,7 @@ export default function OrderClientProducts({
                             disabled
                             className={`bg-gray-100 cursor-not-allowed border border-gray-200 rounded text-sm h-9 ${
                               nextServiceOrder && !isLoadingNextServiceOrder 
-                                ? 'text-green-700 font-medium' 
+                                ? 'text-blue-800 font-medium' 
                                 : 'text-gray-600'
                             }`}
                           />
@@ -337,7 +336,7 @@ export default function OrderClientProducts({
                       <FormDescription className="text-xs text-gray-500">
                         {nextServiceOrderError 
                           ? "Erro ao carregar o próximo número" 
-                          : "Este número será gerado automaticamente pelo sistema"
+                          : "Gerado automaticamente"
                         }
                       </FormDescription>
                       <FormMessage />

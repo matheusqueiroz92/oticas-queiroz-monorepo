@@ -97,7 +97,7 @@ export function useOrders(options: UseOrdersOptions = {}) {
     }
     
     if (nextServiceOrderData?.nextServiceOrder) {
-      return `Próximo número: ${nextServiceOrderData.nextServiceOrder}`;
+      return nextServiceOrderData.nextServiceOrder;
     }
     
     return "Será gerado automaticamente";
