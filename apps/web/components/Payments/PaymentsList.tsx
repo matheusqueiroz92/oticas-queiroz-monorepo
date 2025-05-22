@@ -20,8 +20,8 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PaginationItems } from "@/components/PaginationItems";
-import { formatCurrency, formatDate } from "@/app/utils/formatters";
-import type { IPayment, PaymentStatus, PaymentType } from "@/app/types/payment";
+import { formatCurrency, formatDate } from "@/app/_utils/formatters";
+import type { IPayment, PaymentStatus, PaymentType } from "@/app/_types/payment";
 import { CashRegisterStatus } from "@/components/CashRegister/CashRegisterStatus";
 
 interface PaymentsListProps {

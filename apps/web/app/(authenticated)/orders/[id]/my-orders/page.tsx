@@ -1,11 +1,9 @@
 "use client";
 
-import Cookies from "js-cookie";
-
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, FileX, RefreshCw, Plus, Filter, Search, X, NotepadText } from "lucide-react";
+import { Loader2, FileX, RefreshCw, Filter, Search, X, User } from "lucide-react";
 import { useOrders } from "@/hooks/useOrders";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/useToast";
@@ -23,18 +21,28 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import Cookies from "js-cookie";
 
-export default function OrdersPage() {
-  const [userId, setUserId] = useState<string>("");
+export default function MyOrdersPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-
-  useEffect(() => {
-    const id = Cookies.get("userId") || "";
-    setUserId(id);
-  }, []);
+  const [loggedEmployeeId, setLoggedEmployeeId] = useState<string>("");
+  const [loggedEmployeeName, setLoggedEmployeeName] = useState<string>("");
   
   const { toast } = useToast();
+
+  // Carregar dados do funcionário logado
+  useEffect(() => {
+    const userId = Cookies.get("userId");
+    const userName = Cookies.get("name");
+    
+    if (userId) {
+      setLoggedEmployeeId(userId);
+    }
+    if (userName) {
+      setLoggedEmployeeName(userName);
+    }
+  }, []);
 
   const {
     orders,
@@ -51,8 +59,6 @@ export default function OrdersPage() {
     updateFilters,
     navigateToOrderDetails,
     navigateToEditOrder,
-    navigateToMyOrders,
-    navigateToCreateOrder,
     refreshOrdersList,
     getClientName,
     getEmployeeName,
@@ -60,6 +66,16 @@ export default function OrdersPage() {
     getStatusBadge,
     getPaymentStatusBadge,
   } = useOrders();
+
+  // Aplicar filtro automático pelo funcionário logado
+  useEffect(() => {
+    if (loggedEmployeeId && (!filters.employeeId || filters.employeeId !== loggedEmployeeId)) {
+      updateFilters({
+        ...filters,
+        employeeId: loggedEmployeeId
+      });
+    }
+  }, [loggedEmployeeId, filters, updateFilters]);
   
   const handleManualRefresh = async () => {
     setIsRefreshing(true);
@@ -67,7 +83,7 @@ export default function OrdersPage() {
       await refreshOrdersList();
       toast({
         title: "Atualizado",
-        description: "Lista de pedidos atualizada com sucesso.",
+        description: "Lista de seus pedidos atualizada com sucesso.",
       });
     } catch (error) {
       console.error("Erro ao atualizar lista:", error);
@@ -84,10 +100,26 @@ export default function OrdersPage() {
   const getActiveFiltersCount = () => {
     let count = 0;
     if (search) count++;
+    // Não contar o filtro do employeeId pois é automático
+    if (filters.status && filters.status !== 'all') count++;
+    if (filters.paymentMethod && filters.paymentMethod !== 'all') count++;
+    if (filters.laboratoryId && filters.laboratoryId !== 'all') count++;
+    if (filters.startDate) count++;
+    if (filters.endDate) count++;
     return count;
   };
 
   const handleClearSearch = () => {
+    setSearch('');
+  };
+
+  const handleClearFilters = () => {
+    // Manter o filtro do funcionário e limpar os outros
+    const newFilters = {
+      employeeId: loggedEmployeeId,
+      sort: "-createdAt"
+    };
+    updateFilters(newFilters);
     setSearch('');
   };
 
@@ -122,11 +154,6 @@ export default function OrdersPage() {
       }
     },
     { 
-      key: "employee", 
-      header: "Vendedor",
-      render: (order: Order) => getEmployeeName(order.employeeId.toString())
-    },
-    { 
       key: "laboratory", 
       header: "Laboratório",
       render: (order: Order) => order.laboratoryId 
@@ -152,15 +179,31 @@ export default function OrdersPage() {
     },
   ];
 
+  // Filtros customizados para a página de pedidos do funcionário
+  const handleUpdateFilters = (newFilters: Record<string, any>) => {
+    // Sempre manter o filtro do funcionário logado
+    const filtersWithEmployee = {
+      ...newFilters,
+      employeeId: loggedEmployeeId
+    };
+    updateFilters(filtersWithEmployee);
+  };
+
   return (
     <>
       <style jsx global>{customBadgeStyles}</style>
       
       <div className="space-y-2 max-w-auto mx-auto p-1 md:p-2">
-        <PageTitle
-          title="Pedidos"
-          description="Lista de pedidos da loja"
-        />
+        <div className="flex items-center justify-between">
+          <PageTitle
+            title="Meus Pedidos"
+            description={`Pedidos realizados por ${loggedEmployeeName || 'você'}`}
+          />
+          <div className="flex items-center gap-2 text-sm text-muted-foreground bg-blue-50 px-3 py-2 rounded-md border border-blue-200">
+            <User className="h-4 w-4 text-blue-600" />
+            <span className="text-blue-700 font-medium">Vendedor: {loggedEmployeeName}</span>
+          </div>
+        </div>
         
         <div className="flex justify-between items-center">
           <div className="flex gap-2 items-center">
@@ -221,15 +264,6 @@ export default function OrdersPage() {
           <div className="flex space-x-2">
             <Button
               variant="outline"
-              onClick={() => navigateToMyOrders(userId)}
-              disabled={isRefreshing || isLoading}
-              size="sm"
-            >
-              <NotepadText className={`h-4 w-4 mr-1 ${isRefreshing ? 'animate-spin' : ''}`} />
-              Meus Pedidos
-            </Button>
-            <Button
-              variant="outline"
               onClick={handleManualRefresh}
               disabled={isRefreshing || isLoading}
               size="sm"
@@ -238,28 +272,19 @@ export default function OrdersPage() {
               Atualizar
             </Button>
             <OrderExportButton 
-              filters={filters}
+              filters={{...filters, employeeId: loggedEmployeeId}}
               buttonText="Exportar"
               variant="outline"
               disabled={isLoading || orders.length === 0}
               size="sm"
             />
-            <Button
-              className="bg-[var(--primary-blue)] text-primary-foreground"
-              onClick={navigateToCreateOrder}
-              size="sm"
-            >
-                <Plus className="h-4 w-4 mr-1" />
-              Novo Pedido
-            </Button>
           </div>
         </div>
 
         {showFilters && (
           <OrderFilters 
-            onUpdateFilters={(newFilters: Record<string, any>) => {
-              updateFilters(newFilters);
-            }} 
+            onUpdateFilters={handleUpdateFilters}
+            hideEmployeeFilter={true} // Esconder o filtro de funcionário já que é automático
           />
         )}
 
@@ -276,43 +301,53 @@ export default function OrdersPage() {
             <FileX className="h-16 w-16 text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold">Nenhum pedido encontrado</h3>
             <p className="text-muted-foreground mt-2">
-              Não há pedidos cadastrados ou nenhum corresponde aos filtros aplicados.
+              Você ainda não realizou nenhum pedido ou nenhum corresponde aos filtros aplicados.
             </p>
-            {(search || Object.keys(updateFilters).length > 1) && (
+            {(search || getActiveFiltersCount() > 0) && (
               <Button 
                 variant="outline" 
-                onClick={clearFilters}
-                className="mt-4 mb-2"
+                onClick={handleClearFilters}
+                className="mt-4"
               >
                 <X className="h-4 w-4 mr-1" />
                 Limpar Filtros
               </Button>
             )}
-            <Button 
-              variant="outline" 
-              onClick={navigateToCreateOrder}
-              className="mt-2"
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              Criar Novo Pedido
-            </Button>
           </div>
         )}
 
         {!isLoading && !error && orders.length > 0 && (
-          <OrdersList
-            data={orders}
-            columns={orderColumns}
-            onDetailsClick={navigateToOrderDetails}
-            onEditClick={navigateToEditOrder}
-            currentPage={currentPage}
-            totalPages={totalPages}
-            setCurrentPage={setCurrentPage}
-            totalItems={totalOrders}
-            sortField="createdAt"
-            sortDirection="desc"
-            key={`order-table-${search}-${JSON.stringify(orders.length)}-${currentPage}`}
-          />
+          <>
+            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md">
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span className="text-green-700 font-medium">
+                    Mostrando {orders.length} de {totalOrders} pedidos seus
+                  </span>
+                </div>
+                <span className="text-green-600">
+                  Total vendido: {formatCurrency(
+                    orders.reduce((sum, order) => sum + (order.finalPrice || order.totalPrice), 0)
+                  )}
+                </span>
+              </div>
+            </div>
+
+            <OrdersList
+              data={orders}
+              columns={orderColumns}
+              onDetailsClick={navigateToOrderDetails}
+              onEditClick={navigateToEditOrder}
+              currentPage={currentPage}
+              totalPages={totalPages}
+              setCurrentPage={setCurrentPage}
+              totalItems={totalOrders}
+              sortField="createdAt"
+              sortDirection="desc"
+              key={`my-orders-table-${search}-${JSON.stringify(orders.length)}-${currentPage}`}
+            />
+          </>
         )}
       </div>
     </>

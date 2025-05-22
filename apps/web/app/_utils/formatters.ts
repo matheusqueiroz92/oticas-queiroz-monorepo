@@ -4,7 +4,7 @@ import type {
   PaymentType,
   PaymentMethod,
   PaymentStatus,
-} from "../types/payment";
+} from "../_types/payment";
 
 /**
  * Formata um valor numérico como moeda (R$)

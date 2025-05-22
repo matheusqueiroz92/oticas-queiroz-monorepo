@@ -12,13 +12,13 @@ import {
   deleteProduct,
   formatCurrency,
   getProductStockHistory,
-} from "../app/services/productService";
-import { QUERY_KEYS } from "../app/constants/query-keys";
-import { Product } from "@/app/types/product";
+} from "../app/_services/productService";
+import { QUERY_KEYS } from "../app/_constants/query-keys";
+import { Product } from "@/app/_types/product";
 import { 
   getCorrectPrice, 
   normalizeProduct 
-} from "../app/utils/product-utils";
+} from "../app/_utils/product-utils";
 
 interface ProductFilters {
   search?: string;

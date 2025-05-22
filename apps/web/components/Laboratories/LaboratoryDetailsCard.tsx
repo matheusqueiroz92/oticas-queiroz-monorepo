@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { InfoSection } from "@/components/Users/InfoSection";
 import { InfoField } from "@/components/Users/InfoField";
-import type { Laboratory } from "@/app/types/laboratory";
+import type { Laboratory } from "@/app/_types/laboratory";
 import { PageTitle } from "../PageTitle";
 
 interface LaboratoryDetailsCardProps {

@@ -6,12 +6,12 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import type { Product } from "../../app/types/product";
-import { formatCurrency } from "../../app/utils/formatters";
-import { normalizeProduct } from "@/app/utils/product-utils";
+import type { Product } from "../../app/_types/product";
+import { formatCurrency } from "../../app/_utils/formatters";
+import { normalizeProduct } from "@/app/_utils/product-utils";
 import { Badge } from "@/components/ui/badge";
-import { api } from "@/app/services/authService";
-import { API_ROUTES } from "@/app/constants/api-routes";
+import { api } from "@/app/_services/authService";
+import { API_ROUTES } from "@/app/_constants/api-routes";
 import { Loader2 } from "lucide-react";
 import debounce from 'lodash/debounce';
 

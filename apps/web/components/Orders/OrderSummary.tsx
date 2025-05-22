@@ -1,6 +1,6 @@
 import { ShoppingBag } from "lucide-react";
-import { formatCurrency } from "@/app/utils/formatters";
-import type { Product } from "@/app/types/product";
+import { formatCurrency } from "@/app/_utils/formatters";
+import type { Product } from "@/app/_types/product";
 
 interface OrderSummaryProps {
   form: any;

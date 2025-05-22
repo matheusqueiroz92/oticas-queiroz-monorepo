@@ -30,10 +30,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { api } from "@/app/services/authService";
+import { api } from "@/app/_services/authService";
 import { useOrders } from "@/hooks/useOrders";
-import { API_ROUTES } from "../../app/constants/api-routes";
-import type { Order } from "@/app/types/order";
+import { API_ROUTES } from "../../app/_constants/api-routes";
+import type { Order } from "@/app/_types/order";
 
 interface Laboratory {
   _id: string;

@@ -5,7 +5,7 @@ import {
   CardTitle,
   CardContent,
 } from "@/components/ui/card";
-import type { OrderFormReturn } from "../../app/types/form-types";
+import type { OrderFormReturn } from "../../app/_types/form-types";
 
 interface EyeFormSectionProps {
   eye: "left" | "right";

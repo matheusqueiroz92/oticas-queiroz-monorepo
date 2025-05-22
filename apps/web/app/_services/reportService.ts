@@ -1,12 +1,12 @@
 import { api } from "./authService";
-import { API_ROUTES } from "../constants/api-routes";
+import { API_ROUTES } from "../_constants/api-routes";
 import type {
   IReport,
   CreateReportDTO,
   ReportType,
   ReportStatus,
   ReportFormat,
-} from "../types/report";
+} from "../_types/report";
 
 interface ReportFilters {
   page?: number;

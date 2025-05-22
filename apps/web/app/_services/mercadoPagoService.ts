@@ -1,4 +1,4 @@
-import { API_ROUTES } from "../constants/api-routes";
+import { API_ROUTES } from "../_constants/api-routes";
 import { api } from "./authService";
 
 /**

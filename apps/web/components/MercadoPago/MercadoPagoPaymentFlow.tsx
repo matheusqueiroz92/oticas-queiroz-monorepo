@@ -5,7 +5,7 @@ import { PaymentStatus } from '@/components/MercadoPago/PaymentStatus';
 import { useRouter } from 'next/navigation';
 import { CreditCard, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
-import { formatCurrency } from '@/app/utils/formatters';
+import { formatCurrency } from '@/app/_utils/formatters';
 import {
   Dialog,
   DialogContent,

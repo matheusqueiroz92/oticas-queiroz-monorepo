@@ -3,17 +3,17 @@
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { getPaymentById } from "@/app/services/paymentService";
-import { QUERY_KEYS } from "@/app/constants/query-keys";
+import { getPaymentById } from "@/app/_services/paymentService";
+import { QUERY_KEYS } from "@/app/_constants/query-keys";
 import { usePayments } from "@/hooks/usePayments";
 import {
   translatePaymentType,
   translatePaymentMethod,
   translatePaymentStatus,
   getPaymentStatusClass,
-} from "@/app/utils/formatters";
+} from "@/app/_utils/formatters";
 import { PaymentDetails } from "@/components/Payments/PaymentDetails";
-import type { LegacyClient } from "@/app/types/legacy-client";
+import type { LegacyClient } from "@/app/_types/legacy-client";
 
 export default function PaymentDetailsPage() {
   const { id } = useParams<{ id: string }>();

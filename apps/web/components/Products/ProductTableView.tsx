@@ -1,4 +1,4 @@
-import { Product } from "@/app/types/product";
+import { Product } from "@/app/_types/product";
 import { ProductTableRow } from "./ProductTableRow";
 
 interface ProductTableViewProps {

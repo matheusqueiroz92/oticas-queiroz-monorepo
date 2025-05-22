@@ -1,6 +1,6 @@
 import { api } from "./authService";
-import type { User } from "../types/user";
-import { API_ROUTES } from "../constants/api-routes";
+import type { User } from "../_types/user";
+import { API_ROUTES } from "../_constants/api-routes";
 
 export interface UserFilters {
   search?: string;

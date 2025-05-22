@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle2 } from "lucide-react";
 import OrderPdfExporter from "@/components/Orders/exports/OrderPdfExporter";
 import OrderPrintButton from "@/components/Orders/exports/OrderPrintButton";
-import type { Customer } from "@/app/types/customer";
+import type { Customer } from "@/app/_types/customer";
 
 interface OrderSuccessScreenProps {
   form: any;

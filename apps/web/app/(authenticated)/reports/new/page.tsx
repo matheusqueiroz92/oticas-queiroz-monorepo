@@ -14,7 +14,7 @@ import { CreateReportForm } from "@/components/Reports/CreateReportForm";
 import { PageTitle } from "@/components/PageTitle";
 import { useReports } from "@/hooks/useReports";
 import { useToast } from "@/hooks/useToast";
-import type { CreateReportDTO } from "@/app/types/report";
+import type { CreateReportDTO } from "@/app/_types/report";
 
 export default function NewReportPage() {
   const router = useRouter();

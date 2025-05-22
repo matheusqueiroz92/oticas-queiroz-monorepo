@@ -12,11 +12,11 @@ import {
   updateLegacyClient,
   toggleLegacyClientStatus,
   createLegacyClient
-} from "@/app/services/legacyClientService";
-import { QUERY_KEYS } from "../app/constants/query-keys";
-import { API_ROUTES } from "../app/constants/api-routes";
-import { api } from "../app/services/authService";
-import type { LegacyClient } from "../app/types/legacy-client";
+} from "@/app/_services/legacyClientService";
+import { QUERY_KEYS } from "../app/_constants/query-keys";
+import { API_ROUTES } from "../app/_constants/api-routes";
+import { api } from "../app/_services/authService";
+import type { LegacyClient } from "../app/_types/legacy-client";
 import { useRouter } from "next/navigation";
 
 interface UseLegacyClientOptions {

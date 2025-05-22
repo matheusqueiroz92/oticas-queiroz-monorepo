@@ -11,11 +11,11 @@ import {
   updateLaboratory,
   toggleLaboratoryStatus,
   deleteLaboratory,
-} from "@/app/services/laboratoryService";
-import { QUERY_KEYS } from "@/app/constants/query-keys";
-import type { Laboratory, LaboratoryFilters, ApiError, LoggedEmployee } from "@/app/types/laboratory";
+} from "@/app/_services/laboratoryService";
+import { QUERY_KEYS } from "@/app/_constants/query-keys";
+import type { Laboratory, LaboratoryFilters, ApiError, LoggedEmployee } from "@/app/_types/laboratory";
 import { createLaboratoryForm, LaboratoryFormData } from "@/schemas/laboratory-schema";
-import { api } from "@/app/services/authService";
+import { api } from "@/app/_services/authService";
 import type { AxiosError } from "axios";
 import Cookies from "js-cookie";
 

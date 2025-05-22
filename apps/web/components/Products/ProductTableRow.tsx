@@ -13,8 +13,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Product } from "@/app/types/product";
-import { getProductTypeName } from "@/app/services/productService";
+import { Product } from "@/app/_types/product";
+import { getProductTypeName } from "@/app/_services/productService";
 
 interface ProductTableRowProps {
   product: Product;

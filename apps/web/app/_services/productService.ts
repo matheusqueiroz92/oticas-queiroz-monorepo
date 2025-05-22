@@ -1,5 +1,5 @@
 import { api } from "./authService";
-import { Product } from "../types/product";
+import { Product } from "../_types/product";
 
 interface ProductFilters {
   search?: string;

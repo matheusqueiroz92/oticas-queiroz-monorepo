@@ -8,11 +8,11 @@ import {
   translatePaymentStatus,
   getPaymentTypeClass,
   getPaymentStatusClass,
-} from "@/app/utils/formatters";
+} from "@/app/_utils/formatters";
 import { PaymentsList } from "@/components/Payments/PaymentsList";
 import { PageTitle } from "@/components/PageTitle";
-import { customBadgeStyles } from "@/app/utils/custom-badge-styles";
-import { PaymentStatus, PaymentType } from "@/app/types/payment";
+import { customBadgeStyles } from "@/app/_utils/custom-badge-styles";
+import { PaymentStatus, PaymentType } from "@/app/_types/payment";
 
 export default function PaymentsPage() {
   const [search, setSearch] = useState("");

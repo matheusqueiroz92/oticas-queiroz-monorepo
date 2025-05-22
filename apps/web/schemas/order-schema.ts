@@ -1,4 +1,4 @@
-import { OrderFormValues } from "@/app/types/order";
+import { OrderFormValues } from "@/app/_types/order";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { CreditCard, Loader2 } from "lucide-react";
 import { useToast } from '@/hooks/useToast';
-import { createTestPreference } from "@/app/services/mercadoPagoService";
+import { createTestPreference } from "@/app/_services/mercadoPagoService";
 
 interface DirectTestButtonProps {
   amount?: number;

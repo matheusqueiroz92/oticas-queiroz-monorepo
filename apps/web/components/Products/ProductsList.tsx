@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, Plus } from "lucide-react";
-import { Product } from "@/app/types/product";
+import { Product } from "@/app/_types/product";
 import { PaginationItems } from "@/components/PaginationItems";
 import { ProductFilters } from "./ProductFilters";
 import { ProductGridView } from "./ProductGridView";

@@ -37,8 +37,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 import { type UseFormReturn } from "react-hook-form";
 import type { CloseCashRegisterFormValues } from "@/schemas/cash-register-schema";
-import type { ICashRegister } from "@/app/types/cash-register";
-import { formatCurrency } from "@/app/utils/formatters";
+import type { ICashRegister } from "@/app/_types/cash-register";
+import { formatCurrency } from "@/app/_utils/formatters";
 
 interface CashRegisterCloseFormProps {
   form: UseFormReturn<CloseCashRegisterFormValues>;

@@ -12,11 +12,11 @@ import {
   createPayment,
   cancelPayment,
   getPaymentsByCashRegister,
-} from "@/app/services/paymentService";
-import { checkOpenCashRegister } from "@/app/services/cashRegisterService";
-import { QUERY_KEYS } from "../app/constants/query-keys";
-import { API_ROUTES } from "../app/constants/api-routes";
-import { api } from "@/app/services/authService";
+} from "@/app/_services/paymentService";
+import { checkOpenCashRegister } from "@/app/_services/cashRegisterService";
+import { QUERY_KEYS } from "../app/_constants/query-keys";
+import { API_ROUTES } from "../app/_constants/api-routes";
+import { api } from "@/app/_services/authService";
 import { paymentFormSchema } from "@/schemas/payment-schema";
 import { useCustomers } from "@/hooks/useCustomers";
 import { useOrders } from "@/hooks/useOrders";
@@ -26,9 +26,9 @@ import type {
   PaymentStatus,
   PaymentMethod,
   IPayment
-} from "@/app/types/payment";
-import { Order } from "@/app/types/order";
-import { formatCurrency } from "@/app/utils/formatters";
+} from "@/app/_types/payment";
+import { Order } from "@/app/_types/order";
+import { formatCurrency } from "@/app/_utils/formatters";
 
 interface PaymentFilters {
   search?: string;

@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { api } from "@/app/services/authService";
+import { api } from "@/app/_services/authService";
 import { useToast } from "@/hooks/useToast";
 import { User, Mail, Phone, Home, Calendar, FileImage, CreditCard, Key, CheckCircle2, ChevronRight, Loader2, UserPlus, ShieldCheck } from "lucide-react";
 

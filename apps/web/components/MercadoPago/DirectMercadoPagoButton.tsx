@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { formatCurrency } from '@/app/utils/formatters';
+import { formatCurrency } from '@/app/_utils/formatters';
 
 // Insira seu token de acesso do Mercado Pago para testes
 // IMPORTANTE: Nunca exponha tokens de produção no código frontend

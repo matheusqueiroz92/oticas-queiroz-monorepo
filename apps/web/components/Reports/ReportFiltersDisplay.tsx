@@ -15,8 +15,8 @@ import {
   paymentMethodOptions,
   orderStatusOptions,
   productCategoryOptions,
-} from "@/app/types/report";
-import type { ReportFilters } from "@/app/types/report";
+} from "@/app/_types/report";
+import type { ReportFilters } from "@/app/_types/report";
 
 interface ReportFiltersDisplayProps {
   filters: ReportFilters;

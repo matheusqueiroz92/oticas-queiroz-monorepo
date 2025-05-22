@@ -4,9 +4,9 @@ import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/useToast";
-import { api } from "@/app/services/authService";
-import { API_ROUTES } from "@/app/constants/api-routes";
-import { QUERY_KEYS } from "@/app/constants/query-keys";
+import { api } from "@/app/_services/authService";
+import { API_ROUTES } from "@/app/_constants/api-routes";
+import { QUERY_KEYS } from "@/app/_constants/query-keys";
 
 export function useUsers() {
   const router = useRouter();

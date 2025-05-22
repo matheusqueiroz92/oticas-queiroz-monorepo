@@ -10,8 +10,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from '@/hooks/useToast';
-import { createTestPreference } from "@/app/services/mercadoPagoService";
-import { formatCurrency } from '@/app/utils/formatters';
+import { createTestPreference } from "@/app/_services/mercadoPagoService";
+import { formatCurrency } from '@/app/_utils/formatters';
 
 interface CheckoutButtonProps {
   amount: number;

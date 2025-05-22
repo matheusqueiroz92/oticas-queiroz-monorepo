@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { api } from "@/app/services/authService";
+import { api } from "@/app/_services/authService";
 import { useToast } from "@/hooks/useToast";
 import {
   Table,
@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
-import { formatCurrency, formatDate } from "@/app/utils/formatters";
+import { formatCurrency, formatDate } from "@/app/_utils/formatters";
 import { PageTitle } from "@/components/PageTitle";
 
 export default function ChecksPage() {

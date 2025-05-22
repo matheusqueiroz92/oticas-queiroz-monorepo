@@ -1,6 +1,6 @@
 import axios from "axios";
 import Cookies from "js-cookie";
-import { API_ROUTES } from "../constants/api-routes";
+import { API_ROUTES } from "../_constants/api-routes";
 
 export interface User {
   _id: string;

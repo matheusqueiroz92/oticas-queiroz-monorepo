@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Filter, Search } from "lucide-react";
-import { getProductTypeName } from "@/app/services/productService";
+import { getProductTypeName } from "@/app/_services/productService";
 
 interface ProductFiltersProps {
   searchTerm: string;

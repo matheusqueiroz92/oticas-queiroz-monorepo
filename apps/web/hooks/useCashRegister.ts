@@ -13,15 +13,15 @@ import {
   getCashRegisterById,
   getCashRegisterSummary,
   getCurrentCashRegister,
-} from "@/app/services/cashRegisterService";
-import { getPaymentsByCashRegister } from "@/app/services/paymentService";
-import { QUERY_KEYS } from "@/app/constants/query-keys";
+} from "@/app/_services/cashRegisterService";
+import { getPaymentsByCashRegister } from "@/app/_services/paymentService";
+import { QUERY_KEYS } from "@/app/_constants/query-keys";
 import { useUsers } from "@/hooks/useUsers";
 import type {
   OpenCashRegisterDTO,
   CloseCashRegisterDTO,
   CashRegisterFilters,
-} from "@/app/types/cash-register";
+} from "@/app/_types/cash-register";
 
 export function useCashRegister() {
   const [filters, setFilters] = useState<CashRegisterFilters>({});

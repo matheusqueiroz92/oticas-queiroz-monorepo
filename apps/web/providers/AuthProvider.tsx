@@ -6,7 +6,7 @@ import {
   clearAuthCookies,
   redirectAfterLogout,
   type User,
-} from "../app/services/authService";
+} from "../app/_services/authService";
 import Cookies from "js-cookie";
 import { AuthContext } from "../contexts/authContext";
 

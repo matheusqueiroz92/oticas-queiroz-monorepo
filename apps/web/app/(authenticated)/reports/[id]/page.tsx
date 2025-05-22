@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { reportService } from "@/app/services/reportService";
+import { reportService } from "@/app/_services/reportService";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -15,12 +15,12 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, FileDown, Loader2, RefreshCw } from "lucide-react";
-import { formatDate } from "@/app/utils/formatters";
+import { formatDate } from "@/app/_utils/formatters";
 import { ReportStatusBadge } from "@/components/Reports/ReportStatusBadge";
 import { ReportDataVisualization } from "@/components/Reports/ReportDataVisualization";
 import { ReportFiltersDisplay } from "@/components/Reports/ReportFiltersDisplay";
 import { PageTitle } from "@/components/PageTitle";
-import { reportTypeMap } from "@/app/types/report";
+import { reportTypeMap } from "@/app/_types/report";
 import { useToast } from "@/hooks/useToast";
 import { useReports } from "@/hooks/useReports";
 import {
@@ -29,8 +29,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { QUERY_KEYS } from "@/app/constants/query-keys";
-import type { ReportFormat } from "@/app/types/report";
+import { QUERY_KEYS } from "@/app/_constants/query-keys";
+import type { ReportFormat } from "@/app/_types/report";
 
 export default function ReportDetailsPage() {
   const params = useParams();

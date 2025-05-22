@@ -5,8 +5,8 @@ import {
     CardHeader,
     CardTitle,
   } from "@/components/ui/card";
-  import type { ICashRegister } from "@/app/types/cash-register";
-  import { formatCurrency } from "@/app/utils/formatters";
+  import type { ICashRegister } from "@/app/_types/cash-register";
+  import { formatCurrency } from "@/app/_utils/formatters";
   
   interface CashRegisterSummaryProps {
     register: ICashRegister;

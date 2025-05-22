@@ -9,8 +9,8 @@ import {
 } from "@react-pdf/renderer";
 import { Button } from "@/components/ui/button";
 import { FileDown } from "lucide-react";
-import type { Order } from "@/app/types/order";
-import type { Product } from "@/app/types/product";
+import type { Order } from "@/app/_types/order";
+import type { Product } from "@/app/_types/product";
 
 const styles = StyleSheet.create({
   page: {

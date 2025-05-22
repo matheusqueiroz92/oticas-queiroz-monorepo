@@ -7,10 +7,10 @@ import {
   Image,
 } from "@react-pdf/renderer";
 import LogoImage from "../../../public/logo-oticas-queiroz.png";
-import type { Customer } from "../../../app/types/customer";
-import type { OrderFormValues } from "@/app/types/order";
-import type { Product } from "@/app/types/product";
-import { getProductTypeLabel } from "@/app/utils/product-utils";
+import type { Customer } from "../../../app/_types/customer";
+import type { OrderFormValues } from "@/app/_types/order";
+import type { Product } from "@/app/_types/product";
+import { getProductTypeLabel } from "@/app/_utils/product-utils";
 
 export interface OrderPDFProps {
   data: OrderFormValues & { _id?: string };

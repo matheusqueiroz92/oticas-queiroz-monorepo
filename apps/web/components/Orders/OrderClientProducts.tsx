@@ -17,9 +17,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { formatCurrency } from "@/app/utils/formatters";
-import type { Customer } from "@/app/types/customer";
-import type { Product } from "@/app/types/product";
+import { formatCurrency } from "@/app/_utils/formatters";
+import type { Customer } from "@/app/_types/customer";
+import type { Product } from "@/app/_types/product";
 import { Loader2 } from "lucide-react";
 
 import { useInstitutions } from "@/hooks/useInstitutions";

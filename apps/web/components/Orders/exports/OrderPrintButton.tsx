@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Printer, Loader2 } from "lucide-react";
 import { PDFDownloadLink } from "@react-pdf/renderer";
-import type { Customer } from "@/app/types/customer";
-import type { OrderFormValues } from "@/app/types/order";
+import type { Customer } from "@/app/_types/customer";
+import type { OrderFormValues } from "@/app/_types/order";
 import { PDFViewer } from '@react-pdf/renderer';
 import {
   Dialog,

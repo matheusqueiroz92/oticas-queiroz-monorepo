@@ -46,10 +46,10 @@ import {
   CreditCard,
 } from "lucide-react";
 import ClientSearch from "@/components/Orders/ClientSearch";
-import { formatCurrency, formatDate } from "@/app/utils/formatters";
-import type { Order } from "@/app/types/order";
-import type { User as UserType } from "@/app/types/user";
-import type { LegacyClient } from "@/app/types/legacy-client";
+import { formatCurrency, formatDate } from "@/app/_utils/formatters";
+import type { Order } from "@/app/_types/order";
+import type { User as UserType } from "@/app/_types/user";
+import type { LegacyClient } from "@/app/_types/legacy-client";
 
 type PaymentFormValues = any;
 

@@ -28,8 +28,8 @@ import {
   Info,
   Tag,
 } from "lucide-react";
-import { Product } from "@/app/types/product";
-import { getProductTypeName } from "@/app/utils/product-utils";
+import { Product } from "@/app/_types/product";
+import { getProductTypeName } from "@/app/_utils/product-utils";
 
 interface ProductEditFormProps {
   product: Product | null;

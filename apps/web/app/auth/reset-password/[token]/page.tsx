@@ -21,7 +21,7 @@ import { Loader2, ArrowLeft, CheckCircle2, XCircle } from "lucide-react";
 import {
   resetPassword,
   validateResetToken,
-} from "@/app/services/authService";
+} from "@/app/_services/authService";
 
 const resetPasswordSchema = z
   .object({

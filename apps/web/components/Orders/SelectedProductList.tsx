@@ -1,8 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { Product } from "../../app/types/product";
-import { formatCurrency } from "../../app/utils/formatters";
-import { getCorrectPrice, getProductTypeLabel, normalizeProduct } from "@/app/utils/product-utils";
+import type { Product } from "../../app/_types/product";
+import { formatCurrency } from "../../app/_utils/formatters";
+import { getCorrectPrice, getProductTypeLabel, normalizeProduct } from "@/app/_utils/product-utils";
 import { AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 

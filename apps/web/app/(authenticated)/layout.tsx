@@ -27,7 +27,7 @@ import { cn } from "@/lib/utils";
 import {
   clearAuthCookies,
   redirectAfterLogout,
-} from "@/app/services/authService";
+} from "@/app/_services/authService";
 import { useEffect, useState } from "react";
 import Cookies from "js-cookie";
 import Image from "next/image";

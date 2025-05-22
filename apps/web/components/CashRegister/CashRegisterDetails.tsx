@@ -21,9 +21,9 @@ import {
   CircleDollarSign,
   ReceiptText,
 } from "lucide-react";
-import { formatCurrency, formatDate } from "@/app/utils/formatters";
-import type { ICashRegister } from "@/app/types/cash-register";
-import type { IPayment } from "@/app/types/payment";
+import { formatCurrency, formatDate } from "@/app/_utils/formatters";
+import type { ICashRegister } from "@/app/_types/cash-register";
+import type { IPayment } from "@/app/_types/payment";
 import { CashRegisterPaymentsTable } from "./CashRegisterPaymentsTable";
 import { useUsers } from "@/hooks/useUsers";
 

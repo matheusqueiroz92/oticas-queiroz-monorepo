@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { api } from "@/app/services/authService";
+import { api } from "@/app/_services/authService";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { formatCurrency, formatDate } from "@/app/utils/formatters";
+import { formatCurrency, formatDate } from "@/app/_utils/formatters";
 import { CreditCard, AlertCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { IPayment } from "@/app/types/payment";
+import type { IPayment } from "@/app/_types/payment";
 
 interface OrderPaymentHistoryProps {
   orderId: string;

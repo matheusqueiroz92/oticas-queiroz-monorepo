@@ -1,7 +1,7 @@
 import { api } from "./authService";
-import type { Order } from "../types/order";
-import { normalizeOrder, normalizeOrders } from "../utils/data-normalizers";
-import { API_ROUTES } from "../constants/api-routes"
+import type { Order } from "../_types/order";
+import { normalizeOrder, normalizeOrders } from "../_utils/data-normalizers";
+import { API_ROUTES } from "../_constants/api-routes"
 import axios from "axios";
 
 export interface OrderFilters {

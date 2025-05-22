@@ -10,8 +10,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { FileDown } from "lucide-react";
 import LogoImage from "../../../public/logo-oticas-queiroz.png";
-import type { Customer } from "../../../app/types/customer";
-import type { OrderFormValues } from "@/app/types/order";
+import type { Customer } from "../../../app/_types/customer";
+import type { OrderFormValues } from "@/app/_types/order";
 
 const companyInfo = {
   name: "Óticas Queiroz",

@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import type { Order } from "@/app/types/order";
+import type { Order } from "@/app/_types/order";
 import { Button } from "@/components/ui/button";
 import {
   Table,

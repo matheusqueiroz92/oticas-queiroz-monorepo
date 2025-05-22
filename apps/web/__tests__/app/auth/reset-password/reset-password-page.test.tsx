@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
-import { validateResetToken, resetPassword } from '@/app/services/authService';
+import { validateResetToken, resetPassword } from '@/app/_services/authService';
 import { useRouter } from 'next/navigation';
 
 // Aumentando o timeout global para todos os testes neste arquivo

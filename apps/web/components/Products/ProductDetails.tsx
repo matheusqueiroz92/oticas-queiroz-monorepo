@@ -25,8 +25,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { ProductStockManagement } from "./ProductStockManagement";
-import { Product } from "@/app/types/product";
-import { getProductTypeName } from "@/app/services/productService";
+import { Product } from "@/app/_types/product";
+import { getProductTypeName } from "@/app/_services/productService";
 
 interface ProductDetailsProps {
   product: Product;

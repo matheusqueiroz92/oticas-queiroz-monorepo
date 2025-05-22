@@ -1,7 +1,7 @@
 import { CheckCircle2 } from "lucide-react";
-import type { Customer } from "@/app/types/customer";
-import type { Product } from "@/app/types/product";
-import { formatCurrency } from "@/app/utils/formatters";
+import type { Customer } from "@/app/_types/customer";
+import type { Product } from "@/app/_types/product";
+import { formatCurrency } from "@/app/_utils/formatters";
 import OrderSummary from "./OrderSummary";
 
 interface OrderConfirmationProps {

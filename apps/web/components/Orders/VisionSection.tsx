@@ -7,7 +7,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import type { OrderFormReturn } from "@/app/types/form-types";
+import type { OrderFormReturn } from "@/app/_types/form-types";
 
 interface VisionSectionProps {
   eye: "left" | "right";

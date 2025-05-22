@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Printer, RefreshCw } from "lucide-react";
-import { formatCurrency, formatDate } from "@/app/utils/formatters";
+import { formatCurrency, formatDate } from "@/app/_utils/formatters";
 
 interface OrderReceiptPrinterProps {
   order: any;

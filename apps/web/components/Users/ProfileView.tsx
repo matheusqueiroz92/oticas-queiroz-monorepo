@@ -18,7 +18,8 @@ import {
   DollarSign, 
   Key,
   ChevronRight,
-  ShoppingBag
+  ShoppingBag,
+  Pencil
 } from "lucide-react";
 import { InfoSection } from "@/components/Users/InfoSection";
 import { InfoField } from "@/components/Users/InfoField";
@@ -71,8 +72,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   };
 
   return (
-    <Tabs defaultValue="info" className="mt-6">
-      <TabsList className="grid w-full grid-cols-2 mb-6">
+    <Tabs defaultValue="info" className="w-full">
+      <TabsList className="grid grid-cols-2 mb-6 pb-12 pt-6 pr-6 pl-6">
         <TabsTrigger value="info" className="flex items-center gap-2">
           <UserCircle className="h-4 w-4" />
           Informações Pessoais
@@ -91,7 +92,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           actions={[
             {
               text: "Editar Perfil",
-              icon: <User className="h-4 w-4" />,
+              icon: <Pencil className="h-4 w-4" />,
               onClick: onStartEdit
             }
           ]}
@@ -210,7 +211,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               <div className="flex items-start justify-between">
                 <div>
                   <h3 className="font-medium flex items-center">
-                    <Key className="h-4 w-4 mr-2 text-primary" />
+                    <Key className="h-4 w-4 mr-2 text-red-500" />
                     Alterar Senha
                   </h3>
                   <p className="text-sm text-muted-foreground mt-1">
@@ -232,7 +233,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               <div className="flex items-start justify-between">
                 <div>
                   <h3 className="font-medium flex items-center">
-                    <Activity className="h-4 w-4 mr-2 text-primary" />
+                    <Activity className="h-4 w-4 mr-2 text-red-500" />
                     Atividade da Conta
                   </h3>
                   <p className="text-sm text-muted-foreground mt-1">
@@ -249,14 +250,14 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               </div>
             </div>
 
-            <div className="bg-blue-50 p-4 rounded-md border border-blue-100">
+            <div className="bg-red-50 p-4 rounded-md border border-red-100">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 rounded-full">
-                  <Shield className="h-5 w-5 text-blue-700" />
+                <div className="p-2 bg-red-100 rounded-full">
+                  <Shield className="h-5 w-5 text-red-700" />
                 </div>
                 <div>
-                  <h3 className="font-medium text-blue-800">Dicas de Segurança</h3>
-                  <ul className="mt-2 text-sm text-blue-700 space-y-1">
+                  <h3 className="font-medium text-red-800">Dicas de Segurança</h3>
+                  <ul className="mt-2 text-sm text--700 space-y-1">
                     <li className="flex items-start gap-2">
                       <span className="mt-1">•</span>
                       Use senhas fortes com pelo menos 8 caracteres, incluindo letras maiúsculas, minúsculas, números e símbolos

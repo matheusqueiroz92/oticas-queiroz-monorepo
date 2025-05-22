@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { CreateReportForm } from "./CreateReportForm";
 import { useReports } from "@/hooks/useReports";
-import type { CreateReportDTO } from "@/app/types/report";
+import type { CreateReportDTO } from "@/app/_types/report";
 
 interface CreateReportModalProps {
   isOpen: boolean;

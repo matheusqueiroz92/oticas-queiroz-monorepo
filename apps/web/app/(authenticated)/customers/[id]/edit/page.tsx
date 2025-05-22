@@ -10,9 +10,9 @@ import { PageTitle } from "@/components/PageTitle";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/useToast";
 import { useUsers } from "@/hooks/useUsers";
-import { api } from "@/app/services/authService";
+import { api } from "@/app/_services/authService";
 import { ErrorAlert } from "@/components/ErrorAlert";
-import { API_ROUTES } from "@/app/constants/api-routes";
+import { API_ROUTES } from "@/app/_constants/api-routes";
 
 export default function EditCustomerPage() {
   const { id } = useParams();

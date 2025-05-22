@@ -4,7 +4,7 @@ import type {
   CreatePaymentDTO,
   PaymentType,
   PaymentStatus,
-} from "../types/payment";
+} from "../_types/payment";
 
 interface PaymentFilters {
   page?: number;

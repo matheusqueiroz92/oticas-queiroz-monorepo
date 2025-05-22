@@ -11,7 +11,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { PaymentStatus } from './PaymentStatus';
-import { formatCurrency } from '@/app/utils/formatters';
+import { formatCurrency } from '@/app/_utils/formatters';
 
 interface PaymentButtonProps {
   orderId: string;

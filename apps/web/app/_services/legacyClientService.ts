@@ -1,6 +1,6 @@
 import { api } from "./authService";
-import type { LegacyClient } from "../types/legacy-client";
-import { API_ROUTES } from "../constants/api-routes";
+import type { LegacyClient } from "../_types/legacy-client";
+import { API_ROUTES } from "../_constants/api-routes";
 
 /**
  * Busca todos os clientes legados com opções de filtro

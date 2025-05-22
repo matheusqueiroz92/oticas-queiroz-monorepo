@@ -1,7 +1,7 @@
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import { jsPDF } from 'jspdf';
-import type { Order } from '@/app/types/order';
+import type { Order } from '@/app/_types/order';
 import { formatCurrency } from './formatters';
 
 /**

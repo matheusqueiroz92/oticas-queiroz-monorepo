@@ -2,8 +2,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Eye, Edit, Package, ShoppingBag } from "lucide-react";
-import { Product } from "@/app/types/product";
-import { getProductTypeName } from "@/app/services/productService";
+import { Product } from "@/app/_types/product";
+import { getProductTypeName } from "@/app/_services/productService";
 import Image from "next/image";
 
 interface ProductCardProps {

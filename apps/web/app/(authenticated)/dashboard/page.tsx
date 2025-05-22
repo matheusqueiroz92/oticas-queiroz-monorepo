@@ -24,17 +24,17 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatCurrency, getOrderStatusClass, translateOrderStatus } from "@/app/utils/formatters";
+import { formatCurrency, getOrderStatusClass, translateOrderStatus } from "@/app/_utils/formatters";
 import { QuickOrderSearch } from "@/components/Orders/QuickOrderSearch";
-import type { Order } from "@/app/types/order";
-import type { IPayment } from "@/app/types/payment";
+import type { Order } from "@/app/_types/order";
+import type { IPayment } from "@/app/_types/payment";
 import { useOrders } from "@/hooks/useOrders";
 import { usePayments } from "@/hooks/usePayments";
 import { useCashRegister } from "@/hooks/useCashRegister";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useLegacyClients } from "@/hooks/useLegacyClients";
-import { Employee } from "@/app/types/employee";
-import { formatDate } from "@/app/utils/formatters"
+import { Employee } from "@/app/_types/employee";
+import { formatDate } from "@/app/_utils/formatters"
 import { PageTitle } from "@/components/PageTitle";
 
 type OrderStatus = "pending" | "in_production" | "ready" | "delivered" | "cancelled";

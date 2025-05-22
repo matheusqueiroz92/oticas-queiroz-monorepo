@@ -3,13 +3,13 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { api } from "@/app/services/authService";
-import { API_ROUTES } from "@/app/constants/api-routes";
-import { QUERY_KEYS } from "@/app/constants/query-keys";
+import { api } from "@/app/_services/authService";
+import { API_ROUTES } from "@/app/_constants/api-routes";
+import { QUERY_KEYS } from "@/app/_constants/query-keys";
 import { useUsers } from "@/hooks/useUsers";
 import debounce from 'lodash/debounce';
-import { User } from "@/app/types/user";
-import { Customer } from "@/app/types/customer";
+import { User } from "@/app/_types/user";
+import { Customer } from "@/app/_types/customer";
 
 interface UseCustomersOptions {
   pageSize?: number;
@@ -161,8 +161,6 @@ export function useCustomers(options: UseCustomersOptions = {}) {
         throw error;
       }
     },
-    staleTime: 0,
-    refetchOnMount: true,
     refetchOnWindowFocus: false,
   });
 

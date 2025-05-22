@@ -18,7 +18,7 @@ export function InfoSection({
           {typeof icon === 'function' 
             ? icon() 
             : React.isValidElement(icon) 
-              ? <span className="text-primary">{icon}</span> 
+              ? <span className="text-red-500">{icon}</span> 
               : icon}
         </span>
         {title}

@@ -14,7 +14,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { formatCurrency, formatDate } from "@/app/utils/formatters";
+import { formatCurrency, formatDate } from "@/app/_utils/formatters";
 import { LegacyClientInfo } from "@/components/LegacyClients/LegacyClientInfo";
 import { PaymentHistoryTable } from "@/components/LegacyClients/PaymentHistoryTable";
 import { ArrowLeft, Edit, ToggleLeft, AlertTriangle } from "lucide-react";

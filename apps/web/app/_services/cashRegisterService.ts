@@ -6,9 +6,9 @@ import type {
   CashRegisterCheckResult,
   CashRegisterSummary,
   CashRegisterFilters,
-} from "@/app/types/cash-register";
-import { PaginationInfo } from "@/app/types/api-response";
-import { API_ROUTES } from "@/app/constants/api-routes";
+} from "@/app/_types/cash-register";
+import { PaginationInfo } from "@/app/_types/api-response";
+import { API_ROUTES } from "@/app/_constants/api-routes";
 
 /**
  * Verifica se existe um caixa aberto no sistema

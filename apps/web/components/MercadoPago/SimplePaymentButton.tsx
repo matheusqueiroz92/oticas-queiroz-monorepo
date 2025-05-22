@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { CreditCard, Loader2 } from "lucide-react";
 import { useToast } from '@/hooks/useToast';
-import { createPaymentPreference } from "@/app/services/mercadoPagoService";
+import { createPaymentPreference } from "@/app/_services/mercadoPagoService";
 
 interface SimplePaymentButtonProps {
   orderId: string;

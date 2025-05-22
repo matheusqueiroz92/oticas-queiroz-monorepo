@@ -9,6 +9,8 @@ import { useProfile } from "@/hooks/useProfile";
 import { PageTitle } from "@/components/PageTitle";
 import { ProfileView } from "@/components/Users/ProfileView";
 import { ProfileEditForm } from "@/components/Users/ProfileEditForm";
+import { RecentOrdersTable } from "@/components/Orders/RecentOrdersTable";
+import { useOrders } from "@/hooks/useOrders";
 import Cookies from "js-cookie";
 
 export default function ProfilePage() {
@@ -25,6 +27,8 @@ export default function ProfilePage() {
     refetchProfile,
     getUserImageUrl,
   } = useProfile();
+
+  const { orders, isLoading: isLoadingOrders, getEmployeeName } = useOrders();
 
   const handleStartEdit = () => {
     setEditMode(true);
@@ -64,6 +68,16 @@ export default function ProfilePage() {
     }
   };
 
+  const handleViewOrderDetails = (id: string) => {
+    router.push(`/orders/${id}`);
+  };
+
+  // Filtrar pedidos do funcionário logado
+  const employeeOrders = orders.filter(order => {
+    const userId = Cookies.get("userId");
+    return userId && (order.employeeId === userId || order.employeeId.toString() === userId);
+  });
+
   if (loading) {
     return (
       <div className="flex justify-center items-center py-12">
@@ -74,7 +88,7 @@ export default function ProfilePage() {
 
   if (!user) {
     return (
-      <div className="max-w-4xl mx-auto p-4">
+      <div className="space-y-6 max-w-auto mx-auto p-1 md:p-2">
         <Alert variant="destructive">
           <AlertTitle>Erro</AlertTitle>
           <AlertDescription>
@@ -89,27 +103,68 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-4">
+    <div className="space-y-6 max-w-auto mx-auto p-1 md:p-2">
       <PageTitle
         title="Meu Perfil"
         description="Gerencie suas informações pessoais e configurações de segurança"
       />
 
       {editMode ? (
-        <ProfileEditForm
-          user={user}
-          onCancel={handleCancelEdit}
-          onSubmit={handleSubmit}
-          isSubmitting={isUpdatingProfile}
-          previewImage={previewImage}
-          setPreviewImage={setPreviewImage}
-        />
+        <div className="max-w-4xl mx-auto">
+          <ProfileEditForm
+            user={user}
+            onCancel={handleCancelEdit}
+            onSubmit={handleSubmit}
+            isSubmitting={isUpdatingProfile}
+            previewImage={previewImage}
+            setPreviewImage={setPreviewImage}
+          />
+        </div>
       ) : (
-        <ProfileView
-          user={user}
-          getUserImageUrl={getUserImageUrl}
-          onStartEdit={handleStartEdit}
-        />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Coluna da esquerda - Informações do perfil */}
+          <div className="">
+            <ProfileView
+              user={user}
+              getUserImageUrl={getUserImageUrl}
+              onStartEdit={handleStartEdit}
+            />
+          </div>
+
+          {/* Coluna da direita - Pedidos recentes (apenas para funcionários e admin) */}
+          {(user.role === "employee" || user.role === "admin") && (
+            <div>
+              <div className="bg-white rounded-lg border shadow-sm">
+                <div className="p-6 border-b">
+                  <h3 className="text-lg font-semibold text-[var(--secondary-red)]">
+                    Meus Pedidos Recentes
+                  </h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Últimos pedidos realizados por você
+                  </p>
+                </div>
+                
+                <div className="p-6">
+                  {isLoadingOrders ? (
+                    <div className="flex justify-center items-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    </div>
+                  ) : employeeOrders.length > 0 ? (
+                    <RecentOrdersTable
+                      getEmployeeName={getEmployeeName}
+                      orders={employeeOrders}
+                      onViewDetails={handleViewOrderDetails}
+                    />
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <p>Você ainda não realizou nenhum pedido.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

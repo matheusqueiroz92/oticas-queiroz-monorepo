@@ -9,13 +9,13 @@ import {
 import { Download, FileDown, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/useToast";
 import { useOrders } from "@/hooks/useOrders";
-import { getAllOrdersForExport } from "@/app/services/orderService";
+import { getAllOrdersForExport } from "@/app/_services/orderService";
 import { 
   exportOrdersToExcel, 
   exportOrdersToPDF, 
   exportOrdersToCSV, 
   exportOrdersToJSON 
-} from "@/app/utils/clientExport";
+} from "@/app/_utils/clientExport";
 
 interface OrderExportButtonProps {
   filters?: Record<string, any>;

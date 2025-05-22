@@ -16,8 +16,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import type { IPayment } from "@/app/types/payment";
-import { formatCurrency, formatDate } from "@/app/utils/formatters";
+import type { IPayment } from "@/app/_types/payment";
+import { formatCurrency, formatDate } from "@/app/_utils/formatters";
 
 interface CashRegisterPaymentsTableProps {
   title: string;

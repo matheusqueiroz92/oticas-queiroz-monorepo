@@ -4,7 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useOrders } from "@/hooks/useOrders";
 import { useToast } from "@/hooks/useToast";
 import OrderDetails from "@/components/Orders/OrderDetails";
-import { customBadgeStyles } from "@/app/utils/custom-badge-styles";
+import { customBadgeStyles } from "@/app/_utils/custom-badge-styles";
 
 export default function OrderDetailsPage() {
   const { id } = useParams() as { id: string };

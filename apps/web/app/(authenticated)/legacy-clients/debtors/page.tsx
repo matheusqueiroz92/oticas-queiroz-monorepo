@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { PageTitle } from "@/components/PageTitle";
-import { formatCurrency, formatDate } from "@/app/utils/formatters";
+import { formatCurrency, formatDate } from "@/app/_utils/formatters";
 import { useLegacyClients } from "@/hooks/useLegacyClients";
 import { ArrowLeft, FileDown } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -22,7 +22,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { exportToPDF } from "@/app/utils/exportToPdf";
+import { exportToPDF } from "@/app/_utils/exportToPdf";
 import { useToast } from "@/hooks/useToast";
 
 export default function DebtorsPage() {

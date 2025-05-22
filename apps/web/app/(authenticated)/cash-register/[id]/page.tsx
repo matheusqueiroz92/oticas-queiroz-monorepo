@@ -6,7 +6,7 @@ import {
   translatePaymentType,
   translatePaymentMethod,
   getPaymentTypeClass,
-} from "@/app/utils/formatters";
+} from "@/app/_utils/formatters";
 import { CashRegisterDetails } from "@/components/CashRegister/CashRegisterDetails";
 
 export default function CashRegisterDetailsPage() {

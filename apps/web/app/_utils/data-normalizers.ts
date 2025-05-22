@@ -3,7 +3,7 @@
  * garantindo consistência entre ambientes
  */
 
-import type { Order } from "@/app/types/order";
+import type { Order } from "@/app/_types/order";
 import { diagnosticLog } from "./env-utils";
 import { normalizeProducts } from "./product-utils";
 

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Printer, RefreshCw } from "lucide-react";
-import { formatCurrency, formatDate, formatDateTime } from "@/app/utils/formatters";
-import type { IPayment } from "@/app/types/payment";
-import type { LegacyClient } from "@/app/types/legacy-client";
+import { formatCurrency, formatDate, formatDateTime } from "@/app/_utils/formatters";
+import type { IPayment } from "@/app/_types/payment";
+import type { LegacyClient } from "@/app/_types/legacy-client";
 import { useOrders } from '@/hooks/useOrders';
 
 interface PaymentReceiptPrinterProps {

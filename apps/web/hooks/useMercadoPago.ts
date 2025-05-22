@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { createPaymentPreference, getPaymentInfo, processPayment } from '@/app/services/mercadoPagoService';
-import { QUERY_KEYS } from '@/app/constants/query-keys';
+import { createPaymentPreference, getPaymentInfo, processPayment } from '@/app/_services/mercadoPagoService';
+import { QUERY_KEYS } from '@/app/_constants/query-keys';
 import { useToast } from '@/hooks/useToast';
 
 export function useMercadoPago() {

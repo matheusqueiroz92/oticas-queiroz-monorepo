@@ -12,15 +12,15 @@ import {
   createOrder,
   getOrdersByClient,
   updateOrder,
-} from "@/app/services/orderService";
-import { QUERY_KEYS } from "../app/constants/query-keys";
-import type { Order } from "@/app/types/order";
+} from "@/app/_services/orderService";
+import { QUERY_KEYS } from "../app/_constants/query-keys";
+import type { Order } from "@/app/_types/order";
 import { useUsers } from "@/hooks/useUsers";
 import { useLaboratories } from "@/hooks/useLaboratories";
-import { formatCurrency, formatDate } from "@/app/utils/formatters";
+import { formatCurrency, formatDate } from "@/app/_utils/formatters";
 import debounce from 'lodash/debounce';
-import { api } from "@/app/services/authService";
-import { API_ROUTES } from "@/app/constants/api-routes";
+import { api } from "@/app/_services/authService";
+import { API_ROUTES } from "@/app/_constants/api-routes";
 
 interface OrderFilters {
   search?: string;
@@ -372,6 +372,10 @@ export function useOrders(options: UseOrdersOptions = {}) {
   const navigateToCreateOrder = useCallback(() => {
     router.push("/orders/new");
   }, [router]);
+
+    const navigateToMyOrders = useCallback((id: string) => {
+    router.push(`/orders/${id}/my-orders`);
+  }, [router]);
    
   const translateOrderStatus = useCallback((status: string): string => {
     const statusMap: Record<string, string> = {
@@ -609,6 +613,7 @@ export function useOrders(options: UseOrdersOptions = {}) {
     navigateToOrderDetails,
     navigateToEditOrder,
     navigateToCreateOrder,
+    navigateToMyOrders,
     translateOrderStatus,
     getOrderStatusClass,
     getStatusBadge,

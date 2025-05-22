@@ -2,11 +2,11 @@ import { useEffect, useState } from "react";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import { Button } from "@/components/ui/button";
 import { FileDown } from "lucide-react";
-import type { Customer } from "@/app/types/customer";
-import type { OrderFormValues } from "@/app/types/order";
+import type { Customer } from "@/app/_types/customer";
+import type { OrderFormValues } from "@/app/_types/order";
 import { OrderCompactPDF } from "./OrderCompactPdf";
-import { api } from "@/app/services/authService";
-import { API_ROUTES } from "@/app/constants/api-routes";
+import { api } from "@/app/_services/authService";
+import { API_ROUTES } from "@/app/_constants/api-routes";
 
 interface OrderCompactPdfGeneratorProps {
   formData: OrderFormValues & { _id?: string };

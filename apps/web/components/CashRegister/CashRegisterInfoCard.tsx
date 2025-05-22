@@ -6,8 +6,8 @@ import {
   } from "@/components/ui/card";
   import { Badge } from "@/components/ui/badge";
   import { Calendar, DollarSign } from "lucide-react";
-  import type { ICashRegister } from "@/app/types/cash-register";
-  import { formatCurrency, formatDate } from "@/app/utils/formatters";
+  import type { ICashRegister } from "@/app/_types/cash-register";
+  import { formatCurrency, formatDate } from "@/app/_utils/formatters";
   
   interface CashRegisterInfoCardProps {
     register: ICashRegister;

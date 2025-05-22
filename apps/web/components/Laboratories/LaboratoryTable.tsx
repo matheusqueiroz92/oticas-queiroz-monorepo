@@ -10,7 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import type { Laboratory } from "@/app/types/laboratory";
+import type { Laboratory } from "@/app/_types/laboratory";
 
 interface LaboratoryTableProps {
   laboratories: Laboratory[];

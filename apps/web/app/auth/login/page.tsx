@@ -16,11 +16,11 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
-import { api } from "@/app/services/authService";
+import { api } from "@/app/_services/authService";
 import Cookies from "js-cookie";
 import axios from "axios";
 import { LoginFormData, loginSchema } from "@/schemas/login-schema";
-import { API_ROUTES } from "@/app/constants/api-routes";
+import { API_ROUTES } from "@/app/_constants/api-routes";
 
 export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);

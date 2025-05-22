@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Edit, ArrowLeft, Mail, Phone, MapPin, CreditCard, ShoppingBag } from "lucide-react";
 import { useRouter } from "next/navigation";
-import type { User } from "../../app/types/user";
+import type { User } from "../../app/_types/user";
 
 interface UserDetailsCardProps {
   user: User;

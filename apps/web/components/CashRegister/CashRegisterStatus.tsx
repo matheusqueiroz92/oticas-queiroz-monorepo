@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { DollarSign, Loader2, AlertCircle } from "lucide-react";
-import { checkOpenCashRegister } from "@/app/services/cashRegisterService";
-import { formatCurrency } from "@/app/utils/formatters";
-import { QUERY_KEYS } from "@/app/constants/query-keys";
-import type { ICashRegister } from "@/app/types/cash-register";
+import { checkOpenCashRegister } from "@/app/_services/cashRegisterService";
+import { formatCurrency } from "@/app/_utils/formatters";
+import { QUERY_KEYS } from "@/app/_constants/query-keys";
+import type { ICashRegister } from "@/app/_types/cash-register";
 import { useEffect } from "react";
 
 interface CashRegisterStatusProps {

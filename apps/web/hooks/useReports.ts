@@ -9,15 +9,15 @@ import {
   getReportById,
   getUserReports,
   downloadReport,
-} from "@/app/services/reportService";
-import { QUERY_KEYS } from "../app/constants/query-keys";
+} from "@/app/_services/reportService";
+import { QUERY_KEYS } from "../app/_constants/query-keys";
 import type {
   CreateReportDTO,
   ReportType,
   ReportStatus,
   ReportFormat,
-} from "../app/types/report";
-import { exportService } from "../app/services/exportService";
+} from "../app/_types/report";
+import { exportService } from "../app/_services/exportService";
 
 interface ReportFilters {
   search?: string;

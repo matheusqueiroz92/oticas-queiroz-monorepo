@@ -11,11 +11,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { api } from "@/app/services/authService";
-import { API_ROUTES } from "@/app/constants/api-routes";
-import { formatCurrency, formatDate, getOrderStatusClass, translateOrderStatus } from "@/app/utils/formatters";
+import { api } from "@/app/_services/authService";
+import { API_ROUTES } from "@/app/_constants/api-routes";
+import { formatCurrency, formatDate, getOrderStatusClass, translateOrderStatus } from "@/app/_utils/formatters";
 import { useUsers } from "@/hooks/useUsers";
-import type { Order } from "@/app/types/order";
+import type { Order } from "@/app/_types/order";
 import { 
   Tooltip,
   TooltipContent,

@@ -43,12 +43,12 @@ import {
   orderStatusOptions,
   paymentMethodOptions,
   productCategoryOptions,
-} from "@/app/types/report";
+} from "@/app/_types/report";
 import type {
   ReportType,
   ReportFormat,
   CreateReportDTO,
-} from "@/app/types/report";
+} from "@/app/_types/report";
 
 // Schema para validação do formulário
 const reportFormSchema = z.object({

@@ -10,8 +10,8 @@ import { PaginationItems } from "@/components/PaginationItems";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ClipboardList } from "lucide-react";
-import type { ICashRegister } from "@/app/types/cash-register";
-import { formatCurrency, formatDate } from "@/app/utils/formatters";
+import type { ICashRegister } from "@/app/_types/cash-register";
+import { formatCurrency, formatDate } from "@/app/_utils/formatters";
 import { useUsers } from "@/hooks/useUsers";
 
 interface CashRegisterListProps {

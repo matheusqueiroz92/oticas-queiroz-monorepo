@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Institution } from "@/app/types/institution";
+import { Institution } from "@/app/_types/institution";
 import { Button } from "@/components/ui/button";
 import {
   Table,

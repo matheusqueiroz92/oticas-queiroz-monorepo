@@ -1,6 +1,6 @@
 import { AlertTriangle, CheckCircle, Clock, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import type { ReportStatus } from "@/app/types/report";
+import type { ReportStatus } from "@/app/_types/report";
 
 interface ReportStatusBadgeProps {
   status: ReportStatus;

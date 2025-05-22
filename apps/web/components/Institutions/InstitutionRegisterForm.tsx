@@ -22,7 +22,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { api } from "@/app/services/authService";
+import { api } from "@/app/_services/authService";
 import { useToast } from "@/hooks/useToast";
 import { Building, Mail, Phone, Home, Calendar, FileImage, CreditCard, Key, CheckCircle2, ChevronRight, Loader2, User, Briefcase } from "lucide-react";
 

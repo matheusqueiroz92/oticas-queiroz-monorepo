@@ -9,7 +9,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { SimplePaymentButton } from "@/components/MercadoPago/SimplePaymentButton";
 import { CreditCard, AlertCircle, CheckCircle, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/useToast";
-import { createPaymentPreference, testConnection } from "@/app/services/mercadoPagoService";
+import { createPaymentPreference, testConnection } from "@/app/_services/mercadoPagoService";
 import { DirectTestButton } from "./DirectTestButton";
 import { SimpleMercadoPagoButton } from "@/components/MercadoPago/SimpleMercadoPagoButton";
 

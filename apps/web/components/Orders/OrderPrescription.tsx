@@ -1,5 +1,5 @@
-import type { Product } from "@/app/types/product";
-import type { OrderFormReturn } from "@/app/types/form-types";
+import type { Product } from "@/app/_types/product";
+import type { OrderFormReturn } from "@/app/_types/form-types";
 import PrescriptionForm from "@/components/Orders/PrescriptionForm";
 import OrderSummary from "./OrderSummary";
 

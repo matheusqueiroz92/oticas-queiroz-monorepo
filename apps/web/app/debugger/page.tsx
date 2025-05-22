@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { api } from "../services/authService";
+import { api } from "../_services/authService";
 import { Button } from "@/components/ui/button";
 import {
   Card,

@@ -3,12 +3,12 @@
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/useToast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/app/services/authService";
-import { QUERY_KEYS } from "@/app/constants/query-keys";
-import { API_ROUTES } from "@/app/constants/api-routes";
-import { Employee } from "@/app/types/employee";
-import { Customer } from "@/app/types/customer";
-import type { User } from "@/app/types/user";
+import { api } from "@/app/_services/authService";
+import { QUERY_KEYS } from "@/app/_constants/query-keys";
+import { API_ROUTES } from "@/app/_constants/api-routes";
+import { Employee } from "@/app/_types/employee";
+import { Customer } from "@/app/_types/customer";
+import type { User } from "@/app/_types/user";
 
 interface ChangePasswordData {
   currentPassword: string;

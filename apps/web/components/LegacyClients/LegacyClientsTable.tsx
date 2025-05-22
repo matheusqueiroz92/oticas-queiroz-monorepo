@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
-import { formatCurrency, formatDate } from "@/app/utils/formatters";
+import { formatCurrency, formatDate } from "@/app/_utils/formatters";
 import { Skeleton } from "@/components/ui/skeleton";
-import { LegacyClient } from "@/app/types/legacy-client";
+import { LegacyClient } from "@/app/_types/legacy-client";
 import { Eye } from "lucide-react";
 import {
   Table,

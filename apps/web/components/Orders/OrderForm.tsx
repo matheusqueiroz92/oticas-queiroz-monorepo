@@ -11,9 +11,9 @@ import {
   Form,
 } from "@/components/ui/form";
 import { Loader2, ChevronRight, User, File } from "lucide-react";
-import type { Customer } from "@/app/types/customer";
-import type { Product } from "@/app/types/product";
-import { OrderFormValues } from "@/app/types/form-types";
+import type { Customer } from "@/app/_types/customer";
+import type { Product } from "@/app/_types/product";
+import { OrderFormValues } from "@/app/_types/form-types";
 import OrderStepProgress from "@/components/Orders/OrderStepProgress";
 import OrderClientProducts from "@/components/Orders/OrderClientProducts";
 import OrderPrescription from "@/components/Orders/OrderPrescription";

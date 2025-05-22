@@ -8,9 +8,9 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Loader2 } from "lucide-react";
-import type { Customer } from "@/app/types/customer";
+import type { Customer } from "@/app/_types/customer";
 import type { UseFormReturn } from "react-hook-form";
-import type { OrderFormValues } from "@/app/types/form-types";
+import type { OrderFormValues } from "@/app/_types/form-types";
 import { useToast } from "@/hooks/useToast";
 
 interface ClientSearchProps {

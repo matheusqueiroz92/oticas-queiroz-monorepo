@@ -8,7 +8,7 @@ import { PageTitle } from "@/components/PageTitle";
 import { UserInfoCard } from "@/components/Users/UserInfoCard";
 import { InfoSection } from "@/components/Users/InfoSection";
 import { InfoField } from "@/components/Users/InfoField";
-import { Institution } from "@/app/types/institution";
+import { Institution } from "@/app/_types/institution";
 
 export default function InstitutionDetailsPage() {
   const { id } = useParams();

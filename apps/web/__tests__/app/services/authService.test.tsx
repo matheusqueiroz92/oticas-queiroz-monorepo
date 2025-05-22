@@ -8,7 +8,7 @@ import {
   clearAuthCookies,
   isAuthenticated,
   getUserRole
-} from '@/app/services/authService';
+} from '@/app/_services/authService';
 
 // Criar mock completo do módulo authService
 jest.mock('@/app/services/authService', () => {

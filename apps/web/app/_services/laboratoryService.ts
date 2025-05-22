@@ -1,5 +1,5 @@
 import { api } from "./authService";
-import type { Laboratory } from "../types/laboratory";
+import type { Laboratory } from "../_types/laboratory";
 
 interface LaboratoryFilters {
   search?: string;

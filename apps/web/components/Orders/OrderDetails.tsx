@@ -32,7 +32,7 @@ import {
 } from "lucide-react";
 import { useOrders } from "@/hooks/useOrders";
 import { useToast } from "@/hooks/useToast";
-import type { Order } from "@/app/types/order";
+import type { Order } from "@/app/_types/order";
 import { useRouter } from "next/navigation";
 import OrderPdfExporter from "./exports/OrderPdfExporter";
 

@@ -1,7 +1,7 @@
 /**
  * Utilitários relacionados a produtos
  */
-import { Product, Lens, CleanLens, PrescriptionFrame, SunglassesFrame } from "@/app/types/product";
+import { Product, Lens, CleanLens, PrescriptionFrame, SunglassesFrame } from "@/app/_types/product";
 
 // Mapa de preços conhecidos para produtos específicos
 export const KNOWN_PRICES: { [key: string]: number } = {

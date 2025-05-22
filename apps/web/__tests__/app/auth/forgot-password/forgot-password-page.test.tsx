@@ -3,7 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import ForgotPasswordPage from '@/app/auth/forgot-password/page';
-import { requestPasswordReset } from '@/app/services/authService';
+import { requestPasswordReset } from '@/app/_services/authService';
 
 // Mock do serviço de autenticação
 jest.mock('@/app/services/authService', () => ({

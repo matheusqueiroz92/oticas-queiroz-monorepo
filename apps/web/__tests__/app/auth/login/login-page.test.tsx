@@ -3,8 +3,8 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import LoginPage from '@/app/auth/login/page';
-import * as authService from '@/app/services/authService';
-import { API_ROUTES } from '@/app/constants/api-routes';
+import * as authService from '@/app/_services/authService';
+import { API_ROUTES } from '@/app/_constants/api-routes';
 import Cookies from 'js-cookie';
 
 // Mock de window.location

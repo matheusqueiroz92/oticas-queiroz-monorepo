@@ -20,9 +20,9 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
-import { reportTypeOptions } from "@/app/types/report";
+import { reportTypeOptions } from "@/app/_types/report";
 import { useReports } from "@/hooks/useReports";
-import type { ReportType, ReportStatus } from "@/app/types/report";
+import type { ReportType, ReportStatus } from "@/app/_types/report";
 
 export function ReportFilters() {
   const { filters, updateFilters } = useReports();

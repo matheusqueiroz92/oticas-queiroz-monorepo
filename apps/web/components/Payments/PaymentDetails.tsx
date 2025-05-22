@@ -35,9 +35,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import PaymentReceiptPrinter from "@/components/Payments/PaymentReceiptPrinter";
 
-import { formatCurrency, formatDate, formatDateTime } from "@/app/utils/formatters";
-import type { IPayment } from "@/app/types/payment";
-import type { LegacyClient } from "@/app/types/legacy-client";
+import { formatCurrency, formatDate, formatDateTime } from "@/app/_utils/formatters";
+import type { IPayment } from "@/app/_types/payment";
+import type { LegacyClient } from "@/app/_types/legacy-client";
 import { useUsers } from "@/hooks/useUsers";
 import { useOrders } from "@/hooks/useOrders";
 

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { UserTable } from "@/components/Users/UserTable";
 import { Loader2, UserX } from "lucide-react";
 import { useEmployees } from "@/hooks/useEmployees";
-import type { Column } from "@/app/types/user";
+import type { Column } from "@/app/_types/user";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { PageTitle } from "@/components/PageTitle";
 
