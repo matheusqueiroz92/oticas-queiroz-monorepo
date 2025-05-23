@@ -36,7 +36,14 @@ export class OrderController {
         return;
       }
 
-      const validatedData = createOrderSchema.parse(req.body);
+      const requestBody = { ...req.body };
+      if (requestBody.serviceOrder === null || requestBody.serviceOrder === undefined) {
+        delete requestBody.serviceOrder;
+      }
+      
+      console.log("Dados recebidos processados:", requestBody);
+
+      const validatedData = createOrderSchema.parse(requestBody);
 
       const validProducts = validatedData.products.map(product => {
         if (typeof product === 'string' || product instanceof Types.ObjectId) {
@@ -64,17 +71,34 @@ export class OrderController {
       }      
 
       const orderData: CreateOrderDTO = {
-        ...validatedData,
         clientId: new Types.ObjectId(validatedData.clientId),
         employeeId: new Types.ObjectId(validatedData.employeeId),
-        laboratoryId: validatedData.laboratoryId ? new Types.ObjectId(validatedData.laboratoryId) : null,
+        institutionId: validatedData.institutionId ? new Types.ObjectId(validatedData.institutionId) : undefined,
+        isInstitutionalOrder: validatedData.isInstitutionalOrder,
         products: validProducts as IProduct[],
+        paymentMethod: validatedData.paymentMethod,
+        paymentStatus: validatedData.paymentStatus,
+        paymentEntry: validatedData.paymentEntry,
+        installments: validatedData.installments,
+        orderDate: validatedData.orderDate,
+        deliveryDate: validatedData.deliveryDate,
+        status: validatedData.status,
+        laboratoryId: validatedData.laboratoryId ? new Types.ObjectId(validatedData.laboratoryId) : undefined,
+        prescriptionData: validatedData.prescriptionData,
+        observations: validatedData.observations,
+        totalPrice: validatedData.totalPrice,
+        discount: validatedData.discount,
+        finalPrice: validatedData.finalPrice,
+        isDeleted: validatedData.isDeleted,
       };
+
+      console.log("Dados finais para criação:", orderData);
 
       const order = await this.orderService.createOrder(orderData);
       res.status(201).json(order);
     } catch (error) {
       if (error instanceof z.ZodError) {
+        console.error("Erro de validação:", error.errors);
         res.status(400).json({
           message: "Dados inválidos",
           errors: error.errors,
@@ -240,8 +264,15 @@ export class OrderController {
         res.status(401).json({ message: "Usuário não autenticado" });
         return;
       }
+
+      const requestBody = { ...req.body };
+      if (requestBody.serviceOrder === null || requestBody.serviceOrder === undefined) {
+        delete requestBody.serviceOrder;
+      }
+
+      console.log("Dados recebidos para atualização (processados):", requestBody);
   
-      const validatedData = updateOrderSchema.parse(req.body);
+      const validatedData = updateOrderSchema.parse(requestBody);
       
       let validProducts: any[] | undefined;
       
@@ -277,16 +308,33 @@ export class OrderController {
       }
       
       const updateData: Partial<IOrder> = {
-        ...validatedData,
-        clientId: validatedData.clientId ? new Types.ObjectId(validatedData.clientId) : undefined,
-        employeeId: validatedData.employeeId ? new Types.ObjectId(validatedData.employeeId) : undefined,
-        laboratoryId: validatedData.laboratoryId 
-          ? new Types.ObjectId(validatedData.laboratoryId) 
-          : validatedData.laboratoryId === null 
-            ? null 
-            : undefined,
-        products: validProducts
+        ...(validatedData.clientId && { clientId: new Types.ObjectId(validatedData.clientId) }),
+        ...(validatedData.employeeId && { employeeId: new Types.ObjectId(validatedData.employeeId) }),
+        ...(validatedData.laboratoryId !== undefined && {
+          laboratoryId: validatedData.laboratoryId 
+            ? new Types.ObjectId(validatedData.laboratoryId) 
+            : null
+        }),
+        ...(validProducts && { products: validProducts }),
+        ...(validatedData.paymentMethod && { paymentMethod: validatedData.paymentMethod }),
+        ...(validatedData.paymentStatus && { paymentStatus: validatedData.paymentStatus }),
+        ...(validatedData.paymentEntry !== undefined && { paymentEntry: validatedData.paymentEntry }),
+        ...(validatedData.installments !== undefined && { installments: validatedData.installments }),
+        ...(validatedData.orderDate && { orderDate: validatedData.orderDate }),
+        ...(validatedData.deliveryDate !== undefined && { deliveryDate: validatedData.deliveryDate }),
+        ...(validatedData.status && { status: validatedData.status }),
+        ...(validatedData.prescriptionData && { prescriptionData: validatedData.prescriptionData }),
+        ...(validatedData.observations !== undefined && { observations: validatedData.observations }),
+        ...(validatedData.totalPrice !== undefined && { totalPrice: validatedData.totalPrice }),
+        ...(validatedData.discount !== undefined && { discount: validatedData.discount }),
+        ...(validatedData.finalPrice !== undefined && { finalPrice: validatedData.finalPrice }),
+        ...(validatedData.isDeleted !== undefined && { isDeleted: validatedData.isDeleted }),
+        ...(validatedData.serviceOrder && typeof validatedData.serviceOrder === 'string' && {
+          serviceOrder: validatedData.serviceOrder
+        }),
       };
+
+      console.log("Dados finais para atualização:", updateData);
       
       const order = await this.orderService.updateOrder(
         req.params.id, 
@@ -298,6 +346,7 @@ export class OrderController {
       res.status(200).json(order);
     } catch (error) {
       if (error instanceof z.ZodError) {
+        console.error("Erro de validação na atualização:", error.errors);
         res.status(400).json({
           message: "Dados inválidos",
           errors: error.errors,

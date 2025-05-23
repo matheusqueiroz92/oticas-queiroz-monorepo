@@ -44,8 +44,8 @@ const baseOrderSchema = z.object({
   institutionId: z.string().nullable().optional(),
   isInstitutionalOrder: z.boolean().default(false),
   products: z.array(orderProductSchema).min(1, "Pelo menos um produto é obrigatório"),
-  // REMOVIDO: serviceOrder não é mais obrigatório pois será gerado automaticamente
-  serviceOrder: z.string().optional(), // Opcional para permitir atualizações manuais se necessário
+  // CORRIGIDO: serviceOrder agora é completamente opcional e pode ser null/undefined
+  serviceOrder: z.union([z.string(), z.null(), z.undefined()]).optional(),
   paymentMethod: z.string().min(1, "Método de pagamento é obrigatório"),
   paymentStatus: z.enum(["pending", "partially_paid", "paid"]),
   paymentEntry: z.number().min(0).optional(),
@@ -76,7 +76,7 @@ export const orderQuerySchema = z.object({
   employeeId: z.string().optional(),
   clientId: z.string().optional(),
   laboratoryId: z.string().optional(),
-  serviceOrder: z.string().optional(), // Agora aceita string direta
+  serviceOrder: z.string().optional(),
   paymentMethod: z.string().optional(),
   paymentStatus: z.string().optional(),
   startDate: z.string().optional(),
@@ -149,6 +149,10 @@ export const createOrderSchema = baseOrderSchema
 // Schema para atualização de pedidos
 export const updateOrderSchema = baseOrderSchema
   .partial() // Todos os campos são opcionais para atualizações
+  .extend({
+    // CORRIGIDO: serviceOrder pode ser string, null ou undefined na atualização
+    serviceOrder: z.union([z.string(), z.null(), z.undefined()]).optional(),
+  })
   .refine(
     (data) => {
       // Validar que preço final, se fornecido, não é maior que preço total

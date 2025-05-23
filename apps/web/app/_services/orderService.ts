@@ -238,16 +238,21 @@ export async function createOrder(
   orderData: Omit<Order, "_id" | "createdAt" | "updatedAt">
 ): Promise<Order | null> {
   try {
+    // CORRIGIDO: Remover serviceOrder dos dados enviados para que seja gerado automaticamente
+    const { serviceOrder, ...dataWithoutServiceOrder } = orderData;
+    
     const data = {
-      ...orderData,
+      ...dataWithoutServiceOrder,
       products: Array.isArray(orderData.products) 
         ? orderData.products 
         : [orderData.products],
-      serviceOrder: orderData.serviceOrder?.toString() || null,
+      // REMOVIDO: serviceOrder - será gerado automaticamente pelo backend
       totalPrice: orderData.totalPrice || 0,
       discount: orderData.discount || 0,
       finalPrice: orderData.finalPrice || (orderData.totalPrice || 0) - (orderData.discount || 0)
     };
+    
+    console.log("Dados enviados para criação do pedido:", data);
     
     const response = await api.post(API_ROUTES.ORDERS.CREATE, data);
     return normalizeOrder(response.data);

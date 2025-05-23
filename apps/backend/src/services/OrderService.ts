@@ -318,10 +318,11 @@ export class OrderService {
    * @throws OrderError se ocorrer um erro durante a criação
   */
   async createOrder(orderData: Omit<IOrder, "_id">): Promise<IOrder> {
-    const session = await mongoose.connection.startSession();
+     const session = await mongoose.connection.startSession();
     session.startTransaction();
     
     try {
+      // CORRIGIDO: Tratar laboratoryId adequadamente
       if (orderData.laboratoryId?.toString() === "") {
         orderData.laboratoryId = undefined;
       }
@@ -344,9 +345,12 @@ export class OrderService {
         ? orderData.isDeleted === 'true' 
         : Boolean(orderData.isDeleted);
   
+      // CORRIGIDO: Criar CreateOrderDTO sem incluir serviceOrder se não estiver definido
       const orderDTO: CreateOrderDTO = {
         clientId: new mongoose.Types.ObjectId(orderData.clientId.toString()),
         employeeId: new mongoose.Types.ObjectId(orderData.employeeId.toString()),
+        institutionId: orderData.institutionId ? new mongoose.Types.ObjectId(orderData.institutionId.toString()) : undefined,
+        isInstitutionalOrder: orderData.isInstitutionalOrder,
         products: orderData.products,
         paymentMethod: orderData.paymentMethod,
         paymentStatus: orderData.paymentStatus || "pending",
@@ -362,6 +366,7 @@ export class OrderService {
         discount: orderData.discount || 0,
         finalPrice: orderData.finalPrice || (orderData.totalPrice - (orderData.discount || 0)),
         isDeleted: isDeleted,
+        // REMOVIDO: serviceOrder - será gerado automaticamente pelo middleware do Mongoose
       };
   
       await this.validateOrder(orderData);

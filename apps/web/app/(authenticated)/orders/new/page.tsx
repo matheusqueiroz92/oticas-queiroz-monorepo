@@ -96,16 +96,16 @@ export default function NewOrderPage() {
         return numValue > 0 ? `+${numValue}` : `${numValue}`;
       };
 
-      // Criar o objeto de dados para envio, preservando valores de prescrição
+      // CORRIGIDO: Criar o objeto de dados sem incluir serviceOrder
       const orderData = {
         clientId: formData.clientId,
         employeeId: formData.employeeId,
-        institutionId: formData.instituionId || null,
+        institutionId: formData.institutionId || null,
         isInstitutionalOrder: formData.isInstitutionalOrder,
         products: formData.products,
         // REMOVIDO: serviceOrder - será gerado automaticamente pela API
         paymentMethod: formData.paymentMethod,
-        paymentStatus: "pending",
+        paymentStatus: "pending" as const,
         paymentEntry: formData.paymentEntry,
         installments: formData.installments,
         orderDate: formData.orderDate,
@@ -143,6 +143,8 @@ export default function NewOrderPage() {
         discount: formData.discount,
         finalPrice: formData.finalPrice,
       };
+
+      console.log("Dados do pedido antes de enviar:", orderData);
 
       const newOrder = await handleCreateOrder(orderData as any);
       
