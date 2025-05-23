@@ -1,4 +1,3 @@
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import {
   FormField,
   FormItem,
@@ -61,209 +60,229 @@ export default function PrescriptionForm({ form }: PrescriptionFormProps) {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Dados da Receita</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="prescriptionData.doctorName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Nome do Médico</FormLabel>
-                <FormControl>
-                  <Input placeholder="Nome do médico" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+    <div className="space-y-6">
+      {/* Dados básicos do médico - compacto */}
+      <div className="grid grid-cols-3 gap-4">
+        <FormField
+          control={form.control}
+          name="prescriptionData.doctorName"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-sm">Nome do Médico</FormLabel>
+              <FormControl>
+                <Input 
+                  placeholder="Nome do médico" 
+                  {...field} 
+                  className="h-9 text-sm"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-          <FormField
-            control={form.control}
-            name="prescriptionData.clinicName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Nome da Clínica</FormLabel>
-                <FormControl>
-                  <Input placeholder="Nome da clínica" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+        <FormField
+          control={form.control}
+          name="prescriptionData.clinicName"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-sm">Nome da Clínica</FormLabel>
+              <FormControl>
+                <Input 
+                  placeholder="Nome da clínica" 
+                  {...field} 
+                  className="h-9 text-sm"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-          <FormField
-            control={form.control}
-            name="prescriptionData.appointmentDate"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Data da Consulta</FormLabel>
-                <FormControl>
-                  <Input type="date" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+        <FormField
+          control={form.control}
+          name="prescriptionData.appointmentDate"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-sm">Data da Consulta</FormLabel>
+              <FormControl>
+                <Input 
+                  type="date" 
+                  {...field} 
+                  className="h-9 text-sm"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
 
+      {/* Seções dos olhos lado a lado */}
+      <div className="grid grid-cols-2 gap-6">
         <EyeFormSection eye="left" title="Olho Esquerdo" form={form} />
         <EyeFormSection eye="right" title="Olho Direito" form={form} />
+      </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <FormField
-            control={form.control}
-            name="prescriptionData.nd"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>D.N.P.</FormLabel>
-                <FormControl>
-                  <Input
-                    type="text"
-                    inputMode="decimal"
-                    value={ndInput}
-                    onChange={(e) => 
-                      handleNumericInput(e, field.onChange, setNdInput)
-                    }
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          
-          <FormField
-            control={form.control}
-            name="prescriptionData.oc"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>C.O.</FormLabel>
-                <FormControl>
-                  <Input
-                    type="text"
-                    inputMode="decimal"
-                    value={ocInput}
-                    onChange={(e) => 
-                      handleNumericInput(e, field.onChange, setOcInput)
-                    }
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+      {/* Campos adicionais - mais compactos */}
+      <div className="grid grid-cols-3 gap-4">
+        <FormField
+          control={form.control}
+          name="prescriptionData.nd"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-sm">D.N.P.</FormLabel>
+              <FormControl>
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  value={ndInput}
+                  onChange={(e) => 
+                    handleNumericInput(e, field.onChange, setNdInput)
+                  }
+                  className="h-9 text-sm"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
+          name="prescriptionData.oc"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-sm">C.O.</FormLabel>
+              <FormControl>
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  value={ocInput}
+                  onChange={(e) => 
+                    handleNumericInput(e, field.onChange, setOcInput)
+                  }
+                  className="h-9 text-sm"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-          <FormField
-            control={form.control}
-            name="prescriptionData.addition"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Adição</FormLabel>
-                <FormControl>
-                  <Input
-                    type="text"
-                    inputMode="decimal"
-                    value={additionInput}
-                    onChange={(e) => 
-                      handleNumericInput(e, field.onChange, setAdditionInput)
-                    }
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+        <FormField
+          control={form.control}
+          name="prescriptionData.addition"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-sm">Adição</FormLabel>
+              <FormControl>
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  value={additionInput}
+                  onChange={(e) => 
+                    handleNumericInput(e, field.onChange, setAdditionInput)
+                  }
+                  className="h-9 text-sm"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <FormField
-            control={form.control}
-            name="prescriptionData.bridge"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Ponte</FormLabel>
-                <FormControl>
-                  <Input
-                    type="text"
-                    inputMode="decimal"
-                    value={bridgeInput}
-                    onChange={(e) => 
-                      handleNumericInput(e, field.onChange, setBridgeInput)
-                    }
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+      {/* Última linha de campos */}
+      <div className="grid grid-cols-4 gap-4">
+        <FormField
+          control={form.control}
+          name="prescriptionData.bridge"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-sm">Ponte</FormLabel>
+              <FormControl>
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  value={bridgeInput}
+                  onChange={(e) => 
+                    handleNumericInput(e, field.onChange, setBridgeInput)
+                  }
+                  className="h-9 text-sm"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-          <FormField
-            control={form.control}
-            name="prescriptionData.rim"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Aro</FormLabel>
-                <FormControl>
-                  <Input
-                    type="text"
-                    inputMode="decimal"
-                    value={rimInput}
-                    onChange={(e) => 
-                      handleNumericInput(e, field.onChange, setRimInput)
-                    }
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+        <FormField
+          control={form.control}
+          name="prescriptionData.rim"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-sm">Aro</FormLabel>
+              <FormControl>
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  value={rimInput}
+                  onChange={(e) => 
+                    handleNumericInput(e, field.onChange, setRimInput)
+                  }
+                  className="h-9 text-sm"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-          <FormField
-            control={form.control}
-            name="prescriptionData.vh"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>AV</FormLabel>
-                <FormControl>
-                  <Input
-                    type="text"
-                    inputMode="decimal"
-                    value={avInput}
-                    onChange={(e) => 
-                      handleNumericInput(e, field.onChange, setAvInput)
-                    }
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+        <FormField
+          control={form.control}
+          name="prescriptionData.vh"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-sm">AV</FormLabel>
+              <FormControl>
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  value={avInput}
+                  onChange={(e) => 
+                    handleNumericInput(e, field.onChange, setAvInput)
+                  }
+                  className="h-9 text-sm"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-          <FormField
-            control={form.control}
-            name="prescriptionData.sh"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>AM</FormLabel>
-                <FormControl>
-                  <Input
-                    type="text"
-                    inputMode="decimal"
-                    value={amInput}
-                    onChange={(e) => 
-                      handleNumericInput(e, field.onChange, setAmInput)
-                    }
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-      </CardContent>
-    </Card>
+        <FormField
+          control={form.control}
+          name="prescriptionData.sh"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-sm">AM</FormLabel>
+              <FormControl>
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  value={amInput}
+                  onChange={(e) => 
+                    handleNumericInput(e, field.onChange, setAmInput)
+                  }
+                  className="h-9 text-sm"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+    </div>
   );
 }

@@ -386,63 +386,67 @@ export default function EditOrderPage() {
   // Estado de erro
   if (orderError || !order) {
     return (
-      <div className="max-w-3xl mx-auto p-4">
-        <Alert variant="destructive" className="mb-4">
-          <AlertCircle className="h-4 w-4 mr-2" />
-          <span>
-            {orderError ? "Erro ao carregar dados do pedido" : "Pedido não encontrado"}
-          </span>
-        </Alert>
-        <div className="flex justify-center mt-4">
-          <Button onClick={() => router.back()}>Voltar</Button>
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto p-4">
+          <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="h-4 w-4 mr-2" />
+            <span>
+              {orderError ? "Erro ao carregar dados do pedido" : "Pedido não encontrado"}
+            </span>
+          </Alert>
+          <div className="flex justify-center mt-4">
+            <Button onClick={() => router.back()}>Voltar</Button>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-3">
-      <div className="space-y-4">
-        {/* Add status warning for special statuses */}
-        {(orderStatus === "delivered" || orderStatus === "cancelled") && (
-          <OrderStatusAlert status={orderStatus} className="mb-4" />
-        )}
-        
-        <OrderForm 
-          form={form}
-          selectedProducts={selectedProducts}
-          setSelectedProducts={setSelectedProducts}
-          selectedCustomer={selectedCustomer}
-          setSelectedCustomer={setSelectedCustomer}
-          hasLenses={hasLenses}
-          setHasLenses={setHasLenses}
-          showInstallments={showInstallments}
-          setShowInstallments={setShowInstallments}
-          submittedOrder={submittedOrder}
-          isCreating={false} // false para edição
-          isEditing={true} // Nova prop para indicar que é edição
-          customersData={customersData || []}
-          productsData={productsData || []}
-          loggedEmployee={loggedEmployee}
-          onSubmit={onSubmit}
-          onCancel={handleCancel}
-          onViewOrdersList={handleViewOrdersList}
-          onViewOrderDetails={handleViewOrderDetails}
-          onCreateNewOrder={resetOrderForm}
-          handleAddProduct={handleAddProduct}
-          handleRemoveProduct={handleRemoveProduct}
-          handleUpdateProductPrice={handleUpdateProductPrice}
-          handleClientSelect={handleClientSelect}
-          updateFinalPrice={updateFinalPrice}
-          calculateInstallmentValue={calculateInstallmentValue}
-        />
-        
-        {/* Add OrderEditHistory component */}
-        <OrderEditHistory 
-          orderId={id}
-          onChangeNoteSubmit={handleChangeNoteSubmit}
-          previousEdits={[]} 
-        />
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto p-4">
+        <div className="space-y-4">
+          {/* Add status warning for special statuses */}
+          {(orderStatus === "delivered" || orderStatus === "cancelled") && (
+            <OrderStatusAlert status={orderStatus} className="mb-4" />
+          )}
+          
+          <OrderForm 
+            form={form}
+            selectedProducts={selectedProducts}
+            setSelectedProducts={setSelectedProducts}
+            selectedCustomer={selectedCustomer}
+            setSelectedCustomer={setSelectedCustomer}
+            hasLenses={hasLenses}
+            setHasLenses={setHasLenses}
+            showInstallments={showInstallments}
+            setShowInstallments={setShowInstallments}
+            submittedOrder={submittedOrder}
+            isCreating={false} // false para edição
+            isEditing={true} // Nova prop para indicar que é edição
+            customersData={customersData || []}
+            productsData={productsData || []}
+            loggedEmployee={loggedEmployee}
+            onSubmit={onSubmit}
+            onCancel={handleCancel}
+            onViewOrdersList={handleViewOrdersList}
+            onViewOrderDetails={handleViewOrderDetails}
+            onCreateNewOrder={resetOrderForm}
+            handleAddProduct={handleAddProduct}
+            handleRemoveProduct={handleRemoveProduct}
+            handleUpdateProductPrice={handleUpdateProductPrice}
+            handleClientSelect={handleClientSelect}
+            updateFinalPrice={updateFinalPrice}
+            calculateInstallmentValue={calculateInstallmentValue}
+          />
+          
+          {/* Add OrderEditHistory component */}
+          <OrderEditHistory 
+            orderId={id}
+            onChangeNoteSubmit={handleChangeNoteSubmit}
+            previousEdits={[]} 
+          />
+        </div>
       </div>
     </div>
   );

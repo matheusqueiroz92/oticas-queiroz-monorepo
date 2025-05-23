@@ -1,11 +1,4 @@
 import { useState, useEffect } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -231,17 +224,17 @@ export function OrderForm({
       {/* Adiciona o CSS para remover as setas dos inputs numéricos */}
       <style jsx global>{numericInputStyles}</style>
       
-      <Card className="shadow-sm">
-        <CardHeader className="border-b bg-gray-50 p-4 flex flex-row items-center justify-between">
+      <div className="bg-white rounded-lg shadow-sm border">
+        <div className="border-b bg-gray-50 p-4 flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
               <File className="h-5 w-5 text-[var(--secondary-red)]" />
             </div>
             <div>
-              <CardTitle className="text-xl text-[var(--secondary-red)]">
+              <h1 className="text-xl text-[var(--secondary-red)] font-bold">
                 {getFormTitle()}
-              </CardTitle>
-              <CardDescription>{getFormDescription()}</CardDescription>
+              </h1>
+              <p className="text-muted-foreground">{getFormDescription()}</p>
             </div>
           </div>
           {loggedEmployee && (
@@ -249,10 +242,10 @@ export function OrderForm({
               <User className="h-4 w-4" /> Vendedor: {loggedEmployee.name}
             </p>
           )}
-        </CardHeader>
+        </div>
 
         {!showPdfDownload ? (
-          <CardContent className="p-4">
+          <div className="p-4">
             <Form {...form}>
               <form
                 id="orderForm"
@@ -260,7 +253,7 @@ export function OrderForm({
                   e.preventDefault();
                   onSubmit(form.getValues() as OrderFormValues);
                 }}
-                className="space-y-4"
+                className="space-y-6"
               >
                 <OrderStepProgress
                   steps={steps}
@@ -268,9 +261,11 @@ export function OrderForm({
                   setCurrentStep={setCurrentStep}
                 />
                 
-                {renderStepContent()}
+                <div className="min-h-[calc(100vh-400px)]">
+                  {renderStepContent()}
+                </div>
                 
-                <div className="flex justify-between pt-3 border-t">
+                <div className="flex justify-between pt-4 border-t">
                   <div>
                     {currentStep > 0 && (
                       <Button
@@ -330,9 +325,9 @@ export function OrderForm({
                 </div>
               </form>
             </Form>
-          </CardContent>
+          </div>
         ) : (
-          <CardContent className="p-4">
+          <div className="p-4">
             <OrderSuccessScreen
               form={form}
               submittedOrder={submittedOrder}
@@ -341,9 +336,9 @@ export function OrderForm({
               onViewOrderDetails={onViewOrderDetails}
               onCreateNewOrder={onCreateNewOrder}
             />
-          </CardContent>
+          </div>
         )}
-      </Card>
+      </div>
     </>
   );
 }

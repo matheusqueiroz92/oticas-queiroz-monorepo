@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
   sectionBox: {
     border: "1pt solid #ddd",
     borderRadius: 3,
-    marginBottom: 5,
+    marginBottom: 8,
     padding: 5,
   },
   sectionTitle: {
@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
     borderTopColor: "#000000",
     borderTopStyle: "solid",
     marginTop: 10,
-    marginBottom: 1,
+    marginBottom: 4,
     width: 150,
     alignSelf: "center",
   },
@@ -579,9 +579,6 @@ const ClientOrderSection = ({ data, customer }: OrderPDFProps) => {
         <View style={styles.columnHalf}>
           <ProductsSection data={data} isClientVersion={false} />
         </View>
-        <View style={styles.columnHalf}>
-          <PrescriptionSection data={data} />
-        </View>
       </View>
 
       {/* Observações (se houver) */}
@@ -598,7 +595,12 @@ const ClientOrderSection = ({ data, customer }: OrderPDFProps) => {
         <Text style={styles.signatureLabel}>Assinatura do responsável</Text>
       </View>
 
-      <Text style={styles.footer}>
+      {/* Avisos e Informativos */}
+      <Text style={styles.informative}>
+        O pedido poderá ser entregue em até 30 (trinta) dias úteis.
+      </Text>
+
+      <Text style={styles.informative}>
         Este documento é um comprovante de pedido. Para mais informações entre
         em contato com {companyInfo.name} pelo telefone {companyInfo.phone} ou pelo WhatsApp {companyInfo.whatsapp}.
       </Text>

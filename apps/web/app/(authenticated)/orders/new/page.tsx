@@ -382,44 +382,46 @@ export default function NewOrderPage() {
   };  
 
   return (
-    <div className="max-w-6xl mx-auto p-3">
-      {isLoadingProducts || isLoadingCustomers ? (
-        <div className="flex justify-center items-center h-64">
-          <div className="flex flex-col items-center">
-            <Loader2 className="h-8 w-8 animate-spin mb-2 text-primary" />
-            <p className="text-muted-foreground">Carregando dados...</p>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto p-4">
+        {isLoadingProducts || isLoadingCustomers ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="flex flex-col items-center">
+              <Loader2 className="h-8 w-8 animate-spin mb-2 text-primary" />
+              <p className="text-muted-foreground">Carregando dados...</p>
+            </div>
           </div>
-        </div>
-      ) : (
-       <OrderForm 
-          form={form}
-          selectedProducts={selectedProducts}
-          setSelectedProducts={setSelectedProducts}
-          selectedCustomer={selectedCustomer}
-          setSelectedCustomer={setSelectedCustomer}
-          hasLenses={hasLenses}
-          setHasLenses={setHasLenses}
-          showInstallments={showInstallments}
-          setShowInstallments={setShowInstallments}
-          submittedOrder={submittedOrder}
-          isCreating={isCreating}
-          isEditing={false}
-          customersData={customersData || []}
-          productsData={productsData || []}
-          loggedEmployee={loggedEmployee}
-          onSubmit={onSubmit}
-          onCancel={navigateToOrders}
-          onViewOrdersList={navigateToOrders}
-          onViewOrderDetails={navigateToOrderDetails}
-          onCreateNewOrder={resetOrderForm}
-          handleAddProduct={handleAddProduct}
-          handleRemoveProduct={handleRemoveProduct}
-          handleUpdateProductPrice={handleUpdateProductPrice}
-          handleClientSelect={handleClientSelect}
-          updateFinalPrice={updateFinalPrice}
-          calculateInstallmentValue={calculateInstallmentValue}
-        />
-      )}
+        ) : (
+         <OrderForm 
+            form={form}
+            selectedProducts={selectedProducts}
+            setSelectedProducts={setSelectedProducts}
+            selectedCustomer={selectedCustomer}
+            setSelectedCustomer={setSelectedCustomer}
+            hasLenses={hasLenses}
+            setHasLenses={setHasLenses}
+            showInstallments={showInstallments}
+            setShowInstallments={setShowInstallments}
+            submittedOrder={submittedOrder}
+            isCreating={isCreating}
+            isEditing={false}
+            customersData={customersData || []}
+            productsData={productsData || []}
+            loggedEmployee={loggedEmployee}
+            onSubmit={onSubmit}
+            onCancel={navigateToOrders}
+            onViewOrdersList={navigateToOrders}
+            onViewOrderDetails={navigateToOrderDetails}
+            onCreateNewOrder={resetOrderForm}
+            handleAddProduct={handleAddProduct}
+            handleRemoveProduct={handleRemoveProduct}
+            handleUpdateProductPrice={handleUpdateProductPrice}
+            handleClientSelect={handleClientSelect}
+            updateFinalPrice={updateFinalPrice}
+            calculateInstallmentValue={calculateInstallmentValue}
+          />
+        )}
+      </div>
     </div>
   );
 }
