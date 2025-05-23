@@ -13,18 +13,31 @@ export class CounterService {
     startValue: number = 300000
   ): Promise<number> {
     try {
-      // Usar findOneAndUpdate com upsert para garantir atomicidade
-      const counter = await Counter.findOneAndUpdate(
+      // Verificar se o contador existe
+      let counter = await Counter.findById(counterId);
+      
+      if (!counter) {
+        // Se não existe, criar com o valor inicial
+        console.log(`Criando novo contador ${counterId} com valor inicial ${startValue}`);
+        counter = new Counter({
+          _id: counterId,
+          sequence: startValue
+        });
+        await counter.save();
+        return startValue;
+      }
+      
+      // Se existe, incrementar
+      const result = await Counter.findOneAndUpdate(
         { _id: counterId },
         { $inc: { sequence: 1 } },
         { 
           new: true, // Retorna o documento atualizado
-          upsert: true, // Cria se não existir
-          setDefaultsOnInsert: true // Aplica defaults na inserção
+          runValidators: true
         }
       );
 
-      return counter?.sequence || startValue;
+      return result?.sequence || startValue;
     } catch (error) {
       console.error(`Erro ao obter próximo número de sequência para ${counterId}:`, error);
       throw new Error(`Falha ao gerar número de sequência: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
@@ -33,10 +46,6 @@ export class CounterService {
 
   /**
    * Obtém o próximo número da sequência dentro de uma sessão (para transações)
-   * @param counterId ID do contador
-   * @param session Sessão do MongoDB para transações
-   * @param startValue Valor inicial caso seja o primeiro
-   * @returns Promise com o próximo número da sequência
    */
   static async getNextSequenceWithSession(
     counterId: string,
@@ -44,18 +53,32 @@ export class CounterService {
     startValue: number = 300000
   ): Promise<number> {
     try {
-      const counter = await Counter.findOneAndUpdate(
+      // Verificar se o contador existe
+      let counter = await Counter.findById(counterId).session(session);
+      
+      if (!counter) {
+        // Se não existe, criar com o valor inicial
+        console.log(`Criando novo contador ${counterId} com valor inicial ${startValue} (com sessão)`);
+        counter = new Counter({
+          _id: counterId,
+          sequence: startValue
+        });
+        await counter.save({ session });
+        return startValue;
+      }
+      
+      // Se existe, incrementar
+      const result = await Counter.findOneAndUpdate(
         { _id: counterId },
         { $inc: { sequence: 1 } },
         { 
           new: true,
-          upsert: true,
-          setDefaultsOnInsert: true,
-          session // Usar a sessão para transações
+          runValidators: true,
+          session
         }
       );
 
-      return counter?.sequence || startValue;
+      return result?.sequence || startValue;
     } catch (error) {
       console.error(`Erro ao obter próximo número de sequência para ${counterId} com sessão:`, error);
       throw new Error(`Falha ao gerar número de sequência: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
@@ -70,7 +93,13 @@ export class CounterService {
   static async getCurrentSequence(counterId: string): Promise<number | null> {
     try {
       const counter = await Counter.findById(counterId);
-      return counter?.sequence || null;
+      if (!counter) {
+        console.log(`Contador ${counterId} não existe`);
+        return null;
+      }
+      
+      console.log(`Valor atual do contador ${counterId}:`, counter.sequence);
+      return counter.sequence;
     } catch (error) {
       console.error(`Erro ao obter sequência atual para ${counterId}:`, error);
       return null;
@@ -85,11 +114,15 @@ export class CounterService {
    */
   static async resetCounter(counterId: string, value: number): Promise<boolean> {
     try {
+      console.log(`Resetando contador ${counterId} para valor ${value}`);
+      
       await Counter.findOneAndUpdate(
         { _id: counterId },
         { sequence: value },
-        { upsert: true }
+        { upsert: true, runValidators: true }
       );
+      
+      console.log(`Contador ${counterId} resetado com sucesso para ${value}`);
       return true;
     } catch (error) {
       console.error(`Erro ao resetar contador ${counterId}:`, error);

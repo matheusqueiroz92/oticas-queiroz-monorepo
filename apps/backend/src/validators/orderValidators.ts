@@ -44,7 +44,6 @@ const baseOrderSchema = z.object({
   institutionId: z.string().nullable().optional(),
   isInstitutionalOrder: z.boolean().default(false),
   products: z.array(orderProductSchema).min(1, "Pelo menos um produto é obrigatório"),
-  // CORRIGIDO: serviceOrder agora é completamente opcional e pode ser null/undefined
   serviceOrder: z.union([z.string(), z.null(), z.undefined()]).optional(),
   paymentMethod: z.string().min(1, "Método de pagamento é obrigatório"),
   paymentStatus: z.enum(["pending", "partially_paid", "paid"]),
@@ -107,6 +106,7 @@ export const updateOrderLaboratorySchema = z.object({
 
 // Schema para criação de pedidos (com validações adicionais)
 export const createOrderSchema = baseOrderSchema
+  .omit({ serviceOrder: true }) // Remove serviceOrder do schema de criação
   .refine(
     (data) => {
       // Validar que o preço final, se fornecido, é menor ou igual ao preço total
@@ -150,8 +150,7 @@ export const createOrderSchema = baseOrderSchema
 export const updateOrderSchema = baseOrderSchema
   .partial() // Todos os campos são opcionais para atualizações
   .extend({
-    // CORRIGIDO: serviceOrder pode ser string, null ou undefined na atualização
-    serviceOrder: z.union([z.string(), z.null(), z.undefined()]).optional(),
+    serviceOrder: z.union([z.string(), z.null(), z.undefined()]).optional().transform(() => undefined),
   })
   .refine(
     (data) => {

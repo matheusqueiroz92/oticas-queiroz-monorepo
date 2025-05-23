@@ -93,14 +93,25 @@ export function useOrders(options: UseOrdersOptions = {}) {
     }
     
     if (nextServiceOrderError) {
+      console.error("Erro ao carregar próximo serviceOrder:", nextServiceOrderError);
       return "Erro ao carregar";
     }
     
     if (nextServiceOrderData?.nextServiceOrder) {
-      return nextServiceOrderData.nextServiceOrder;
+      const serviceOrderNumber = nextServiceOrderData.nextServiceOrder;
+      console.log("Próximo serviceOrder recebido:", serviceOrderNumber);
+      
+      // Verificar se o número é válido e >= 300000
+      const numberValue = parseInt(serviceOrderNumber);
+      if (!isNaN(numberValue) && numberValue >= 300000) {
+        return serviceOrderNumber;
+      } else {
+        console.warn("ServiceOrder inválido recebido:", serviceOrderNumber);
+        return "300000"; // Fallback para 300000
+      }
     }
     
-    return "Será gerado automaticamente";
+    return "300000"; // Fallback padrão
   }, [isLoadingNextServiceOrder, nextServiceOrderError, nextServiceOrderData]);
 
   const processSearch = useCallback((value: string) => {

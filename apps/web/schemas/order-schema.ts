@@ -10,7 +10,6 @@ const orderFormSchema = z
     isInstitutionalOrder: z.boolean().default(false),
     institutionId: z.string().optional(),
     products: z.array(z.any()).min(1, "Pelo menos um produto é obrigatório"),
-    serviceOrder: z.union([z.number(), z.string(), z.null(), z.undefined()]).optional(),
     paymentMethod: z.string().min(1, "Forma de pagamento é obrigatória"),
     paymentEntry: z.number().min(0).optional(),
     installments: z.number().min(1).optional(),
@@ -81,7 +80,6 @@ export const createOrderform = () => {
       totalPrice: 0,
       discount: 0,
       finalPrice: 0,
-      // REMOVIDO: serviceOrder dos valores padrão - será gerado automaticamente
       prescriptionData: {
         doctorName: "",
         clinicName: "",

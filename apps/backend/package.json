@@ -22,7 +22,8 @@
     "create-admin": "ts-node src/scripts/createAdmin.ts",
     "fix-relationships": "ts-node -r tsconfig-paths/register src/scripts/fixRelationships.ts",
     "migrate:service-order": "ts-node src/scripts/migrateServiceOrder.ts",
-    "migrate:service-order:rollback": "ts-node src/scripts/migrateServiceOrder.ts --rollback"
+    "migrate:service-order:rollback": "ts-node src/scripts/migrateServiceOrder.ts --rollback",
+    "reset-service-order-force": "ts-node src/scripts/resetServiceOrderCounter.ts --force"
   },
   "keywords": [],
   "author": "",

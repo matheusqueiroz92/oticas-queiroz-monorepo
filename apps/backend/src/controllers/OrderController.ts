@@ -37,11 +37,15 @@ export class OrderController {
       }
 
       const requestBody = { ...req.body };
-      if (requestBody.serviceOrder === null || requestBody.serviceOrder === undefined) {
+      
+      if ('serviceOrder' in requestBody) {
         delete requestBody.serviceOrder;
       }
+      if ('serviceNumber' in requestBody) {
+        delete requestBody.serviceNumber;
+      }
       
-      console.log("Dados recebidos processados:", requestBody);
+      console.log("Dados recebidos processados (sem serviceOrder):", requestBody);
 
       const validatedData = createOrderSchema.parse(requestBody);
 
@@ -92,7 +96,7 @@ export class OrderController {
         isDeleted: validatedData.isDeleted,
       };
 
-      console.log("Dados finais para criação:", orderData);
+      console.log("Dados finais para criação (sem serviceOrder):", orderData);
 
       const order = await this.orderService.createOrder(orderData);
       res.status(201).json(order);
@@ -329,9 +333,7 @@ export class OrderController {
         ...(validatedData.discount !== undefined && { discount: validatedData.discount }),
         ...(validatedData.finalPrice !== undefined && { finalPrice: validatedData.finalPrice }),
         ...(validatedData.isDeleted !== undefined && { isDeleted: validatedData.isDeleted }),
-        ...(validatedData.serviceOrder && typeof validatedData.serviceOrder === 'string' && {
-          serviceOrder: validatedData.serviceOrder
-        }),
+        ...(typeof validatedData.serviceOrder === 'string' ? { serviceOrder: validatedData.serviceOrder } : {}),
       };
 
       console.log("Dados finais para atualização:", updateData);
@@ -730,10 +732,28 @@ export class OrderController {
 
   async getNextServiceOrder(req: Request, res: Response): Promise<void> {
     try {
+      // Buscar o valor atual do contador
       const currentSequence = await CounterService.getCurrentSequence("serviceOrder");
-      // Se não existe contador ainda, o próximo será 300000
-      // Se já existe, o próximo será o atual + 1
-      const nextServiceOrder = currentSequence ? currentSequence + 1 : 300000;
+      
+      console.log("Sequência atual do contador:", currentSequence);
+      
+      let nextServiceOrder: number;
+      
+      if (currentSequence === null || currentSequence === undefined) {
+        // Se não existe contador ainda, o próximo será 300000
+        nextServiceOrder = 300000;
+        console.log("Contador não existe, próximo será:", nextServiceOrder);
+      } else {
+        // Se já existe, o próximo será o atual + 1
+        nextServiceOrder = currentSequence + 1;
+        console.log("Contador existe, próximo será:", nextServiceOrder);
+      }
+      
+      // Verificar se o número calculado é menor que 300000
+      if (nextServiceOrder < 300000) {
+        nextServiceOrder = 300000;
+        console.log("Número menor que 300000, resetando para:", nextServiceOrder);
+      }
       
       res.status(200).json({
         nextServiceOrder: nextServiceOrder.toString()

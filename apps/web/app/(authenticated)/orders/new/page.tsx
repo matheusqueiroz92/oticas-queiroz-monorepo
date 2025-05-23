@@ -78,32 +78,26 @@ export default function NewOrderPage() {
           return "";
         }
         
-        // Garantir que vírgulas são convertidas para pontos
         const normalizedValue = value.replace(',', '.');
-        
-        // Verificar se é um valor numérico válido
         const numValue = parseFloat(normalizedValue);
         if (isNaN(numValue)) {
           return "";
         }
         
-        // Se for zero, retornar string vazia
         if (numValue === 0) {
           return "";
         }
         
-        // Retornar com sinal explícito
         return numValue > 0 ? `+${numValue}` : `${numValue}`;
       };
 
-      // CORRIGIDO: Criar o objeto de dados sem incluir serviceOrder
+      // CORRIGIDO: Criar o objeto de dados SEM incluir serviceOrder
       const orderData = {
         clientId: formData.clientId,
         employeeId: formData.employeeId,
         institutionId: formData.institutionId || null,
         isInstitutionalOrder: formData.isInstitutionalOrder,
         products: formData.products,
-        // REMOVIDO: serviceOrder - será gerado automaticamente pela API
         paymentMethod: formData.paymentMethod,
         paymentStatus: "pending" as const,
         paymentEntry: formData.paymentEntry,
@@ -144,7 +138,12 @@ export default function NewOrderPage() {
         finalPrice: formData.finalPrice,
       };
 
-      console.log("Dados do pedido antes de enviar:", orderData);
+      // IMPORTANTE: Garantir que serviceOrder não está presente nos dados
+      if ('serviceOrder' in orderData) {
+        delete (orderData as any).serviceOrder;
+      }
+
+      console.log("Dados do pedido antes de enviar (sem serviceOrder):", orderData);
 
       const newOrder = await handleCreateOrder(orderData as any);
       
