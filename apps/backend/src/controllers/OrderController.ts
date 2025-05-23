@@ -31,8 +31,6 @@ export class OrderController {
 
   async createOrder(req: AuthRequest, res: Response): Promise<void> {
     try {
-      console.log("Received order data:", JSON.stringify(req.body, null, 2));
-      console.log("Prescription data:", JSON.stringify(req.body.prescriptionData, null, 2));
       if (!req.user?.id) {
         res.status(401).json({ message: "Usuário não autenticado" });
         return;
@@ -71,7 +69,6 @@ export class OrderController {
         employeeId: new Types.ObjectId(validatedData.employeeId),
         laboratoryId: validatedData.laboratoryId ? new Types.ObjectId(validatedData.laboratoryId) : null,
         products: validProducts as IProduct[],
-        // REMOVIDO: Não definimos serviceOrder - será gerado automaticamente
       };
 
       const order = await this.orderService.createOrder(orderData);

@@ -8,7 +8,7 @@ export interface Order {
   institutionId?: string | null;
   isInstitutionalOrder?: boolean;
   products: Product[];
-  serviceOrder?: string | null;
+  serviceOrder?: string;
   paymentMethod: string;
   paymentStatus: "pending" | "paid" | "partially_paid";
   paymentHistory?: Array<{
