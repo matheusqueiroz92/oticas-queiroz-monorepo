@@ -137,6 +137,7 @@ export default function ClientSearch({
           <div className="relative">
             <Input
               placeholder="Digite o nome do cliente"
+              className="placeholder:text-blue-300" 
               value={customerSearch}
               onChange={(e) => setCustomerSearch(e.target.value)}
               onFocus={() => {

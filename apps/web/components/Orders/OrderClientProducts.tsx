@@ -74,7 +74,6 @@ export default function OrderClientProducts({
     enablePagination: false
   });
 
-  // Usar o hook integrado para buscar o próximo serviceOrder
   const {
     nextServiceOrder,
     isLoadingNextServiceOrder,
@@ -278,66 +277,67 @@ export default function OrderClientProducts({
     <div className="space-y-4">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 space-y-4">
-          <div className="space-y-3">
-            <h3 className="text-sm font-medium border-b pb-1">Informações do Cliente</h3>
-            <div className="grid grid-cols-4 gap-3">
-              <div className="col-span-3">
-                <ClientSearch
-                  customers={customersData || []}
-                  form={form}
-                  onClientSelect={handleClientSelect}
-                  fetchAllCustomers={fetchAllCustomers}
-                  selectedCustomer={selectedCustomer}
-                />
-              </div>
+          <h3 className="text-sm text-[var(--primary-blue)] font-medium border-b pb-1">INFORMAÇÕES DO CLIENTE</h3>
+          <div className="grid grid-cols-4 gap-3">
+            {/* Campo de busca por clientes */}
+            <div className="col-span-3">
+              <ClientSearch
+                customers={customersData || []}
+                form={form}
+                onClientSelect={handleClientSelect}
+                fetchAllCustomers={fetchAllCustomers}
+                selectedCustomer={selectedCustomer}
+              />
+            </div>
 
-              <div className="col-span-1">
-                <div className="h-full mt-2">
-                  <label className="text-xs flex items-center gap-1">
-                    Nº da O.S.
-                    {!isLoadingNextServiceOrder && (
-                      <button
-                        type="button"
-                        onClick={fetchNextServiceOrder}
-                        className="ml-1 p-0.5 hover:bg-gray-100 rounded"
-                        title="Atualizar próximo número"
-                      >
-                        <RefreshCw className="h-3 w-3 text-gray-400 hover:text-gray-600" />
-                      </button>
+            {/* Campo Nº da O.S. */}
+            <div className="col-span-1">
+              <div className="h-full mt-4">
+                <label className="text-xs flex items-center gap-1">
+                  Nº da O.S.
+                  {!isLoadingNextServiceOrder && (
+                    <button
+                      type="button"
+                      onClick={fetchNextServiceOrder}
+                      className="ml-1 p-0.5 hover:bg-gray-100 rounded"
+                      title="Atualizar próximo número"
+                    >
+                      <RefreshCw className="h-3 w-3 text-gray-400 hover:text-gray-600" />
+                    </button>
+                  )}
+                </label>
+                <div className="relative">
+                  <Input
+                    type="text"
+                    placeholder={getServiceOrderDisplayValue()}
+                    value={getServiceOrderDisplayValue()}
+                    readOnly
+                    disabled
+                    className={`bg-gray-100 cursor-not-allowed border border-gray-200 rounded text-sm h-9 ${
+                      nextServiceOrder && !isLoadingNextServiceOrder 
+                        ? 'text-blue-800 font-medium' 
+                        : 'text-gray-600'
+                    }`}
+                  />
+                  <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center gap-1">
+                    {isLoadingNextServiceOrder ? (
+                      <Loader2 className="h-3 w-3 animate-spin text-blue-500" />
+                    ) : (
+                      <Lock className="h-3 w-3 text-gray-400" />
                     )}
-                  </label>
-                  <div className="relative">
-                    <Input
-                      type="text"
-                      placeholder={getServiceOrderDisplayValue()}
-                      value={getServiceOrderDisplayValue()}
-                      readOnly
-                      disabled
-                      className={`bg-gray-100 cursor-not-allowed border border-gray-200 rounded text-sm h-9 ${
-                        nextServiceOrder && !isLoadingNextServiceOrder 
-                          ? 'text-blue-800 font-medium' 
-                          : 'text-gray-600'
-                      }`}
-                    />
-                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center gap-1">
-                      {isLoadingNextServiceOrder ? (
-                        <Loader2 className="h-3 w-3 animate-spin text-blue-500" />
-                      ) : (
-                        <Lock className="h-3 w-3 text-gray-400" />
-                      )}
-                    </div>
                   </div>
-                  <p className="text-xs text-gray-500">
-                    {nextServiceOrderError 
-                      ? "Erro ao carregar o próximo número" 
-                      : "Gerado automaticamente"
-                    }
-                  </p>
                 </div>
+                <p className="text-xs text-gray-500">
+                  {nextServiceOrderError 
+                    ? "Erro ao carregar o próximo número" 
+                    : "Gerado automaticamente"
+                  }
+                </p>
               </div>
             </div>
           </div>
           
+          {/* Cliente selecionado */}
           {selectedCustomer && (
             <div className="bg-blue-50 p-2 rounded border border-blue-100 text-sm">
               <p className="font-medium text-blue-800 mb-1">Cliente Selecionado</p>
@@ -357,21 +357,28 @@ export default function OrderClientProducts({
           )}
           
           <div className="space-y-3">
-            <h3 className="text-sm font-medium border-b pb-1">Produtos</h3>
+            <h3 className="text-sm text-[var(--primary-blue)] font-medium border-b pb-1">INFORMAÇÕES DOS PRODUTOS</h3>
+            {/* Campo de busca por produtos */}
+            <div className="flex flex-col gap-1">
+              <ProductSearch
+                products={productsData || []}
+                form={form}
+                onProductAdd={handleAddProduct}
+                selectedProducts={selectedProducts}
+              />
+              <p className="text-xs text-gray-500">
+                Busque os produtos para adicionar ao pedido
+              </p>
+            </div>
             
-            <ProductSearch
-              products={productsData || []}
-              form={form}
-              onProductAdd={handleAddProduct}
-              selectedProducts={selectedProducts}
-            />
-            
+            {/* Seleção de produtos ao pedido */}
             <SelectedProductsList
               products={selectedProducts}
               onUpdatePrice={handleUpdateProductPrice}
               onRemoveProduct={handleRemoveProduct}
             />
             
+            {/* Preço do pedido */}
             <div className="grid grid-cols-3 gap-3 p-2 bg-gray-50 rounded border border-gray-200">
               <FormField
                 control={form.control}
@@ -441,79 +448,81 @@ export default function OrderClientProducts({
             </div>
           </div>
 
+          {/* Checkbox Pedido Institucional */}
           <FormField
-          control={form.control}
-          name="isInstitutionalOrder"
-          render={({ field }) => (
-            <FormItem className="flex items-center space-x-2">
-              <FormControl>
-                <Checkbox
-                  checked={field.value}
-                  onCheckedChange={(checked) => {
-                    field.onChange(checked);
-                    if (checked && loadedInstitutions.length === 0) {
-                      fetchAllInstitutions();
-                    }
-                  }}
-                />
+            control={form.control}
+            name="isInstitutionalOrder"
+            render={({ field }) => (
+              <FormItem className="flex items-center space-x-2 space-y-4">
+                <FormControl>
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={(checked) => {
+                      field.onChange(checked);
+                      if (checked && loadedInstitutions.length === 0) {
+                        fetchAllInstitutions();
+                      }
+                    }}
+              />
               </FormControl>
-              <div className="space-y-1 leading-none">
+              <div className="space-y-1 leading-none items-center">
                 <FormLabel>Pedido Institucional</FormLabel>
                 <FormDescription>
                   Marque essa opção para pedidos de instituições conveniadas
                 </FormDescription>
               </div>
             </FormItem>
-          )}
-        />
-
-        {form.watch("isInstitutionalOrder") && (
-          <FormField
-            control={form.control}
-            name="institutionId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Instituição</FormLabel>
-                <Select 
-                  onValueChange={field.onChange} 
-                  value={field.value}
-                  onOpenChange={(open) => {
-                    if (open && loadedInstitutions.length === 0 && !isLoadingInstitutions) {
-                      fetchAllInstitutions();
-                    }
-                  }}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione a instituição" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {isLoadingInstitutions ? (
-                      <div className="flex items-center justify-center py-2">
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        <span className="text-sm">Carregando instituições...</span>
-                      </div>
-                    ) : loadedInstitutions.length > 0 ? (
-                      loadedInstitutions.map((institution) => (
-                        <SelectItem key={institution._id} value={institution._id}>
-                          {institution.name}
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <div className="text-center py-2 text-sm text-muted-foreground">
-                        Nenhuma instituição encontrada
-                      </div>
-                    )}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
             )}
           />
-        )}
+
+          {form.watch("isInstitutionalOrder") && (
+            <FormField
+              control={form.control}
+              name="institutionId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Instituição</FormLabel>
+                  <Select 
+                    onValueChange={field.onChange} 
+                    value={field.value}
+                    onOpenChange={(open) => {
+                      if (open && loadedInstitutions.length === 0 && !isLoadingInstitutions) {
+                        fetchAllInstitutions();
+                      }
+                    }}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione a instituição" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {isLoadingInstitutions ? (
+                        <div className="flex items-center justify-center py-2">
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          <span className="text-sm">Carregando instituições...</span>
+                        </div>
+                      ) : loadedInstitutions.length > 0 ? (
+                        loadedInstitutions.map((institution) => (
+                          <SelectItem key={institution._id} value={institution._id}>
+                            {institution.name}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <div className="text-center py-2 text-sm text-muted-foreground">
+                          Nenhuma instituição encontrada
+                        </div>
+                      )}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
         </div>
         
+        {/* Resumo do pedido */}
         <div className="lg:col-span-1 space-y-4">
           <OrderSummary 
             form={form}

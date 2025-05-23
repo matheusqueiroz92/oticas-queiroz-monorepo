@@ -15,8 +15,8 @@ export default function OrderSummary({ form, selectedProducts }: OrderSummaryPro
 
   return (
     <div className="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
-      <div className="border-b border-gray-200 p-3">
-        <h3 className="font-medium">Resumo do Pedido</h3>
+      <div className="border-b border-gray-200 p-2">
+        <h3 className="font-medium text-[var(--primary-blue)]">Resumo do Pedido</h3>
         {serviceOrder && (
           <div className="text-xs text-gray-500 mt-1">
            O.S.: {serviceOrder}

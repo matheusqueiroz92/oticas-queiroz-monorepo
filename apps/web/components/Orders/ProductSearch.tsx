@@ -153,6 +153,7 @@ export default function ProductSearch({
           <FormLabel>Adicionar Produtos</FormLabel>
           <div className="relative">
             <Input
+              className="placeholder:text-blue-300" 
               placeholder="Digite o nome do produto"
               value={productSearch}
               onChange={(e) => setProductSearch(e.target.value)}

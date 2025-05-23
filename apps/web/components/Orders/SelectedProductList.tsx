@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import type { Product } from "../../app/_types/product";
 import { formatCurrency } from "../../app/_utils/formatters";
 import { getCorrectPrice, getProductTypeLabel, normalizeProduct } from "@/app/_utils/product-utils";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, CircleX, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface SelectedProductsListProps {
@@ -40,13 +40,13 @@ export default function SelectedProductsList({
             <th className="px-4 py-2 text-left">Produto</th>
             <th className="px-4 py-2 text-left">Tipo</th>
             <th className="px-4 py-2 text-right">Preço</th>
-            <th className="px-4 py-2 text-right">Ações</th>
+            <th className="px-4 py-2 text-right">Remover</th>
           </tr>
         </thead>
         <tbody>
           {normalizedProducts.map((product) => (
-            <tr key={product._id} className="border-t">
-              <td className="px-4 py-2">
+            <tr key={product._id}>
+              <td className="px-4 py-1">
                 <div>
                   <span className="font-medium">{product.name}</span>
                   
@@ -61,8 +61,8 @@ export default function SelectedProductsList({
                   )}
                 </div>
               </td>
-              <td className="px-4 py-2">{getProductTypeLabel(product.productType)}</td>
-              <td className="px-4 py-2 text-right">
+              <td className="px-4 py-1">{getProductTypeLabel(product.productType)}</td>
+              <td className="px-4 py-1 text-right">
                 <Input
                   type="number"
                   step="0.01"
@@ -83,7 +83,7 @@ export default function SelectedProductsList({
                   size="sm" 
                   onClick={() => onRemoveProduct(product._id)}
                 >
-                  Remover
+                  <X/>
                 </Button>
               </td>
             </tr>
