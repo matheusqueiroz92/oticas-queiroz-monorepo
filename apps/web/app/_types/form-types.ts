@@ -15,8 +15,8 @@ export interface PrescriptionData {
   doctorName: string;
   clinicName: string;
   appointmentDate: string;
-  leftEye: EyeData;
   rightEye: EyeData;
+  leftEye: EyeData;
   nd: number;
   oc: number;
   addition: number;
@@ -50,13 +50,13 @@ export const orderFormSchema = z.object({
     doctorName: z.string().optional(),
     clinicName: z.string().optional(),
     appointmentDate: z.string().optional(),
-    leftEye: z.object({
+    rightEye: z.object({
       sph: z.number().default(0),
       cyl: z.number().default(0),
       axis: z.number().default(0),
       pd: z.number().default(0),
     }),
-    rightEye: z.object({
+    leftEye: z.object({
       sph: z.number().default(0),
       cyl: z.number().default(0),
       axis: z.number().default(0),
@@ -94,8 +94,8 @@ export interface OrderFormValues {
     doctorName: string;
     clinicName: string;
     appointmentDate: string;
-    leftEye: EyeData;
     rightEye: EyeData;
+    leftEye: EyeData;
     nd: number;
     oc: number;
     addition: number;

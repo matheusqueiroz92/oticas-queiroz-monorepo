@@ -8,6 +8,7 @@ import type { OrderFormValues } from "@/app/_types/order";
 import { OrderCompactPDF } from "./OrderCompactPdf";
 import { api } from "@/app/_services/authService";
 import { API_ROUTES } from "@/app/_constants/api-routes";
+import { useUsers } from "@/hooks/useUsers";
 
 interface OrderPdfExporterProps {
   formData?: OrderFormValues & { _id?: string };
@@ -20,6 +21,8 @@ interface OrderPdfExporterProps {
   disabled?: boolean;
 }
 
+const { getUserById } = useUsers();
+
 export default function OrderPdfExporter({
   formData,
   order,
@@ -31,6 +34,7 @@ export default function OrderPdfExporter({
   disabled = false,
 }: OrderPdfExporterProps) {
   const [customerData, setCustomerData] = useState<Customer | null>(initialCustomer || null);
+  const [employeeData, setEmployeeData] = useState<any>(null);
   const [orderData, setOrderData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -145,6 +149,7 @@ export default function OrderPdfExporter({
 
         setOrderData(finalOrderData);
         setCustomerData(finalCustomerData);
+        setEmployeeData(finalOrderData.employeeId ? await getUserById(finalOrderData.employeeId) : null);
       } catch (err) {
         console.error("Erro ao carregar dados para PDF:", err);
         setError("Erro ao carregar dados para exportação");
@@ -199,7 +204,7 @@ export default function OrderPdfExporter({
 
   return (
     <PDFDownloadLink
-      document={<OrderCompactPDF data={orderData} customer={customerData} />}
+      document={<OrderCompactPDF data={orderData} customer={customerData} employee={employeeData} />}
       fileName={fileName}
       className={`block ${className}`}
     >

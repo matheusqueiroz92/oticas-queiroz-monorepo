@@ -11,18 +11,20 @@ import type { Customer } from "../../../app/_types/customer";
 import type { OrderFormValues } from "@/app/_types/order";
 import type { Product } from "@/app/_types/product";
 import { getProductTypeLabel } from "@/app/_utils/product-utils";
+import { Employee } from "@/app/_types/employee";
 
 export interface OrderPDFProps {
   data: OrderFormValues & { _id?: string };
   customer: Customer | null;
+  employee: Employee | null;
 }
 
 const companyInfo = {
   name: "Óticas Queiroz",
   logo: LogoImage.src,
   address: "Rua J. J. Seabra, 116 - Centro. Itapetinga-Bahia. CEP: 45700-000",
-  phone: "(77) 3262-1344",
-  whatsapp: "(77) 98801-8192",
+  phone: "(77)3262-1344",
+  whatsapp: "(77)99932-2806 / (77)99157-8445",
   email: "contato@oticasqueiroz.com.br",
   website: "www.oticasqueiroz.com.br",
 };
@@ -94,6 +96,10 @@ const styles = StyleSheet.create({
   },
   columnHalf: {
     width: "50%",
+    paddingRight: 5,
+  },
+  column: {
+    width: "100%",
     paddingRight: 5,
   },
   sectionBox: {
@@ -215,6 +221,7 @@ const styles = StyleSheet.create({
   // Assinatura
   signatureSection: {
     marginTop: 5,
+    marginBottom: 5,
     paddingTop: 2,
   },
   signatureLine: {
@@ -223,7 +230,7 @@ const styles = StyleSheet.create({
     borderTopStyle: "solid",
     marginTop: 10,
     marginBottom: 4,
-    width: 150,
+    width: 250,
     alignSelf: "center",
   },
   signatureLabel: {
@@ -252,10 +259,18 @@ const styles = StyleSheet.create({
     fontSize: 7,
     color: "#000",
     marginTop: 4,
+  },
+
+  informativeFooter: {
+    textAlign: "center",
+    fontSize: 7,
+    color: "#000",
+    marginTop: 4,
+    marginBottom: 10,
   }
 });
 
-// Funções auxiliares compartilhadas
+// Função auxiliar para formatar a data
 const formatDate = (dateString?: string) => {
   if (!dateString) return "N/A";
   try {
@@ -265,10 +280,12 @@ const formatDate = (dateString?: string) => {
   }
 };
 
+// Função auxiliar para formatar valores monetários
 const formatCurrency = (value: number) => {
   return `R$ ${value.toFixed(2).replace(".", ",")}`;
 };
 
+// Função auxiliar para calcular o valor da parcela
 const calculateInstallmentValue = (data: OrderFormValues & { _id?: string }) => {
   const totalPrice = data.finalPrice || 0;
   const installments = data.installments || 1;
@@ -278,6 +295,7 @@ const calculateInstallmentValue = (data: OrderFormValues & { _id?: string }) => 
   return remainingAmount <= 0 ? 0 : remainingAmount / installments;
 };
 
+// Função auxiliar para formatar valores de refração
 const formatRefractionValue = (value?: string | number): string => {
   if (value === undefined || value === null || value === "") {
     return "N/A";
@@ -329,7 +347,7 @@ const ClientDataSection = ({ customer }: { customer: Customer | null }) => (
 );
 
 // Componente para a seção de detalhes do pedido (compartilhado entre vias)
-const OrderDetailsSection = ({ data }: { data: OrderFormValues & { _id?: string } }) => (
+const OrderDetailsSection = ({ data, employee }: { data: OrderFormValues & { _id?: string }, employee?: Employee | null }) => (
   <View style={styles.sectionBox}>
     <Text style={styles.sectionTitle}>DETALHES DO PEDIDO</Text>
     <View style={styles.dataRow}>
@@ -369,6 +387,10 @@ const OrderDetailsSection = ({ data }: { data: OrderFormValues & { _id?: string 
         </Text>
       </View>
     )}
+    <View style={styles.dataRow}>
+      <Text style={styles.label}>Vendedor:</Text>
+      <Text style={styles.value}>{employee?.name || "N/A"}</Text>
+    </View>
   </View>
 );
 
@@ -452,7 +474,7 @@ const ProductsSection = ({ data, isClientVersion = true }: { data: OrderFormValu
 
 // Componente para a seção de prescrição (compartilhado entre vias)
 const PrescriptionSection = ({ data }: { data: OrderFormValues & { _id?: string } }) => {
-  if (!data.prescriptionData || !data.prescriptionData.leftEye || !data.prescriptionData.rightEye) {
+  if (!data.prescriptionData || !data.prescriptionData.leftEye || !data.prescriptionData.leftEye) {
     return null;
   }
 
@@ -475,30 +497,14 @@ const PrescriptionSection = ({ data }: { data: OrderFormValues & { _id?: string 
       <View style={styles.prescriptionTable}>
         <View style={styles.prescriptionTableHeader}>
           <Text style={[styles.prescriptionTableCell, styles.eyeCell]}>Olho</Text>
-          <Text style={[styles.prescriptionTableCell, styles.dataCell]}>ESF</Text>
-          <Text style={[styles.prescriptionTableCell, styles.dataCell]}>CIL</Text>
+          <Text style={[styles.prescriptionTableCell, styles.dataCell]}>ESF.</Text>
+          <Text style={[styles.prescriptionTableCell, styles.dataCell]}>CIL.</Text>
           <Text style={[styles.prescriptionTableCell, styles.dataCell]}>EIXO</Text>
-          <Text style={[styles.prescriptionTableCell, styles.dataCell]}>DP</Text>
+          <Text style={[styles.prescriptionTableCell, styles.dataCell]}>D.P.</Text>
         </View>
 
         <View style={styles.prescriptionTableRow}>
-          <Text style={[styles.prescriptionTableCell, styles.eyeCell, {fontWeight: "bold"}]}>ESQ</Text>
-          <Text style={[styles.prescriptionTableCell, styles.dataCell]}>
-            {formatRefractionValue(data.prescriptionData.leftEye.sph)}
-          </Text>
-          <Text style={[styles.prescriptionTableCell, styles.dataCell]}>
-            {formatRefractionValue(data.prescriptionData.leftEye.cyl)}
-          </Text>
-          <Text style={[styles.prescriptionTableCell, styles.dataCell]}>
-            {data.prescriptionData.leftEye.axis || 0}°
-          </Text>
-          <Text style={[styles.prescriptionTableCell, styles.dataCell]}>
-            {data.prescriptionData.leftEye.pd || 0}
-          </Text>
-        </View>
-
-        <View style={[styles.prescriptionTableRow, {borderBottomWidth: 0}]}>
-          <Text style={[styles.prescriptionTableCell, styles.eyeCell, {fontWeight: "bold"}]}>DIR</Text>
+          <Text style={[styles.prescriptionTableCell, styles.eyeCell, {fontWeight: "bold"}]}>DIR.</Text>
           <Text style={[styles.prescriptionTableCell, styles.dataCell]}>
             {formatRefractionValue(data.prescriptionData.rightEye.sph)}
           </Text>
@@ -510,6 +516,22 @@ const PrescriptionSection = ({ data }: { data: OrderFormValues & { _id?: string 
           </Text>
           <Text style={[styles.prescriptionTableCell, styles.dataCell]}>
             {data.prescriptionData.rightEye.pd || 0}
+          </Text>
+        </View>
+
+        <View style={[styles.prescriptionTableRow, {borderBottomWidth: 0}]}>
+          <Text style={[styles.prescriptionTableCell, styles.eyeCell, {fontWeight: "bold"}]}>ESQ.</Text>
+          <Text style={[styles.prescriptionTableCell, styles.dataCell]}>
+            {formatRefractionValue(data.prescriptionData.leftEye.sph)}
+          </Text>
+          <Text style={[styles.prescriptionTableCell, styles.dataCell]}>
+            {formatRefractionValue(data.prescriptionData.leftEye.cyl)}
+          </Text>
+          <Text style={[styles.prescriptionTableCell, styles.dataCell]}>
+            {data.prescriptionData.leftEye.axis || 0}°
+          </Text>
+          <Text style={[styles.prescriptionTableCell, styles.dataCell]}>
+            {data.prescriptionData.leftEye.pd || 0}
           </Text>
         </View>
       </View>
@@ -529,8 +551,8 @@ const PrescriptionSection = ({ data }: { data: OrderFormValues & { _id?: string 
   );
 };
 
-// Componente para a 1ª Via - Cliente
-const ClientOrderSection = ({ data, customer }: OrderPDFProps) => {
+// Componente para a 1ª Via - Cliente (SEM RECEITA MÉDICA)
+const ClientOrderSection = ({ data, customer, employee }: OrderPDFProps) => {
   const hasObservations = !!data.observations && data.observations.trim() !== '';
   
   return (
@@ -570,15 +592,13 @@ const ClientOrderSection = ({ data, customer }: OrderPDFProps) => {
           <ClientDataSection customer={customer} />
         </View>
         <View style={styles.columnHalf}>
-          <OrderDetailsSection data={data} />
+          <OrderDetailsSection data={data} employee={employee} />
         </View>
       </View>
 
-      {/* Layout em duas colunas para produtos e receita */}
-      <View style={styles.rowContainer}>
-        <View style={styles.columnHalf}>
-          <ProductsSection data={data} isClientVersion={false} />
-        </View>
+      {/* Produtos ocupando a largura completa (sem receita médica) */}
+      <View style={styles.column}>
+        <ProductsSection data={data} isClientVersion={false} />
       </View>
 
       {/* Observações (se houver) */}
@@ -597,7 +617,7 @@ const ClientOrderSection = ({ data, customer }: OrderPDFProps) => {
 
       {/* Avisos e Informativos */}
       <Text style={styles.informative}>
-        O pedido poderá ser entregue em até 30 (trinta) dias úteis.
+        Este pedido tem o prazo de até 30 (trinta) dias úteis para ser entregue.
       </Text>
 
       <Text style={styles.informative}>
@@ -605,16 +625,16 @@ const ClientOrderSection = ({ data, customer }: OrderPDFProps) => {
         em contato com {companyInfo.name} pelo telefone {companyInfo.phone} ou pelo WhatsApp {companyInfo.whatsapp}.
       </Text>
 
-      <Text style={styles.informative}>
-        Consulte o status do seu pedido através do site app.oticasqueiroz.com.br.
-        Para acessar, basta fazer o login com o seu CPF cadastrado e sua senha são os 6 primeiro dígitos do CPF.
+      <Text style={styles.informativeFooter}>
+        Consulte o status do seu pedido pelo site app.oticasqueiroz.com.br.
+        Para acessar basta fazer o login com o seu CPF cadastrado, e a senha são os 6 primeiro dígitos do CPF.
       </Text>
     </View>
   );
 };
 
-// Componente para a 2ª Via - Loja (sem cabeçalho)
-const StoreOrderSection = ({ data, customer }: OrderPDFProps) => {
+// Componente para a 2ª Via - Loja (COM RECEITA MÉDICA)
+const StoreOrderSection = ({ data, customer, employee }: OrderPDFProps) => {
   const hasObservations = !!data.observations && data.observations.trim() !== '';
   
   return (
@@ -637,7 +657,7 @@ const StoreOrderSection = ({ data, customer }: OrderPDFProps) => {
           <ClientDataSection customer={customer} />
         </View>
         <View style={styles.columnHalf}>
-          <OrderDetailsSection data={data} />
+          <OrderDetailsSection data={data} employee={employee} />
         </View>
       </View>
 
@@ -669,18 +689,18 @@ const StoreOrderSection = ({ data, customer }: OrderPDFProps) => {
 };
 
 // Componente principal do PDF com duas vias
-export const OrderCompactPDF = ({ data, customer }: OrderPDFProps) => {
+export const OrderCompactPDF = ({ data, customer, employee }: OrderPDFProps) => {
   return (
     <Document>
       <Page size="A4" style={styles.page}>
         {/* 1ª Via - Cliente */}
-        <ClientOrderSection data={data} customer={customer} />
+        <ClientOrderSection data={data} customer={customer} employee={employee} />
         
         {/* Linha divisória entre as vias */}
         <View style={styles.divider} />
         
         {/* 2ª Via - Loja (mais compacta) */}
-        <StoreOrderSection data={data} customer={customer} />
+        <StoreOrderSection data={data} customer={customer} employee={employee} />
       </Page>
     </Document>
   );

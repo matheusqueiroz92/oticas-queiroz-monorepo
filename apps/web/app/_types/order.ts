@@ -27,13 +27,13 @@ export interface Order {
     doctorName?: string;
     clinicName?: string;
     appointmentDate?: string | Date;
-    leftEye?: {
+    rightEye?: {
       sph?: number;
       cyl?: number;
       axis?: number;
       pd?: number;
     };
-    rightEye?: {
+    leftEye?: {
       sph?: number;
       cyl?: number;
       axis?: number;
@@ -82,8 +82,8 @@ export interface PrescriptionData {
   doctorName: string;
   clinicName: string;
   appointmentDate: string;
-  leftEye: EyeData;
   rightEye: EyeData;
+  leftEye: EyeData;
   nd: number;
   oc: number;
   addition: number;
@@ -115,8 +115,8 @@ export interface OrderFormValues {
     doctorName: string;
     clinicName: string;
     appointmentDate: string;
-    leftEye: EyeData;
     rightEye: EyeData;
+    leftEye: EyeData;
     nd: number;
     oc: number;
     addition: number;

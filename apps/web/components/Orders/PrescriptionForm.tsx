@@ -120,8 +120,8 @@ export default function PrescriptionForm({ form }: PrescriptionFormProps) {
 
       {/* Seções dos olhos lado a lado */}
       <div className="grid grid-cols-2 gap-6">
-        <EyeFormSection eye="left" title="Olho Esquerdo" form={form} />
         <EyeFormSection eye="right" title="Olho Direito" form={form} />
+        <EyeFormSection eye="left" title="Olho Esquerdo" form={form} />
       </div>
 
       {/* Campos adicionais - mais compactos */}

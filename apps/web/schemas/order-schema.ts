@@ -25,13 +25,13 @@ const orderFormSchema = z
       doctorName: z.string().optional(),
       clinicName: z.string().optional(),
       appointmentDate: z.string().optional(),
-      leftEye: z.object({
+      rightEye: z.object({
         sph: z.string(),
         cyl: z.string(),
         axis: z.number(),
         pd: z.number(),
       }),
-      rightEye: z.object({
+      leftEye: z.object({
         sph: z.string(),
         cyl: z.string(),
         axis: z.number(),
@@ -84,8 +84,8 @@ export const createOrderform = () => {
         doctorName: "",
         clinicName: "",
         appointmentDate: new Date().toISOString().split("T")[0],
-        leftEye: { sph: '', cyl: '', axis: 0, pd: 0 },
         rightEye: { sph: '', cyl: '', axis: 0, pd: 0 },
+        leftEye: { sph: '', cyl: '', axis: 0, pd: 0 },
         nd: 0,
         oc: 0,
         addition: 0,

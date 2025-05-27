@@ -112,17 +112,17 @@ export default function NewOrderPage() {
           doctorName: formData.prescriptionData.doctorName || "Não aplicável",
           clinicName: formData.prescriptionData.clinicName || "Não aplicável",
           appointmentDate: formData.prescriptionData.appointmentDate || new Date().toISOString().split("T")[0],
-          leftEye: {
-            sph: normalizeDioptriaValue(formData.prescriptionData.leftEye.sph),
-            cyl: normalizeDioptriaValue(formData.prescriptionData.leftEye.cyl),
-            axis: formData.prescriptionData.leftEye.axis || 0,
-            pd: formData.prescriptionData.leftEye.pd || 0,
-          },
           rightEye: {
             sph: normalizeDioptriaValue(formData.prescriptionData.rightEye.sph),
             cyl: normalizeDioptriaValue(formData.prescriptionData.rightEye.cyl),
             axis: formData.prescriptionData.rightEye.axis || 0,
             pd: formData.prescriptionData.rightEye.pd || 0,
+          },
+          leftEye: {
+            sph: normalizeDioptriaValue(formData.prescriptionData.leftEye.sph),
+            cyl: normalizeDioptriaValue(formData.prescriptionData.leftEye.cyl),
+            axis: formData.prescriptionData.leftEye.axis || 0,
+            pd: formData.prescriptionData.leftEye.pd || 0,
           },
           nd: formData.prescriptionData.nd || 0,
           oc: formData.prescriptionData.oc || 0,

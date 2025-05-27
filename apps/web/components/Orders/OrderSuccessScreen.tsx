@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, FileText } from "lucide-react";
 import OrderPdfExporter from "@/components/Orders/exports/OrderPdfExporter";
-import OrderPrintButton from "@/components/Orders/exports/OrderPrintButton";
 import type { Customer } from "@/app/_types/customer";
 
 interface OrderSuccessScreenProps {
@@ -77,7 +76,7 @@ export default function OrderSuccessScreen({
         
         {/* Opções de exportação e impressão */}
         <div className="bg-white p-3 rounded border shadow-sm">
-          <h4 className="text-sm font-medium mb-3">Exportar/Imprimir Pedido</h4>
+          <h4 className="text-sm font-medium mb-3">Exportar Pedido</h4>
           
           <div className="grid grid-cols-1 gap-3 mb-3">
             {/* Usar o componente unificado */}
@@ -90,16 +89,6 @@ export default function OrderSuccessScreen({
               customer={submittedOrder?.customer || selectedCustomer}
               buttonText="Baixar PDF (2 vias)"
               variant="outline"
-            />
-            
-            {/* Botão de impressão direta */}
-            <OrderPrintButton
-              formData={{
-                ...form.getValues(),
-                _id: submittedOrder?._id,
-                serviceOrder: submittedOrder?.serviceOrder
-              }}
-              customer={selectedCustomer}
             />
           </div>          
         </div>

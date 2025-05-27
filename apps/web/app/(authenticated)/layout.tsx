@@ -2,7 +2,7 @@
 
 import { usePermissions } from "@/hooks/usePermissions";
 import {
-  Home,
+  LayoutDashboard,
   Package,
   Users,
   FileText,
@@ -51,7 +51,7 @@ interface MenuItem {
 const menuItems: MenuItem[] = [
   {
     title: "Dashboard",
-    icon: Home,
+    icon: LayoutDashboard,
     href: "/dashboard",
     roles: ["admin", "employee", "customer"],
   },

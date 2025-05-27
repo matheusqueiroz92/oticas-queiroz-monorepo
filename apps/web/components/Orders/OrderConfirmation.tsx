@@ -129,6 +129,7 @@ export default function OrderConfirmation({
         </div>
       </div>
       
+      {/* Resumo do pedido */}
       <div className="col-span-3">
         <OrderSummary 
           form={form}
