@@ -7,6 +7,7 @@
 // import { OrderCompactPDF } from "./OrderCompactPdf";
 // import { api } from "@/app/_services/authService";
 // import { API_ROUTES } from "@/app/_constants/api-routes";
+// import { useUsers } from "@/hooks/useUsers";
 
 // interface OrderCompactPdfGeneratorProps {
 //   formData: OrderFormValues & { _id?: string };
@@ -18,7 +19,10 @@
 //   customer,
 // }: OrderCompactPdfGeneratorProps) {
 //   const [customerData, setCustomerData] = useState<Customer | null>(customer);
+//   const [employeeData, setEmployeeData] = useState<any>(null);
 //   const [isLoading, setIsLoading] = useState(false);
+
+//   const { getUserById } = useUsers();
   
 //   useEffect(() => {
 //     const fetchCustomer = async () => {
@@ -31,6 +35,8 @@
 //           if (response.data) {
 //             setCustomerData(response.data);
 //           }
+
+//           setEmployeeData(response.data.employeeId ? await getUserById(response.data.employeeId) : null);
 //         } catch (error) {
 //           console.error("Erro ao buscar dados do cliente:", error);
 //         } finally {
@@ -44,7 +50,7 @@
   
 //   return (
 //     <PDFDownloadLink
-//       document={<OrderCompactPDF data={formData} customer={customerData} employee={employee} />}
+//       document={<OrderCompactPDF data={formData} customer={customerData} employee={employeeData} />}
 //       fileName={`pedido-compacto-${formData._id || new Date().toISOString().split("T")[0]}.pdf`}
 //       className="block w-full"
 //     >

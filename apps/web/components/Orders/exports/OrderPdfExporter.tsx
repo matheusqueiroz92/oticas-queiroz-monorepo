@@ -1,3 +1,5 @@
+"use client"
+
 import { useEffect, useState } from "react";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import { Button } from "@/components/ui/button";
@@ -21,8 +23,6 @@ interface OrderPdfExporterProps {
   disabled?: boolean;
 }
 
-const { getUserById } = useUsers();
-
 export default function OrderPdfExporter({
   formData,
   order,
@@ -38,6 +38,8 @@ export default function OrderPdfExporter({
   const [orderData, setOrderData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const { getUserById } = useUsers();
 
   // Normalizar os dados do pedido para o formato esperado pelo PDF
   const normalizeOrderData = (sourceOrder: Order): OrderFormValues & { _id?: string } => {
