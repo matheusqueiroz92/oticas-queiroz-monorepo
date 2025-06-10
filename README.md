@@ -12,11 +12,13 @@ Sistema completo de gestão para Óticas Queiroz, desenvolvido para otimizar pro
   - Clientes: Acesso limitado aos seus pedidos e perfil;
   - Instituições: Parceiros institucionais com acesso a funcionalidades específicas;
 - 🔑 **Autenticação Segura**: Login com email, CPF ou CNPJ, protegido por JWT (JSON Web Tokens);
+- 🆔 **Login por Ordem de Serviço**: Clientes podem fazer login usando o número da O.S. como usuário e senha;
 - 🔄 **Recuperação de Senha**: Sistema de reset de senha via tokens enviados por email;
 - **Gerenciamento de Perfil**: Upload de foto, atualização de dados pessoais e senha;
 - ✅ **Validação de CPF**: Verificação automática da validade do CPF para evitar cadastros fraudulentos;
 - ✅ **Validação de CNPJ**: Verificação automática da validade do CNPJ para evitar cadastros fraudulentos;
-- 📊 **Controle de Sessão**: Verificação e renovação automática de tokens de autenticação.
+- 📊 **Controle de Sessão**: Verificação e renovação automática de tokens de autenticação;
+- 🆔 **CPF Opcional**: Possibilidade de cadastrar clientes sem informar CPF (para casos onde o cliente não fornece o documento);
 
 ### 📦 Gestão de Produtos
 - 🗂️ **Categorização de Produtos**: Suporte a diferentes tipos de produtos óticos:
@@ -36,6 +38,7 @@ Sistema completo de gestão para Óticas Queiroz, desenvolvido para otimizar pro
 ### 🛍️ Gestão de Pedidos
 - ✨ **Criação Intuitiva**: Interface amigável para registro de novos pedidos;
 - 📝 **Seleção de Produtos**: Adição de múltiplos produtos em um mesmo pedido;
+- 👥 **Responsável pela Compra**: Possibilidade de registrar pedido em nome de um cliente com débito sendo lançado em outro responsável (ex: filho compra, pai paga);
 - 📅 **Dados de Prescrição**: Registro detalhado da receita médica:
   - Dados do médico e clínica;
   - Data da consulta;
@@ -129,6 +132,42 @@ Sistema completo de gestão para Óticas Queiroz, desenvolvido para otimizar pro
 - 👤 **Identificação de Responsáveis**: Registro de quem realizou cada operação;
 - 🔗 **Vinculação com Pedidos**: Associação entre movimentações e vendas;
 - 📤 **Exportação de Dados**: Geração de relatórios de inventário.
+
+## 🆕 Funcionalidades Recentemente Implementadas
+
+### 🔑 Autenticação por Ordem de Serviço (O.S.)
+- **Funcionalidade**: Clientes podem fazer login usando o número da Ordem de Serviço
+- **Como usar**: 
+  - Username: Número da O.S. (ex: "12345")
+  - Senha: Mesmo número da O.S. (ex: "12345")
+- **Benefícios**: Facilita o acesso para clientes que só conhecem o número do seu pedido
+- **Compatibilidade**: Mantém funcionamento dos logins tradicionais (email, CPF, CNPJ)
+
+### 🆔 CPF Opcional para Clientes
+- **Funcionalidade**: Possibilidade de cadastrar clientes sem informar o CPF
+- **Casos de uso**: 
+  - Clientes que não querem fornecer CPF no momento da compra
+  - Compras rápidas onde o documento não é necessário
+  - Clientes menores de idade sem CPF
+- **Interface**: Formulários indicam claramente que o CPF é "(opcional)"
+- **Validação**: Quando informado, CPF continua sendo validado normalmente
+
+### 👥 Responsável pela Compra
+- **Funcionalidade**: Permite registrar pedido em nome de um cliente com débito sendo lançado em outro responsável
+- **Casos de uso**:
+  - Filho menor de idade compra óculos, débito fica no nome do pai
+  - Compras corporativas onde funcionário compra mas empresa paga
+  - Qualquer situação onde comprador ≠ pagador
+- **Como usar**:
+  1. Selecione o cliente que está comprando normalmente
+  2. Marque checkbox "Há um responsável pela compra?"
+  3. Busque e selecione o cliente responsável pelo pagamento
+  4. Finalize o pedido - débito será lançado no responsável
+- **Interface**: Visual diferenciado com cores para distinguir cliente (azul) e responsável (laranja)
+- **Lógica**: 
+  - Compra registrada no nome do cliente original
+  - Débitos e pagamentos vinculados ao responsável
+  - Histórico de vendas mantido no funcionário
 
 ## 🚀 Tecnologias utilizadas
 
@@ -238,8 +277,8 @@ oticas-queiroz-monorepo/
 A API expõe diversos endpoints organizados por domínio:
 
 ### 🔒 Autenticação
-- `POST /api/auth/login`: Autenticação de usuários
-- `POST /api/auth/register`: Registro de novos usuários (requer autorização)
+- `POST /api/auth/login`: Autenticação de usuários (suporta email, CPF, CNPJ ou número de O.S.)
+- `POST /api/auth/register`: Registro de novos usuários (requer autorização, CPF opcional)
 - `POST /api/auth/forgot-password`: Solicita redefinição de senha
 - `POST /api/auth/reset-password`: Redefine senha com token
 - `GET /api/auth/validate-token/:token`: Valida token de redefinição
@@ -416,10 +455,10 @@ Schemas do Typescript de cada entidade da aplicação
   image?: string;
   address?: string;
   phone?: string;
-  cpf?: string;
+  cpf?: string; // opcional - pode ser cadastrado sem CPF
   cnpj?: string; // apenas para instituições
   rg?: string;
-  birthDate?: Date;
+  birthDate?: Date; // opcional
   sales?: string[]; // apenas para funcionários (vendas realizadas)
   purchases?: string[]; // apenas para clientes (compras realizadas)
   debts?: number; // apenas para clientes (débitos dos clientes)
@@ -468,6 +507,10 @@ Schemas do Typescript de cada entidade da aplicação
   _id?: string;
   clientId: string;
   employeeId: string;
+  institutionId?: string | null;
+  isInstitutionalOrder?: boolean;
+  responsibleClientId?: string; // ID do cliente responsável pelos débitos
+  hasResponsible?: boolean; // Se há um responsável pela compra
   products: Product[]; // array de produtos
   serviceOrder?: string;
   paymentMethod: string;
@@ -963,6 +1006,31 @@ A documentação da API está disponível no Swagger UI: https://app.oticasqueir
 
 - [ ] Desenvolvimento da parte Desktop do sistema
 
+
+## 🔄 Histórico de Versões e Melhorias
+
+### v2.3.0 (Dezembro 2024) - Flexibilidade e UX
+**Implementações Principais:**
+- ✅ **Login por Ordem de Serviço**: Simplifica acesso para clientes
+- ✅ **CPF Opcional**: Maior flexibilidade no cadastro de clientes  
+- ✅ **Responsável pela Compra**: Suporte a cenários complexos de responsabilidade financeira
+
+**Melhorias Técnicas:**
+- Refatoração de schemas para maior flexibilidade
+- Melhoria na UX dos formulários com indicações claras
+- Manutenção da compatibilidade com funcionalidades existentes
+- Validações robustas para novos fluxos
+
+**Impacto:**
+- 📈 Maior flexibilidade para diferentes tipos de clientes
+- 🚀 Simplificação do processo de login para clientes
+- 💼 Suporte a casos de uso empresariais e familiares
+- 🔄 Zero breaking changes - sistema anterior continua funcionando
+
+### Próximas Versões
+- **v2.4.0**: Sistema de notificações e alertas
+- **v3.0.0**: Aplicativo móvel React Native
+- **v3.1.0**: Aplicativo desktop Electron
 
 ## 📝 Licença
 

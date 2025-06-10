@@ -18,7 +18,9 @@ export class LegacyClientService {
     this.legacyClientModel = new LegacyClientModel();
   }
 
-  private validateDocumentId(cpf: string): void {
+  private validateDocumentId(cpf?: string): void {
+    if (!cpf) return; // CPF é opcional agora
+    
     const cleanDocument = cpf.replace(/\D/g, "");
 
     // Valida CPF ou CNPJ
@@ -51,11 +53,14 @@ export class LegacyClientService {
   ): Promise<ILegacyClient> {
     this.validateClient(clientData);
 
-    const existingClient = await this.legacyClientModel.findByDocument(
-      clientData.cpf
-    );
-    if (existingClient) {
-      throw new LegacyClientError("Cliente já cadastrado com este documento");
+    // Verificar documento apenas se CPF foi fornecido
+    if (clientData.cpf) {
+      const existingClient = await this.legacyClientModel.findByDocument(
+        clientData.cpf
+      );
+      if (existingClient) {
+        throw new LegacyClientError("Cliente já cadastrado com este documento");
+      }
     }
 
     const client = await this.legacyClientModel.create({

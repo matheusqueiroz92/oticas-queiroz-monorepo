@@ -45,6 +45,17 @@ export class AuthModel {
     return (await User.findById(id)) as unknown as UserDocument | null;
   }
 
+  async findUserByServiceOrder(serviceOrder: string): Promise<UserDocument | null> {
+    // Buscar na coleção de pedidos (Order) para encontrar o cliente pelo serviceOrder
+    const Order = require("../schemas/OrderSchema").Order;
+    
+    const order = await Order.findOne({ serviceOrder: serviceOrder.toString() });
+    if (!order) return null;
+
+    // Buscar o usuário cliente associado ao pedido
+    return (await User.findById(order.clientId)) as unknown as UserDocument | null;
+  }
+
   async verifyPassword(user: UserDocument, password: string): Promise<boolean> {
     return await user.comparePassword(password);
   }

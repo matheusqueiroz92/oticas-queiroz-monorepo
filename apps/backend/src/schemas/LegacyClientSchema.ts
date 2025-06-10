@@ -3,7 +3,12 @@ import { model, Schema } from "mongoose";
 const legacyClientSchema = new Schema(
   {
     name: { type: String, required: true },
-    cpf: { type: String, required: true, unique: true },
+    cpf: { 
+      type: String, 
+      required: false, // CPF agora é opcional
+      unique: true,
+      sparse: true // Permite múltiplos documentos com valor null/undefined para CPF
+    },
     email: { type: String },
     phone: { type: String },
     address: {

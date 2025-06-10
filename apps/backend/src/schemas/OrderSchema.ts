@@ -42,6 +42,14 @@ const orderSchema = new Schema<IOrder>({
     type: Boolean,
     default: false
   },
+  responsibleClientId: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+  },
+  hasResponsible: {
+    type: Boolean,
+    default: false
+  },
   products: [{
     type: Schema.Types.Mixed,
     required: true

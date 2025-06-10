@@ -59,16 +59,9 @@ export class UserService {
         );
       }
     } else if (userData.role === "customer" || userData.role === "employee" || userData.role === "admin") {
-      // CPF é obrigatório para clientes, funcionários e administradores
-      if ("cpf" in userData && !userData.cpf) {
-        throw new ValidationError(
-          `CPF é obrigatório para ${userData.role === 'customer' ? 'clientes' : 'funcionários/administradores'}`, 
-          ErrorCode.VALIDATION_ERROR
-        );
-      }
-      
-      // Validar formato do CPF
-      if ("cpf" in userData && userData.cpf !== undefined) {
+      // CPF agora é opcional para todos os tipos de usuário
+      // Validar formato do CPF apenas se fornecido
+      if ("cpf" in userData && userData.cpf !== undefined && userData.cpf !== null && userData.cpf !== "") {
         const cpfString = userData.cpf.toString();
         if (!/^\d{11}$/.test(cpfString)) {
           throw new ValidationError(
@@ -110,7 +103,7 @@ export class UserService {
       if (existingInstitution) {
         throw new ValidationError("CNPJ já cadastrado", ErrorCode.DUPLICATE_CNPJ);
       }
-    } else if (userData.cpf) {
+    } else if (userData.cpf && userData.cpf.trim() !== "") {
       const existingUserByCpf = await this.userModel.findByCpf(userData.cpf);
       if (existingUserByCpf) {
         throw new ValidationError("CPF já cadastrado", ErrorCode.DUPLICATE_CPF);

@@ -25,7 +25,7 @@ export class AuthService {
       );
     }
   
-    // Verificamos se o login é um email, CPF ou CNPJ
+    // Verificamos se o login é um email, CPF, CNPJ ou número de O.S.
     let user = null;
     
     // Verifica se é um CNPJ (apenas números e exatamente 14 dígitos)
@@ -33,6 +33,9 @@ export class AuthService {
     
     // Verifica se é um CPF (apenas números e exatamente 11 dígitos)
     const isCPF = /^\d{11}$/.test(login.replace(/[^\d]/g, ""));
+    
+    // Verifica se é um número de O.S. (apenas números, mas menor que CPF)
+    const isServiceOrder = /^\d+$/.test(login) && login.length < 11;
   
     if (isCNPJ) {
       // Buscar por CNPJ
@@ -42,6 +45,33 @@ export class AuthService {
       // Buscar por CPF
       const sanitizedCPF = login.replace(/[^\d]/g, "");
       user = await this.authModel.findUserByCpf(sanitizedCPF);
+    } else if (isServiceOrder) {
+      // Buscar por número de O.S.
+      user = await this.authModel.findUserByServiceOrder(login);
+      
+      // Para login com O.S., a senha deve ser o próprio número da O.S.
+      if (user && login !== password) {
+        throw new AuthError(
+          "Credenciais inválidas",
+          ErrorCode.INVALID_CREDENTIALS
+        );
+      }
+      
+      // Se encontrou o usuário e as credenciais são válidas (O.S. = senha)
+      if (user && login === password) {
+        const token = generateToken(user._id.toString(), user.role);
+        const userData = this.authModel.convertToIUser(user);
+        const {
+          password: _,
+          comparePassword: __,
+          ...userWithoutSensitiveData
+        } = userData;
+      
+        return {
+          token,
+          user: userWithoutSensitiveData,
+        };
+      }
     } else {
       // Buscar por email
       user = await this.authModel.findUserByEmail(login);
@@ -54,6 +84,7 @@ export class AuthService {
       );
     }
   
+    // Para login tradicional (não O.S.), verificar senha hash
     const isValidPassword = await this.authModel.verifyPassword(user, password);
     if (!isValidPassword) {
       throw new AuthError(

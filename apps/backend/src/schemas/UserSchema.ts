@@ -27,13 +27,11 @@ const userSchema = new Schema<IUser>(
     phone: { type: String },
     cpf: {
       type: String,
-      required: function(this: { role: string }) {
-        return this.role === 'customer' || this.role === 'employee' || this.role === 'admin';
-      },
+      required: false, // CPF agora é opcional para todos os tipos de usuário
       validate: {
         validator: function(v: string) {
-          // Se for instituição, não validar CPF
-          if (this.role === 'institution') return true;
+          // Se for instituição ou se CPF não estiver presente, não validar
+          if (this.role === 'institution' || !v) return true;
           return isValidCPF(v);
         },
         message: (props) => `${props.value} não é um CPF válido!`,
@@ -94,14 +92,18 @@ userSchema.pre('save', function(next) {
 });
 
 // Adicionar índices manualmente, fora do schema
-// Para CPF (apenas para não-instituições)
+// Para CPF (apenas quando CPF estiver presente e não for instituição)
 userSchema.index(
   { cpf: 1 }, 
   { 
     unique: true,
     partialFilterExpression: { 
-      cpf: { $exists: true, $ne: null },
-      role: { $ne: "institution" }
+      $and: [
+        { cpf: { $exists: true } },
+        { cpf: { $ne: null } },
+        { cpf: { $ne: "" } },
+        { role: { $ne: "institution" } }
+      ]
     }
   }
 );

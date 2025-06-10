@@ -40,6 +40,8 @@ interface OrderFormProps {
   setSelectedProducts: React.Dispatch<React.SetStateAction<Product[]>>;
   selectedCustomer: Customer | null;
   setSelectedCustomer: React.Dispatch<React.SetStateAction<Customer | null>>;
+  selectedResponsible?: Customer | null;
+  setSelectedResponsible?: React.Dispatch<React.SetStateAction<Customer | null>>;
   hasLenses: boolean;
   setHasLenses: React.Dispatch<React.SetStateAction<boolean>>;
   showInstallments: boolean;
@@ -58,6 +60,7 @@ interface OrderFormProps {
   handleRemoveProduct: (productId: string) => void;
   handleUpdateProductPrice: (productId: string, newPrice: number) => void;
   handleClientSelect: (clientId: string, name: string) => void;
+  handleResponsibleSelect?: (clientId: string, name: string) => void;
   updateFinalPrice: (total: number, discount: number) => void;
   calculateInstallmentValue: () => number;
   isEditing?: boolean;
@@ -67,6 +70,7 @@ export function OrderForm({
   form,
   selectedProducts, 
   selectedCustomer,
+  selectedResponsible,
   hasLenses,
   showInstallments,
   setShowInstallments,
@@ -85,6 +89,7 @@ export function OrderForm({
   handleRemoveProduct,
   handleUpdateProductPrice,
   handleClientSelect,
+  handleResponsibleSelect,
   updateFinalPrice,
   calculateInstallmentValue,
 }: OrderFormProps) {
@@ -182,11 +187,13 @@ export function OrderForm({
             productsData={productsData}
             selectedProducts={selectedProducts}
             selectedCustomer={selectedCustomer}
+            selectedResponsible={selectedResponsible}
             hasLenses={hasLenses}
             showInstallments={showInstallments}
             fetchAllCustomers={fetchAllCustomers}
             setShowInstallments={setShowInstallments}
             handleClientSelect={handleClientSelect}
+            handleResponsibleSelect={handleResponsibleSelect}
             handleAddProduct={handleAddProduct}
             handleRemoveProduct={handleRemoveProduct}
             handleUpdateProductPrice={handleUpdateProductPrice}

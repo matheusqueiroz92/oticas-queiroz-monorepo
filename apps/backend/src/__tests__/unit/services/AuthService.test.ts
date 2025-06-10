@@ -67,6 +67,8 @@ describe("AuthService", () => {
     rg: mockUserDocument.rg,
     birthDate: mockUserDocument.birthDate,
     comparePassword: mockUserDocument.comparePassword,
+    createdAt: new Date(),
+    updatedAt: new Date(),
   };
 
   describe("login", () => {
@@ -91,28 +93,30 @@ describe("AuthService", () => {
 
     it("should validate empty email and password", async () => {
       await expect(authService.login("", "123456")).rejects.toThrow(
-        "Email e senha são obrigatórios"
+        "Login e senha são obrigatórios"
       );
 
       await expect(authService.login("test@example.com", "")).rejects.toThrow(
-        "Email e senha são obrigatórios"
+        "Login e senha são obrigatórios"
       );
 
       expect(authModel.findUserByEmail).not.toHaveBeenCalled();
     });
 
-    it("should validate email format", async () => {
+    it("should validate login credentials", async () => {
+      authModel.findUserByEmail.mockResolvedValue(null);
+      
       await expect(
         authService.login("invalid-email", "123456")
-      ).rejects.toThrow("Email inválido");
+      ).rejects.toThrow("Credenciais inválidas");
 
-      expect(authModel.findUserByEmail).not.toHaveBeenCalled();
+      expect(authModel.findUserByEmail).toHaveBeenCalled();
     });
 
     it("should validate password presence", async () => {
       // Act & Assert
       await expect(authService.login("test@example.com", "")).rejects.toThrow(
-        "Email e senha são obrigatórios"
+        "Login e senha são obrigatórios"
       );
       expect(authModel.findUserByEmail).not.toHaveBeenCalled();
     });
@@ -124,7 +128,7 @@ describe("AuthService", () => {
       // Act & Assert
       await expect(
         authService.login("nonexistent@example.com", "123456")
-      ).rejects.toThrow("E-mail não cadastrado");
+      ).rejects.toThrow("Credenciais inválidas");
       expect(authModel.verifyPassword).not.toHaveBeenCalled();
     });
 
@@ -136,7 +140,7 @@ describe("AuthService", () => {
       // Act & Assert
       await expect(
         authService.login("test@example.com", "wrongpass")
-      ).rejects.toThrow("Senha inválida");
+      ).rejects.toThrow("Credenciais inválidas");
     });
 
     it("should return a valid JWT token with correct payload", async () => {
@@ -169,6 +173,44 @@ describe("AuthService", () => {
       // Assert
       expect(result.user).not.toHaveProperty("password");
       expect(result.user).not.toHaveProperty("comparePassword");
+    });
+
+    it("should login successfully with service order", async () => {
+      // Arrange
+      const serviceOrder = "12345";
+      authModel.findUserByServiceOrder.mockResolvedValue(mockUserDocument);
+      authModel.convertToIUser.mockReturnValue(mockUserResponse);
+
+      // Act
+      const result = await authService.login(serviceOrder, serviceOrder);
+
+      // Assert
+      expect(result).toHaveProperty("token");
+      expect(result).toHaveProperty("user");
+      expect(result.user).not.toHaveProperty("password");
+      expect(authModel.findUserByServiceOrder).toHaveBeenCalledWith(serviceOrder);
+    });
+
+    it("should fail login with service order and wrong password", async () => {
+      // Arrange
+      const serviceOrder = "12345";
+      authModel.findUserByServiceOrder.mockResolvedValue(mockUserDocument);
+
+      // Act & Assert
+      await expect(
+        authService.login(serviceOrder, "wrongpassword")
+      ).rejects.toThrow("Credenciais inválidas");
+    });
+
+    it("should fail login with non-existent service order", async () => {
+      // Arrange
+      const serviceOrder = "99999";
+      authModel.findUserByServiceOrder.mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(
+        authService.login(serviceOrder, serviceOrder)
+      ).rejects.toThrow("Credenciais inválidas");
     });
   });
 
@@ -253,27 +295,27 @@ describe("AuthService", () => {
           undefined as unknown as string,
           undefined as unknown as string
         )
-      ).rejects.toThrow("Email e senha são obrigatórios");
+      ).rejects.toThrow("Login e senha são obrigatórios");
     });
 
     it("should handle null email and password", async () => {
       // Act & Assert
       await expect(
         authService.login(null as unknown as string, null as unknown as string)
-      ).rejects.toThrow("Email e senha são obrigatórios");
+      ).rejects.toThrow("Login e senha são obrigatórios");
     });
 
     it("should handle empty string email and password", async () => {
       // Act & Assert
       await expect(authService.login("", "")).rejects.toThrow(
-        "Email e senha são obrigatórios"
+        "Login e senha são obrigatórios"
       );
     });
 
     it("should handle whitespace only email and password", async () => {
       // Act & Assert
       await expect(authService.login("   ", "   ")).rejects.toThrow(
-        "Email e senha são obrigatórios"
+        "Login e senha são obrigatórios"
       );
     });
   });

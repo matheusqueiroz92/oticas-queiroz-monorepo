@@ -1,7 +1,7 @@
 export interface ILegacyClient {
   _id?: string;
   name: string;
-  cpf: string;
+  cpf?: string; // CPF agora é opcional
   email?: string;
   phone?: string;
   address?: {

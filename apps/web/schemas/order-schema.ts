@@ -9,6 +9,8 @@ const orderFormSchema = z
     employeeId: z.string().min(1, "ID do funcionário é obrigatório"),
     isInstitutionalOrder: z.boolean().default(false),
     institutionId: z.string().optional(),
+    hasResponsible: z.boolean().default(false),
+    responsibleClientId: z.string().optional(),
     products: z.array(z.any()).min(1, "Pelo menos um produto é obrigatório"),
     paymentMethod: z.string().min(1, "Forma de pagamento é obrigatória"),
     paymentEntry: z.number().min(0).optional(),
@@ -47,18 +49,30 @@ const orderFormSchema = z
     }),
   })
   .passthrough()
-  .refine(
-    (data) => {
-      if (data.isInstitutionalOrder && !data.institutionId) {
-        return false;
+      .refine(
+      (data) => {
+        if (data.isInstitutionalOrder && !data.institutionId) {
+          return false;
+        }
+        return true;
+      },
+      {
+        message: "Instituição é obrigatória para pedidos institucionais",
+        path: ["institutionId"],
       }
-      return true;
-    },
-    {
-      message: "Instituição é obrigatória para pedidos institucionais",
-      path: ["institutionId"],
-    }
-  );
+    )
+    .refine(
+      (data) => {
+        if (data.hasResponsible && !data.responsibleClientId) {
+          return false;
+        }
+        return true;
+      },
+      {
+        message: "Cliente responsável é obrigatório quando há responsável",
+        path: ["responsibleClientId"],
+      }
+    );
 
 export type OrderFormData = z.infer<typeof orderFormSchema>;
 
@@ -68,6 +82,8 @@ export const createOrderform = () => {
     defaultValues: {
       employeeId: "",
       clientId: "",
+      hasResponsible: false,
+      responsibleClientId: "",
       products: [],
       paymentMethod: "",
       paymentEntry: 0,

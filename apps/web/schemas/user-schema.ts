@@ -16,10 +16,12 @@ const baseUserSchema = z.object({
 export const userFormSchema = baseUserSchema.extend({
   password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
   confirmPassword: z.string(),
-  cpf: z.string().regex(/^\d{11}$/, "CPF inválido"),
+  cpf: z.string().regex(/^\d{11}$/, "CPF inválido").optional().or(z.literal("")), // CPF agora é opcional
   birthDate: z
     .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, "Data de nascimento inválida"),
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Data de nascimento inválida")
+    .optional()
+    .or(z.literal("")), // Data de nascimento também opcional
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Senhas não conferem",
   path: ["confirmPassword"],

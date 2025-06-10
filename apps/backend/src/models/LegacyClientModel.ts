@@ -6,7 +6,7 @@ import { type Document, Types, type FilterQuery } from "mongoose";
 interface LegacyClientDocument extends Document {
   _id: Types.ObjectId;
   name: string;
-  cpf: string;
+  cpf?: string; // CPF agora é opcional
   email?: string;
   phone?: string;
   address?: {

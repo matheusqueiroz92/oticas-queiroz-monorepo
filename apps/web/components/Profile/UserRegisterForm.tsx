@@ -283,10 +283,10 @@ export function UserRegisterForm({ userType, title, description }: UserFormProps
                 <FormItem>
                   <FormLabel className="flex items-center gap-1">
                     <CreditCard className="h-4 w-4 text-primary" />
-                    CPF
+                    CPF (opcional)
                   </FormLabel>
                   <FormControl>
-                    <Input placeholder="Apenas números (11 dígitos)" {...field} />
+                    <Input placeholder="Apenas números (11 dígitos) - opcional" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -317,7 +317,7 @@ export function UserRegisterForm({ userType, title, description }: UserFormProps
                 <FormItem>
                   <FormLabel className="flex items-center gap-1">
                     <Calendar className="h-4 w-4 text-primary" />
-                    Data de Nascimento
+                    Data de Nascimento (opcional)
                   </FormLabel>
                   <FormControl>
                     <Input type="date" {...field} />

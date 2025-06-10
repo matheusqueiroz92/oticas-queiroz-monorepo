@@ -132,6 +132,11 @@ export default function LoginPage() {
             <p className="text-sm text-muted-foreground text-center">
               Entre com suas credenciais para acessar o sistema
             </p>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
+              <p className="text-xs text-blue-700 text-center">
+                <strong>Clientes:</strong> Use o número da sua O.S. como usuário e senha
+              </p>
+            </div>
           </CardHeader>
           <CardContent>
             {error && (
@@ -142,12 +147,12 @@ export default function LoginPage() {
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div className="space-y-2">
                 <label htmlFor="login" className="text-sm font-medium">
-                  Email ou CPF
+                  Email, CPF ou Número da O.S.
                 </label>
                 <Input
                   id="login"
                   type="text"
-                  placeholder="seu@email.com ou 000.000.000-00"
+                  placeholder="seu@email.com, CPF ou número da O.S."
                   {...register("login")}
                   className={errors.login ? "border-destructive" : ""}
                 />

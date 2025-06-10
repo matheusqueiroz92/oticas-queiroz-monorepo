@@ -29,9 +29,8 @@ const registerSchema = z.object({
   phone: z.string().optional(),
   cpf: z
     .string()
-    .min(11, "CPF deve ter pelo menos 11 dígitos")
-    .refine((cpf) => isValidCPF(cpf), { message: "CPF inválido" })
-    .optional(),
+    .optional()
+    .refine((cpf) => !cpf || isValidCPF(cpf), { message: "CPF inválido" }),
   cnpj: z
       .string()
       .min(14, "CNPJ deve ter pelo menos 14 dígitos")

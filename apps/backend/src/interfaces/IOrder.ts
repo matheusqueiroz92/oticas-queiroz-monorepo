@@ -18,6 +18,8 @@ export interface IOrder {
   employeeId: string | Types.ObjectId;
   institutionId?: Types.ObjectId | string | null;
   isInstitutionalOrder?: boolean;
+  responsibleClientId?: string | Types.ObjectId;
+  hasResponsible?: boolean;
   products: OrderProduct[];
   serviceOrder?: string;
   paymentMethod: string;

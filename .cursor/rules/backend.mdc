@@ -1,0 +1,17 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+Regras válidas para o backend (pasta apps/backend):
+- Foi desenvolvida uma API rest com Node.js e Express.js;
+- Foram utilizados middlewares e interfaces;
+- Arquitetura MSC (Model, Service, Controller);
+- Banco de dados MongoDB e o Mongoose como ODM;
+- BCrypt e JWT para segurança e gerenciamento de tokens;
+- Multer para manipulação de arquivos;
+- Swagger para documentação da API;
+- Node Mailer para envio de e-mails;
+- Cors como mecanismo de segurança;
+
+- Zod para validações;

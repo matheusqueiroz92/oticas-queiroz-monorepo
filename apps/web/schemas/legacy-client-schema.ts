@@ -16,7 +16,7 @@ const addressSchema = z.object({
 // Schema para criação de cliente legado
 export const createLegacyClientSchema = z.object({
   name: z.string().min(2, "Nome deve ter no mínimo 2 caracteres"),
-  cpf: z.string().min(11, "CPF deve ter 11 dígitos").max(11, "CPF deve ter 11 dígitos"),
+  cpf: z.string().min(11, "CPF deve ter 11 dígitos").max(11, "CPF deve ter 11 dígitos").optional().or(z.literal("")), // CPF agora é opcional
   email: z.string().email("Email inválido").optional().or(z.literal("")),
   phone: z.string().min(10, "Telefone deve ter no mínimo 10 dígitos").optional().or(z.literal("")),
   address: addressSchema,

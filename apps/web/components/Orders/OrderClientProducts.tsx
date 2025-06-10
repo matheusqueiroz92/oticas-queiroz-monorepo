@@ -45,6 +45,8 @@ interface OrderClientProductsProps {
   handleUpdateProductPrice: (productId: string, newPrice: number) => void;
   handleDiscountChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   calculateInstallmentValue: () => number;
+  selectedResponsible?: Customer | null;
+  handleResponsibleSelect?: (clientId: string, name: string) => void;
 }
 
 export default function OrderClientProducts({
@@ -63,6 +65,8 @@ export default function OrderClientProducts({
   handleUpdateProductPrice,
   handleDiscountChange,
   calculateInstallmentValue,
+  selectedResponsible,
+  handleResponsibleSelect,
 }: OrderClientProductsProps) {
   const [loadedInstitutions, setLoadedInstitutions] = useState<any[]>([]);
   
@@ -179,6 +183,81 @@ export default function OrderClientProducts({
               </div>
             </div>
           )}
+
+          {/* Seção do Responsável */}
+          <div className="space-y-3">
+            <FormField
+              control={form.control}
+              name="hasResponsible"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={(checked) => {
+                        field.onChange(checked);
+                        if (!checked) {
+                          form.setValue("responsibleClientId", "");
+                        }
+                      }}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel className="text-sm font-medium text-blue-700">
+                      Há um responsável pela compra?
+                    </FormLabel>
+                    <FormDescription className="text-xs text-gray-600">
+                      Marque se outra pessoa será responsável pelos débitos desta compra
+                    </FormDescription>
+                  </div>
+                </FormItem>
+              )}
+            />
+            
+            {form.watch("hasResponsible") && (
+              <div className="space-y-2">
+                <FormField
+                  control={form.control}
+                  name="responsibleClientId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium text-blue-700">
+                        Cliente Responsável
+                      </FormLabel>
+                      <div className="mt-1">
+                        <ClientSearch
+                          customers={customersData || []}
+                          form={form}
+                          onClientSelect={handleResponsibleSelect || (() => {})}
+                          fetchAllCustomers={fetchAllCustomers}
+                          selectedCustomer={selectedResponsible}
+                        />
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                {/* Responsável selecionado - compacto */}
+                {selectedResponsible && (
+                  <div className="bg-orange-50 p-2 rounded border border-orange-100 text-xs">
+                    <div className="grid grid-cols-4 gap-2">
+                      <div><strong>Responsável:</strong> {selectedResponsible.name}</div>
+                      {selectedResponsible.phone && (
+                        <div><strong>Tel:</strong> {selectedResponsible.phone}</div>
+                      )}
+                      {selectedResponsible.email && (
+                        <div><strong>Email:</strong> {selectedResponsible.email}</div>
+                      )}
+                      {selectedResponsible.cpf && (
+                        <div><strong>CPF:</strong> {selectedResponsible.cpf}</div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
         
         {/* Seção dos Produtos */}

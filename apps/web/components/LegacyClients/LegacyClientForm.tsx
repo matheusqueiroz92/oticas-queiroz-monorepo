@@ -54,10 +54,10 @@ export function LegacyClientForm({ form, isEdit = false }: LegacyClientFormProps
           name="cpf"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>CPF*</FormLabel>
+              <FormLabel>CPF</FormLabel>
               <FormControl>
                 <Input 
-                  placeholder="Somente números" 
+                  placeholder="Somente números (opcional)" 
                   maxLength={11}
                   {...field} 
                   disabled={isEdit}

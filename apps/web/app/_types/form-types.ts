@@ -32,6 +32,8 @@ export const orderFormSchema = z.object({
   employeeId: z.string().min(1, "ID do funcionário é obrigatório"),
   institutionId: z.string().optional(),
   isInstitutionalOrder: z.boolean(),
+  hasResponsible: z.boolean().default(false),
+  responsibleClientId: z.string().optional(),
   products: z.array(z.any()).min(1, "Pelo menos um produto é obrigatório"),
   serviceOerder: z.string().min(4, "Nº da Ordem de Serviço é obrigatório"),
   paymentMethod: z.string().min(1, "Forma de pagamento é obrigatória"),
@@ -77,6 +79,8 @@ export interface OrderFormValues {
   employeeId: string;
   institutionId: string;
   isInstitutionalOrder: boolean;
+  hasResponsible: boolean;
+  responsibleClientId: string;
   products: Product[];
   serviceOrder: number;
   paymentMethod: string;

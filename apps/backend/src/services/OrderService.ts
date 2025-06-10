@@ -286,9 +286,14 @@ export class OrderService {
         return;
       }
 
-      const customer = await this.userModel.findById(clientId);
+      // Determinar quem será responsável pela dívida
+      const responsibleId = orderData.hasResponsible && orderData.responsibleClientId
+        ? orderData.responsibleClientId.toString()
+        : clientId;
+
+      const customer = await this.userModel.findById(responsibleId);
       if (!customer) {
-        console.error(`Cliente com ID ${clientId} não encontrado para atualizar dívidas`);
+        console.error(`Cliente com ID ${responsibleId} não encontrado para atualizar dívidas`);
         return;
       }
 
@@ -299,13 +304,14 @@ export class OrderService {
         return; // Não há dívida a ser adicionada
       }
 
-      // Atualizar a dívida do cliente
+      // Atualizar a dívida do cliente responsável
       const currentDebt = customer.debts || 0;
-      await this.userModel.update(clientId, {
+      await this.userModel.update(responsibleId, {
         debts: currentDebt + debtAmount
       });
       
-      console.log(`Dívida de ${debtAmount} adicionada ao cliente ${clientId}`);
+      const responsibleInfo = responsibleId !== clientId ? 'responsável' : 'cliente';
+      console.log(`Dívida de ${debtAmount} adicionada ao ${responsibleInfo} ${responsibleId}`);
     } catch (error) {
       console.error(`Erro ao atualizar dívidas do cliente ${clientId}:`, error);
     }
@@ -351,6 +357,8 @@ export class OrderService {
         employeeId: new mongoose.Types.ObjectId(orderData.employeeId.toString()),
         institutionId: orderData.institutionId ? new mongoose.Types.ObjectId(orderData.institutionId.toString()) : undefined,
         isInstitutionalOrder: orderData.isInstitutionalOrder,
+        responsibleClientId: orderData.responsibleClientId ? new mongoose.Types.ObjectId(orderData.responsibleClientId.toString()) : undefined,
+        hasResponsible: orderData.hasResponsible || false,
         products: orderData.products,
         paymentMethod: orderData.paymentMethod,
         paymentStatus: orderData.paymentStatus || "pending",
@@ -426,15 +434,20 @@ export class OrderService {
           console.error(`Erro ao atualizar compras do cliente ${clientId}:`, error);
         }
         
-        // 3. Atualizar dívidas do cliente - SEMPRE o valor TOTAL do pedido
+        // 3. Atualizar dívidas - considerar se há responsável pela compra
         try {
-          // IMPORTANTE: Buscar o cliente novamente para ter certeza de que temos o valor mais recente
-          const currentCustomer = await this.userModel.findById(clientId);
+          // Determinar quem será responsável pela dívida
+          const responsibleId = orderData.hasResponsible && orderData.responsibleClientId
+            ? orderData.responsibleClientId.toString()
+            : clientId;
+
+          // IMPORTANTE: Buscar o cliente responsável pela dívida
+          const currentCustomer = await this.userModel.findById(responsibleId);
           if (!currentCustomer) {
-            throw new Error(`Cliente ${clientId} não encontrado`);
+            throw new Error(`Cliente responsável ${responsibleId} não encontrado`);
           }
           
-          // Obter o valor atual do débito do cliente
+          // Obter o valor atual do débito do cliente responsável
           const currentDebt = currentCustomer.debts || 0;
           
           // Calcular o débito com o novo pedido (valor TOTAL, sem subtrair a entrada)
@@ -443,10 +456,13 @@ export class OrderService {
           // Total do débito (atual + novo pedido)
           const newDebt = currentDebt + debtAmount;
           
-          // Atualizar o débito do cliente com o valor TOTAL
-          await this.userModel.update(clientId, {
+          // Atualizar o débito do cliente responsável
+          await this.userModel.update(responsibleId, {
             debts: newDebt
           });
+          
+          const responsibleInfo = responsibleId !== clientId ? 'responsável' : 'cliente';
+          console.log(`Dívida de ${debtAmount} adicionada ao ${responsibleInfo} ${responsibleId}`);
           
           // O campo paymentEntry é apenas informativo e não deve gerar um registro no histórico
           // de pagamentos nem afetar o débito do cliente.

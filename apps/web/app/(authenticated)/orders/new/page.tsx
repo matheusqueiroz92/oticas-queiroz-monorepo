@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/useToast";
 import type { Customer } from "@/app/_types/customer";
@@ -17,10 +16,10 @@ import { createOrderform } from "@/schemas/order-schema";
 import { OrderForm } from "@/components/Orders/OrderForm";
 
 export default function NewOrderPage() {
-  const router = useRouter();
   const { toast } = useToast();
   const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [selectedResponsible, setSelectedResponsible] = useState<Customer | null>(null);
   const [loggedEmployee, setLoggedEmployee] = useState<{
     id: string;
     name: string;
@@ -35,6 +34,7 @@ export default function NewOrderPage() {
     handleCreateOrder,
     isCreating,
     navigateToOrders,
+    navigateToCreateOrder,
     navigateToOrderDetails,
     fetchNextServiceOrder
   } = useOrders();
@@ -97,6 +97,8 @@ export default function NewOrderPage() {
         employeeId: formData.employeeId,
         institutionId: formData.institutionId || null,
         isInstitutionalOrder: formData.isInstitutionalOrder,
+        hasResponsible: formData.hasResponsible || false,
+        responsibleClientId: formData.responsibleClientId || null,
         products: formData.products,
         paymentMethod: formData.paymentMethod,
         paymentStatus: "pending" as const,
@@ -143,14 +145,13 @@ export default function NewOrderPage() {
         delete (orderData as any).serviceOrder;
       }
 
-      console.log("Dados do pedido antes de enviar (sem serviceOrder):", orderData);
-
       const newOrder = await handleCreateOrder(orderData as any);
       
       if (newOrder) {
         setSubmittedOrder({
           ...newOrder,
-          customer: selectedCustomer
+          customer: selectedCustomer,
+          responsible: selectedResponsible
         });
 
         // Atualizar o próximo número de serviceOrder após criar um pedido
@@ -359,6 +360,18 @@ export default function NewOrderPage() {
     }
   };
 
+  const handleResponsibleSelect = async (clientId: string, name: string) => {
+    form.setValue("responsibleClientId", clientId);
+    
+    try {
+      const customer = await fetchCustomerById(clientId);
+      setSelectedResponsible(customer);
+    } catch (error) {
+      console.error("Erro ao buscar detalhes do responsável:", error);
+      setSelectedResponsible({ _id: clientId, name, role: "customer" } as Customer);
+    }
+  };
+
   const calculateInstallmentValue = () => {
     if (!form) return 0;
     
@@ -376,10 +389,11 @@ export default function NewOrderPage() {
     form.reset();
     setSelectedProducts([]);
     setSelectedCustomer(null);
+    setSelectedResponsible(null);
     setSubmittedOrder(null);
     setHasLenses(false);
     fetchNextServiceOrder();
-  };  
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -398,6 +412,8 @@ export default function NewOrderPage() {
             setSelectedProducts={setSelectedProducts}
             selectedCustomer={selectedCustomer}
             setSelectedCustomer={setSelectedCustomer}
+            selectedResponsible={selectedResponsible}
+            setSelectedResponsible={setSelectedResponsible}
             hasLenses={hasLenses}
             setHasLenses={setHasLenses}
             showInstallments={showInstallments}
@@ -412,11 +428,12 @@ export default function NewOrderPage() {
             onCancel={navigateToOrders}
             onViewOrdersList={navigateToOrders}
             onViewOrderDetails={navigateToOrderDetails}
-            onCreateNewOrder={resetOrderForm}
+            onCreateNewOrder={navigateToCreateOrder}
             handleAddProduct={handleAddProduct}
             handleRemoveProduct={handleRemoveProduct}
             handleUpdateProductPrice={handleUpdateProductPrice}
             handleClientSelect={handleClientSelect}
+            handleResponsibleSelect={handleResponsibleSelect}
             updateFinalPrice={updateFinalPrice}
             calculateInstallmentValue={calculateInstallmentValue}
           />
