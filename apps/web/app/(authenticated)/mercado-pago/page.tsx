@@ -10,7 +10,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Loader2, CheckCircle, AlertCircle, CreditCard, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/useToast";
 import { api } from "@/app/_services/authService";
-import { MercadoPagoButton } from "@/components/MercadoPago/PaymentButton";
+import { MercadoPagoButton } from "@/components/mercado-pago/PaymentButton";
 
 export default function MercadoPagoSettingsPage() {
   const router = useRouter();

@@ -42,7 +42,7 @@ export const MercadoPagoAPI = {
    */
   createPreference: async (preference: any): Promise<any> => {
     try {
-      console.log('[MercadoPagoAPI] Enviando preferência para o Mercado Pago...');
+  
       
       // Verificação básica dos dados mínimos necessários
       if (!preference.items || preference.items.length === 0) {
@@ -61,14 +61,7 @@ export const MercadoPagoAPI = {
         }
       }
       
-      // Log do tipo de token usado (produção ou teste)
-      const tokenType = process.env.NODE_ENV === 'production' 
-        ? 'produção' 
-        : 'teste';
-      console.log(`[MercadoPagoAPI] Usando token de ${tokenType}`);
-      
       const response = await api.post('/checkout/preferences', preference);
-      console.log('[MercadoPagoAPI] Preferência criada com sucesso:', response.data);
       
       if (!response.data || !response.data.id) {
         throw new Error('Resposta inválida da API do Mercado Pago: ID não encontrado');

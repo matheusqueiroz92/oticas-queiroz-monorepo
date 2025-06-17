@@ -2,8 +2,9 @@ import {
   LaboratoryService,
   LaboratoryError,
 } from "../../../services/LaboratoryService";
-import { LaboratoryModel } from "../../../models/LaboratoryModel";
+import { RepositoryFactory } from "../../../repositories/RepositoryFactory";
 import type { ILaboratory } from "../../../interfaces/ILaboratory";
+import type { ILaboratoryRepository } from "../../../repositories/interfaces/ILaboratoryRepository";
 import {
   describe,
   it,
@@ -15,22 +16,43 @@ import {
   jest,
 } from "@jest/globals";
 
-jest.mock("../../../models/LaboratoryModel");
-
-type LaboratoryServiceWithModel = {
-  laboratoryModel: jest.Mocked<LaboratoryModel>;
-};
+// Mock do RepositoryFactory
+jest.mock("../../../repositories/RepositoryFactory");
 
 describe("LaboratoryService", () => {
   let laboratoryService: LaboratoryService;
-  let laboratoryModel: jest.Mocked<LaboratoryModel>;
+  let mockLaboratoryRepository: jest.Mocked<ILaboratoryRepository>;
+  let mockRepositoryFactory: jest.Mocked<RepositoryFactory>;
 
   beforeEach(() => {
-    laboratoryModel = new LaboratoryModel() as jest.Mocked<LaboratoryModel>;
+    // Setup dos mocks
+    mockLaboratoryRepository = {
+      create: jest.fn(),
+      findById: jest.fn(),
+      findAll: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+      softDelete: jest.fn(),
+      exists: jest.fn(),
+      count: jest.fn(),
+      findByEmail: jest.fn(),
+      emailExists: jest.fn(),
+      toggleActive: jest.fn(),
+      findActive: jest.fn(),
+      findInactive: jest.fn(),
+      search: jest.fn(),
+      findByCity: jest.fn(),
+      findByState: jest.fn(),
+      findByContactName: jest.fn(),
+    };
+
+    mockRepositoryFactory = {
+      getLaboratoryRepository: jest.fn().mockReturnValue(mockLaboratoryRepository),
+    } as any;
+
+    (RepositoryFactory.getInstance as jest.Mock).mockReturnValue(mockRepositoryFactory);
+
     laboratoryService = new LaboratoryService();
-    (
-      laboratoryService as unknown as LaboratoryServiceWithModel
-    ).laboratoryModel = laboratoryModel;
   });
 
   const mockLaboratory: Omit<ILaboratory, "_id"> = {
@@ -50,35 +72,34 @@ describe("LaboratoryService", () => {
     isActive: true,
   };
 
+  const mockCreatedLaboratory: ILaboratory = {
+    _id: "lab-id",
+    ...mockLaboratory,
+  };
+
   describe("createLaboratory", () => {
     it("should create a laboratory successfully", async () => {
-      const mockCreatedLaboratory: ILaboratory = {
-        _id: "lab-id",
-        ...mockLaboratory,
-      };
-
-      laboratoryModel.findByEmail.mockResolvedValue(null);
-      laboratoryModel.create.mockResolvedValue(mockCreatedLaboratory);
+      mockLaboratoryRepository.findByEmail.mockResolvedValue(null);
+      mockLaboratoryRepository.create.mockResolvedValue(mockCreatedLaboratory);
 
       const result = await laboratoryService.createLaboratory(mockLaboratory);
 
       expect(result).toEqual(mockCreatedLaboratory);
-      expect(laboratoryModel.create).toHaveBeenCalledWith(mockLaboratory);
+      expect(mockLaboratoryRepository.findByEmail).toHaveBeenCalledWith(mockLaboratory.email);
+      expect(mockLaboratoryRepository.create).toHaveBeenCalledWith(mockLaboratory);
     });
 
     it("should throw error if laboratory already exists", async () => {
-      laboratoryModel.findByEmail.mockResolvedValue({
-        _id: "existing-id",
-        ...mockLaboratory,
-      });
+      mockLaboratoryRepository.findByEmail.mockResolvedValue(mockCreatedLaboratory);
 
       await expect(
         laboratoryService.createLaboratory(mockLaboratory)
       ).rejects.toThrow(
-        new LaboratoryError(
-          "Já existe um laboratório cadastrado com este email"
-        )
+        new LaboratoryError("Já existe um laboratório cadastrado com este email")
       );
+
+      expect(mockLaboratoryRepository.findByEmail).toHaveBeenCalledWith(mockLaboratory.email);
+      expect(mockLaboratoryRepository.create).not.toHaveBeenCalled();
     });
 
     it("should throw error for invalid email", async () => {
@@ -90,6 +111,9 @@ describe("LaboratoryService", () => {
       await expect(
         laboratoryService.createLaboratory(invalidLaboratory)
       ).rejects.toThrow(new LaboratoryError("Email inválido"));
+
+      expect(mockLaboratoryRepository.findByEmail).not.toHaveBeenCalled();
+      expect(mockLaboratoryRepository.create).not.toHaveBeenCalled();
     });
 
     it("should throw error for invalid phone", async () => {
@@ -101,30 +125,88 @@ describe("LaboratoryService", () => {
       await expect(
         laboratoryService.createLaboratory(invalidLaboratory)
       ).rejects.toThrow(new LaboratoryError("Telefone inválido"));
+
+      expect(mockLaboratoryRepository.findByEmail).not.toHaveBeenCalled();
+      expect(mockLaboratoryRepository.create).not.toHaveBeenCalled();
+    });
+
+    it("should throw error for invalid ZIP code", async () => {
+      const invalidLaboratory = {
+        ...mockLaboratory,
+        address: {
+          ...mockLaboratory.address,
+          zipCode: "123",
+        },
+      };
+
+      await expect(
+        laboratoryService.createLaboratory(invalidLaboratory)
+      ).rejects.toThrow(new LaboratoryError("CEP inválido"));
     });
   });
 
   describe("getAllLaboratories", () => {
     it("should return all laboratories with pagination", async () => {
       const mockResponse = {
-        laboratories: [{ _id: "1", ...mockLaboratory }],
+        items: [mockCreatedLaboratory],
         total: 1,
+        page: 1,
+        limit: 10,
       };
 
-      laboratoryModel.findAll.mockResolvedValue(mockResponse);
+      mockLaboratoryRepository.findAll.mockResolvedValue(mockResponse);
 
       const result = await laboratoryService.getAllLaboratories(1, 10);
 
-      expect(result).toEqual(mockResponse);
-      expect(laboratoryModel.findAll).toHaveBeenCalledWith(
-        1,
-        10,
-        expect.any(Object)
-      );
+      expect(result).toEqual({
+        laboratories: [mockCreatedLaboratory],
+        total: 1,
+      });
+      expect(mockLaboratoryRepository.findAll).toHaveBeenCalledWith(1, 10, {});
+    });
+
+    it("should return laboratories with filters", async () => {
+      const filters = { isActive: true };
+      const mockResponse = {
+        items: [mockCreatedLaboratory],
+        total: 1,
+        page: 1,
+        limit: 10,
+      };
+
+      mockLaboratoryRepository.findAll.mockResolvedValue(mockResponse);
+
+      const result = await laboratoryService.getAllLaboratories(1, 10, filters);
+
+      expect(result).toEqual({
+        laboratories: [mockCreatedLaboratory],
+        total: 1,
+      });
+      expect(mockLaboratoryRepository.findAll).toHaveBeenCalledWith(1, 10, filters);
+    });
+
+    it("should use default pagination", async () => {
+      const mockResponse = {
+        items: [mockCreatedLaboratory],
+        total: 1,
+        page: 1,
+        limit: 10,
+      };
+
+      mockLaboratoryRepository.findAll.mockResolvedValue(mockResponse);
+
+      await laboratoryService.getAllLaboratories();
+
+      expect(mockLaboratoryRepository.findAll).toHaveBeenCalledWith(1, 10, {});
     });
 
     it("should throw error when no laboratories found", async () => {
-      laboratoryModel.findAll.mockResolvedValue({ laboratories: [], total: 0 });
+      mockLaboratoryRepository.findAll.mockResolvedValue({ 
+        items: [], 
+        total: 0, 
+        page: 1, 
+        limit: 10 
+      });
 
       await expect(laboratoryService.getAllLaboratories()).rejects.toThrow(
         new LaboratoryError("Nenhum laboratório encontrado")
@@ -134,16 +216,16 @@ describe("LaboratoryService", () => {
 
   describe("getLaboratoryById", () => {
     it("should return laboratory by id", async () => {
-      const mockFoundLaboratory = { _id: "lab-id", ...mockLaboratory };
-      laboratoryModel.findById.mockResolvedValue(mockFoundLaboratory);
+      mockLaboratoryRepository.findById.mockResolvedValue(mockCreatedLaboratory);
 
       const result = await laboratoryService.getLaboratoryById("lab-id");
 
-      expect(result).toEqual(mockFoundLaboratory);
+      expect(result).toEqual(mockCreatedLaboratory);
+      expect(mockLaboratoryRepository.findById).toHaveBeenCalledWith("lab-id");
     });
 
     it("should throw error if laboratory not found", async () => {
-      laboratoryModel.findById.mockResolvedValue(null);
+      mockLaboratoryRepository.findById.mockResolvedValue(null);
 
       await expect(
         laboratoryService.getLaboratoryById("non-existent")
@@ -155,41 +237,84 @@ describe("LaboratoryService", () => {
     it("should update laboratory successfully", async () => {
       const updateData = { name: "Updated Laboratory" };
       const mockUpdatedLaboratory = {
-        _id: "lab-id",
-        ...mockLaboratory,
+        ...mockCreatedLaboratory,
         ...updateData,
       };
 
-      laboratoryModel.update.mockResolvedValue(mockUpdatedLaboratory);
+      mockLaboratoryRepository.update.mockResolvedValue(mockUpdatedLaboratory);
 
-      const result = await laboratoryService.updateLaboratory(
-        "lab-id",
-        updateData
-      );
+      const result = await laboratoryService.updateLaboratory("lab-id", updateData);
 
       expect(result).toEqual(mockUpdatedLaboratory);
+      expect(mockLaboratoryRepository.update).toHaveBeenCalledWith("lab-id", updateData);
     });
 
     it("should throw error when updating with existing email", async () => {
-      laboratoryModel.findByEmail.mockResolvedValue({
-        _id: "other-id",
-        ...mockLaboratory,
-      });
+      const updateData = { email: "existing@laboratory.com" };
+      
+      mockLaboratoryRepository.emailExists.mockResolvedValue(true);
 
       await expect(
-        laboratoryService.updateLaboratory("lab-id", {
-          email: mockLaboratory.email,
-        })
+        laboratoryService.updateLaboratory("lab-id", updateData)
       ).rejects.toThrow(
         new LaboratoryError("Já existe um laboratório com este email")
       );
+
+      expect(mockLaboratoryRepository.emailExists).toHaveBeenCalledWith(updateData.email, "lab-id");
+      expect(mockLaboratoryRepository.update).not.toHaveBeenCalled();
+    });
+
+    it("should allow updating with same email", async () => {
+      const updateData = { email: mockLaboratory.email };
+      const mockUpdatedLaboratory = {
+        ...mockCreatedLaboratory,
+        ...updateData,
+      };
+
+      mockLaboratoryRepository.emailExists.mockResolvedValue(false);
+      mockLaboratoryRepository.update.mockResolvedValue(mockUpdatedLaboratory);
+
+      const result = await laboratoryService.updateLaboratory("lab-id", updateData);
+
+      expect(result).toEqual(mockUpdatedLaboratory);
+      expect(mockLaboratoryRepository.emailExists).toHaveBeenCalledWith(updateData.email, "lab-id");
+      expect(mockLaboratoryRepository.update).toHaveBeenCalledWith("lab-id", updateData);
     });
 
     it("should throw error when laboratory not found", async () => {
-      laboratoryModel.update.mockResolvedValue(null);
+      mockLaboratoryRepository.update.mockResolvedValue(null);
 
       await expect(
         laboratoryService.updateLaboratory("non-existent", { name: "Updated" })
+      ).rejects.toThrow(new LaboratoryError("Laboratório não encontrado"));
+    });
+
+    it("should validate data before updating", async () => {
+      const invalidUpdateData = { email: "invalid-email" };
+
+      await expect(
+        laboratoryService.updateLaboratory("lab-id", invalidUpdateData)
+      ).rejects.toThrow(new LaboratoryError("Email inválido"));
+
+      expect(mockLaboratoryRepository.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("deleteLaboratory", () => {
+    it("should delete laboratory successfully", async () => {
+      mockLaboratoryRepository.delete.mockResolvedValue(mockCreatedLaboratory);
+
+      const result = await laboratoryService.deleteLaboratory("lab-id");
+
+      expect(result).toEqual(mockCreatedLaboratory);
+      expect(mockLaboratoryRepository.delete).toHaveBeenCalledWith("lab-id");
+    });
+
+    it("should throw error when laboratory not found", async () => {
+      mockLaboratoryRepository.delete.mockResolvedValue(null);
+
+      await expect(
+        laboratoryService.deleteLaboratory("non-existent")
       ).rejects.toThrow(new LaboratoryError("Laboratório não encontrado"));
     });
   });
@@ -197,24 +322,166 @@ describe("LaboratoryService", () => {
   describe("toggleLaboratoryStatus", () => {
     it("should toggle laboratory status successfully", async () => {
       const mockToggledLaboratory = {
-        _id: "lab-id",
-        ...mockLaboratory,
+        ...mockCreatedLaboratory,
         isActive: false,
       };
 
-      laboratoryModel.toggleActive.mockResolvedValue(mockToggledLaboratory);
+      mockLaboratoryRepository.toggleActive.mockResolvedValue(mockToggledLaboratory);
 
       const result = await laboratoryService.toggleLaboratoryStatus("lab-id");
 
+      expect(result).toEqual(mockToggledLaboratory);
       expect(result.isActive).toBe(false);
+      expect(mockLaboratoryRepository.toggleActive).toHaveBeenCalledWith("lab-id");
     });
 
     it("should throw error when laboratory not found", async () => {
-      laboratoryModel.toggleActive.mockResolvedValue(null);
+      mockLaboratoryRepository.toggleActive.mockResolvedValue(null);
 
       await expect(
         laboratoryService.toggleLaboratoryStatus("non-existent")
       ).rejects.toThrow(new LaboratoryError("Laboratório não encontrado"));
+    });
+  });
+
+  describe("getActiveLaboratories", () => {
+    it("should return active laboratories", async () => {
+      const mockResponse = {
+        items: [mockCreatedLaboratory],
+        total: 1,
+        page: 1,
+        limit: 10,
+      };
+
+      mockLaboratoryRepository.findActive.mockResolvedValue(mockResponse);
+
+      const result = await laboratoryService.getActiveLaboratories(1, 10);
+
+      expect(result).toEqual({
+        laboratories: [mockCreatedLaboratory],
+        total: 1,
+      });
+      expect(mockLaboratoryRepository.findActive).toHaveBeenCalledWith(1, 10);
+    });
+
+    it("should use default pagination", async () => {
+      const mockResponse = { 
+        items: [], 
+        total: 0, 
+        page: 1, 
+        limit: 10 
+      };
+      mockLaboratoryRepository.findActive.mockResolvedValue(mockResponse);
+
+      await laboratoryService.getActiveLaboratories();
+
+      expect(mockLaboratoryRepository.findActive).toHaveBeenCalledWith(1, 10);
+    });
+  });
+
+  describe("getInactiveLaboratories", () => {
+    it("should return inactive laboratories", async () => {
+      const inactiveLab = { ...mockCreatedLaboratory, isActive: false };
+      const mockResponse = {
+        items: [inactiveLab],
+        total: 1,
+        page: 1,
+        limit: 10,
+      };
+
+      mockLaboratoryRepository.findInactive.mockResolvedValue(mockResponse);
+
+      const result = await laboratoryService.getInactiveLaboratories(1, 10);
+
+      expect(result).toEqual({
+        laboratories: [inactiveLab],
+        total: 1,
+      });
+      expect(mockLaboratoryRepository.findInactive).toHaveBeenCalledWith(1, 10);
+    });
+  });
+
+  describe("searchLaboratories", () => {
+    it("should search laboratories by term", async () => {
+      const mockResponse = {
+        items: [mockCreatedLaboratory],
+        total: 1,
+        page: 1,
+        limit: 10,
+      };
+
+      mockLaboratoryRepository.search.mockResolvedValue(mockResponse);
+
+      const result = await laboratoryService.searchLaboratories("Test", 1, 10);
+
+      expect(result).toEqual({
+        laboratories: [mockCreatedLaboratory],
+        total: 1,
+      });
+      expect(mockLaboratoryRepository.search).toHaveBeenCalledWith("Test", 1, 10);
+    });
+  });
+
+  describe("getLaboratoriesByCity", () => {
+    it("should return laboratories by city", async () => {
+      const mockResponse = {
+        items: [mockCreatedLaboratory],
+        total: 1,
+        page: 1,
+        limit: 10,
+      };
+
+      mockLaboratoryRepository.findByCity.mockResolvedValue(mockResponse);
+
+      const result = await laboratoryService.getLaboratoriesByCity("Test City", 1, 10);
+
+      expect(result).toEqual({
+        laboratories: [mockCreatedLaboratory],
+        total: 1,
+      });
+      expect(mockLaboratoryRepository.findByCity).toHaveBeenCalledWith("Test City", 1, 10);
+    });
+  });
+
+  describe("getLaboratoriesByState", () => {
+    it("should return laboratories by state", async () => {
+      const mockResponse = {
+        items: [mockCreatedLaboratory],
+        total: 1,
+        page: 1,
+        limit: 10,
+      };
+
+      mockLaboratoryRepository.findByState.mockResolvedValue(mockResponse);
+
+      const result = await laboratoryService.getLaboratoriesByState("ST", 1, 10);
+
+      expect(result).toEqual({
+        laboratories: [mockCreatedLaboratory],
+        total: 1,
+      });
+      expect(mockLaboratoryRepository.findByState).toHaveBeenCalledWith("ST", 1, 10);
+    });
+  });
+
+  describe("getLaboratoriesByContactName", () => {
+    it("should return laboratories by contact name", async () => {
+      const mockResponse = {
+        items: [mockCreatedLaboratory],
+        total: 1,
+        page: 1,
+        limit: 10,
+      };
+
+      mockLaboratoryRepository.findByContactName.mockResolvedValue(mockResponse);
+
+      const result = await laboratoryService.getLaboratoriesByContactName("Test Contact", 1, 10);
+
+      expect(result).toEqual({
+        laboratories: [mockCreatedLaboratory],
+        total: 1,
+      });
+      expect(mockLaboratoryRepository.findByContactName).toHaveBeenCalledWith("Test Contact", 1, 10);
     });
   });
 });

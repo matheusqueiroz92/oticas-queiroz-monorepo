@@ -33,7 +33,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import PaymentReceiptPrinter from "@/components/Payments/PaymentReceiptPrinter";
+import PaymentReceiptPrinter from "@/components/payments/PaymentReceiptPrinter";
 
 import { formatCurrency, formatDate, formatDateTime } from "@/app/_utils/formatters";
 import type { IPayment } from "@/app/_types/payment";

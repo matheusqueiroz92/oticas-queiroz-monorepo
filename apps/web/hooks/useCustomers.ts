@@ -78,29 +78,25 @@ export function useCustomers(options: UseCustomersOptions = {}) {
           searchParams.search = searchQuery;
         }
       }
-      
-      const response = await api.get(API_ROUTES.USERS.BASE, {
-        params: searchParams,
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache',
-          'Expires': '0',
-          'X-Timestamp': timestamp.toString()
-        }
-      });
 
-      let customers: Customer[] = [];
+      const queryString = new URLSearchParams(searchParams).toString();
+      const url = `/api/users?${queryString}`;
       
-      if (Array.isArray(response.data)) {
-        customers = response.data.filter((user: any) => user.role === 'customer');
-      } else if (response.data?.users && Array.isArray(response.data.users)) {
-        customers = response.data.users.filter((user: any) => user.role === 'customer');
+      const response = await api.get(url);
+      
+      if (response.data?.users) {
+        return response.data.users;
       }
       
-      return customers;
-    } catch (error) {
-      console.error("Erro ao buscar todos os clientes:", error);
       return [];
+    } catch (error: any) {
+      console.error("❌ Erro ao buscar clientes:", error);
+      
+      if (error.response?.status === 404) {
+        return [];
+      }
+      
+      throw error;
     }
   }, []);
 

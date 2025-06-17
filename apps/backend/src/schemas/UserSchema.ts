@@ -1,5 +1,5 @@
-import { Schema, model } from "mongoose";
-import bcrypt from "bcrypt";
+import mongoose, { Schema } from "mongoose";
+import * as bcrypt from "bcrypt";
 import type { IUser } from "../interfaces/IUser";
 import { isValidCNPJ, isValidCPF } from "../utils/validators";
 
@@ -27,10 +27,9 @@ const userSchema = new Schema<IUser>(
     phone: { type: String },
     cpf: {
       type: String,
-      required: false, // CPF agora é opcional para todos os tipos de usuário
+      required: false,
       validate: {
         validator: function(v: string) {
-          // Se for instituição ou se CPF não estiver presente, não validar
           if (this.role === 'institution' || !v) return true;
           return isValidCPF(v);
         },
@@ -75,15 +74,12 @@ const userSchema = new Schema<IUser>(
 
 // Hook pre-save para garantir campos corretos conforme o tipo
 userSchema.pre('save', function(next) {
-  // Para instituições, garantir que CPF não exista
   if (this.role === 'institution') {
     this.cpf = undefined;
   } else {
-    // Para não-instituições, garantir que CNPJ não exista
     this.cnpj = undefined;
   }
   
-  // Limpar outros campos opcionais para não serem null
   if (this.email === null || this.email === '') {
     this.email = undefined;
   }
@@ -91,8 +87,7 @@ userSchema.pre('save', function(next) {
   next();
 });
 
-// Adicionar índices manualmente, fora do schema
-// Para CPF (apenas quando CPF estiver presente e não for instituição)
+// Índices
 userSchema.index(
   { cpf: 1 }, 
   { 
@@ -108,7 +103,6 @@ userSchema.index(
   }
 );
 
-// Para CNPJ (apenas para instituições)
 userSchema.index(
   { cnpj: 1 }, 
   { 
@@ -126,4 +120,4 @@ userSchema.methods.comparePassword = async function (
   return bcrypt.compare(candidatePassword, this.password);
 };
 
-export const User = model<IUser>("User", userSchema);
+export const User = mongoose.model<IUser>("User", userSchema);

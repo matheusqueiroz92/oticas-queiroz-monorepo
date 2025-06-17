@@ -1,5 +1,6 @@
-import { UserModel } from "../models/UserModel";
+import { getRepositories } from "../repositories/RepositoryFactory";
 import type { ICreateUserDTO, IUser } from "../interfaces/IUser";
+import type { IUserRepository } from "../repositories/interfaces/IUserRepository";
 import {
   ValidationError,
   NotFoundError,
@@ -11,10 +12,11 @@ type CreateUserInput = Omit<IUser, "comparePassword">;
 type UpdateUserInput = Partial<CreateUserInput>;
 
 export class UserService {
-  private userModel: UserModel;
+  private userRepository: IUserRepository;
 
   constructor() {
-    this.userModel = new UserModel();
+    const { userRepository } = getRepositories();
+    this.userRepository = userRepository;
   }
 
   private validateUserData(userData: CreateUserInput | UpdateUserInput): void {
@@ -86,6 +88,24 @@ export class UserService {
   }
 
   async createUser(userData: ICreateUserDTO, creatorRole?: string): Promise<IUser> {
+    // NOVA REGRA: Gerar senha automática para clientes se não enviada (ANTES da validação)
+    if (
+      userData.role === "customer" &&
+      (!userData.password || userData.password.trim() === "")
+    ) {
+      if (!userData.birthDate) {
+        throw new ValidationError(
+          "Data de nascimento é obrigatória para gerar a senha do cliente.",
+          ErrorCode.VALIDATION_ERROR
+        );
+      }
+      const birth = new Date(userData.birthDate);
+      const day = String(birth.getUTCDate()).padStart(2, "0");
+      const month = String(birth.getUTCMonth() + 1).padStart(2, "0");
+      const year = String(birth.getUTCFullYear());
+      userData.password = `${day}${month}${year}`;
+    }
+
     this.validateUserData(userData);
 
     if (creatorRole === "employee" && 
@@ -99,12 +119,12 @@ export class UserService {
     }
     
     if (userData.role === "institution" && userData.cnpj) {
-      const existingInstitution = await this.userModel.findByCnpj(userData.cnpj);
+      const existingInstitution = await this.userRepository.findByCnpj(userData.cnpj);
       if (existingInstitution) {
         throw new ValidationError("CNPJ já cadastrado", ErrorCode.DUPLICATE_CNPJ);
       }
     } else if (userData.cpf && userData.cpf.trim() !== "") {
-      const existingUserByCpf = await this.userModel.findByCpf(userData.cpf);
+      const existingUserByCpf = await this.userRepository.findByCpf(userData.cpf);
       if (existingUserByCpf) {
         throw new ValidationError("CPF já cadastrado", ErrorCode.DUPLICATE_CPF);
       }
@@ -113,7 +133,7 @@ export class UserService {
     const email = userData.email?.trim().toLowerCase() || null;
 
     if (email) {
-      const existingUser = await this.userModel.findByEmail(email);
+      const existingUser = await this.userRepository.findByEmail(email);
       if (existingUser) {
         throw new ValidationError(
           "Email já cadastrado",
@@ -121,12 +141,15 @@ export class UserService {
         );
       }
     }
-    const userToCreate = {
+    const userToCreate: Omit<IUser, "_id"> = {
         ...userData,
-        email: email || undefined
+        email: email || undefined,
+        comparePassword: undefined as any,
+        createdAt: new Date(),
+        updatedAt: new Date()
     };
     try {
-      return await this.userModel.create(userToCreate);
+      return await this.userRepository.create(userToCreate);
     } catch (error) {
       if ((error as any).code === 11000 && (error as any).keyPattern?.email) {
         throw new ValidationError(
@@ -143,16 +166,13 @@ export class UserService {
     limit = 10,
     filters: Record<string, any> = {}
   ): Promise<{ users: IUser[]; total: number }> {
-    const result = await this.userModel.findAll(page, limit, filters);
+    const result = await this.userRepository.findAll(page, limit, filters);
     
-    if (!result.users.length) {
-      throw new NotFoundError(
-        "Nenhum usuário encontrado",
-        ErrorCode.USER_NOT_FOUND
-      );
-    }
-    
-    return result;
+    // Retorna array vazio ao invés de lançar erro quando não há resultados
+    return {
+      users: result.items,
+      total: result.total
+    };
   }
 
   async searchUsers(
@@ -166,16 +186,13 @@ export class UserService {
       return this.getAllUsers(page, limit);
     }
   
-    const result = await this.userModel.findAll(page, limit, { search: sanitizedSearch });
+    const result = await this.userRepository.findAll(page, limit, { searchTerm: sanitizedSearch });
     
-    if (!result.users.length) {
-      throw new NotFoundError(
-        "Nenhum usuário encontrado com os critérios de busca",
-        ErrorCode.USER_NOT_FOUND
-      );
-    }
-  
-    return result;
+    // Retorna array vazio ao invés de lançar erro quando não há resultados
+    return {
+      users: result.items,
+      total: result.total
+    };
   }
 
   async getUsersByRole(
@@ -187,108 +204,117 @@ export class UserService {
       throw new ValidationError("Role inválida", ErrorCode.INVALID_ROLE);
     }
   
-    const result = await this.userModel.findAll(page, limit, { role });
+    const result = await this.userRepository.findByRole(role as IUser["role"], page, limit);
     
-    if (!result.users.length) {
-      throw new NotFoundError(
-        `Nenhum usuário com role '${role}' encontrado`,
-        ErrorCode.USER_NOT_FOUND
-      );
-    }
-  
-    return result;
+    // Retorna array vazio ao invés de lançar erro quando não há resultados
+    return {
+      users: result.items,
+      total: result.total
+    };
   }
 
   async getUserById(id: string): Promise<IUser> {
-    const user = await this.userModel.findById(id);
+    if (!id?.trim()) {
+      throw new ValidationError("ID é obrigatório", ErrorCode.VALIDATION_ERROR);
+    }
 
+    const user = await this.userRepository.findById(id);
     if (!user) {
-      throw new NotFoundError(
-        "Usuário não encontrado",
-        ErrorCode.USER_NOT_FOUND
-      );
+      throw new NotFoundError("Usuário não encontrado", ErrorCode.USER_NOT_FOUND);
     }
 
     return user;
   }
 
   async getUserByCpf(cpf: string): Promise<IUser> {
-    const sanitizedCpf = cpf.replace(/[^\d]/g, "");
+    if (!cpf?.trim()) {
+      throw new ValidationError("CPF é obrigatório", ErrorCode.VALIDATION_ERROR);
+    }
 
-    if (sanitizedCpf.length !== 11) {
+    // Validar formato do CPF
+    const cpfString = cpf.toString();
+    if (!/^\d{11}$/.test(cpfString)) {
       throw new ValidationError(
-        "Formato de CPF inválido",
+        "CPF inválido. Deve conter 11 dígitos numéricos",
         ErrorCode.INVALID_CPF
       );
     }
 
-    const user = await this.userModel.findByCpf(sanitizedCpf);
+    const user = await this.userRepository.findByCpf(cpf);
     if (!user) {
-      throw new NotFoundError(
-        "Usuário não encontrado",
-        ErrorCode.USER_NOT_FOUND
-      );
+      throw new NotFoundError("Usuário não encontrado", ErrorCode.USER_NOT_FOUND);
     }
 
     return user;
   }
 
   async getUserByEmail(email: string): Promise<IUser> {
-    const user = await this.userModel.findByEmail(email);
-    if (!user) {
-      throw new NotFoundError(
-        "Usuário não encontrado",
-        ErrorCode.USER_NOT_FOUND
-      );
+    if (!email?.trim()) {
+      throw new ValidationError("Email é obrigatório", ErrorCode.VALIDATION_ERROR);
     }
+
+    const user = await this.userRepository.findByEmail(email);
+    if (!user) {
+      throw new NotFoundError("Usuário não encontrado", ErrorCode.USER_NOT_FOUND);
+    }
+
     return user;
   }
 
   async updateUser(id: string, userData: UpdateUserInput): Promise<IUser> {
+    if (!id?.trim()) {
+      throw new ValidationError("ID é obrigatório", ErrorCode.VALIDATION_ERROR);
+    }
+
     this.validateUserData(userData);
 
-    if (userData.email) {
-      const existingUser = await this.userModel.findByEmail(userData.email);
-      if (existingUser?.email && existingUser._id.toString() !== id) {
-        throw new ValidationError(
-          "Email já cadastrado",
-          ErrorCode.DUPLICATE_EMAIL
-        );
+    // Verificar se o usuário existe
+    const existingUser = await this.userRepository.findById(id);
+    if (!existingUser) {
+      throw new NotFoundError("Usuário não encontrado", ErrorCode.USER_NOT_FOUND);
+    }
+
+    // Verificar duplicatas apenas se os valores foram alterados
+    if (userData.email && userData.email !== existingUser.email) {
+      const emailExists = await this.userRepository.emailExists(userData.email);
+      if (emailExists) {
+        throw new ValidationError("Email já cadastrado", ErrorCode.DUPLICATE_EMAIL);
       }
     }
 
-    if (userData.role === "institution" && userData.cnpj) {
-      const existingInstitution = await this.userModel.findByCnpj(userData.cnpj);
-      if (existingInstitution && existingInstitution._id.toString() !== id) {
-        throw new ValidationError("CNPJ já cadastrado", ErrorCode.DUPLICATE_CNPJ);
-      }
-    } else if (userData.cpf) {
-      const existingUser = await this.userModel.findByCpf(userData.cpf);
-      if (existingUser && existingUser._id.toString() !== id) {
+    if (userData.cpf && userData.cpf !== existingUser.cpf) {
+      const existingUserByCpf = await this.userRepository.findByCpf(userData.cpf);
+      if (existingUserByCpf) {
         throw new ValidationError("CPF já cadastrado", ErrorCode.DUPLICATE_CPF);
       }
     }
 
-    const user = await this.userModel.update(id, userData);
-    if (!user) {
-      throw new NotFoundError(
-        "Usuário não encontrado",
-        ErrorCode.USER_NOT_FOUND
-      );
+    if (userData.cnpj && userData.cnpj !== existingUser.cnpj) {
+      const existingUserByCnpj = await this.userRepository.findByCnpj(userData.cnpj);
+      if (existingUserByCnpj) {
+        throw new ValidationError("CNPJ já cadastrado", ErrorCode.DUPLICATE_CNPJ);
+      }
     }
 
-    return user;
+    const updatedUser = await this.userRepository.update(id, userData);
+    if (!updatedUser) {
+      throw new NotFoundError("Usuário não encontrado", ErrorCode.USER_NOT_FOUND);
+    }
+
+    return updatedUser;
   }
 
   async deleteUser(id: string): Promise<IUser> {
-    const user = await this.userModel.delete(id);
-    if (!user) {
-      throw new NotFoundError(
-        "Usuário não encontrado",
-        ErrorCode.USER_NOT_FOUND
-      );
+    if (!id?.trim()) {
+      throw new ValidationError("ID é obrigatório", ErrorCode.VALIDATION_ERROR);
     }
-    return user;
+
+    const deletedUser = await this.userRepository.delete(id);
+    if (!deletedUser) {
+      throw new NotFoundError("Usuário não encontrado", ErrorCode.USER_NOT_FOUND);
+    }
+
+    return deletedUser;
   }
 
   async getProfile(userId: string): Promise<IUser> {
@@ -299,55 +325,66 @@ export class UserService {
     userId: string,
     userData: UpdateUserInput
   ): Promise<IUser> {
-    if (userData.role) {
-      throw new PermissionError(
-        "Não é permitido alterar a role do usuário",
-        ErrorCode.INSUFFICIENT_PERMISSIONS
-      );
-    }
-
-    this.validateUserData(userData);
-
-    const updatedData = {
-      ...userData,
-      image: userData.image
-        ? userData.image.startsWith("/")
-          ? userData.image
-          : `/images/users/${userData.image}`
-        : userData.image,
-    };
-
-    const user = await this.userModel.update(userId, updatedData);
-    if (!user) {
-      throw new NotFoundError(
-        "Usuário não encontrado",
-        ErrorCode.USER_NOT_FOUND
-      );
-    }
-
-    return user;
+    // Remover campos que não devem ser alterados no perfil
+    const { role, ...profileData } = userData;
+    
+    return this.updateUser(userId, profileData);
   }
 
   async verifyPassword(userId: string, password: string): Promise<boolean> {
-    return this.userModel.checkPassword(userId, password);
+    const user = await this.getUserById(userId);
+    return user.comparePassword ? user.comparePassword(password) : false;
   }
 
   async updatePassword(userId: string, newPassword: string): Promise<void> {
-    if (!newPassword || newPassword.length < 6) {
+    if (!newPassword?.trim() || newPassword.length < 6) {
       throw new ValidationError(
-        "Senha deve ter pelo menos 6 caracteres",
+        "Nova senha deve ter pelo menos 6 caracteres",
         ErrorCode.INVALID_PASSWORD
       );
     }
 
-    const user = await this.userModel.findById(userId);
-    if (!user) {
-      throw new NotFoundError(
-        "Usuário não encontrado",
-        ErrorCode.USER_NOT_FOUND
-      );
-    }
+    await this.updateUser(userId, { password: newPassword });
+  }
 
-    await this.userModel.update(userId, { password: newPassword });
+  // Métodos específicos do repository
+  async getUsersWithPagination(
+    page: number = 1,
+    limit: number = 10,
+    filters?: Record<string, any>
+  ) {
+    return this.userRepository.findAll(page, limit, filters);
+  }
+
+  async checkEmailExists(email: string): Promise<boolean> {
+    return this.userRepository.emailExists(email);
+  }
+
+  async checkCpfExists(cpf: string): Promise<boolean> {
+    const user = await this.userRepository.findByCpf(cpf);
+    return !!user;
+  }
+
+  async checkCnpjExists(cnpj: string): Promise<boolean> {
+    const user = await this.userRepository.findByCnpj(cnpj);
+    return !!user;
+  }
+
+  async getActiveUsersCount(): Promise<number> {
+    return this.userRepository.count({ isDeleted: { $ne: true } });
+  }
+
+  async getCustomersCount(): Promise<number> {
+    return this.userRepository.count({ 
+      role: "customer",
+      isDeleted: { $ne: true }
+    });
+  }
+
+  async getEmployeesCount(): Promise<number> {
+    return this.userRepository.count({ 
+      role: "employee",
+      isDeleted: { $ne: true }
+    });
   }
 }

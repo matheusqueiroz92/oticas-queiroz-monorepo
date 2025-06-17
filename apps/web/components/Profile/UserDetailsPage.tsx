@@ -4,10 +4,10 @@ import { useParams, useRouter } from "next/navigation";
 import { Loader2, Info } from "lucide-react";
 import { useUsers } from "@/hooks/useUsers";
 import { ErrorAlert } from "@/components/ErrorAlert";
-import { PageTitle } from "@/components/PageTitle";
-import { UserInfoCard } from "@/components/Profile/UserInfoCard";
-import { InfoSection } from "@/components/Profile/InfoSection";
-import { InfoField } from "@/components/Profile/InfoField";
+import { PageTitle } from "@/components/ui/page-title";
+import { UserInfoCard } from "@/components/profile/UserInfoCard";
+import { InfoSection } from "@/components/profile/InfoSection";
+import { InfoField } from "@/components/profile/InfoField";
 import { ReactNode } from "react";
 
 interface FieldDefinition {

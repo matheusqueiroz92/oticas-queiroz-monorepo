@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useLegacyClients } from "@/hooks/useLegacyClients";
 import { Button } from "@/components/ui/button";
-import { PageTitle } from "@/components/PageTitle";
+import { PageTitle } from "@/components/ui/page-title";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Card,
@@ -15,8 +15,8 @@ import {
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { formatCurrency, formatDate } from "@/app/_utils/formatters";
-import { LegacyClientInfo } from "@/components/LegacyClients/LegacyClientInfo";
-import { PaymentHistoryTable } from "@/components/LegacyClients/PaymentHistoryTable";
+import { LegacyClientInfo } from "@/components/legacy-clients/LegacyClientInfo";
+import { PaymentHistoryTable } from "@/components/legacy-clients/PaymentHistoryTable";
 import { ArrowLeft, Edit, ToggleLeft, AlertTriangle } from "lucide-react";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { Badge } from "@/components/ui/badge";

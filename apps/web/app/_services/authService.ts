@@ -29,6 +29,7 @@ export const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     const token = Cookies.get("token");
+    
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -38,14 +39,13 @@ api.interceptors.request.use(
       // Garantir que a URL comece com /api se não começar já
       if (!config.url.startsWith("/api/") && !config.url.startsWith("/auth/")) {
         // Não adicionar prefixo se já for uma rota /auth/
-        config.url = `/api${config.url.startsWith("/") ? config.url : `/${config.url}`}`;
+        config.url = `/api${config.url.startsWith("/") ? "" : "/"}${config.url}`;
       }
     }
 
     return config;
   },
   (error) => {
-    console.error("Erro na preparação da requisição:", error);
     return Promise.reject(error);
   }
 );

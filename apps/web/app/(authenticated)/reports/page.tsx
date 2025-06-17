@@ -12,10 +12,10 @@ import {
 import { PlusCircle, FileText, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/useToast";
 import { useReports } from "@/hooks/useReports";
-import { ReportList } from "@/components/Reports/ReportList";
-import { CreateReportModal } from "@/components/Reports/CreateReportModal";
-import { ReportFilters } from "@/components/Reports/ReportFilters";
-import { PageTitle } from "@/components/PageTitle";
+import { ReportList } from "@/components/reports/ReportList";
+import { CreateReportModal } from "@/components/reports/CreateReportModal";
+import { ReportFilters } from "@/components/reports/ReportFilters";
+import { PageTitle } from "@/components/ui/page-title";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function ReportsPage() {

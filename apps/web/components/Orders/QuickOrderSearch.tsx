@@ -1,16 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Search, X, FileText, Loader2 } from "lucide-react";
+import { Search, X, FileText, Loader2, Info } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { api } from "@/app/_services/authService";
 import { API_ROUTES } from "@/app/_constants/api-routes";
 import { formatCurrency, formatDate, getOrderStatusClass, translateOrderStatus } from "@/app/_utils/formatters";
@@ -56,15 +49,20 @@ export const QuickOrderSearch: React.FC<QuickOrderSearchProps> = ({ className })
     setIsLoading(true);
     try {
       const searchParams: Record<string, string> = {};
+      const trimmedQuery = query.trim();
       
-      const cleanSearch = query.trim().replace(/\D/g, '');
+      // Verificar se é apenas números (CPF ou OS)
+      const isOnlyNumbers = /^\d+$/.test(trimmedQuery);
       
-      if (/^\d{11}$/.test(cleanSearch)) {
-        searchParams.cpf = cleanSearch;
-      } else if (/^\d{4,7}$/.test(cleanSearch)) {
-        searchParams.serviceOrder = cleanSearch;
+      if (isOnlyNumbers && trimmedQuery.length === 11) {
+        // CPF - exatamente 11 dígitos
+        searchParams.cpf = trimmedQuery;
+      } else if (isOnlyNumbers && trimmedQuery.length >= 4 && trimmedQuery.length <= 7) {
+        // Número da OS - entre 4 e 7 dígitos
+        searchParams.serviceOrder = trimmedQuery;
       } else {
-        searchParams.search = query.trim();
+        // Busca por nome do cliente ou busca geral
+        searchParams.search = trimmedQuery;
       }
       
       searchParams._t = Date.now().toString();
@@ -194,132 +192,130 @@ export const QuickOrderSearch: React.FC<QuickOrderSearchProps> = ({ className })
   };
 
   return (
-    <Card className={className}>
-      <CardHeader>
-        <CardTitle className="text-[var(--primary-blue)]">
-          Busca Rápida de Pedidos
-        </CardTitle>
-        <CardDescription>
-          Pesquise por cliente, CPF ou número da O.S.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+    <div className={className}>
+      <div className="relative">
         <div className="relative">
-          <div className="relative">
-            <Input
-              placeholder="Buscar pedido..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onFocus={() => setShowResults(!!searchQuery)}
-              className="pl-9 pr-8"
-              aria-label="Buscar pedido por cliente, CPF ou O.S."
-            />
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <Input
+            placeholder="Buscar pedidos ou clientes..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onFocus={() => setShowResults(!!searchQuery)}
+            className="pl-10 pr-16"
+            aria-label="Buscar pedido por cliente, CPF ou O.S."
+          />
+          
+          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
             <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer">
-                  <div className="w-4 h-4 rounded-full bg-muted-foreground/20 flex items-center justify-center text-xs">?</div>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent className="max-w-xs">
-                <p>Você pode buscar por:</p>
-                <ul className="list-disc pl-4 text-xs mt-1">
-                  <li>Nome do cliente</li>
-                  <li>CPF (formato: 12345678900)</li>
-                  <li>Número da O.S. (4 a 7 dígitos)</li>
-                </ul>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+                  >
+                    <Info className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-xs">
+                  <div className="space-y-1">
+                    <p className="font-medium">Você pode buscar por:</p>
+                    <ul className="list-disc pl-4 text-xs space-y-0.5">
+                      <li>Nome do cliente</li>
+                      <li>CPF (formato: 12345678901)</li>
+                      <li>Número da O.S. (4 a 7 dígitos)</li>
+                    </ul>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
 
             {searchQuery && (
               <Button 
                 variant="ghost"
                 size="sm"
                 onClick={clearSearch}
-                className="absolute right-2 top-1/2 -translate-y-1/2 h-5 w-5 p-0 text-muted-foreground"
+                className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
                 aria-label="Limpar busca"
               >
-                <X className="h-4 w-4" />
+                <X className="h-3 w-3" />
               </Button>
             )}
           </div>
+        </div>
 
-          {/* Dropdown de resultados */}
-          {showResults && (searchResults.length > 0 || isLoading) && (
-            <div 
-              ref={resultsRef}
-              className="absolute z-50 w-full mt-1 bg-white border rounded-md shadow-lg max-h-[300px] overflow-y-auto"
-            >
-              {isLoading ? (
-                <div className="p-4 text-center">
-                  <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">Buscando pedidos...</p>
-                </div>
-              ) : searchResults.length > 0 ? (
-                <div className="py-1">
-                  {searchResults.map((order) => (
-                    <div 
-                      key={order._id} 
-                      className="cursor-pointer hover:bg-slate-100 p-3 border-b transition-colors"
-                      onClick={() => viewOrder(order._id)}
-                    >
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <div className="flex items-center">
-                            <FileText className="h-4 w-4 mr-2 text-primary" />
-                            <span className="font-medium">
-                              {getClientName(order.clientId) === "Carregando..." ? (
-                                <span className="flex items-center">
-                                  <span>Cliente</span>
-                                  <Loader2 className="h-3 w-3 ml-1 animate-spin" />
-                                </span>
-                              ) : (
-                                getClientName(order.clientId)
-                              )}
-                            </span>
-                          </div>
-                          <div className="text-xs text-muted-foreground mt-1">
-                            {order.serviceOrder ? `O.S.: ${order.serviceOrder}` : ''} 
-                            {order.serviceOrder && order.cpf ? ' • ' : ''}
-                            {order.cpf ? `CPF: ${order.cpf}` : ''}
-                          </div>
+        {/* Dropdown de resultados */}
+        {showResults && (searchResults.length > 0 || isLoading) && (
+          <div 
+            ref={resultsRef}
+            className="absolute z-50 w-full mt-1 bg-background border rounded-md shadow-lg max-h-[300px] overflow-y-auto"
+          >
+            {isLoading ? (
+              <div className="p-4 text-center">
+                <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">Buscando pedidos...</p>
+              </div>
+            ) : searchResults.length > 0 ? (
+              <div className="py-1">
+                {searchResults.map((order) => (
+                  <div 
+                    key={order._id} 
+                    className="cursor-pointer hover:bg-accent p-3 border-b last:border-b-0 transition-colors"
+                    onClick={() => viewOrder(order._id)}
+                  >
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <div className="flex items-center">
+                          <FileText className="h-4 w-4 mr-2 text-primary" />
+                          <span className="font-medium">
+                            {getClientName(order.clientId) === "Carregando..." ? (
+                              <span className="flex items-center">
+                                <span>Cliente</span>
+                                <Loader2 className="h-3 w-3 ml-1 animate-spin" />
+                              </span>
+                            ) : (
+                              getClientName(order.clientId)
+                            )}
+                          </span>
                         </div>
-                        <div className="text-right">
-                          <div className="font-medium">{formatCurrency(order.finalPrice)}</div>
-                          <div className="mt-1">
-                            <Badge className={getOrderStatusClass(order.status)}>
-                              {translateOrderStatus(order.status)}
-                            </Badge>
-                          </div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {order.serviceOrder ? `O.S.: ${order.serviceOrder}` : ''} 
+                          {order.serviceOrder && order.cpf ? ' • ' : ''}
+                          {order.cpf ? `CPF: ${order.cpf}` : ''}
                         </div>
                       </div>
-                      <div className="text-xs text-muted-foreground mt-2">
-                        {formatDate(order.orderDate || order.createdAt)}
+                      <div className="text-right">
+                        <div className="font-medium">{formatCurrency(order.finalPrice)}</div>
+                        <div className="mt-1">
+                          <Badge className={getOrderStatusClass(order.status)}>
+                            {translateOrderStatus(order.status)}
+                          </Badge>
+                        </div>
                       </div>
                     </div>
-                  ))}
-                  
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="w-full text-primary justify-center h-10"
-                    onClick={() => router.push('/orders')}
-                  >
-                    Ver todos os pedidos
-                  </Button>
-                </div>
-              ) : (
-                <div className="p-4 text-center text-muted-foreground text-sm">
-                  Nenhum pedido encontrado
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+                    <div className="text-xs text-muted-foreground mt-2">
+                      {formatDate(order.orderDate || order.createdAt)}
+                    </div>
+                  </div>
+                ))}
+                
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="w-full text-primary justify-center h-10"
+                  onClick={() => router.push('/orders')}
+                >
+                  Ver todos os pedidos
+                </Button>
+              </div>
+            ) : (
+              <div className="p-4 text-center text-muted-foreground text-sm">
+                Nenhum pedido encontrado
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
   );
 };

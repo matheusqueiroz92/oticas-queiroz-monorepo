@@ -58,12 +58,12 @@ export function useUsers() {
     });
   };
 
-  const fetchUserById = async (id: string) => {
+  const fetchUserById = useCallback(async (id: string) => {
     const response = await api.get(API_ROUTES.USERS.BY_ID(id));
     return response.data;
-  };
+  }, []);
 
-  const getUserById = async (id: string) => {
+  const getUserById = useCallback(async (id: string) => {
     try {
       if (usersMap[id]) {
         return usersMap[id];
@@ -87,7 +87,7 @@ export function useUsers() {
         error.response?.data?.message || "Erro ao buscar usuário"
       );
     }
-  };
+  }, [queryClient, usersMap]);
 
   const fetchUsers = useCallback(async (userIds: string[]) => {
     if (!userIds.length) return;
@@ -184,6 +184,41 @@ export function useUsers() {
     },
   });
 
+  const updateUserMutation = useMutation({
+    mutationFn: async ({ id, formData }: { id: string, formData: FormData }) => {
+      const response = await api.put(API_ROUTES.USERS.BY_ID(id), formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      return response.data;
+    },
+    onSuccess: (data) => {
+      // Atualizar o cache com os novos dados
+      queryClient.setQueryData(QUERY_KEYS.USERS.DETAIL(data._id), data);
+      
+      // Invalidar queries relevantes
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.USERS.ALL });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.USERS.CUSTOMERS() });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.USERS.EMPLOYEES() });
+      
+      // Atualizar o mapa de usuários
+      setUsersMap(prev => ({
+        ...prev,
+        [data._id]: data
+      }));
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Erro ao atualizar usuário",
+        description:
+          error.response?.data?.message ||
+          "Ocorreu um erro ao atualizar o usuário",
+      });
+    },
+  });
+
   const getUserImageUrl = (imagePath?: string): string => {
     if (!imagePath) return "";
 
@@ -208,6 +243,7 @@ export function useUsers() {
     getUserById,
     useUserQuery,
     createUserMutation,
+    updateUserMutation,
     getUserImageUrl,
     getAllUsers,
     useAllUsersQuery,

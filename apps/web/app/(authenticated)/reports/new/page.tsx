@@ -10,8 +10,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { CreateReportForm } from "@/components/Reports/CreateReportForm";
-import { PageTitle } from "@/components/PageTitle";
+import { CreateReportForm } from "@/components/reports/CreateReportForm";
+import { PageTitle } from "@/components/ui/page-title";
 import { useReports } from "@/hooks/useReports";
 import { useToast } from "@/hooks/useToast";
 import type { CreateReportDTO } from "@/app/_types/report";

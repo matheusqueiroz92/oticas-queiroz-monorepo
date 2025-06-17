@@ -30,7 +30,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Loader2, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
 import { formatCurrency, formatDate } from "@/app/_utils/formatters";
-import { PageTitle } from "@/components/PageTitle";
+import { PageTitle } from "@/components/ui/page-title";
 
 export default function ChecksPage() {
   const [status, setStatus] = useState<"pending" | "compensated" | "rejected" | "all">("pending");

@@ -9,8 +9,8 @@ import {
   getPaymentTypeClass,
   getPaymentStatusClass,
 } from "@/app/_utils/formatters";
-import { PaymentsList } from "@/components/Payments/PaymentsList";
-import { PageTitle } from "@/components/PageTitle";
+import { PaymentsList } from "@/components/payments/PaymentsList";
+import { PageTitle } from "@/components/ui/page-title";
 import { customBadgeStyles } from "@/app/_utils/custom-badge-styles";
 import { PaymentStatus, PaymentType } from "@/app/_types/payment";
 

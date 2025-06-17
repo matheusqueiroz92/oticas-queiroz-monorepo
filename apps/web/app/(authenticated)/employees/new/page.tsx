@@ -1,6 +1,6 @@
 "use client";
 
-import { UserRegisterForm } from "@/components/Profile/UserRegisterForm";
+import { UserRegisterForm } from "@/components/profile/UserRegisterForm";
 
 export default function NewEmployeePage() {
   return (

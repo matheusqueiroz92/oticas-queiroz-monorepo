@@ -244,6 +244,46 @@ export function normalizeOrder(order: any): Order {
  * Normaliza uma lista de pedidos
  */
 export function normalizeOrders(orders: any[]): Order[] {
-  if (!Array.isArray(orders)) return [];
-  return orders.map(order => normalizeOrder(order));
+  if (!Array.isArray(orders)) {
+    return [];
+  }
+  
+  if (orders.length === 0) {
+    return [];
+  }
+  
+  const normalizedOrders = orders.map((order, index) => {
+    try {
+      return normalizeOrder(order);
+    } catch (error) {
+      console.error(`Erro ao normalizar pedido ${index}:`, error);
+      console.error('Dados do pedido problemático:', order);
+      // Retorna um pedido vazio em vez de quebrar toda a lista
+      return {
+        _id: '',
+        clientId: '',
+        employeeId: '',
+        products: [],
+        serviceOrder: '',
+        paymentMethod: '',
+        paymentStatus: 'pending',
+        orderDate: new Date().toISOString(),
+        status: 'pending',
+        totalPrice: 0,
+        discount: 0,
+        finalPrice: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        _normalized: {
+          clientName: 'Erro ao processar',
+          clientId: null,
+          employeeName: 'Erro ao processar',
+          employeeId: null,
+          laboratoryName: null,
+        }
+      } as Order;
+    }
+  });
+  
+  return normalizedOrders;
 }

@@ -84,7 +84,7 @@ export const OrdersList: React.FC<OrderTableProps> = ({
   return (
     <div className="space-y-4">
       <Table>
-        <TableHeader>
+        <TableHeader className="bg-gray-100 dark:bg-slate-800/50">
           <TableRow>
             {columns.map((column) => (
               <TableHead key={column.key}>{column.header}</TableHead>

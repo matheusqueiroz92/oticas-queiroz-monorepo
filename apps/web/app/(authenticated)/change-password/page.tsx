@@ -1,8 +1,8 @@
 "use client";
 
 import { useProfile } from "@/hooks/useProfile";
-import { ChangePasswordForm } from "@/components/ChangePassword/ChangePasswordForm";
-import { ChangePasswordHeader } from "@/components/ChangePassword/ChangePasswordHeader";
+import { ChangePasswordForm } from "@/components/change-password/ChangePasswordForm";
+import { ChangePasswordHeader } from "@/components/change-password/ChangePasswordHeader";
 import type { ChangePasswordFormValues } from "@/schemas/change-password-schema";
 
 export default function ChangePasswordPage() {

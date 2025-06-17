@@ -133,7 +133,7 @@ export default function ClientSearch({
       name="clientId"
       render={({ field }) => (
         <FormItem>
-          <FormLabel>Cliente</FormLabel>
+          <FormLabel className="text-xs text-muted-foreground">Cliente</FormLabel>
           <div className="relative">
             <Input
               placeholder="Digite o nome do cliente"
@@ -150,7 +150,7 @@ export default function ClientSearch({
             {showSuggestions && (
               <div
                 ref={suggestionsRef}
-                className="absolute z-10 w-full bg-white border rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto"
+                className="absolute z-10 w-full bg-background border border-input rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto"
               >
                 {isSearching ? (
                   <div className="p-3 text-center">

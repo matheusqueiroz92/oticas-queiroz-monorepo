@@ -3,11 +3,12 @@
 import { Button } from "@/components/ui/button";
 import { Loader2, PlusCircle } from "lucide-react";
 import { useCashRegister } from "@/hooks/useCashRegister";
-import { PageTitle } from "@/components/PageTitle";
-import { ActiveCashRegisterCard } from "@/components/CashRegister/ActiveCashRegisterCard";
-import { CashRegisterFilters } from "@/components/CashRegister/CashRegisterFilters";
-import { CashRegisterList } from "@/components/CashRegister/CashRegisterList";
-import { CashRegisterEmptyState } from "@/components/CashRegister/CashRegisterEmptyState";
+import { PageTitle } from "@/components/ui/page-title";
+import { ActiveCashRegisterCard } from "@/components/cash-register/ActiveCashRegisterCard";
+import { CashRegisterFilters } from "@/components/cash-register/CashRegisterFilters";
+import { CashRegisterList } from "@/components/cash-register/CashRegisterList";
+import { CashRegisterEmptyState } from "@/components/cash-register/CashRegisterEmptyState";
+import { PageContainer } from "@/components/ui/page-container";
 
 export default function CashRegisterPage() {
   const {
@@ -33,7 +34,8 @@ export default function CashRegisterPage() {
   const showEmptyState = !isLoading && !error && cashRegisters.length === 0;
 
   return (
-    <div className="space-y-2 max-w-auto mx-auto p-1 md:p-2">
+    <PageContainer>
+      <div className="space-y-6">
       <PageTitle
         title="Controle de caixa"
         description="Gerencie e visualize os registros de caixa da loja"
@@ -93,6 +95,7 @@ export default function CashRegisterPage() {
           setCurrentPage={setCurrentPage}
         />
       )}
-    </div>
+      </div>
+    </PageContainer>
   );
 }

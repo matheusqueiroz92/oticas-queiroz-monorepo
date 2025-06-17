@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Search, Building, Plus } from "lucide-react";
 import { useInstitutions } from "@/hooks/useInstitutions";
 import { ErrorAlert } from "@/components/ErrorAlert";
-import { PageTitle } from "@/components/PageTitle";
-import { InstitutionTable } from "@/components/Institutions/InstitutionTable";
+import { PageTitle } from "@/components/ui/page-title";
+import { InstitutionTable } from "@/components/institutions/InstitutionTable";
 
 export default function InstitutionsPage() {
   const {

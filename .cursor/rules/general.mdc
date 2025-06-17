@@ -22,7 +22,10 @@ As tecnologias e ferramentas utilzadas na aplicação:
 - Swagger;
 - Nodemon;
 - PDF Kit;
+- Json2CSV;
 - Jest;
+- Mocha;
+- Supertest;
 - Multer;
 - React 19;
 - Next.js 15 (App Router);
@@ -38,9 +41,10 @@ As tecnologias e ferramentas utilzadas na aplicação:
 
 
 Arquitetura, organização do projeto e deploy:
-- Arquitetura de código utilizada na API é a MSC (Model, Service, Controller);
+- API com padrão REST
+- Arquitetura de código utilizada na API é a MSC (Model, Service, Controller) com utilização do Repository Pattern;
 - Gerenciamento do repositório monorepo com Turborepo;
-- Dividido em: backend (api), web (frontend), mobile (a desenvolver) e desktop (a desenvolver);
+- Projeto dividido em: backend (api), web (frontend), mobile (a desenvolver) e desktop (a desenvolver);
 - Foi feito o deploy em uma servidor VPN da Hostinger com sistema operacional Alma Linux, utilizando NGINX;
 - Está registrado no domínio app.oticasqueiroz.com.br;
 

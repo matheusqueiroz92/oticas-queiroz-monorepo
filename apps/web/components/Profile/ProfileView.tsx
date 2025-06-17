@@ -21,9 +21,9 @@ import {
   ShoppingBag,
   Pencil
 } from "lucide-react";
-import { InfoSection } from "@/components/Profile/InfoSection";
-import { InfoField } from "@/components/Profile/InfoField";
-import { ProfileSection } from "@/components/Profile/ProfileSection";
+import { InfoSection } from "@/components/profile/InfoSection";
+import { InfoField } from "@/components/profile/InfoField";
+import { ProfileSection } from "@/components/profile/ProfileSection";
 
 interface ProfileViewProps {
   user: any;

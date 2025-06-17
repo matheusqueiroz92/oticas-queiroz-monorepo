@@ -5,16 +5,16 @@ import { useParams, useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/useToast";
 import { useCashRegister } from "@/hooks/useCashRegister";
-import { CashRegisterCloseForm } from "@/components/CashRegister/CashRegisterCloseForm";
-import { CashRegisterInfoCard } from "@/components/CashRegister/CashRegisterInfoCard";
-import { CashRegisterSummary } from "@/components/CashRegister/CashRegisterSummary";
+import { CashRegisterCloseForm } from "@/components/cash-register/CashRegisterCloseForm";
+import { CashRegisterInfoCard } from "@/components/cash-register/CashRegisterInfoCard";
+import { CashRegisterSummary } from "@/components/cash-register/CashRegisterSummary";
 import { 
   createCloseCashRegisterForm, 
   type CloseCashRegisterFormValues 
 } from "@/schemas/cash-register-schema";
 import { BackButton } from "@/components/ui/back-button";
-import { CloseCashRegisterMessageCard } from "@/components/CashRegister/CloseCashRegisterMessageCard";
-import { ErrorCashRegisterCard } from "@/components/CashRegister/ErrorCashRegisterCard";
+import { CloseCashRegisterMessageCard } from "@/components/cash-register/CloseCashRegisterMessageCard";
+import { ErrorCashRegisterCard } from "@/components/cash-register/ErrorCashRegisterCard";
 
 export default function CloseCashRegisterPage() {
   const { id } = useParams<{ id: string }>();

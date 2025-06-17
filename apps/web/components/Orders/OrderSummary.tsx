@@ -1,6 +1,7 @@
 import { ShoppingBag } from "lucide-react";
 import { formatCurrency } from "@/app/_utils/formatters";
 import type { Product } from "@/app/_types/product";
+import { useState, useEffect } from "react";
 
 interface OrderSummaryProps {
   form: any;
@@ -13,13 +14,56 @@ export default function OrderSummary({ form, selectedProducts }: OrderSummaryPro
   const finalPrice = form.getValues("finalPrice") || 0;
   const serviceOrder = form.getValues("serviceOrder") as string | undefined;
 
+  // Estado para detectar tema dark
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    // Função para verificar o tema
+    const checkTheme = () => {
+      const isDarkMode = document.documentElement.classList.contains('dark');
+      setIsDark(isDarkMode);
+    };
+
+    // Verificar tema inicial
+    checkTheme();
+
+    // Observer para mudanças na classe dark
+    const observer = new MutationObserver(checkTheme);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <div className="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
-      <div className="border-b border-gray-200 p-2">
-        <h3 className="font-medium text-[var(--primary-blue)]">Resumo do Pedido</h3>
+        <div 
+     className="rounded-lg overflow-hidden shadow-sm"
+     style={{ 
+       backgroundColor: isDark ? '#1e293b' : '#ffffff',
+       borderColor: isDark ? '#374151' : '#e5e7eb',
+       border: isDark ? '1px solid #374151' : '1px solid #e5e7eb',
+       color: isDark ? '#f1f5f9' : '#111827',
+       transition: 'all 0.2s ease'
+     }}
+    >
+      <div 
+        className="p-2 border-b"
+        style={{ borderColor: isDark ? '#374151' : '#e5e7eb' }}
+      >
+        <h3 
+          className="font-medium"
+          style={{ color: isDark ? '#60a5fa' : '#2563eb' }}
+        >
+          Resumo do Pedido
+        </h3>
         {serviceOrder && (
-          <div className="text-xs text-gray-500 mt-1">
-           O.S.: {serviceOrder}
+          <div 
+            className="text-xs mt-1"
+            style={{ color: isDark ? '#9ca3af' : '#6b7280' }}
+          >
+            O.S.: {serviceOrder}
           </div>
         )}
       </div>
@@ -30,40 +74,75 @@ export default function OrderSummary({ form, selectedProducts }: OrderSummaryPro
             {selectedProducts.map((product) => (
               <div key={product._id} className="flex justify-between items-center">
                 <div className="flex items-center">
-                  <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center mr-2">
-                    <ShoppingBag className="w-4 h-4 text-gray-500" />
+                  <div 
+                    className="w-8 h-8 rounded flex items-center justify-center mr-2"
+                    style={{ backgroundColor: isDark ? '#374151' : '#f3f4f6' }}
+                  >
+                    <ShoppingBag 
+                      className="w-4 h-4"
+                      style={{ color: isDark ? '#9ca3af' : '#6b7280' }}
+                    />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{product.name}</p>
-                    <p className="text-xs text-gray-500">{product.productType}</p>
+                    <p 
+                      className="text-sm font-medium truncate"
+                      style={{ color: isDark ? '#f1f5f9' : '#111827' }}
+                    >
+                      {product.name}
+                    </p>
+                    <p 
+                      className="text-xs"
+                      style={{ color: isDark ? '#9ca3af' : '#6b7280' }}
+                    >
+                      {product.productType}
+                    </p>
                   </div>
                 </div>
-                <span className="text-sm font-medium">{formatCurrency(product.sellPrice || 0)}</span>
+                <span 
+                  className="text-sm font-medium"
+                  style={{ color: isDark ? '#f1f5f9' : '#111827' }}
+                >
+                  {formatCurrency(product.sellPrice || 0)}
+                </span>
               </div>
             ))}
           </div>
         ) : (
-          <div className="text-center py-4 text-gray-500">
+          <div 
+            className="text-center py-4"
+            style={{ color: isDark ? '#9ca3af' : '#6b7280' }}
+          >
             <ShoppingBag className="w-8 h-8 mx-auto mb-2 opacity-30" />
-            <p className="text-sm">Nenhum produto adicionado</p>
+            <p 
+              className="text-sm"
+              style={{ color: isDark ? '#9ca3af' : '#6b7280' }}
+            >
+              Nenhum produto adicionado
+            </p>
           </div>
         )}
         
-        <div className="pt-2 border-t border-gray-200">
+        <div 
+          className="pt-2 border-t"
+          style={{ borderColor: isDark ? '#374151' : '#e5e7eb' }}
+        >
           <div className="space-y-1">
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Subtotal</span>
-              <span>{formatCurrency(totalPrice)}</span>
+              <span style={{ color: isDark ? '#f1f5f9' : '#111827' }}>Subtotal</span>
+                              <span style={{ color: isDark ? '#f1f5f9' : '#111827' }}>{formatCurrency(totalPrice)}</span>
             </div>
             
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Desconto</span>
-              <span>{formatCurrency(discount || 0)}</span>
+              <span style={{ color: isDark ? '#f1f5f9' : '#111827' }}>Desconto</span>
+                              <span style={{ color: isDark ? '#f1f5f9' : '#111827' }}>{formatCurrency(discount || 0)}</span>
             </div>
             
-            <div className="flex justify-between font-medium pt-1 border-t border-gray-200 mt-1">
-              <span>Total</span>
-              <span className="text-primary">{formatCurrency(finalPrice)}</span>
+            <div 
+              className="flex justify-between font-medium pt-1 border-t mt-1"
+              style={{ borderColor: isDark ? '#374151' : '#e5e7eb' }}
+            >
+                              <span style={{ color: isDark ? '#f1f5f9' : '#111827' }}>Total</span>
+              <span style={{ color: isDark ? '#60a5fa' : '#2563eb' }}>{formatCurrency(finalPrice)}</span>
             </div>
           </div>
         </div>

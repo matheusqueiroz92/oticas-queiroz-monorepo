@@ -1,4 +1,5 @@
 import { MercadoPagoAPI } from "../utils/mercadoPagoDirectApi";
+import { RepositoryFactory } from "../repositories/RepositoryFactory";
 import type { 
   IMercadoPagoPreference, 
   IMercadoPagoPreferenceResponse,
@@ -7,9 +8,9 @@ import type {
 import type { IOrder, IPaymentHistoryEntry } from "../interfaces/IOrder";
 import { IPayment } from "../interfaces/IPayment";
 import { OrderService } from "./OrderService";
-import { PaymentModel } from "../models/PaymentModel";
-import { OrderModel } from "../models/OrderModel";
-import { CashRegisterModel } from "../models/CashRegisterModel";
+import type { IPaymentRepository } from "../repositories/interfaces/IPaymentRepository";
+import type { IOrderRepository } from "../repositories/interfaces/IOrderRepository";
+import type { ICashRegisterRepository } from "../repositories/interfaces/ICashRegisterRepository";
 
 export class MercadoPagoError extends Error {
   constructor(message: string) {
@@ -19,15 +20,16 @@ export class MercadoPagoError extends Error {
 }
 
 export class MercadoPagoService {
-  private paymentModel: PaymentModel;
-  private orderModel: OrderModel;
-  private cashRegisterModel: CashRegisterModel;
+  private paymentRepository: IPaymentRepository;
+  private orderRepository: IOrderRepository;
+  private cashRegisterRepository: ICashRegisterRepository;
   private orderService: OrderService;
 
   constructor() {
-    this.paymentModel = new PaymentModel();
-    this.orderModel = new OrderModel();
-    this.cashRegisterModel = new CashRegisterModel();
+    const factory = RepositoryFactory.getInstance();
+    this.paymentRepository = factory.getPaymentRepository();
+    this.orderRepository = factory.getOrderRepository();
+    this.cashRegisterRepository = factory.getCashRegisterRepository();
     this.orderService = new OrderService();
   }
 
@@ -53,7 +55,7 @@ export class MercadoPagoService {
       }
 
       // Verificar caixa
-      const openRegister = await this.cashRegisterModel.findOpenRegister();
+      const openRegister = await this.cashRegisterRepository.findOpenRegister();
       if (!openRegister) {
         throw new MercadoPagoError("Não há caixa aberto para registrar pagamentos");
       }
@@ -156,13 +158,13 @@ export class MercadoPagoService {
   async processPayment(paymentId: string): Promise<IPayment> {
     try {
       // Verificar se já processamos este pagamento antes (idempotência)
-      const existingPayments = await this.paymentModel.findAllWithMongoFilters(1, 1, {
+      const { items: existingPayments } = await this.paymentRepository.findAll(1, 1, {
         mercadoPagoId: paymentId,
         status: "completed"
       });
       
-      if (existingPayments.total > 0) {
-        return existingPayments.payments[0];
+      if (existingPayments.length > 0) {
+        return existingPayments[0];
       }
       
       // Buscar informações do pagamento no Mercado Pago
@@ -191,59 +193,55 @@ export class MercadoPagoService {
       }
       
       // Verificar se há caixa aberto
-      const openRegister = await this.cashRegisterModel.findOpenRegister();
+      const openRegister = await this.cashRegisterRepository.findOpenRegister();
       if (!openRegister) {
         console.error(`[MercadoPagoService] Não há caixa aberto para registrar pagamento ${paymentId}`);
         throw new MercadoPagoError("Não há caixa aberto para registrar pagamentos");
       }
       
       // Mapear o tipo de pagamento do Mercado Pago para o tipo de pagamento do sistema
-      let paymentMethod: IPayment["paymentMethod"] = "mercado_pago";
+      const paymentMethod = "mercado_pago";
+      const amount = paymentInfo.transaction_amount || 0;
       
       // Criar o pagamento no sistema
-      const payment: Omit<IPayment, "_id"> = {
-        createdBy: order.employeeId.toString(),
-        customerId: order.clientId.toString(),
-        cashRegisterId: openRegister._id ? openRegister._id.toString() : (() => { throw new MercadoPagoError("ID do caixa aberto é indefinido"); })(),
-        orderId: order._id?.toString() ?? (() => { throw new MercadoPagoError("Order ID is undefined"); })(),
-        amount: paymentInfo.transaction_amount,
-        date: new Date(),
+      const payment = await this.paymentRepository.create({
+        amount,
+        date: new Date(paymentInfo.date_created || Date.now()),
         type: "sale",
         paymentMethod,
         status: "completed",
-        description: `Pagamento via Mercado Pago - ID: ${paymentId}`,
-        mercadoPagoId: paymentId.toString(),
-        mercadoPagoData: paymentInfo
-      };
+        description: `Pagamento Mercado Pago - ID: ${paymentId}`,
+        customerId: order.clientId ? order.clientId.toString() : undefined,
+        orderId: order._id ? order._id.toString() : undefined,
+        cashRegisterId: openRegister._id!,
+        createdBy: typeof order.employeeId === 'string' ? order.employeeId : order.employeeId?.toString() || "",
+        mercadoPagoId: paymentId,
+        mercadoPagoData: {
+          id: paymentInfo.id,
+          status: paymentInfo.status,
+          paymentMethodId: paymentInfo.payment_method_id,
+          paymentTypeId: paymentInfo.payment_type_id,
+          dateCreated: paymentInfo.date_created,
+          dateApproved: paymentInfo.date_approved,
+          externalReference: paymentInfo.external_reference
+        }
+      });
       
-      // Se for cartão de crédito com parcelamento, adicionar informações
-      if (paymentInfo.payment_method_id === "credit_card" && paymentInfo.installments > 1) {
-        payment.creditCardInstallments = {
-          current: 1,
-          total: paymentInfo.installments,
-          value: paymentInfo.transaction_details?.installment_amount || (paymentInfo.transaction_amount / paymentInfo.installments)
-        };
-      }
-
-      // Criar o pagamento no sistema
-      const createdPayment = await this.paymentModel.create(payment);
+      // Atualizar status do pagamento do pedido
+      await this.updateOrderPaymentStatus(orderId, payment);
       
-      // Verificar se o pagamento criado tem _id
-      if (!createdPayment._id) {
-        console.error(`[MercadoPagoService] Erro ao criar pagamento: ID não gerado`);
-        throw new MercadoPagoError("Erro ao criar pagamento: ID não gerado");
-      }
+      return payment;
       
-      // Atualizar o status de pagamento do pedido
-      
-      await this.updateOrderPaymentStatus(order._id.toString(), createdPayment);
-
-      return createdPayment;
     } catch (error) {
-      console.error(`[MercadoPagoService] Erro ao processar pagamento ${paymentId}:`, error);
-      throw error instanceof MercadoPagoError 
-        ? error 
-        : new MercadoPagoError(error instanceof Error ? error.message : "Erro desconhecido ao processar pagamento");
+      console.error("[MercadoPagoService] Erro ao processar pagamento:", error);
+      if (error instanceof MercadoPagoError) {
+        throw error;
+      }
+      throw new MercadoPagoError(
+        error instanceof Error
+          ? error.message
+          : "Erro desconhecido ao processar pagamento"
+      );
     }
   }
 
@@ -376,7 +374,7 @@ export class MercadoPagoService {
         
         // Usar o método update do OrderModel
         // Enviamos apenas as propriedades que queremos atualizar
-        const updated = await this.orderModel.update(
+        const updated = await this.orderRepository.update(
           orderId,
           {
             paymentStatus: paymentStatus,

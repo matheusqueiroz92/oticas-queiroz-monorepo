@@ -99,7 +99,6 @@ export function useOrders(options: UseOrdersOptions = {}) {
     
     if (nextServiceOrderData?.nextServiceOrder) {
       const serviceOrderNumber = nextServiceOrderData.nextServiceOrder;
-      console.log("Próximo serviceOrder recebido:", serviceOrderNumber);
       
       // Verificar se o número é válido e >= 300000
       const numberValue = parseInt(serviceOrderNumber);

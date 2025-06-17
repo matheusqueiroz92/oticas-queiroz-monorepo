@@ -87,12 +87,7 @@ const frameSchema = {
     type: Number,
     required: false,
     default: 0,
-    min: 0,
-    set: (value: any) => {
-      // Garantir que o valor seja um número
-      const numValue = Number(value);
-      return isNaN(numValue) ? 0 : numValue;
-    }
+    min: 0
   }
 };
 
@@ -106,27 +101,7 @@ const sunglassesFrameSchema = new Schema({
   }
 });
 
-// Logging para verificar alterações no estoque
-const addStockLogging = (schema: Schema) => {
-  schema.pre('findOneAndUpdate', function(this: any) {
-    const update = this.getUpdate();
-    if (update && update.$inc && update.$inc.stock !== undefined) {
-      console.log(`[MongooseMiddleware] Atualizando estoque: ${update.$inc.stock}`);
-    } else if (update && update.$set && update.$set.stock !== undefined) {
-      console.log(`[MongooseMiddleware] Definindo estoque: ${update.$set.stock}`);
-    }
-  });
 
-  schema.post('findOneAndUpdate', function(doc: Document) {
-    if (doc) {
-      console.log(`[MongooseMiddleware] Estoque após atualização: ${(doc as any).stock}`);
-    }
-  });
-};
-
-// Aplicar middleware de logging
-addStockLogging(prescriptionFrameSchema);
-addStockLogging(sunglassesFrameSchema);
 
 const Lens = ProductBase.discriminator<LensDocument, LensModel>(
   "lenses", 
@@ -154,8 +129,8 @@ const discriminatorOptions = {
   id: false,
   versionKey: false,
   timestamps: true,
-  strict: 'throw',
-  optimisticConcurrency: true // Adicionar controle de concorrência
+  strict: 'throw'
+  // Removido optimisticConcurrency temporariamente para teste
 }
 
 export { ProductBase as Product, Lens, CleanLens, PrescriptionFrame, SunglassesFrame };

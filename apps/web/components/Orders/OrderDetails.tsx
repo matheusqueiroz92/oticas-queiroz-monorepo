@@ -10,9 +10,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import OrderLaboratoryUpdate from "@/components/Orders/OrderLaboratoryUpdate";
-import OrderStatusUpdate from "@/components/Orders/OrderStatusUpdate";
-import OrderPaymentHistory from "@/components/Orders/OrderPaymentHistory";
+import OrderLaboratoryUpdate from "@/components/orders/OrderLaboratoryUpdate";
+import OrderStatusUpdate from "@/components/orders/OrderStatusUpdate";
+import OrderPaymentHistory from "@/components/orders/OrderPaymentHistory";
 import { 
   Beaker, 
   FileText,

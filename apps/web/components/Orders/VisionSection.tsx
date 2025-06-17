@@ -25,13 +25,13 @@ export default function VisionSection({ eye, form }: VisionSectionProps) {
   useEffect(() => {
     // Para campos numéricos, verificamos se não são undefined, null ou zero
     const sph = form.getValues(`prescriptionData.${eye}Eye.sph`);
-    if (sph) {
+    if (sph && sph !== "0") {
       // Converter formato do backend (com ponto) para formato de exibição (com vírgula)
       setSphInput(String(sph).replace('.', ','));
     }
 
     const cyl = form.getValues(`prescriptionData.${eye}Eye.cyl`);
-    if (cyl) {
+    if (cyl && cyl !== "0") {
       // Converter formato do backend (com ponto) para formato de exibição (com vírgula)
       setCylInput(String(cyl).replace('.', ','));
     }

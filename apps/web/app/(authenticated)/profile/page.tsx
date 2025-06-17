@@ -1,23 +1,24 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useProfile } from "@/hooks/useProfile";
-import { PageTitle } from "@/components/PageTitle";
-import { ProfileView } from "@/components/Profile/ProfileView";
-import { ProfileEditForm } from "@/components/Profile/ProfileEditForm";
-import { RecentOrdersTable } from "@/components/Orders/RecentOrdersTable";
+import { ProfileCard } from "@/components/profile/ProfileCard";
+import { ProfileStats } from "@/components/profile/ProfileStats";
+import { ProfileEditDialog } from "@/components/profile/ProfileEditDialog";
+import { RecentOrdersCard } from "@/components/profile/RecentOrdersCard";
 import { useOrders } from "@/hooks/useOrders";
 import Cookies from "js-cookie";
+import { PageContainer } from "@/components/ui/page-container";
+import type { User } from "@/app/_types/user";
+import type { Order } from "@/app/_types/order";
 
 export default function ProfilePage() {
-  const [editMode, setEditMode] = useState(false);
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const router = useRouter();
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
     profile: user,
@@ -28,30 +29,29 @@ export default function ProfilePage() {
     getUserImageUrl,
   } = useProfile();
 
-  const { orders, isLoading: isLoadingOrders, getEmployeeName } = useOrders();
+  const { orders, isLoading: isLoadingOrders, getClientName } = useOrders();
 
-  const handleStartEdit = () => {
-    setEditMode(true);
-  };
-
-  const handleCancelEdit = () => {
-    setEditMode(false);
-    setPreviewImage(null);
+  const handleEditClick = () => {
+    setEditDialogOpen(true);
   };
 
   const handleSubmit = async (data: any) => {
     try {
       const formData = new FormData();
 
-      for (const [key, value] of Object.entries(data)) {
-        if (key !== "image" && value !== undefined) {
+      // Adicionar dados do formulário
+      Object.entries(data).forEach(([key, value]) => {
+        if (key === "address" && typeof value === "object" && value !== null) {
+          // Serializar endereço como JSON
+          formData.append(key, JSON.stringify(value));
+        } else if (key !== "image" && value !== undefined && value !== null) {
           formData.append(key, String(value));
         }
-      }
+      });
 
-      const file = fileInputRef.current?.files?.[0];
-      if (file) {
-        formData.append("userImage", file);
+      // Adicionar imagem se fornecida
+      if (data.image) {
+        formData.append("userImage", data.image);
       }
 
       const updatedUser = await handleUpdateProfile(formData);
@@ -60,9 +60,7 @@ export default function ProfilePage() {
         Cookies.set("name", updatedUser.name, { expires: 1 });
       }
 
-      setEditMode(false);
       refetchProfile();
-      setPreviewImage(null);
     } catch (error) {
       console.error("Erro ao atualizar perfil:", error);
     }
@@ -103,69 +101,68 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="space-y-6 max-w-auto mx-auto p-1 md:p-2">
-      <PageTitle
-        title="Meu Perfil"
-        description="Gerencie suas informações pessoais e configurações de segurança"
-      />
+    <PageContainer>
+      <div className="space-y-8">
+        {/* Header da página
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+            {user.name}
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">
+            {user.role === "admin" ? "Administrador" : 
+             user.role === "employee" ? "Funcionário" : "Cliente"}
+          </p>
+        </div> */}
 
-      {editMode ? (
-        <div className="max-w-4xl mx-auto">
-          <ProfileEditForm
-            user={user}
-            onCancel={handleCancelEdit}
-            onSubmit={handleSubmit}
-            isSubmitting={isUpdatingProfile}
-            previewImage={previewImage}
-            setPreviewImage={setPreviewImage}
-          />
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Coluna da esquerda - Informações do perfil */}
-          <div className="">
-            <ProfileView
+        {/* Estatísticas do usuário */}
+        <ProfileStats userRole={user.role} />
+
+        {/* Grid principal */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Coluna da esquerda - Card do perfil */}
+          <div className="lg:col-span-1">
+            <ProfileCard
               user={user}
               getUserImageUrl={getUserImageUrl}
-              onStartEdit={handleStartEdit}
+              onEditClick={handleEditClick}
             />
           </div>
 
-          {/* Coluna da direita - Pedidos recentes (apenas para funcionários e admin) */}
-          {(user.role === "employee" || user.role === "admin") && (
-            <div>
-              <div className="bg-white rounded-lg border shadow-sm">
-                <div className="p-6 border-b">
-                  <h3 className="text-lg font-semibold text-[var(--secondary-red)]">
-                    Meus Pedidos Recentes
-                  </h3>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Últimos pedidos realizados por você
-                  </p>
-                </div>
-                
-                <div className="p-6">
-                  {isLoadingOrders ? (
-                    <div className="flex justify-center items-center py-8">
-                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                    </div>
-                  ) : employeeOrders.length > 0 ? (
-                    <RecentOrdersTable
-                      getEmployeeName={getEmployeeName}
-                      orders={employeeOrders}
-                      onViewDetails={handleViewOrderDetails}
-                    />
-                  ) : (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <p>Você ainda não realizou nenhum pedido.</p>
-                    </div>
-                  )}
-                </div>
+          {/* Coluna da direita - Pedidos recentes */}
+          <div className="lg:col-span-2">
+            {(user.role === "employee" || user.role === "admin") && (
+              <RecentOrdersCard
+                orders={employeeOrders}
+                getClientName={getClientName}
+                onViewDetails={handleViewOrderDetails}
+                isLoading={isLoadingOrders}
+              />
+            )}
+            
+            {user.role === "customer" && (
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg p-8 text-center">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                  Bem-vindo ao Sistema!
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Acesse as funcionalidades do sistema através do menu lateral.
+                  Você pode visualizar seus pedidos, débitos e muito mais.
+                </p>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
-      )}
-    </div>
+
+        {/* Dialog de edição */}
+        <ProfileEditDialog
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+          user={user}
+          onSubmit={handleSubmit}
+          isSubmitting={isUpdatingProfile}
+          getUserImageUrl={getUserImageUrl}
+        />
+      </div>
+    </PageContainer>
   );
 }

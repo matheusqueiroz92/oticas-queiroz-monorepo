@@ -22,7 +22,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PaginationItems } from "@/components/PaginationItems";
 import { formatCurrency, formatDate } from "@/app/_utils/formatters";
 import type { IPayment, PaymentStatus, PaymentType } from "@/app/_types/payment";
-import { CashRegisterStatus } from "@/components/CashRegister/CashRegisterStatus";
+import { CashRegisterStatus } from "@/components/cash-register/CashRegisterStatus";
 
 interface PaymentsListProps {
   payments: IPayment[];

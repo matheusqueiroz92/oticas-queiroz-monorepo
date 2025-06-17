@@ -12,6 +12,7 @@ const orderFormSchema = z
     hasResponsible: z.boolean().default(false),
     responsibleClientId: z.string().optional(),
     products: z.array(z.any()).min(1, "Pelo menos um produto é obrigatório"),
+    serviceOrder: z.number().optional(),
     paymentMethod: z.string().min(1, "Forma de pagamento é obrigatória"),
     paymentEntry: z.number().min(0).optional(),
     installments: z.number().min(1).optional(),
@@ -113,3 +114,5 @@ export const createOrderform = () => {
     }
   })
 };
+
+export { orderFormSchema };

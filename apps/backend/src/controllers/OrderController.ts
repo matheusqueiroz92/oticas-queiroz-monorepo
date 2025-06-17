@@ -123,6 +123,8 @@ export class OrderController {
 
   async getAllOrders(req: Request, res: Response): Promise<void> {
     try {
+  
+      
       const queryParams = orderQuerySchema.parse(req.query);
 
       const {
@@ -211,6 +213,7 @@ export class OrderController {
       }
       
       if (search) {
+  
         filters.search = search;
       }
       

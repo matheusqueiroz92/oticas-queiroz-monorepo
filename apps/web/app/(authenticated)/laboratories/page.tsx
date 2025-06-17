@@ -1,8 +1,8 @@
 "use client";
 
 import { useLaboratories } from "@/hooks/useLaboratories";
-import { LaboratoryTable } from "@/components/Laboratories/LaboratoryTable";
-import { PageTitle } from "@/components/PageTitle";
+import { LaboratoryTable } from "@/components/laboratories/LaboratoryTable";
+import { PageTitle } from "@/components/ui/page-title";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2, Beaker } from "lucide-react";

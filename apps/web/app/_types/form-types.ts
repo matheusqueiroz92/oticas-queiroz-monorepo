@@ -31,11 +31,11 @@ export const orderFormSchema = z.object({
   clientId: z.string().min(1, "Cliente é obrigatório"),
   employeeId: z.string().min(1, "ID do funcionário é obrigatório"),
   institutionId: z.string().optional(),
-  isInstitutionalOrder: z.boolean(),
+  isInstitutionalOrder: z.boolean().default(false),
   hasResponsible: z.boolean().default(false),
   responsibleClientId: z.string().optional(),
   products: z.array(z.any()).min(1, "Pelo menos um produto é obrigatório"),
-  serviceOerder: z.string().min(4, "Nº da Ordem de Serviço é obrigatório"),
+  serviceOrder: z.string().optional(),
   paymentMethod: z.string().min(1, "Forma de pagamento é obrigatória"),
   paymentStatus: z.enum(["pending", "paid", "partially_paid"]).default("pending"),
   paymentEntry: z.number().min(0).default(0),
@@ -53,14 +53,14 @@ export const orderFormSchema = z.object({
     clinicName: z.string().optional(),
     appointmentDate: z.string().optional(),
     rightEye: z.object({
-      sph: z.number().default(0),
-      cyl: z.number().default(0),
+      sph: z.string().default(""),
+      cyl: z.string().default(""),
       axis: z.number().default(0),
       pd: z.number().default(0),
     }),
     leftEye: z.object({
-      sph: z.number().default(0),
-      cyl: z.number().default(0),
+      sph: z.string().default(""),
+      cyl: z.string().default(""),
       axis: z.number().default(0),
       pd: z.number().default(0),
     }),
@@ -72,18 +72,44 @@ export const orderFormSchema = z.object({
     vh: z.number().default(0),
     sh: z.number().default(0),
   }),
+}).refine((data) => {
+  // Verificar se há lentes nos produtos
+  const hasLenses = data.products?.some((product: any) => 
+    product.productType === "lenses" || 
+    (product.name && product.name.toLowerCase().includes('lente'))
+  );
+  
+  // Se há lentes, a data de entrega é obrigatória e deve ser futura
+  if (hasLenses) {
+    if (!data.deliveryDate) {
+      return false;
+    }
+    
+    const deliveryDate = new Date(data.deliveryDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    deliveryDate.setHours(0, 0, 0, 0);
+    
+    return deliveryDate >= today;
+  }
+  
+  return true;
+}, {
+  message: "Pedidos com lentes exigem data de entrega futura",
+  path: ["deliveryDate"],
 });
 
 export interface OrderFormValues {
   clientId: string;
   employeeId: string;
-  institutionId: string;
+  institutionId?: string;
   isInstitutionalOrder: boolean;
   hasResponsible: boolean;
-  responsibleClientId: string;
+  responsibleClientId?: string;
   products: Product[];
-  serviceOrder: number;
+  serviceOrder?: string;
   paymentMethod: string;
+  paymentStatus: "pending" | "paid" | "partially_paid";
   paymentEntry: number;
   installments?: number;
   orderDate: string;
@@ -95,11 +121,21 @@ export interface OrderFormValues {
   discount: number;
   finalPrice: number;
   prescriptionData: {
-    doctorName: string;
-    clinicName: string;
-    appointmentDate: string;
-    rightEye: EyeData;
-    leftEye: EyeData;
+    doctorName?: string;
+    clinicName?: string;
+    appointmentDate?: string;
+    rightEye: {
+      sph: string;
+      cyl: string;
+      axis: number;
+      pd: number;
+    };
+    leftEye: {
+      sph: string;
+      cyl: string;
+      axis: number;
+      pd: number;
+    };
     nd: number;
     oc: number;
     addition: number;

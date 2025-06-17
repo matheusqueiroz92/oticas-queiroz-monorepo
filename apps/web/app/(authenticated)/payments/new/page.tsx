@@ -1,8 +1,8 @@
 "use client";
 
 import { usePayments } from "@/hooks/usePayments";
-import { PaymentForm } from "@/components/Payments/PaymentForm";
-import { MercadoPagoPaymentFlow } from "@/components/MercadoPago/MercadoPagoPaymentFlow";
+import { PaymentForm } from "@/components/payments/PaymentForm";
+import { MercadoPagoPaymentFlow } from "@/components/mercado-pago/MercadoPagoPaymentFlow";
 
 export default function NewPaymentPage() {
   const { usePaymentForm } = usePayments();

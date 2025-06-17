@@ -12,7 +12,7 @@ import {
   translatePaymentStatus,
   getPaymentStatusClass,
 } from "@/app/_utils/formatters";
-import { PaymentDetails } from "@/components/Payments/PaymentDetails";
+import { PaymentDetails } from "@/components/payments/PaymentDetails";
 import type { LegacyClient } from "@/app/_types/legacy-client";
 
 export default function PaymentDetailsPage() {

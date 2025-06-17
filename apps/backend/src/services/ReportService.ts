@@ -1,3 +1,4 @@
+import { RepositoryFactory } from "../repositories/RepositoryFactory";
 import { ReportModel } from "../models/ReportModel";
 import { ReportError } from "../interfaces/IReport";
 import type {
@@ -16,10 +17,19 @@ import { Payment } from "../schemas/PaymentSchema";
 import { Product } from "../schemas/ProductSchema";
 
 export class ReportService {
+  private userRepository: any;
+  private orderRepository: any;
+  private paymentRepository: any;
+  private productRepository: any;
   private reportModel: ReportModel;
   private reportCache = new Map<string, ReportData>();
 
   constructor() {
+    const factory = RepositoryFactory.getInstance();
+    this.userRepository = factory.getUserRepository();
+    this.orderRepository = factory.getOrderRepository();
+    this.paymentRepository = factory.getPaymentRepository();
+    this.productRepository = factory.getProductRepository();
     this.reportModel = new ReportModel();
   }
 
@@ -33,7 +43,7 @@ export class ReportService {
       const cacheKey = `${report.type}_${JSON.stringify(report.filters)}`;
       if (this.reportCache.has(cacheKey)) {
         const cachedData = this.reportCache.get(cacheKey);
-        await this.reportModel.updateStatus(reportId, "completed", cachedData);
+        await this.reportModel.updateStatus(reportId, "completed", cachedData!);
         return;
       }
   
@@ -67,12 +77,8 @@ export class ReportService {
   
       await this.reportModel.updateStatus(reportId, "completed", data);
     } catch (error) {
-      await this.reportModel.updateStatus(
-        reportId,
-        "error",
-        null,
-        error instanceof Error ? error.message : "Erro desconhecido"
-      );
+      const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
+      await this.reportModel.updateStatus(reportId, "error", null, errorMessage);
     }
   }
 
@@ -148,16 +154,23 @@ export class ReportService {
     const query: Record<string, unknown> = {};
 
     if (filters.productCategory && filters.productCategory.length > 0) {
-      query.category = { $in: filters.productCategory };
+      query.productType = { $in: filters.productCategory };
     }
 
     const categoryData = await Product.aggregate([
       { $match: query },
       {
         $group: {
-          _id: "$category",
+          _id: "$productType",
           count: { $sum: 1 },
-          value: { $sum: { $multiply: ["$price", "$stock"] } },
+          value: { 
+            $sum: { 
+              $multiply: [
+                { $ifNull: ["$currentPrice", "$basePrice"] }, 
+                { $ifNull: ["$stock", 0] }
+              ] 
+            } 
+          },
         },
       },
       { $sort: { value: -1 } },
@@ -169,18 +182,12 @@ export class ReportService {
       value: item.value,
     }));
 
-    const lowStockProducts = await Product.find({ stock: { $lt: 5 } })
-      .select("_id name stock")
-      .limit(10)
-      .lean();
-
-    const lowStock = lowStockProducts
-      .filter((product) => product.stock !== undefined)
-      .map((product) => ({
-        productId: product._id.toString(),
-        name: product.name,
-        stock: product.stock as number,
-      }));
+    const lowStockResult = await this.productRepository.findLowStock(5, 1, 10);
+    const lowStock = lowStockResult.items.map((product: any) => ({
+      productId: product._id?.toString() || product.id,
+      name: product.name,
+      stock: product.stock || 0,
+    }));
 
     const totalItems = byCategory.reduce((sum, item) => sum + item.count, 0);
     const totalValue = byCategory.reduce((sum, item) => sum + item.value, 0);
@@ -196,67 +203,87 @@ export class ReportService {
   private async generateCustomersReport(
     filters: ReportFilters
   ): Promise<CustomersReportData> {
-    const query: Record<string, unknown> = { role: "customer" };
+    const customersResult = await this.userRepository.findByRole("customer", 1, 1000);
+    const customers = customersResult.items;
 
-    const customersData = await User.aggregate([
+    let query: Record<string, unknown> = { role: "customer" };
+
+    if (filters.startDate && filters.endDate) {
+      query.createdAt = {
+        $gte: filters.startDate,
+        $lte: filters.endDate,
+      };
+    }
+
+    const periodData = await User.aggregate([
       { $match: query },
       {
         $group: {
+          _id: {
+            month: { $month: "$createdAt" },
+            year: { $year: "$createdAt" },
+          },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { "_id.year": 1, "_id.month": 1 } },
+    ]);
+
+    const byPeriod = periodData.map((item) => ({
+      period: `${item._id.year}-${String(item._id.month).padStart(2, "0")}`,
+      count: item.count,
+    }));
+
+    // Calcular clientes recorrentes
+    const recurringCustomersData = await Order.aggregate([
+      {
+        $group: {
+          _id: "$clientId",
+          orderCount: { $sum: 1 },
+          totalSpent: { $sum: "$totalPrice" },
+        },
+      },
+      { $match: { orderCount: { $gt: 1 } } },
+    ]);
+
+    // Calcular compra média
+    const averagePurchaseData = await Order.aggregate([
+      {
+        $group: {
           _id: null,
-          totalCustomers: { $sum: 1 },
-          averagePurchase: { $avg: "$totalPurchases" },
+          averagePurchase: { $avg: "$totalPrice" },
         },
       },
     ]);
 
-    const newCustomersQuery: Record<string, unknown> = {
-      role: "customer",
-    };
-
-    if (filters.startDate) {
-      newCustomersQuery.createdAt = { $gte: filters.startDate };
-    }
-
-    if (filters.endDate) {
-      if (newCustomersQuery.createdAt) {
-        newCustomersQuery.createdAt = {
-          ...(newCustomersQuery.createdAt as Record<string, unknown>),
-          $lte: filters.endDate,
-        };
-      } else {
-        newCustomersQuery.createdAt = { $lte: filters.endDate };
-      }
-    }
-
-    const newCustomers = await User.countDocuments(newCustomersQuery);
-
+    // Calcular dados por localização (estado)
     const locationData = await User.aggregate([
-      { $match: { role: "customer", address: { $exists: true, $ne: "" } } },
+      { $match: { role: "customer" } },
       {
         $group: {
-          _id: "$address",
+          _id: "$state",
           count: { $sum: 1 },
         },
       },
-      { $sort: { count: -1 } },
-      { $limit: 10 },
     ]);
 
     const byLocation: Record<string, number> = {};
     for (const item of locationData) {
-      byLocation[item._id] = item.count;
+      if (item._id) {
+        byLocation[item._id] = item.count;
+      }
     }
 
-    const recurringCustomers = await User.countDocuments({
-      role: "customer",
-      "purchases.1": { $exists: true },
-    });
+    const totalCustomers = customers.length;
+    const newCustomers = byPeriod.reduce((sum, item) => sum + item.count, 0);
+    const recurring = recurringCustomersData.length;
+    const averagePurchase = averagePurchaseData[0]?.averagePurchase || 0;
 
     return {
-      totalCustomers: customersData[0]?.totalCustomers ?? 0,
+      totalCustomers,
       newCustomers,
-      recurring: recurringCustomers,
-      averagePurchase: customersData[0]?.averagePurchase || 0,
+      recurring,
+      averagePurchase,
       byLocation,
     };
   }
@@ -267,7 +294,7 @@ export class ReportService {
     const query: Record<string, unknown> = {};
 
     if (filters.startDate && filters.endDate) {
-      query.createdAt = {
+      query.orderDate = {
         $gte: filters.startDate,
         $lte: filters.endDate,
       };
@@ -277,13 +304,31 @@ export class ReportService {
       query.status = { $in: filters.status };
     }
 
+    const statusData = await Order.aggregate([
+      { $match: query },
+      {
+        $group: {
+          _id: "$status",
+          count: { $sum: 1 },
+          value: { $sum: "$totalPrice" },
+        },
+      },
+    ]);
+
+    const byStatus: Record<string, number> = {};
+    let totalValue = 0;
+    for (const item of statusData) {
+      byStatus[item._id] = item.count;
+      totalValue += item.value;
+    }
+
     const periodData = await Order.aggregate([
       { $match: query },
       {
         $group: {
           _id: {
-            month: { $month: "$createdAt" },
-            year: { $year: "$createdAt" },
+            month: { $month: "$orderDate" },
+            year: { $year: "$orderDate" },
           },
           count: { $sum: 1 },
           value: { $sum: "$totalPrice" },
@@ -298,23 +343,7 @@ export class ReportService {
       value: item.value,
     }));
 
-    const statusData = await Order.aggregate([
-      { $match: query },
-      {
-        $group: {
-          _id: "$status",
-          count: { $sum: 1 },
-        },
-      },
-    ]);
-
-    const byStatus: Record<string, number> = {};
-    for (const item of statusData) {
-      byStatus[item._id] = item.count;
-    }
-
-    const totalOrders = byPeriod.reduce((sum, item) => sum + item.count, 0);
-    const totalValue = byPeriod.reduce((sum, item) => sum + item.value, 0);
+    const totalOrders = Object.values(byStatus).reduce((sum, count) => sum + count, 0);
     const averageValue = totalOrders > 0 ? totalValue / totalOrders : 0;
 
     return {
@@ -332,63 +361,81 @@ export class ReportService {
     const query: Record<string, unknown> = {};
 
     if (filters.startDate && filters.endDate) {
-      query.paymentDate = {
+      query.date = {
         $gte: filters.startDate,
         $lte: filters.endDate,
       };
     }
 
-    const periodData = await Payment.aggregate([
-      { $match: query },
+    const revenueData = await Payment.aggregate([
+      { $match: { ...query, type: "sale" } },
       {
         $group: {
           _id: {
-            month: { $month: "$paymentDate" },
-            year: { $year: "$paymentDate" },
-            type: "$type",
+            month: { $month: "$date" },
+            year: { $year: "$date" },
           },
-          amount: { $sum: "$amount" },
+          revenue: { $sum: "$amount" },
+          count: { $sum: 1 },
         },
       },
       { $sort: { "_id.year": 1, "_id.month": 1 } },
     ]);
 
-    const periodMap = new Map<string, { revenue: number; expenses: number }>();
-    for (const item of periodData) {
+    const expenseData = await Payment.aggregate([
+      { $match: { ...query, type: "expense" } },
+      {
+        $group: {
+          _id: {
+            month: { $month: "$date" },
+            year: { $year: "$date" },
+          },
+          expenses: { $sum: "$amount" },
+        },
+      },
+      { $sort: { "_id.year": 1, "_id.month": 1 } },
+    ]);
+
+    // Combinar dados de receita e despesas por período
+    const periodMap = new Map<string, { revenue: number; expenses: number; profit: number }>();
+    
+    revenueData.forEach((item) => {
       const period = `${item._id.year}-${String(item._id.month).padStart(2, "0")}`;
-      const entry = periodMap.get(period) ?? { revenue: 0, expenses: 0 };
+      periodMap.set(period, {
+        revenue: item.revenue,
+        expenses: 0,
+        profit: item.revenue,
+      });
+    });
 
-      if (item._id.type === "expense") {
-        entry.expenses += item.amount;
-      } else {
-        entry.revenue += item.amount;
-      }
-
-      periodMap.set(period, entry);
-    }
+    expenseData.forEach((item) => {
+      const period = `${item._id.year}-${String(item._id.month).padStart(2, "0")}`;
+      const existing = periodMap.get(period) || { revenue: 0, expenses: 0, profit: 0 };
+      existing.expenses = item.expenses;
+      existing.profit = existing.revenue - item.expenses;
+      periodMap.set(period, existing);
+    });
 
     const byPeriod = Array.from(periodMap.entries()).map(([period, data]) => ({
       period,
-      revenue: data.revenue,
-      expenses: data.expenses,
-      profit: data.revenue - data.expenses,
+      ...data,
     }));
 
+    // Dados por categoria de despesas
     const categoryData = await Payment.aggregate([
-      { $match: query },
+      { $match: { ...query, type: "expense" } },
       {
         $group: {
           _id: "$category",
-          amount: { $sum: "$amount" },
+          total: { $sum: "$amount" },
         },
       },
-      { $sort: { amount: -1 } },
     ]);
 
     const byCategory: Record<string, number> = {};
     for (const item of categoryData) {
       if (item._id) {
-        byCategory[item._id] = item.amount;
+        byCategory[item._id] = item.total;
       }
     }
 
@@ -420,7 +467,7 @@ export class ReportService {
       throw new ReportError("Data inicial não pode ser maior que data final");
     }
 
-    const report = await this.reportModel.create({
+    const reportData: Omit<IReport, "_id"> = {
       name,
       type,
       filters,
@@ -428,11 +475,12 @@ export class ReportService {
       format,
       status: "pending",
       data: null,
-    });
+    };
 
-    if (report?._id) {
-      this.generateReportData(report._id).catch(console.error);
-    }
+    const report = await this.reportModel.create(reportData);
+
+    // Executar geração de dados de forma assíncrona
+    setTimeout(() => this.generateReportData(report._id!), 100);
 
     return report;
   }
@@ -447,9 +495,47 @@ export class ReportService {
 
   async getUserReports(
     userId: string,
-    page?: number,
-    limit?: number
+    page = 1,
+    limit = 10
   ): Promise<{ reports: IReport[]; total: number }> {
-    return await this.reportModel.findByUser(userId, page, limit);
+    const result = await this.reportModel.findByUser(userId, page, limit);
+    return result;
+  }
+
+  async getSalesStats(startDate?: Date, endDate?: Date) {
+    const filters: ReportFilters = {};
+    if (startDate) filters.startDate = startDate;
+    if (endDate) filters.endDate = endDate;
+    
+    return this.generateSalesReport(filters);
+  }
+
+  async getInventoryStats() {
+    return this.generateInventoryReport({});
+  }
+
+  async getCustomerStats(startDate?: Date, endDate?: Date) {
+    const filters: ReportFilters = {};
+    if (startDate) filters.startDate = startDate;
+    if (endDate) filters.endDate = endDate;
+    
+    return this.generateCustomersReport(filters);
+  }
+
+  async getOrderStats(startDate?: Date, endDate?: Date, status?: string[]) {
+    const filters: ReportFilters = {};
+    if (startDate) filters.startDate = startDate;
+    if (endDate) filters.endDate = endDate;
+    if (status) filters.status = status;
+    
+    return this.generateOrdersReport(filters);
+  }
+
+  async getFinancialStats(startDate?: Date, endDate?: Date) {
+    const filters: ReportFilters = {};
+    if (startDate) filters.startDate = startDate;
+    if (endDate) filters.endDate = endDate;
+    
+    return this.generateFinancialReport(filters);
   }
 }

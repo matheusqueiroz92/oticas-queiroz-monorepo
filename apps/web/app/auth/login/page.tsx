@@ -21,6 +21,7 @@ import Cookies from "js-cookie";
 import axios from "axios";
 import { LoginFormData, loginSchema } from "@/schemas/login-schema";
 import { API_ROUTES } from "@/app/_constants/api-routes";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
@@ -106,9 +107,12 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-background">
-      <div className="hidden lg:flex lg:w-1/2 bg-[#2f67ff] relative">
-        <div className="absolute inset-0 bg-black/50" />
+    <div className="min-h-screen flex flex-col lg:flex-row bg-background relative">
+      <div className="absolute top-4 right-4 z-20">
+        <ThemeToggle />
+      </div>
+      <div className="hidden lg:flex lg:w-1/2 bg-[var(--primary-blue)] relative">
+        {/* <div className="absolute inset-0 bg-black/50" /> */}
         <div className="relative z-10 flex items-center justify-center w-full">
           <div className="text-center">
             <div className="w-[300px] h-[120px] mx-auto relative">
@@ -132,11 +136,6 @@ export default function LoginPage() {
             <p className="text-sm text-muted-foreground text-center">
               Entre com suas credenciais para acessar o sistema
             </p>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
-              <p className="text-xs text-blue-700 text-center">
-                <strong>Clientes:</strong> Use o número da sua O.S. como usuário e senha
-              </p>
-            </div>
           </CardHeader>
           <CardContent>
             {error && (
@@ -147,12 +146,12 @@ export default function LoginPage() {
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div className="space-y-2">
                 <label htmlFor="login" className="text-sm font-medium">
-                  Email, CPF ou Número da O.S.
+                  Email ou CPF
                 </label>
                 <Input
                   id="login"
                   type="text"
-                  placeholder="seu@email.com, CPF ou número da O.S."
+                  placeholder="seu@email.com ou CPF."
                   {...register("login")}
                   className={errors.login ? "border-destructive" : ""}
                 />
@@ -200,7 +199,7 @@ export default function LoginPage() {
           <CardFooter className="flex flex-col space-y-4">
             <Link
               href="/auth/forgot-password"
-              className="text-sm text-[#1e3a8a] hover:underline text-center w-full"
+              className="text-sm text-[var(--primary-blue)] hover:underline text-center w-full"
             >
               Esqueceu sua senha?
             </Link>

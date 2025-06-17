@@ -92,17 +92,17 @@ export default function OrderPaymentHistory({
       <CardContent className="p-3">
         <div className="space-y-3">
           <div className="flex justify-between text-sm border-b pb-2">
-            <span className="text-gray-600">Valor Total:</span>
+            <span className="text-foreground">Valor Total:</span>
             <span className="font-medium">{formatCurrency(finalPrice)}</span>
           </div>
           
           <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Total Pago:</span>
+            <span className="text-foreground">Total Pago:</span>
             <span className="font-medium text-green-600">{formatCurrency(totalPaid)}</span>
           </div>
           
           <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Valor Restante:</span>
+            <span className="text-foreground">Valor Restante:</span>
             <span className="font-medium text-blue-600">{formatCurrency(getRemainingAmount())}</span>
           </div>
           
@@ -110,14 +110,14 @@ export default function OrderPaymentHistory({
             <h4 className="text-xs font-medium border-b pb-1 mb-2">Pagamentos Registrados</h4>
             
             {error && (
-              <div className="flex items-center text-red-600 text-xs p-2 bg-red-50 rounded">
+              <div className="flex items-center text-red-600 text-xs p-2 bg-red-100/10 rounded">
                 <AlertCircle className="h-3.5 w-3.5 mr-1" />
                 {error}
               </div>
             )}
             
             {!error && payments.length === 0 && (
-              <div className="text-center py-3 text-sm text-gray-500 bg-gray-50 rounded">
+              <div className="text-center py-3 text-sm text-muted-foreground bg-muted rounded">
                 Não há registros de pagamentos
               </div>
             )}
@@ -127,7 +127,7 @@ export default function OrderPaymentHistory({
                 {payments.map((payment) => (
                   <div 
                     key={payment._id} 
-                    className="text-xs p-2 bg-gray-50 rounded border flex justify-between items-center"
+                    className="text-xs p-2 bg-muted rounded border flex justify-between items-center"
                   >
                     <div>
                       <div className="font-medium">
@@ -138,7 +138,7 @@ export default function OrderPaymentHistory({
                           </span>
                         )}
                       </div>
-                      <div className="text-gray-500 flex flex-col">
+                      <div className="text-muted-foreground flex flex-col">
                         <span>{formatDate(payment.date)}</span>
                         <span className="capitalize">
                           {payment.paymentMethod === "credit" ? "Cartão de Crédito" :

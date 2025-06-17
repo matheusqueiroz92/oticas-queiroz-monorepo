@@ -10,6 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PaginationItems } from "@/components/PaginationItems";
+import { Eye } from "lucide-react";
 
 interface UserTableProps {
   data: User[];
@@ -58,7 +59,7 @@ export function UserTable({
   return (
     <div className="space-y-4">
       <Table>
-        <TableHeader>
+        <TableHeader className="bg-gray-100 dark:bg-slate-800/50">
           <TableRow>
             {columns.map((column) => (
               <TableHead key={column.key}>{column.header}</TableHead>
@@ -73,7 +74,19 @@ export function UserTable({
                 <TableCell key={column.key}>
                   {column.render
                     ? column.render(item)
-                    : item[column.key as keyof User]}
+                    : (() => {
+                        const value = item[column.key as keyof User];
+                        // Se for Date, formata para string legível
+                        if (value instanceof Date) {
+                          return value.toLocaleDateString("pt-BR");
+                        }
+                        // Se for undefined ou null, retorna vazio
+                        if (value === undefined || value === null) {
+                          return "";
+                        }
+                        // Para outros tipos, converte para string
+                        return String(value);
+                      })()}
                 </TableCell>
               ))}
               <TableCell>
@@ -81,6 +94,7 @@ export function UserTable({
                   variant="outline"
                   onClick={() => onDetailsClick(item._id)}
                 >
+                  <Eye className="w-4 h-4 mr-2" />
                   Detalhes
                 </Button>
               </TableCell>
@@ -88,16 +102,19 @@ export function UserTable({
           ))}
         </TableBody>
       </Table>
+      
+      <div className="bg-gray-100 dark:bg-slate-800/50 w-full p-1">
+          {(totalItems ?? 0) > 10 && (
+            <PaginationItems
+              currentPage={currentPage}
+              totalPages={totalPages}
+              setCurrentPage={setCurrentPage}
+              totalItems={totalItems}
+              pageSize={pageSize}
+            />
+          )}
+      </div>
 
-      {(totalItems ?? 0) > 10 && (
-        <PaginationItems
-          currentPage={currentPage}
-          totalPages={totalPages}
-          setCurrentPage={setCurrentPage}
-          totalItems={totalItems}
-          pageSize={pageSize}
-        />
-      )}
     </div>
   );
 };

@@ -4,7 +4,7 @@ import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { useLaboratories } from "@/hooks/useLaboratories";
-import { LaboratoryForm } from "@/components/Laboratories/LaboratoryForm";
+import { LaboratoryForm } from "@/components/laboratories/LaboratoryForm";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function EditLaboratoryPage() {

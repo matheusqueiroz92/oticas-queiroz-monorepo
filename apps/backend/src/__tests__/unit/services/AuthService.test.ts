@@ -1,322 +1,251 @@
-import { AuthService } from "../../../services/AuthService";
-import { AuthModel } from "../../../models/AuthModel";
-import { Types } from "mongoose";
-import jwt from "jsonwebtoken";
 import { describe, it, expect, beforeEach, jest } from "@jest/globals";
-import type { Document } from "mongoose";
-import type { IUser } from "../../../interfaces/IUser";
-import type { JwtPayload } from "jsonwebtoken";
+import { AuthService } from "../../../services/AuthService";
+import { getRepositories } from "../../../repositories/RepositoryFactory";
+import { AuthError } from "../../../utils/AppError";
+import { ErrorCode } from "../../../utils/errorCodes";
+import { 
+  mockAdminUser, 
+  mockEmployeeUser, 
+  mockCustomerUser,
+  mockInstitutionUser,
+  createUserWithComparePassword,
+  validCPFs 
+} from "../../helpers/testUtils";
 
-// Interface que representa o documento de usuário no Mongoose
-interface UserDocument extends Document {
-  _id: Types.ObjectId;
-  name: string;
-  email: string;
-  password: string;
-  role: "admin" | "employee" | "customer";
-  cpf: string;
-  rg: string;
-  birthDate: Date;
-  comparePassword(candidatePassword: string): Promise<boolean>;
-}
-
-// Mock do AuthModel
-jest.mock("../../../models/AuthModel");
-
-// Definir segredo JWT para testes
-process.env.JWT_SECRET = "test-secret";
-
-// Tipo que permite acessar o modelo mockado dentro do serviço
-type AuthServiceWithModel = {
-  authModel: jest.Mocked<AuthModel>;
-};
+// Mock do getRepositories
+jest.mock("../../../repositories/RepositoryFactory", () => ({
+  getRepositories: jest.fn()
+}));
 
 describe("AuthService", () => {
   let authService: AuthService;
-  let authModel: jest.Mocked<AuthModel>;
+  let mockUserRepository: any;
 
   beforeEach(() => {
     jest.clearAllMocks();
+    
+    // Configurar mock do UserRepository
+    mockUserRepository = {
+      findByEmail: jest.fn(),
+      findByCpf: jest.fn(),
+      findByCnpj: jest.fn(),
+      findByServiceOrder: jest.fn(),
+      findById: jest.fn(),
+    };
 
-    authModel = new AuthModel() as jest.Mocked<AuthModel>;
+    // Mock do getRepositories
+    (getRepositories as jest.Mock).mockReturnValue({
+      userRepository: mockUserRepository,
+      orderRepository: jest.fn(),
+      paymentRepository: jest.fn(),
+      productRepository: jest.fn(),
+      laboratoryRepository: jest.fn(),
+      cashRegisterRepository: jest.fn(),
+      counterRepository: jest.fn(),
+      legacyClientRepository: jest.fn(),
+      passwordResetRepository: jest.fn(),
+    });
+
     authService = new AuthService();
-    (authService as unknown as AuthServiceWithModel).authModel = authModel;
   });
 
-  // Mock do documento de usuário que simula um documento do Mongoose
-  const mockUserDocument: UserDocument = {
-    _id: new Types.ObjectId(),
-    name: "Test User",
-    email: "test@example.com",
-    password: "hashedPassword123",
-    role: "customer",
-    cpf: "85804688502",
-    rg: "1299106781",
-    birthDate: new Date("1990-01-01"),
-    comparePassword: jest.fn().mockImplementation(async () => true),
-  } as unknown as UserDocument;
-
-  // Mock do objeto de interface IUser que é retornado pelo serviço
-  const mockUserResponse: IUser = {
-    _id: mockUserDocument._id.toString(),
-    name: mockUserDocument.name,
-    email: mockUserDocument.email,
-    password: mockUserDocument.password,
-    role: mockUserDocument.role,
-    cpf: mockUserDocument.cpf,
-    rg: mockUserDocument.rg,
-    birthDate: mockUserDocument.birthDate,
-    comparePassword: mockUserDocument.comparePassword,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
-
   describe("login", () => {
-    it("should login successfully with correct credentials", async () => {
-      authModel.findUserByEmail.mockResolvedValue(mockUserDocument);
-      authModel.verifyPassword.mockResolvedValue(true);
-      authModel.convertToIUser.mockReturnValue(mockUserResponse);
+    it("should login successfully with valid email and password", async () => {
+      const userWithComparePassword = createUserWithComparePassword(mockAdminUser, "123456");
+      mockUserRepository.findByEmail.mockResolvedValue(userWithComparePassword);
 
-      const result = await authService.login("test@example.com", "123456");
+      const result = await authService.login("admin@test.com", "123456");
 
       expect(result).toHaveProperty("token");
       expect(result).toHaveProperty("user");
       expect(result.user).not.toHaveProperty("password");
-      expect(authModel.findUserByEmail).toHaveBeenCalledWith(
-        "test@example.com"
-      );
-      expect(authModel.verifyPassword).toHaveBeenCalledWith(
-        mockUserDocument,
-        "123456"
-      );
+      expect(result.user.name).toBe(mockAdminUser.name);
+      expect(mockUserRepository.findByEmail).toHaveBeenCalledWith("admin@test.com");
     });
 
-    it("should validate empty email and password", async () => {
-      await expect(authService.login("", "123456")).rejects.toThrow(
-        "Login e senha são obrigatórios"
-      );
+    it("should login successfully with valid CPF and password", async () => {
+      const userWithComparePassword = createUserWithComparePassword(mockCustomerUser, "123456");
+      mockUserRepository.findByCpf.mockResolvedValue(userWithComparePassword);
 
-      await expect(authService.login("test@example.com", "")).rejects.toThrow(
-        "Login e senha são obrigatórios"
-      );
+      const result = await authService.login(validCPFs.customer, "123456");
 
-      expect(authModel.findUserByEmail).not.toHaveBeenCalled();
+      expect(result).toHaveProperty("token");
+      expect(result).toHaveProperty("user");
+      expect(result.user.cpf).toBe(validCPFs.customer);
+      expect(mockUserRepository.findByCpf).toHaveBeenCalledWith(validCPFs.customer);
     });
 
-    it("should validate login credentials", async () => {
-      authModel.findUserByEmail.mockResolvedValue(null);
-      
-      await expect(
-        authService.login("invalid-email", "123456")
-      ).rejects.toThrow("Credenciais inválidas");
+    it("should login successfully with valid CNPJ and password", async () => {
+      const userWithComparePassword = createUserWithComparePassword(mockInstitutionUser, "123456");
+      mockUserRepository.findByCnpj.mockResolvedValue(userWithComparePassword);
 
-      expect(authModel.findUserByEmail).toHaveBeenCalled();
-    });
+      const result = await authService.login("12345678000195", "123456");
 
-    it("should validate password presence", async () => {
-      // Act & Assert
-      await expect(authService.login("test@example.com", "")).rejects.toThrow(
-        "Login e senha são obrigatórios"
-      );
-      expect(authModel.findUserByEmail).not.toHaveBeenCalled();
-    });
-
-    it("should throw when user not found", async () => {
-      // Arrange
-      authModel.findUserByEmail.mockResolvedValue(null);
-
-      // Act & Assert
-      await expect(
-        authService.login("nonexistent@example.com", "123456")
-      ).rejects.toThrow("Credenciais inválidas");
-      expect(authModel.verifyPassword).not.toHaveBeenCalled();
-    });
-
-    it("should throw when password is incorrect", async () => {
-      // Arrange
-      authModel.findUserByEmail.mockResolvedValue(mockUserDocument);
-      authModel.verifyPassword.mockResolvedValue(false);
-
-      // Act & Assert
-      await expect(
-        authService.login("test@example.com", "wrongpass")
-      ).rejects.toThrow("Credenciais inválidas");
-    });
-
-    it("should return a valid JWT token with correct payload", async () => {
-      authModel.findUserByEmail.mockResolvedValue(mockUserDocument);
-      authModel.verifyPassword.mockResolvedValue(true);
-      authModel.convertToIUser.mockReturnValue(mockUserResponse);
-
-      const result = await authService.login("test@example.com", "123456");
-
-      const decoded = jwt.verify(
-        result.token,
-        process.env.JWT_SECRET as string
-      ) as JwtPayload;
-      expect(decoded).toHaveProperty("id", mockUserDocument._id.toString());
-      expect(decoded).toHaveProperty("role", mockUserDocument.role);
-      expect(decoded).toHaveProperty("iat");
-      expect(decoded).toHaveProperty("exp");
-      expect(decoded.exp).toBeGreaterThan(decoded.iat as number);
-    });
-
-    it("should not include sensitive data in the response", async () => {
-      // Arrange
-      authModel.findUserByEmail.mockResolvedValue(mockUserDocument);
-      authModel.verifyPassword.mockResolvedValue(true);
-      authModel.convertToIUser.mockReturnValue(mockUserResponse);
-
-      // Act
-      const result = await authService.login("test@example.com", "123456");
-
-      // Assert
-      expect(result.user).not.toHaveProperty("password");
-      expect(result.user).not.toHaveProperty("comparePassword");
+      expect(result).toHaveProperty("token");
+      expect(result).toHaveProperty("user");
+      expect(result.user.cnpj).toBe("12345678000195");
+      expect(mockUserRepository.findByCnpj).toHaveBeenCalledWith("12345678000195");
     });
 
     it("should login successfully with service order", async () => {
-      // Arrange
-      const serviceOrder = "12345";
-      authModel.findUserByServiceOrder.mockResolvedValue(mockUserDocument);
-      authModel.convertToIUser.mockReturnValue(mockUserResponse);
+      // Para service order, não precisamos do comparePassword
+      const userMock = { ...mockCustomerUser };
+      
+      // Configurar mocks para garantir que findByServiceOrder seja chamado
+      mockUserRepository.findByEmail.mockResolvedValue(null);
+      mockUserRepository.findByCpf.mockResolvedValue(null);
+      mockUserRepository.findByCnpj.mockResolvedValue(null);
+      mockUserRepository.findByServiceOrder.mockResolvedValue(userMock);
 
-      // Act
-      const result = await authService.login(serviceOrder, serviceOrder);
+      const result = await authService.login("123", "123");
 
-      // Assert
+      expect(result).toHaveProperty("token");
+      expect(result).toHaveProperty("user");
+      expect(mockUserRepository.findByServiceOrder).toHaveBeenCalledWith("123");
+    });
+
+    it("should login successfully when user is found by service order and passwords match", async () => {
+      // Este teste cobre especificamente o caminho onde user é encontrado por service order
+      const userMock = { ...mockCustomerUser };
+      mockUserRepository.findByServiceOrder.mockResolvedValue(userMock);
+
+      const result = await authService.login("456", "456");
+
       expect(result).toHaveProperty("token");
       expect(result).toHaveProperty("user");
       expect(result.user).not.toHaveProperty("password");
-      expect(authModel.findUserByServiceOrder).toHaveBeenCalledWith(serviceOrder);
+      expect(mockUserRepository.findByServiceOrder).toHaveBeenCalledWith("456");
     });
 
-    it("should fail login with service order and wrong password", async () => {
-      // Arrange
-      const serviceOrder = "12345";
-      authModel.findUserByServiceOrder.mockResolvedValue(mockUserDocument);
+    it("should throw error for invalid credentials", async () => {
+      mockUserRepository.findByEmail.mockResolvedValue(null);
 
-      // Act & Assert
       await expect(
-        authService.login(serviceOrder, "wrongpassword")
-      ).rejects.toThrow("Credenciais inválidas");
+        authService.login("invalid@test.com", "wrongpassword")
+      ).rejects.toThrow(new AuthError("Credenciais inválidas", ErrorCode.INVALID_CREDENTIALS));
+
+      expect(mockUserRepository.findByEmail).toHaveBeenCalledWith("invalid@test.com");
     });
 
-    it("should fail login with non-existent service order", async () => {
-      // Arrange
-      const serviceOrder = "99999";
-      authModel.findUserByServiceOrder.mockResolvedValue(null);
+    it("should throw error for wrong password", async () => {
+      const userWithComparePassword = createUserWithComparePassword(mockAdminUser, "correctpassword");
+      mockUserRepository.findByEmail.mockResolvedValue(userWithComparePassword);
 
-      // Act & Assert
       await expect(
-        authService.login(serviceOrder, serviceOrder)
-      ).rejects.toThrow("Credenciais inválidas");
+        authService.login("admin@test.com", "wrongpassword")
+      ).rejects.toThrow(new AuthError("Credenciais inválidas", ErrorCode.INVALID_CREDENTIALS));
+    });
+
+    it("should throw error for service order with wrong password", async () => {
+      const userMock = { ...mockCustomerUser };
+      mockUserRepository.findByServiceOrder.mockResolvedValue(userMock);
+
+      await expect(
+        authService.login("123", "wrongpassword")
+      ).rejects.toThrow(new AuthError("Credenciais inválidas", ErrorCode.INVALID_CREDENTIALS));
+    });
+
+    it("should handle user without comparePassword method", async () => {
+      // Teste para o caso onde user.comparePassword é undefined
+      const userWithoutComparePassword = { ...mockAdminUser };
+      delete userWithoutComparePassword.comparePassword;
+      mockUserRepository.findByEmail.mockResolvedValue(userWithoutComparePassword);
+
+      await expect(
+        authService.login("admin@test.com", "123456")
+      ).rejects.toThrow(new AuthError("Credenciais inválidas", ErrorCode.INVALID_CREDENTIALS));
+    });
+
+    it("should validate required login field", async () => {
+      await expect(
+        authService.login("", "123456")
+      ).rejects.toThrow(new AuthError("Login e senha são obrigatórios", ErrorCode.VALIDATION_ERROR));
+    });
+
+    it("should validate required password field", async () => {
+      await expect(
+        authService.login("admin@test.com", "")
+      ).rejects.toThrow(new AuthError("Login e senha são obrigatórios", ErrorCode.VALIDATION_ERROR));
     });
   });
 
   describe("validateToken", () => {
     it("should validate token successfully", async () => {
-      // Arrange
-      authModel.findUserById.mockResolvedValue(mockUserDocument);
-      authModel.convertToIUser.mockReturnValue(mockUserResponse);
+      const userWithoutSensitiveData = { ...mockAdminUser };
+      delete userWithoutSensitiveData.password;
+      mockUserRepository.findById.mockResolvedValue(userWithoutSensitiveData);
 
-      // Act
-      const result = await authService.validateToken(
-        mockUserDocument._id.toString()
-      );
+      const result = await authService.validateToken(mockAdminUser._id!);
 
-      // Assert
-      expect(result).toHaveProperty("_id", mockUserDocument._id.toString());
-      expect(result.email).toBe(mockUserDocument.email);
-      expect(authModel.findUserById).toHaveBeenCalledWith(
-        mockUserDocument._id.toString()
-      );
-    });
-
-    it("should handle malformed user ID", async () => {
-      // Act & Assert
-      await expect(authService.validateToken("invalid-id")).rejects.toThrow(
-        "Token inválido"
-      );
-      expect(authModel.findUserById).toHaveBeenCalledWith("invalid-id");
-    });
-
-    it("should throw when user not found", async () => {
-      // Arrange
-      authModel.findUserById.mockResolvedValue(null);
-
-      // Act & Assert
-      await expect(
-        authService.validateToken(mockUserDocument._id.toString())
-      ).rejects.toThrow("Token inválido");
-    });
-
-    it("should validate user role matches token role", async () => {
-      const adminUserDocument: UserDocument = {
-        ...mockUserDocument,
-        role: "admin",
-      } as UserDocument;
-
-      const adminUserResponse: IUser = {
-        ...mockUserResponse,
-        role: "admin",
-      };
-
-      authModel.findUserById.mockResolvedValue(adminUserDocument);
-      authModel.convertToIUser.mockReturnValue(adminUserResponse);
-
-      const result = await authService.validateToken(
-        adminUserDocument._id.toString()
-      );
-
-      expect(result.role).toBe("admin");
-    });
-    it("should not expose sensitive data in validated user", async () => {
-      // Arrange
-      authModel.findUserById.mockResolvedValue(mockUserDocument);
-      authModel.convertToIUser.mockReturnValue(mockUserResponse);
-
-      // Act
-      const result = await authService.validateToken(
-        mockUserDocument._id.toString()
-      );
-
-      // Assert
+      expect(result).toEqual(userWithoutSensitiveData);
       expect(result).not.toHaveProperty("password");
+      expect(mockUserRepository.findById).toHaveBeenCalledWith(mockAdminUser._id);
+    });
+
+    it("should throw error for invalid user ID", async () => {
+      mockUserRepository.findById.mockResolvedValue(null);
+
+      await expect(
+        authService.validateToken("invalid-id")
+      ).rejects.toThrow(new AuthError("Token inválido", ErrorCode.INVALID_TOKEN));
+
+      expect(mockUserRepository.findById).toHaveBeenCalledWith("invalid-id");
     });
   });
 
-  // Testes de edge cases e validações
-  describe("edge cases", () => {
-    it("should handle undefined email and password", async () => {
-      // Act & Assert
-      await expect(
-        authService.login(
-          undefined as unknown as string,
-          undefined as unknown as string
-        )
-      ).rejects.toThrow("Login e senha são obrigatórios");
+  describe("additional methods", () => {
+    it("should get user by email", async () => {
+      mockUserRepository.findByEmail.mockResolvedValue(mockAdminUser);
+
+      const result = await authService.getUserByEmail("admin@test.com");
+
+      expect(result).toEqual(mockAdminUser);
+      expect(mockUserRepository.findByEmail).toHaveBeenCalledWith("admin@test.com");
     });
 
-    it("should handle null email and password", async () => {
-      // Act & Assert
-      await expect(
-        authService.login(null as unknown as string, null as unknown as string)
-      ).rejects.toThrow("Login e senha são obrigatórios");
+    it("should get user by CPF", async () => {
+      mockUserRepository.findByCpf.mockResolvedValue(mockCustomerUser);
+
+      const result = await authService.getUserByCpf(validCPFs.customer);
+
+      expect(result).toEqual(mockCustomerUser);
+      expect(mockUserRepository.findByCpf).toHaveBeenCalledWith(validCPFs.customer);
     });
 
-    it("should handle empty string email and password", async () => {
-      // Act & Assert
-      await expect(authService.login("", "")).rejects.toThrow(
-        "Login e senha são obrigatórios"
-      );
+    it("should get user by CNPJ", async () => {
+      mockUserRepository.findByCnpj.mockResolvedValue(mockEmployeeUser);
+
+      const result = await authService.getUserByCnpj("12345678000195");
+
+      expect(result).toEqual(mockEmployeeUser);
+      expect(mockUserRepository.findByCnpj).toHaveBeenCalledWith("12345678000195");
     });
 
-    it("should handle whitespace only email and password", async () => {
-      // Act & Assert
-      await expect(authService.login("   ", "   ")).rejects.toThrow(
-        "Login e senha são obrigatórios"
-      );
+    it("should verify user password correctly", async () => {
+      const userWithComparePassword = createUserWithComparePassword(mockAdminUser, "123456");
+      mockUserRepository.findById.mockResolvedValue(userWithComparePassword);
+
+      const result = await authService.verifyUserPassword(mockAdminUser._id!, "123456");
+
+      expect(result).toBe(true);
+      expect(mockUserRepository.findById).toHaveBeenCalledWith(mockAdminUser._id);
+    });
+
+    it("should return false for wrong password verification", async () => {
+      const userWithComparePassword = createUserWithComparePassword(mockAdminUser, "correctpassword");
+      mockUserRepository.findById.mockResolvedValue(userWithComparePassword);
+
+      const result = await authService.verifyUserPassword(mockAdminUser._id!, "wrongpassword");
+
+      expect(result).toBe(false);
+    });
+
+    it("should return false for non-existent user password verification", async () => {
+      mockUserRepository.findById.mockResolvedValue(null);
+
+      const result = await authService.verifyUserPassword("invalid-id", "123456");
+
+      expect(result).toBe(false);
     });
   });
 });

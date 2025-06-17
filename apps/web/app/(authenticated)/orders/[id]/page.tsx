@@ -3,7 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import { useOrders } from "@/hooks/useOrders";
 import { useToast } from "@/hooks/useToast";
-import OrderDetails from "@/components/Orders/OrderDetails";
+import OrderDetails from "@/components/orders/OrderDetails";
 import { customBadgeStyles } from "@/app/_utils/custom-badge-styles";
 
 export default function OrderDetailsPage() {

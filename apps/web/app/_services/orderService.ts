@@ -90,6 +90,7 @@ export async function getAllOrders(filters: OrderFilters = {}): Promise<{
         'X-Timestamp': Date.now().toString()
       }
     };
+    
     const response = await api.get(API_ROUTES.ORDERS.LIST, config);
 
     let rawOrders: any[] = [];
@@ -101,11 +102,21 @@ export async function getAllOrders(filters: OrderFilters = {}): Promise<{
       rawOrders = response.data.orders;
       pagination = response.data.pagination;
     }
+    
     const orders = normalizeOrders(rawOrders);
 
     return { orders, pagination };
   } catch (error) {
     console.error("Erro ao buscar pedidos:", error);
+    
+    if (axios.isAxiosError(error) && error.response) {
+      console.error("Dados da resposta de erro:", {
+        status: error.response.status,
+        data: error.response.data,
+        url: error.config?.url
+      });
+    }
+    
     return { orders: [] };
   }
 }

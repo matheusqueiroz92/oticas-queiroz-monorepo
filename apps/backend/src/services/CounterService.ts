@@ -1,7 +1,14 @@
-import { Counter } from "../schemas/CounterSchema";
+import { RepositoryFactory } from "../repositories/RepositoryFactory";
+import type { ICounterRepository } from "../repositories/interfaces/ICounterRepository";
 import mongoose from "mongoose";
 
 export class CounterService {
+  private counterRepository: ICounterRepository;
+
+  constructor() {
+    this.counterRepository = RepositoryFactory.getInstance().getCounterRepository();
+  }
+
   /**
    * Obtém o próximo número da sequência para um contador específico
    * @param counterId ID do contador (ex: 'serviceOrder')
@@ -12,36 +19,8 @@ export class CounterService {
     counterId: string, 
     startValue: number = 300000
   ): Promise<number> {
-    try {
-      // Verificar se o contador existe
-      let counter = await Counter.findById(counterId);
-      
-      if (!counter) {
-        // Se não existe, criar com o valor inicial
-        console.log(`Criando novo contador ${counterId} com valor inicial ${startValue}`);
-        counter = new Counter({
-          _id: counterId,
-          sequence: startValue
-        });
-        await counter.save();
-        return startValue;
-      }
-      
-      // Se existe, incrementar
-      const result = await Counter.findOneAndUpdate(
-        { _id: counterId },
-        { $inc: { sequence: 1 } },
-        { 
-          new: true, // Retorna o documento atualizado
-          runValidators: true
-        }
-      );
-
-      return result?.sequence || startValue;
-    } catch (error) {
-      console.error(`Erro ao obter próximo número de sequência para ${counterId}:`, error);
-      throw new Error(`Falha ao gerar número de sequência: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
-    }
+    const service = new CounterService();
+    return service.counterRepository.getNextSequence(counterId, startValue);
   }
 
   /**
@@ -52,37 +31,8 @@ export class CounterService {
     session: mongoose.ClientSession,
     startValue: number = 300000
   ): Promise<number> {
-    try {
-      // Verificar se o contador existe
-      let counter = await Counter.findById(counterId).session(session);
-      
-      if (!counter) {
-        // Se não existe, criar com o valor inicial
-        console.log(`Criando novo contador ${counterId} com valor inicial ${startValue} (com sessão)`);
-        counter = new Counter({
-          _id: counterId,
-          sequence: startValue
-        });
-        await counter.save({ session });
-        return startValue;
-      }
-      
-      // Se existe, incrementar
-      const result = await Counter.findOneAndUpdate(
-        { _id: counterId },
-        { $inc: { sequence: 1 } },
-        { 
-          new: true,
-          runValidators: true,
-          session
-        }
-      );
-
-      return result?.sequence || startValue;
-    } catch (error) {
-      console.error(`Erro ao obter próximo número de sequência para ${counterId} com sessão:`, error);
-      throw new Error(`Falha ao gerar número de sequência: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
-    }
+    const service = new CounterService();
+    return service.counterRepository.getNextSequenceWithSession(counterId, session, startValue);
   }
 
   /**
@@ -91,19 +41,8 @@ export class CounterService {
    * @returns Promise com o valor atual ou null se não existir
    */
   static async getCurrentSequence(counterId: string): Promise<number | null> {
-    try {
-      const counter = await Counter.findById(counterId);
-      if (!counter) {
-        console.log(`Contador ${counterId} não existe`);
-        return null;
-      }
-      
-      console.log(`Valor atual do contador ${counterId}:`, counter.sequence);
-      return counter.sequence;
-    } catch (error) {
-      console.error(`Erro ao obter sequência atual para ${counterId}:`, error);
-      return null;
-    }
+    const service = new CounterService();
+    return service.counterRepository.getCurrentSequence(counterId);
   }
 
   /**
@@ -113,20 +52,74 @@ export class CounterService {
    * @returns Promise<boolean> indicando sucesso
    */
   static async resetCounter(counterId: string, value: number): Promise<boolean> {
-    try {
-      console.log(`Resetando contador ${counterId} para valor ${value}`);
-      
-      await Counter.findOneAndUpdate(
-        { _id: counterId },
-        { sequence: value },
-        { upsert: true, runValidators: true }
-      );
-      
-      console.log(`Contador ${counterId} resetado com sucesso para ${value}`);
-      return true;
-    } catch (error) {
-      console.error(`Erro ao resetar contador ${counterId}:`, error);
-      return false;
-    }
+    const service = new CounterService();
+    return service.counterRepository.resetCounter(counterId, value);
+  }
+
+  // Novos métodos usando funcionalidades do repository
+  /**
+   * Cria um novo contador
+   * @param counterId ID do contador
+   * @param initialValue Valor inicial
+   * @returns Promise com o counter criado
+   */
+  static async createCounter(counterId: string, initialValue: number = 300000) {
+    const service = new CounterService();
+    return service.counterRepository.createCounter(counterId, initialValue);
+  }
+
+  /**
+   * Verifica se um contador existe
+   * @param counterId ID do contador
+   * @returns Promise<boolean> indicando se existe
+   */
+  static async exists(counterId: string): Promise<boolean> {
+    const service = new CounterService();
+    return service.counterRepository.exists(counterId);
+  }
+
+  /**
+   * Lista todos os contadores
+   * @returns Promise com array de contadores
+   */
+  static async findAll() {
+    const service = new CounterService();
+    return service.counterRepository.findAll();
+  }
+
+  /**
+   * Remove um contador
+   * @param counterId ID do contador
+   * @returns Promise<boolean> indicando sucesso
+   */
+  static async deleteCounter(counterId: string): Promise<boolean> {
+    const service = new CounterService();
+    return service.counterRepository.deleteCounter(counterId);
+  }
+
+  // Métodos de instância para uso em outros serviços
+  /**
+   * Obtém próxima sequência (método de instância)
+   */
+  async getNextSequenceInstance(counterId: string, startValue: number = 300000): Promise<number> {
+    return this.counterRepository.getNextSequence(counterId, startValue);
+  }
+
+  /**
+   * Obtém próxima sequência com sessão (método de instância)
+   */
+  async getNextSequenceWithSessionInstance(
+    counterId: string,
+    session: mongoose.ClientSession,
+    startValue: number = 300000
+  ): Promise<number> {
+    return this.counterRepository.getNextSequenceWithSession(counterId, session, startValue);
+  }
+
+  /**
+   * Obtém valor atual (método de instância)
+   */
+  async getCurrentSequenceInstance(counterId: string): Promise<number | null> {
+    return this.counterRepository.getCurrentSequence(counterId);
   }
 }

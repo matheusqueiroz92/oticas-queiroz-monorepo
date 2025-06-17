@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { PageTitle } from "@/components/PageTitle";
+import { PageTitle } from "@/components/ui/page-title";
 import { Input } from "@/components/ui/input";
 import { PaginationItems } from "@/components/PaginationItems";
 import { useRouter } from "next/navigation";
 import { useLegacyClients } from "@/hooks/useLegacyClients";
-import { LegacyClientsTable } from "@/components/LegacyClients/LegacyClientsTable";
+import { LegacyClientsTable } from "@/components/legacy-clients/LegacyClientsTable";
 import { Search, Plus } from "lucide-react";
 import {
   Card,

@@ -47,7 +47,7 @@ export function useProducts() {
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: QUERY_KEYS.PRODUCTS.PAGINATED(currentPage, filters),
-    queryFn: () => getAllProducts({ ...filters, page: currentPage, limit: 10 }),
+    queryFn: () => getAllProducts({ ...filters, page: currentPage, limit: 15 }),
     placeholderData: (prevData) => prevData,
   });
 

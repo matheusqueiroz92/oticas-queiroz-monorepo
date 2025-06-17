@@ -32,7 +32,7 @@ import {
   Clock,
 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/app/_utils/formatters";
-import { PageTitle } from "@/components/PageTitle";
+import { PageTitle } from "@/components/ui/page-title";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { 
   Dialog,

@@ -7,13 +7,13 @@ import { Loader2, FileX, RefreshCw, Filter, Search, X, User } from "lucide-react
 import { useOrders } from "@/hooks/useOrders";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/useToast";
-import { OrderExportButton } from "@/components/Orders/exports/OrderExportButton";
-import { OrderFilters } from "@/components/Orders/OrderFilters";
-import { OrdersList } from "@/components/Orders/OrdersList";
+import { OrderExportButton } from "@/components/orders/exports/OrderExportButton";
+import { OrderFilters } from "@/components/orders/OrderFilters";
+import { OrdersList } from "@/components/orders/OrdersList";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { Order } from "@/app/_types/order";
 import { formatCurrency, formatDate } from "@/app/_utils/formatters";
-import { PageTitle } from "@/components/PageTitle";
+import { PageTitle } from "@/components/ui/page-title";
 import { customBadgeStyles } from "@/app/_utils/custom-badge-styles";
 import { 
   Tooltip,

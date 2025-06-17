@@ -14,6 +14,9 @@ export interface User {
   sales?: string[];
   debts?: number;
   purchases?: string[];
+  birthDate?: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface Column {

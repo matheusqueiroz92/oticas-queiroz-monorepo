@@ -1,5 +1,6 @@
-import { LaboratoryModel } from "../models/LaboratoryModel";
+import { RepositoryFactory } from "../repositories/RepositoryFactory";
 import type { ILaboratory } from "../interfaces/ILaboratory";
+import type { ILaboratoryRepository } from "../repositories/interfaces/ILaboratoryRepository";
 
 export class LaboratoryError extends Error {
   constructor(message: string) {
@@ -9,10 +10,10 @@ export class LaboratoryError extends Error {
 }
 
 export class LaboratoryService {
-  private laboratoryModel: LaboratoryModel;
+  private laboratoryRepository: ILaboratoryRepository;
 
   constructor() {
-    this.laboratoryModel = new LaboratoryModel();
+    this.laboratoryRepository = RepositoryFactory.getInstance().getLaboratoryRepository();
   }
 
   private validateLaboratoryData(laboratoryData: Partial<ILaboratory>): void {
@@ -42,7 +43,7 @@ export class LaboratoryService {
   ): Promise<ILaboratory> {
     this.validateLaboratoryData(laboratoryData);
 
-    const existingLaboratory = await this.laboratoryModel.findByEmail(
+    const existingLaboratory = await this.laboratoryRepository.findByEmail(
       laboratoryData.email
     );
     if (existingLaboratory) {
@@ -51,23 +52,28 @@ export class LaboratoryService {
       );
     }
 
-    return this.laboratoryModel.create(laboratoryData);
+    return this.laboratoryRepository.create(laboratoryData);
   }
 
   async getAllLaboratories(
-    page?: number,
-    limit?: number,
+    page: number = 1,
+    limit: number = 10,
     filters: Partial<ILaboratory> = {}
   ): Promise<{ laboratories: ILaboratory[]; total: number }> {
-    const result = await this.laboratoryModel.findAll(page, limit, filters);
-    if (!result.laboratories.length) {
+    const result = await this.laboratoryRepository.findAll(page, limit, filters);
+    
+    if (!result.items.length) {
       throw new LaboratoryError("Nenhum laboratório encontrado");
     }
-    return result;
+    
+    return {
+      laboratories: result.items,
+      total: result.total
+    };
   }
 
   async getLaboratoryById(id: string): Promise<ILaboratory> {
-    const laboratory = await this.laboratoryModel.findById(id);
+    const laboratory = await this.laboratoryRepository.findById(id);
     if (!laboratory) {
       throw new LaboratoryError("Laboratório não encontrado");
     }
@@ -81,15 +87,16 @@ export class LaboratoryService {
     this.validateLaboratoryData(laboratoryData);
 
     if (laboratoryData.email) {
-      const existingLaboratory = await this.laboratoryModel.findByEmail(
-        laboratoryData.email
+      const emailExists = await this.laboratoryRepository.emailExists(
+        laboratoryData.email, 
+        id
       );
-      if (existingLaboratory && existingLaboratory._id !== id) {
+      if (emailExists) {
         throw new LaboratoryError("Já existe um laboratório com este email");
       }
     }
 
-    const laboratory = await this.laboratoryModel.update(id, laboratoryData);
+    const laboratory = await this.laboratoryRepository.update(id, laboratoryData);
     if (!laboratory) {
       throw new LaboratoryError("Laboratório não encontrado");
     }
@@ -98,7 +105,7 @@ export class LaboratoryService {
   }
 
   async deleteLaboratory(id: string): Promise<ILaboratory> {
-    const laboratory = await this.laboratoryModel.delete(id);
+    const laboratory = await this.laboratoryRepository.delete(id);
     if (!laboratory) {
       throw new LaboratoryError("Laboratório não encontrado");
     }
@@ -106,10 +113,81 @@ export class LaboratoryService {
   }
 
   async toggleLaboratoryStatus(id: string): Promise<ILaboratory> {
-    const laboratory = await this.laboratoryModel.toggleActive(id);
+    const laboratory = await this.laboratoryRepository.toggleActive(id);
     if (!laboratory) {
       throw new LaboratoryError("Laboratório não encontrado");
     }
     return laboratory;
+  }
+
+  // Novos métodos usando funcionalidades do repository
+  async getActiveLaboratories(
+    page: number = 1,
+    limit: number = 10
+  ): Promise<{ laboratories: ILaboratory[]; total: number }> {
+    const result = await this.laboratoryRepository.findActive(page, limit);
+    return {
+      laboratories: result.items,
+      total: result.total
+    };
+  }
+
+  async getInactiveLaboratories(
+    page: number = 1,
+    limit: number = 10
+  ): Promise<{ laboratories: ILaboratory[]; total: number }> {
+    const result = await this.laboratoryRepository.findInactive(page, limit);
+    return {
+      laboratories: result.items,
+      total: result.total
+    };
+  }
+
+  async searchLaboratories(
+    searchTerm: string,
+    page: number = 1,
+    limit: number = 10
+  ): Promise<{ laboratories: ILaboratory[]; total: number }> {
+    const result = await this.laboratoryRepository.search(searchTerm, page, limit);
+    return {
+      laboratories: result.items,
+      total: result.total
+    };
+  }
+
+  async getLaboratoriesByCity(
+    city: string,
+    page: number = 1,
+    limit: number = 10
+  ): Promise<{ laboratories: ILaboratory[]; total: number }> {
+    const result = await this.laboratoryRepository.findByCity(city, page, limit);
+    return {
+      laboratories: result.items,
+      total: result.total
+    };
+  }
+
+  async getLaboratoriesByState(
+    state: string,
+    page: number = 1,
+    limit: number = 10
+  ): Promise<{ laboratories: ILaboratory[]; total: number }> {
+    const result = await this.laboratoryRepository.findByState(state, page, limit);
+    return {
+      laboratories: result.items,
+      total: result.total
+    };
+  }
+
+  async getLaboratoriesByContactName(
+    contactName: string,
+    page: number = 1,
+    limit: number = 10
+  ): Promise<{ laboratories: ILaboratory[]; total: number }> {
+    const result = await this.laboratoryRepository.findByContactName(contactName, page, limit);
+    return {
+      laboratories: result.items,
+      total: result.total
+    };
   }
 }

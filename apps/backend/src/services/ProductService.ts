@@ -1,4 +1,4 @@
-import { ProductModel } from "../models/ProductModel";
+import { getRepositories } from "../repositories/RepositoryFactory";
 import { IProduct } from "../interfaces/IProduct";
 import { z } from 'zod';
 import { productSchema } from '../validators/productValidators';
@@ -12,10 +12,11 @@ export class ProductError extends Error {
 }
 
 export class ProductService {
-  private productModel: ProductModel;
+  private productRepository: any;
 
   constructor() {
-    this.productModel = new ProductModel();
+    const { productRepository } = getRepositories();
+    this.productRepository = productRepository;
   }
 
   private validateProduct(productData: IProduct): void {
@@ -42,12 +43,18 @@ export class ProductService {
   async createProduct(productData: IProduct): Promise<IProduct> {
     this.validateProduct(productData);
 
-    const existingProduct = await this.productModel.findByName(productData.name);
-    if (existingProduct) {
-      throw new ProductError("Produto já cadastrado com este nome");
+    // Verificar se já existe produto com o mesmo nome
+    const searchResult = await this.productRepository.search(productData.name, 1, 1);
+    if (searchResult.items.length > 0) {
+      const existingProduct = searchResult.items.find((p: IProduct) => 
+        p.name.toLowerCase() === productData.name.toLowerCase()
+      );
+      if (existingProduct) {
+        throw new ProductError("Produto já cadastrado com este nome");
+      }
     }
 
-    return this.productModel.create(productData);
+    return this.productRepository.create(productData);
   }
 
   async getAllProducts(
@@ -55,17 +62,20 @@ export class ProductService {
     limit?: number,
     filters?: Record<string, any>
   ): Promise<{ products: IProduct[]; total: number }> {
-    const result = await this.productModel.findAll(page, limit, filters);
+    const result = await this.productRepository.findAll(page || 1, limit || 10, filters);
     
     if (result.total === 0) {
       throw new ProductError("Nenhum produto encontrado");
     }
     
-    return result;
+    return {
+      products: result.items,
+      total: result.total
+    };
   }
 
   async getProductById(id: string): Promise<IProduct> {
-    const product = await this.productModel.findById(id);
+    const product = await this.productRepository.findById(id);
     
     if (!product) {
       throw new ProductError("Produto não encontrado");
@@ -85,14 +95,20 @@ export class ProductService {
       throw new ProductError("Preço de custo não pode ser negativo");
     }
 
+    // Verificar se já existe produto com o mesmo nome (exceto o atual)
     if (productData.name) {
-      const existingProduct = await this.productModel.findByName(productData.name);
-      if (existingProduct && existingProduct._id !== id) {
-        throw new ProductError("Já existe um produto com este nome");
+      const searchResult = await this.productRepository.search(productData.name, 1, 1);
+      if (searchResult.items.length > 0) {
+        const existingProduct = searchResult.items.find((p: IProduct) => 
+          p.name.toLowerCase() === productData.name!.toLowerCase() && p._id !== id
+        );
+        if (existingProduct) {
+          throw new ProductError("Já existe um produto com este nome");
+        }
       }
     }
 
-    const product = await this.productModel.update(id, productData);
+    const product = await this.productRepository.update(id, productData);
     
     if (!product) {
       throw new ProductError("Produto não encontrado");
@@ -102,7 +118,7 @@ export class ProductService {
   }
 
   async deleteProduct(id: string): Promise<IProduct> {
-    const product = await this.productModel.delete(id);
+    const product = await this.productRepository.delete(id);
     
     if (!product) {
       throw new ProductError("Produto não encontrado");
@@ -111,11 +127,141 @@ export class ProductService {
     return product;
   }
 
+  // Métodos específicos usando repository
+  async getProductsByType(
+    productType: IProduct["productType"],
+    page: number = 1,
+    limit: number = 10
+  ): Promise<{ products: IProduct[]; total: number }> {
+    const result = await this.productRepository.findByType(productType, page, limit);
+    
+    return {
+      products: result.items,
+      total: result.total
+    };
+  }
+
+  async getProductsByBrand(
+    brand: string,
+    page: number = 1,
+    limit: number = 10
+  ): Promise<{ products: IProduct[]; total: number }> {
+    const result = await this.productRepository.findByBrand(brand, page, limit);
+    
+    return {
+      products: result.items,
+      total: result.total
+    };
+  }
+
+  async searchProducts(
+    searchTerm: string,
+    page: number = 1,
+    limit: number = 10
+  ): Promise<{ products: IProduct[]; total: number }> {
+    const result = await this.productRepository.search(searchTerm, page, limit);
+    
+    return {
+      products: result.items,
+      total: result.total
+    };
+  }
+
+  async getLowStockProducts(
+    threshold: number = 10,
+    page: number = 1,
+    limit: number = 10
+  ): Promise<{ products: IProduct[]; total: number }> {
+    const result = await this.productRepository.findLowStock(threshold, page, limit);
+    
+    return {
+      products: result.items,
+      total: result.total
+    };
+  }
+
+  async updateStock(
+    id: string,
+    quantity: number,
+    operation: "add" | "subtract" | "set" = "set"
+  ): Promise<IProduct> {
+    const product = await this.productRepository.updateStock(id, quantity, operation);
+    
+    if (!product) {
+      throw new ProductError("Produto não encontrado");
+    }
+    
+    return product;
+  }
+
+  async getProductsByPriceRange(
+    minPrice: number,
+    maxPrice: number,
+    page: number = 1,
+    limit: number = 10
+  ): Promise<{ products: IProduct[]; total: number }> {
+    const result = await this.productRepository.findByPriceRange(minPrice, maxPrice, page, limit);
+    
+    return {
+      products: result.items,
+      total: result.total
+    };
+  }
+
+  async getFramesByFilters(
+    filters: {
+      typeFrame?: string;
+      color?: string;
+      shape?: string;
+      reference?: string;
+      modelSunglasses?: string;
+      productType?: "prescription_frame" | "sunglasses_frame";
+    },
+    page: number = 1,
+    limit: number = 10
+  ): Promise<{ products: IProduct[]; total: number }> {
+    const result = await this.productRepository.findFrames(filters, page, limit);
+    
+    return {
+      products: result.items,
+      total: result.total
+    };
+  }
+
+  async getLensesByType(
+    lensType?: string,
+    page: number = 1,
+    limit: number = 10
+  ): Promise<{ products: IProduct[]; total: number }> {
+    const result = await this.productRepository.findLenses(lensType, page, limit);
+    
+    return {
+      products: result.items,
+      total: result.total
+    };
+  }
+
+  async checkInsufficientStock(
+    productIds: string[],
+    requiredQuantities: number[]
+  ): Promise<{ productId: string; available: number; required: number }[]> {
+    return this.productRepository.findInsufficientStock(productIds, requiredQuantities);
+  }
+
+  async getProductsByIds(ids: string[]): Promise<IProduct[]> {
+    return this.productRepository.findByIds(ids);
+  }
+
+  // Métodos para integração com sessões (mantidos para compatibilidade)
   async getProductByIdWithSession(
     id: string,
     session: mongoose.ClientSession
   ): Promise<IProduct | null> {
-    return this.productModel.findByIdWithSession(id, session);
+    // Usar o repository com sessão se disponível
+    if (this.productRepository.findByIdWithSession) {
+      return this.productRepository.findByIdWithSession(id, session);
+    }
+    return this.productRepository.findById(id);
   }
   
   async updateProductWithSession(
@@ -123,6 +269,10 @@ export class ProductService {
     productData: Partial<IProduct>,
     session: mongoose.ClientSession
   ): Promise<IProduct | null> {
-    return this.productModel.updateWithSession(id, productData, session);
+    // Usar o repository com sessão se disponível
+    if (this.productRepository.updateWithSession) {
+      return this.productRepository.updateWithSession(id, productData, session);
+    }
+    return this.productRepository.update(id, productData);
   }
 }

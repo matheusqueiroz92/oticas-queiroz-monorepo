@@ -91,7 +91,7 @@ export default function SelectedProductsList({
               </td>
             </tr>
           ))}
-          <tr className="border-t font-semibold bg-gray-50">
+          <tr className="border-t font-semibold bg-muted">
             <td colSpan={2} className="px-3 py-2 text-right text-sm">Total:</td>
             <td className="px-3 py-2 text-right text-sm">{formatCurrency(total)}</td>
             <td></td>

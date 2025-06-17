@@ -1,6 +1,6 @@
 "use client";
 
-import { InstitutionRegisterForm } from "@/components/Institutions/InstitutionRegisterForm";
+import { InstitutionRegisterForm } from "@/components/institutions/InstitutionRegisterForm";
 
 export default function NewInstitutionPage() {
   return (

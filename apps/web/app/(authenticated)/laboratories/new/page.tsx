@@ -1,7 +1,7 @@
 "use client";
 
 import { useLaboratories } from "@/hooks/useLaboratories";
-import { LaboratoryForm } from "@/components/Laboratories/LaboratoryForm";
+import { LaboratoryForm } from "@/components/laboratories/LaboratoryForm";
 
 export default function NewLaboratoryPage() {
   const {

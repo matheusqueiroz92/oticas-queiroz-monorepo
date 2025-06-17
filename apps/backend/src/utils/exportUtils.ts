@@ -2,7 +2,7 @@ import Excel from "exceljs";
 import PDFDocument from "pdfkit";
 import { Parser } from "json2csv";
 import type { IPayment } from "../interfaces/IPayment";
-import type { ICashRegister } from "src/interfaces/ICashRegister";
+import type { ICashRegister } from "../interfaces/ICashRegister";
 import type { IOrder } from "../interfaces/IOrder";
 import type {
   InventoryReportData,

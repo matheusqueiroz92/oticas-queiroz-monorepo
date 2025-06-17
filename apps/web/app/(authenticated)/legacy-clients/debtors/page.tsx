@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { PageTitle } from "@/components/PageTitle";
+import { PageTitle } from "@/components/ui/page-title";
 import { formatCurrency, formatDate } from "@/app/_utils/formatters";
 import { useLegacyClients } from "@/hooks/useLegacyClients";
 import { ArrowLeft, FileDown } from "lucide-react";
@@ -45,7 +45,7 @@ export default function DebtorsPage() {
       // Preparar dados para exportação
       const exportData = debtors.map((debtor) => ({
         Nome: debtor.name,
-        CPF: debtor.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4"),
+        CPF: debtor.cpf ? debtor.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4") : "-",
         Telefone: debtor.phone
           ? debtor.phone.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3")
           : "-",
@@ -139,10 +139,10 @@ export default function DebtorsPage() {
                         {debtor.name}
                       </TableCell>
                       <TableCell>
-                        {debtor.cpf.replace(
+                        {debtor.cpf ? debtor.cpf.replace(
                           /(\d{3})(\d{3})(\d{3})(\d{2})/,
                           "$1.$2.$3-$4"
-                        )}
+                        ) : "-"}
                       </TableCell>
                       <TableCell>
                         {debtor.phone

@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, CreditCard } from "lucide-react";
-import { DirectMercadoPagoButton } from "@/components/MercadoPago/DirectMercadoPagoButton";
+import { DirectMercadoPagoButton } from "@/components/mercado-pago/DirectMercadoPagoButton";
 import { useToast } from "@/hooks/useToast";
 
 export default function MercadoPagoDirectPage() {

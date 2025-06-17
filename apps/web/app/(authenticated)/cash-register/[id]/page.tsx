@@ -7,7 +7,7 @@ import {
   translatePaymentMethod,
   getPaymentTypeClass,
 } from "@/app/_utils/formatters";
-import { CashRegisterDetails } from "@/components/CashRegister/CashRegisterDetails";
+import { CashRegisterDetails } from "@/components/cash-register/CashRegisterDetails";
 
 export default function CashRegisterDetailsPage() {
   const { id } = useParams<{ id: string }>();

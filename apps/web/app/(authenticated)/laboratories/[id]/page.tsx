@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 import { useLaboratories } from "@/hooks/useLaboratories";
-import { LaboratoryDetailsCard } from "@/components/Laboratories/LaboratoryDetailsCard";
+import { LaboratoryDetailsCard } from "@/components/laboratories/LaboratoryDetailsCard";
 import { Loader2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";

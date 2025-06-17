@@ -28,6 +28,8 @@ export class UserController {
   }
 
   async getAllUsers(req: Request, res: Response): Promise<void> {
+    console.log('🔍 UserController.getAllUsers - Query params:', req.query);
+    
     try {
       const { role, search, cpf, serviceOrder } = req.query;
       
@@ -68,9 +70,21 @@ export class UserController {
       else if (search) {
         result = await this.userService.searchUsers(search as string, page, limit);
         
+        console.log('🔍 UserController - Resultado antes da filtragem por role:', {
+          total: result.total,
+          roles: result.users.map(u => u.role)
+        });
+        
+        // Filtrar por role se fornecido
         if (role) {
           const filteredUsers = result.users.filter(user => user.role === role);
           result = { users: filteredUsers, total: filteredUsers.length };
+          
+          console.log('🔍 UserController - Resultado após filtragem por role:', {
+            role,
+            total: result.total,
+            users: result.users.map(u => ({ name: u.name, role: u.role }))
+          });
         }
       }
       else if (role) {

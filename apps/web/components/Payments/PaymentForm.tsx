@@ -45,7 +45,7 @@ import {
   ChevronRight,
   CreditCard,
 } from "lucide-react";
-import ClientSearch from "@/components/Orders/ClientSearch";
+import ClientSearch from "@/components/orders/ClientSearch";
 import { formatCurrency, formatDate } from "@/app/_utils/formatters";
 import type { Order } from "@/app/_types/order";
 import type { User as UserType } from "@/app/_types/user";

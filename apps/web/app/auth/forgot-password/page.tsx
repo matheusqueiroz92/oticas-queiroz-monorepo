@@ -70,8 +70,8 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-background">
-      <div className="hidden lg:flex lg:w-1/2 bg-[#2f67ff] relative">
-        <div className="absolute inset-0 bg-black/50" />
+      <div className="hidden lg:flex lg:w-1/2 bg-[var(--primary-blue)] relative">
+        {/* <div className="absolute inset-0 bg-black/50" /> */}
         <div className="relative z-10 flex items-center justify-center w-full">
           <div className="text-center">
             <div className="w-[300px] h-[120px] mx-auto relative">
@@ -148,7 +148,7 @@ export default function ForgotPasswordPage() {
           <CardFooter className="flex justify-center">
             <Link
               href="/auth/login"
-              className="text-sm text-[#1e3a8a] hover:underline flex items-center"
+              className="text-sm text-[var(--primary-blue)] hover:underline flex items-center"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Voltar para o login
