@@ -34,6 +34,10 @@ import { useLegacyClients } from "@/hooks/useLegacyClients";
 import { PageContainer } from "@/components/ui/page-container";
 import { OrderDialog } from "@/components/orders/OrderDialog";
 import { CustomerDialog } from "@/components/customers/CustomerDialog";
+import { ProductDialog } from "@/components/products/ProductDialog";
+import { PaymentDialog } from "@/components/payments/PaymentDialog";
+import { QuickActionButton } from "@/components/dashboard/QuickActionButton";
+import { StatCard } from "@/components/dashboard/StatCard";
 
 type OrderStatus = "pending" | "in_production" | "ready" | "delivered" | "cancelled";
 
@@ -43,6 +47,8 @@ export default function DashboardPage() {
   const [userId, setUserId] = useState("");
   const [orderDialogOpen, setOrderDialogOpen] = useState(false);
   const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
+  const [productDialogOpen, setProductDialogOpen] = useState(false);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
 
   useEffect(() => {
     const name = Cookies.get("name") || "";
@@ -139,223 +145,138 @@ export default function DashboardPage() {
 
           {/* Ações Rápidas */}
           <div className="grid grid-cols-2 md:grid-cols-5 xl:grid-cols-5 gap-4">
-            <OrderDialog
-              open={orderDialogOpen}
-              onOpenChange={setOrderDialogOpen}
-              mode="create"
-            />
-            <button
-              type="button"
+            <QuickActionButton
+              icon={Plus}
+              title="Novo Pedido"
+              description="Criar pedido"
               onClick={() => setOrderDialogOpen(true)}
-              aria-label="Abrir novo pedido"
-              className="h-full w-full text-left"
-              style={{ all: "unset" }}
+              ariaLabel="Abrir novo pedido"
             >
-              <Card className="hover:shadow-md transition-shadow cursor-pointer border-dashed border-2 hover:border-primary/50 h-full w-full">
-                <CardContent className="flex items-center justify-center p-10 gap-4">
-                  <div className="rounded-full bg-blue-100/10 p-4 flex items-center justify-center">
-                    <Plus className="h-8 w-8 text-primary" />
-                  </div>
-                  <div className="flex flex-col items-center justify-center">
-                    <span className="text-md font-bold">Novo Pedido</span>
-                    <span className="text-xs text-muted-foreground">Criar pedido</span>
-                  </div>
-                </CardContent>
-              </Card>
-            </button>
+              <OrderDialog
+                open={orderDialogOpen}
+                onOpenChange={setOrderDialogOpen}
+                mode="create"
+              />
+            </QuickActionButton>
 
-            <CustomerDialog
-              open={customerDialogOpen}
-              onOpenChange={setCustomerDialogOpen}
-              mode="create"
-            />
-            <button
-              type="button"
+            <QuickActionButton
+              icon={UserPlus}
+              title="Novo Cliente"
+              description="Cadastrar cliente"
               onClick={() => setCustomerDialogOpen(true)}
-              aria-label="Abrir novo cliente"
-              className="h-full w-full text-left"
-              style={{ all: "unset" }}
+              ariaLabel="Abrir novo cliente"
             >
-              <Card className="hover:shadow-md transition-shadow cursor-pointer border-dashed border-2 hover:border-primary/50 h-full w-full">
-                <CardContent className="flex items-center justify-center p-10 gap-4">
-                  <div className="rounded-full bg-blue-100/10 p-4 flex items-center justify-center">
-                    <UserPlus className="h-8 w-8 text-primary" />
-                  </div>
-                  <div className="flex flex-col items-center justify-center">
-                    <span className="text-md font-bold">Novo Cliente</span>
-                    <span className="text-xs text-muted-foreground">Cadastrar cliente</span>
-                  </div>
-                </CardContent>
-              </Card>
-            </button>
+              <CustomerDialog
+                open={customerDialogOpen}
+                onOpenChange={setCustomerDialogOpen}
+                mode="create"
+              />
+            </QuickActionButton>
 
-            <CustomerDialog
-              open={customerDialogOpen}
-              onOpenChange={setCustomerDialogOpen}
-              mode="create"
-            />    
-            <button
-              type="button"
-              onClick={() => setCustomerDialogOpen(true)}
-              aria-label="Abrir novo produto"
-              className="h-full w-full text-left"
-              style={{ all: "unset" }}
+            <QuickActionButton
+              icon={Package}
+              title="Novo Produto"
+              description="Cadastrar produto"
+              onClick={() => setProductDialogOpen(true)}
+              ariaLabel="Abrir novo produto"
             >
-              <Card className="hover:shadow-md transition-shadow cursor-pointer border-dashed border-2 hover:border-primary/50 h-full w-full">
-                <CardContent className="flex items-center justify-center p-10 gap-4">
-                  <div className="rounded-full bg-blue-100/10 p-4 flex items-center justify-center">
-                    <Package className="h-8 w-8 text-primary" />
-                  </div>
-                  <div className="flex flex-col items-center justify-center">
-                    <span className="text-md font-bold">Novo Produto</span>
-                    <span className="text-xs text-muted-foreground">Cadastrar produto</span>
-                  </div>
-                </CardContent>
-              </Card>
-            </button>
+              <ProductDialog
+                open={productDialogOpen}
+                onOpenChange={setProductDialogOpen}
+                mode="create"
+              />
+            </QuickActionButton>
 
-            <CustomerDialog
-              open={customerDialogOpen}
-              onOpenChange={setCustomerDialogOpen}
-              mode="create"
-            />
-            <button
-              type="button"
-              onClick={() => setCustomerDialogOpen(true)}
-              aria-label="Abrir novo pagamento"
-              className="h-full w-full text-left"
-              style={{ all: "unset" }}
+            <QuickActionButton
+              icon={HandCoins}
+              title="Novo Pagamento"
+              description="Cadastrar pagamento"
+              onClick={() => setPaymentDialogOpen(true)}
+              ariaLabel="Abrir novo pagamento"
             >
-              <Card className="hover:shadow-md transition-shadow cursor-pointer border-dashed border-2 hover:border-primary/50 h-full w-full">
-                <CardContent className="flex items-center justify-center p-10 gap-4">
-                  <div className="rounded-full bg-blue-100/10 p-4 flex items-center justify-center">
-                    <HandCoins className="h-8 w-8 text-primary" />
-                  </div>
-                  <div className="flex flex-col items-center justify-center">
-                    <span className="text-md font-bold">Novo Pagamento</span>
-                    <span className="text-xs text-muted-foreground">Cadastrar pagamento</span>
-                  </div>
-                </CardContent>
-              </Card>
-            </button>
+              <PaymentDialog
+                open={paymentDialogOpen}
+                onOpenChange={setPaymentDialogOpen}
+                mode="create"
+              />
+            </QuickActionButton>
 
-            <CustomerDialog
-              open={customerDialogOpen}
-              onOpenChange={setCustomerDialogOpen}
-              mode="create"
-            />
-            <button
-              type="button"
+            <QuickActionButton
+              icon={FileText}
+              title="Novo Relatório"
+              description="Gerar relatório"
               onClick={() => setCustomerDialogOpen(true)}
-              aria-label="Abrir novo relatório"
-              className="h-full w-full text-left"
-              style={{ all: "unset" }}
+              ariaLabel="Abrir novo relatório"
             >
-              <Card className="hover:shadow-md transition-shadow cursor-pointer border-dashed border-2 hover:border-primary/50 h-full w-full">
-                <CardContent className="flex items-center justify-center p-10 gap-4">
-                  <div className="rounded-full bg-blue-100/10 p-4 flex items-center justify-center">
-                    <FileText className="h-8 w-8 text-primary" />
-                  </div>
-                  <div className="flex flex-col items-center justify-center">
-                    <span className="text-md font-bold">Novo Relatório</span>
-                    <span className="text-xs text-muted-foreground">Gerar relatório</span>
-                  </div>
-                </CardContent>
-              </Card>
-            </button>
+              <CustomerDialog
+                open={customerDialogOpen}
+                onOpenChange={setCustomerDialogOpen}
+                mode="create"
+              />
+            </QuickActionButton>
           </div>
 
           {/* Cards de estatísticas */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Vendas Hoje */}
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-xl font-medium">Vendas Hoje</CardTitle>
-                <div className="rounded-full bg-green-200 p-2 flex items-center justify-center">
-                  <DollarSign className="h-8 w-8 text-green-600" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                {isLoadingPayments ? (
-                  <Skeleton className="h-8 w-24" />
-                ) : (
-                  <>
-                    <div className="text-2xl font-bold">
-                      {formatCurrency(getSalesTotal(todayPayments))}
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      <TrendingUp className="h-4 w-4 inline mr-1 text-green-600" />
-                      +12% vs ontem
-                    </p>
-                  </>
-                )}
-              </CardContent>
-            </Card>
+            <StatCard
+              title="Vendas Hoje"
+              value={formatCurrency(getSalesTotal(todayPayments))}
+              icon={DollarSign}
+              iconColor="text-green-600"
+              bgColor="bg-green-100 dark:bg-green-100/10"
+              isLoading={isLoadingPayments}
+              description={
+                <>
+                  <TrendingUp className="h-4 w-4 inline mr-1 text-green-600" />
+                  +12% vs ontem
+                </>
+              }
+            />
 
-            {/* Pedidos */}
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-xl font-medium">Pedidos</CardTitle>
-                <div className="rounded-full bg-blue-200 p-2 flex items-center justify-center">
-                  <ShoppingBag className="h-8 w-8 text-blue-600" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                {isLoadingOrders ? (
-                  <Skeleton className="h-8 w-16" />
-                ) : (
-                  <>
-                    <div className="text-2xl font-bold">{allOrders?.length || 0}</div>
-                    <p className="text-xs text-muted-foreground">
-                      <span className="text-blue-600 font-semibold">
-                        +{getOrdersCountByStatus(allOrders, ["pending"])}
-                      </span>{" "}
-                      vs ontem
-                    </p>
-                  </>
-                )}
-              </CardContent>
-            </Card>
+            <StatCard
+              title="Pedidos"
+              value={allOrders?.length || 0}
+              icon={ShoppingBag}
+              iconColor="text-orange-600"
+              bgColor="bg-orange-100 dark:bg-orange-100/10"
+              isLoading={isLoadingOrders}
+              skeletonWidth="w-16"
+              description={
+                <>
+                  <span className="text-orange-600 font-semibold">
+                    +{getOrdersCountByStatus(allOrders, ["pending"])}
+                  </span>{" "}
+                  vs ontem
+                </>
+              }
+            />
 
-            {/* Clientes */}
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-xl font-medium">Clientes</CardTitle>
-                <div className="rounded-full bg-yellow-200 p-2 flex items-center justify-center">
-                  <Users className="h-8 w-8 text-yellow-600" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">1.247</div>
-                <p className="text-xs text-muted-foreground">
+            <StatCard
+              title="Clientes"
+              value="1.247"
+              icon={Users}
+              iconColor="text-yellow-600"
+              bgColor="bg-yellow-100 dark:bg-yellow-100/10"
+              description={
+                <>
                   <span className="text-yellow-600 font-semibold">+5</span> novos
-                </p>
-              </CardContent>
-            </Card>
+                </>
+              }
+            />
 
-            {/* Caixa Atual */}
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-xl font-medium">Caixa Atual</CardTitle>
-                <div className="rounded-full bg-violet-200 p-2 flex items-center justify-center">
-                  <HandCoins className="h-8 w-8 text-violet-600" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                {isLoadingCashRegister ? (
-                  <Skeleton className="h-8 w-24" />
-                ) : (
-                  <>
-                    <div className="text-2xl font-bold">
-                      {formatCurrency(currentCashRegister?.currentBalance || 0)}
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Aberto às <span className="text-purple-600 font-semibold">08:00</span>
-                    </p>
-                  </>
-                )}
-              </CardContent>
-            </Card>
+            <StatCard
+              title="Caixa Atual"
+              value={formatCurrency(currentCashRegister?.currentBalance || 0)}
+              icon={HandCoins}
+              iconColor="text-violet-600"
+              bgColor="bg-violet-100 dark:bg-violet-100/10"
+              isLoading={isLoadingCashRegister}
+              description={
+                <>
+                  Aberto às <span className="text-purple-600 font-semibold">08:00</span>
+                </>
+              }
+            />
           </div>
 
           {/* Seção de conteúdo principal */}
