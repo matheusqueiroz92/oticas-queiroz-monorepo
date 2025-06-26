@@ -341,21 +341,22 @@ export function PaymentForm({
                 )}
               />
             )}
-            
-            {/* Campo Caixa movido aqui para ficar alinhado com "Valor (R$)" */}
+          </div>
+          
+          <div className="space-y-4">
             <FormField
               control={form.control}
               name="cashRegisterId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Caixa *</FormLabel>
+                  <FormLabel>Caixa Atual *</FormLabel>
                   <div className="border rounded-md p-3 bg-gray-50">
                     {isLoadingCashRegister ? (
                       <div className="flex items-center">
                         <Loader2 className="h-4 w-4 animate-spin mr-2" />
                         <span className="text-muted-foreground">Carregando caixa...</span>
                       </div>
-                    ) : !cashRegister ? (
+                    ) : !isCashRegisterOpen || !cashRegister ? (
                       <div className="text-red-500">
                         Nenhum caixa disponível. Você precisa abrir um caixa primeiro.
                       </div>
@@ -371,9 +372,7 @@ export function PaymentForm({
                 </FormItem>
               )}
             />
-          </div>
-          
-          <div className="space-y-4">
+
             {showCheckFields && (
               <div className="space-y-4 border p-4 rounded-md bg-gray-50">
                 <h3 className="font-medium">Dados do Cheque</h3>
@@ -543,7 +542,7 @@ export function PaymentForm({
                 name="category"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Categoria da Despesa</FormLabel>
+                    <FormLabel>Categoria da Despesa *</FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       defaultValue={field.value || ""}
@@ -571,28 +570,30 @@ export function PaymentForm({
                 )}
               />
             )}
-            
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Descrição</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Descrição ou observações sobre este pagamento..."
-                      className="min-h-[80px]"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    Adicione informações adicionais sobre este pagamento, se necessário
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
           </div>
+        </div>
+        
+        <div className="w-full">
+          <FormField
+            control={form.control}
+            name="description"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Descrição/Observações</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="Adicione informações adicionais sobre este pagamento..."
+                    className="min-h-[80px]"
+                    {...field}
+                  />
+                </FormControl>
+                <FormDescription>
+                  Adicione informações adicionais sobre este pagamento, se necessário
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
       </div>
     );
@@ -610,7 +611,6 @@ export function PaymentForm({
             </p>
           </div>
 
-          {/* Hidden status field - sempre completado para despesas */}
           <input 
             type="hidden" 
             name="status" 
@@ -751,7 +751,6 @@ export function PaymentForm({
               </div>
             )}
 
-            {/* Status de pagamento - hidden field */}
             <input 
               type="hidden" 
               name="status" 
@@ -1007,7 +1006,6 @@ export function PaymentForm({
           </div>
         </div>
         
-        {/* Campo de observações adicionado novamente no step 3 */}
         <FormField
           control={form.control}
           name="description"
@@ -1032,10 +1030,8 @@ export function PaymentForm({
     );
   };
   
-  // Verificar se o botão de próximo deve estar desabilitado
   const isNextButtonDisabled = () => {
     if (currentStep === 1) {
-      // Campos obrigatórios do passo 1
       const amount = watch("amount");
       const paymentDate = watch("paymentDate");
       const cashRegisterId = watch("cashRegisterId");
@@ -1050,7 +1046,6 @@ export function PaymentForm({
         return false;
       } else {
         const hasCustomer = !!selectedCustomerId || !!legacyClientId;
-        // Para vendas, idealmente temos um pedido selecionado, mas não obrigatório
         return !hasCustomer;
       }
     }
@@ -1079,8 +1074,6 @@ export function PaymentForm({
               id="paymentForm" 
               onSubmit={(e) => {
                 e.preventDefault();
-                // Não submete automaticamente ao chegar no passo 3
-                // O usuário precisa clicar no botão "Registrar Pagamento"
               }}
               className="space-y-4"
             >
@@ -1101,7 +1094,6 @@ export function PaymentForm({
                       `}
                       onClick={() => {
                         if (index <= currentStep - 1) {
-                          // Navegação para passos anteriores
                           if (index === 0) onPrev();
                           if (index === 1 && currentStep === 3) onPrev();
                         }

@@ -166,20 +166,26 @@ export function OrderForm({
       form.setValue("deliveryDate", "");
     }
     
-    // Calcular preços
+    // Calcular preços - mantendo o desconto atual
     const totalPrice = selectedProducts.reduce((sum, product) => sum + (product.sellPrice || 0), 0);
-    const discount = form.getValues("discount") || 0;
-    const finalPrice = totalPrice - discount;
+    const currentDiscount = form.getValues("discount") || 0;
+    const finalPrice = Math.max(0, totalPrice - currentDiscount);
     
     form.setValue("totalPrice", totalPrice);
     form.setValue("finalPrice", finalPrice);
+    
+    console.log("OrderForm - Recalculando preços:");
+    console.log("Total:", totalPrice);
+    console.log("Desconto atual:", currentDiscount);
+    console.log("Final:", finalPrice);
   }, [selectedProducts, form, hasLenses, setHasLenses]);
 
-  const handleDiscountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const discount = e.target.value ? Number.parseFloat(e.target.value) : '';
-    form.setValue("discount", discount as number);
-    updateFinalPriceInternal(form.getValues("totalPrice") || 0, discount || 0);
-  };
+  // Função removida - agora o desconto é controlado diretamente no OrderClientProducts
+  // const handleDiscountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const discount = e.target.value ? Number.parseFloat(e.target.value) : 0;
+  //   form.setValue("discount", discount);
+  //   updateFinalPriceInternal(form.getValues("totalPrice") || 0, discount);
+  // };
 
   const { 
     customers: initialCustomers,
@@ -233,8 +239,20 @@ export function OrderForm({
 
   const calculateInstallmentValueInternal = () => {
     const finalPrice = form.getValues("finalPrice") || 0;
+    const paymentEntry = form.getValues("paymentEntry") || 0;
     const installments = form.getValues("installments") || 1;
-    return finalPrice / installments;
+    
+    // Calcular o valor restante após descontar a entrada
+    const remainingAmount = Math.max(0, finalPrice - paymentEntry);
+    
+    console.log("Cálculo das parcelas:");
+    console.log("Valor final:", finalPrice);
+    console.log("Entrada:", paymentEntry);
+    console.log("Valor restante:", remainingAmount);
+    console.log("Parcelas:", installments);
+    console.log("Valor por parcela:", remainingAmount / installments);
+    
+    return remainingAmount / installments;
   };
 
   const checkCanContinue = () => {
@@ -317,7 +335,7 @@ export function OrderForm({
             handleAddProduct={handleAddProductInternal}
             handleRemoveProduct={handleRemoveProductInternal}
             handleUpdateProductPrice={handleUpdateProductPriceInternal}
-            handleDiscountChange={handleDiscountChange}
+            handleDiscountChange={() => {}} // Função removida - controlada diretamente no componente
             calculateInstallmentValue={calculateInstallmentValueInternal}
           />
         );

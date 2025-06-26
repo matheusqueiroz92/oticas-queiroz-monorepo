@@ -17,7 +17,7 @@ export function ProductGridWithActions({
   onRefresh,
 }: ProductGridWithActionsProps) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 p-6">
+    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 px-6">
       {products.map((product) => (
         <ProductCardWithActions
           key={product._id}

@@ -53,22 +53,69 @@ export function useEmployees() {
     queryKey: QUERY_KEYS.USERS.EMPLOYEES(search, currentPage, pageSize),
     queryFn: async () => {
       const timestamp = new Date().getTime();
-      const response = await api.get(API_ROUTES.USERS.EMPLOYEES, {
-        params: {
-          search: search || undefined,
-          page: currentPage,
-          limit: pageSize,
-          _t: timestamp
-        },
-        headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0',
-          'X-Timestamp': timestamp.toString()
-        }
-      });
-  
-      return response.data;
+      
+      // Se há busca, buscar em todos os usuários e filtrar depois
+      if (search && search.trim()) {
+        const response = await api.get(API_ROUTES.USERS.BASE, {
+          params: {
+            search: search.trim(),
+            page: currentPage,
+            limit: pageSize * 2, // Aumentar o limit para compensar a filtragem
+            _t: timestamp
+          },
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0',
+            'X-Timestamp': timestamp.toString()
+          }
+        });
+        
+        return response.data;
+      } else {
+        // Buscar funcionários e administradores separadamente e combinar
+        const [employeesResponse, adminsResponse] = await Promise.all([
+          api.get(API_ROUTES.USERS.BASE, {
+            params: {
+              role: 'employee',
+              page: currentPage,
+              limit: pageSize,
+              _t: timestamp
+            },
+            headers: {
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Pragma': 'no-cache',
+              'Expires': '0',
+              'X-Timestamp': timestamp.toString()
+            }
+          }),
+          api.get(API_ROUTES.USERS.BASE, {
+            params: {
+              role: 'admin',
+              page: 1,
+              limit: 50, // Assumindo que não há muitos admins
+              _t: timestamp
+            },
+            headers: {
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Pragma': 'no-cache',
+              'Expires': '0',
+              'X-Timestamp': timestamp.toString()
+            }
+          })
+        ]);
+        
+        // Combinar os resultados
+        const combinedUsers = [
+          ...employeesResponse.data.users,
+          ...adminsResponse.data.users
+        ];
+        
+        return {
+          users: combinedUsers,
+          pagination: employeesResponse.data.pagination // Usar a paginação dos funcionários como base
+        };
+      }
     },
     staleTime: 0,
     refetchOnMount: true,
@@ -77,7 +124,7 @@ export function useEmployees() {
 
   const employees = useMemo(() => {
     if (Array.isArray(employeesData.users)) {
-      const onlyEmployees = employeesData.users.filter((user: User) => user.role === 'employee');
+      const onlyEmployees = employeesData.users.filter((user: User) => user.role === 'employee' || user.role === 'admin');
       return [...onlyEmployees].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     }
     return [];

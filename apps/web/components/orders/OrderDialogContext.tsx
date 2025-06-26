@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState } from "react";
 import type { Customer } from "@/app/_types/customer";
 import type { Product } from "@/app/_types/product";
-import { OrderFormValues } from "@/app/_types/form-types";
 
 interface OrderDialogContextProps {
   selectedProducts: Product[];

@@ -98,7 +98,7 @@ export default function ProductsPage() {
         <Card>
           <CardHeader className="bg-gray-100 dark:bg-slate-800/50">
             <CardTitle className="text-lg">Lista de Produtos</CardTitle>
-            <div className="flex flex-col sm:flex-row gap-4 mt-4 sm:items-center">
+            <div className="flex flex-col sm:flex-row gap-4 sm:items-center">
               {/* Área esquerda: Input de busca e selects */}
               <div className="flex flex-1 flex-col sm:flex-row gap-4">
                 <div className="relative flex-1 max-w-md">

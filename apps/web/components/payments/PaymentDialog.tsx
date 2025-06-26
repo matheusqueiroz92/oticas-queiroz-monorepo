@@ -3,8 +3,10 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, DollarSign, CreditCard, Banknote } from "lucide-react";
+import { Loader2, DollarSign, CreditCard, Banknote, Calendar as CalendarIcon, User, Store, ClipboardCheck } from "lucide-react";
 import React, { useState, useEffect, useMemo } from "react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 import {
   Dialog,
@@ -26,18 +28,30 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { usePayments } from "@/hooks/usePayments";
 import { useToast } from "@/hooks/useToast";
 import { IPayment, PaymentType, PaymentMethod, PaymentStatus } from "@/app/_types/payment";
-import { formatCurrency } from "@/app/_utils/formatters";
+import { formatCurrency, formatDate } from "@/app/_utils/formatters";
+import ClientSearch from "@/components/orders/ClientSearch";
+import type { User as UserType } from "@/app/_types/user";
+import type { LegacyClient } from "@/app/_types/legacy-client";
+import type { Order } from "@/app/_types/order";
+import { Badge } from "@/components/ui/badge";
 
-// Schema de validação para pagamentos
+// Schema de validação para pagamentos - CORRIGIDO
 const paymentSchema = z.object({
   type: z.enum(["sale", "debt_payment", "expense"], {
     required_error: "Selecione um tipo de pagamento",
@@ -46,18 +60,29 @@ const paymentSchema = z.object({
     required_error: "Selecione um método de pagamento",
   }),
   amount: z.coerce.number().min(0.01, "Valor deve ser maior que zero"),
-  description: z.string().min(3, "Descrição deve ter pelo menos 3 caracteres").optional(),
+  paymentDate: z.date({
+    required_error: "Selecione a data do pagamento",
+  }),
+  description: z.string().optional(),
   customerId: z.string().optional(),
+  legacyClientId: z.string().optional(),
   orderId: z.string().optional(),
-  installments: z.object({
-    current: z.number(),
-    total: z.number(),
-    value: z.number(),
+  installments: z.number().min(1).max(12).optional(), // CORRIGIDO: apenas um número
+  cashRegisterId: z.string({
+    required_error: "É necessário ter um caixa aberto",
+  }),
+  // Campos para cheque
+  check: z.object({
+    bank: z.string().optional(),
+    checkNumber: z.string().optional(),
+    checkDate: z.date().optional(),
+    presentationDate: z.date().optional(),
+    accountHolder: z.string().optional(),
+    branch: z.string().optional(),
+    accountNumber: z.string().optional(),
   }).optional(),
-  checkNumber: z.string().optional(),
-  checkBank: z.string().optional(),
-  checkDate: z.string().optional(),
   category: z.string().optional(),
+  status: z.enum(["completed", "pending", "cancelled"]).default("completed"),
 });
 
 type PaymentFormData = z.infer<typeof paymentSchema>;
@@ -81,19 +106,29 @@ export function PaymentDialog({
   const { toast } = useToast();
   
   const {
+    form,
     isCashRegisterOpen,
     isLoadingCashRegister,
+    cashRegister,
     customers,
     isLoadingCustomers,
+    legacyClients,
+    isLoadingLegacyClients,
     clientOrders,
     isLoadingOrders,
     customerSearch,
     orderSearch,
+    legacyClientSearch,
+    selectedEntityType,
     setCustomerSearch,
     setOrderSearch,
+    setLegacyClientSearch,
     onClientSelect,
+    onLegacyClientSelect,
     onOrderSelect,
+    onEntityTypeSelect,
     fetchAllCustomers,
+    fetchClientOrders,
   } = usePaymentForm();
 
   const [showInstallments, setShowInstallments] = useState(false);
@@ -103,25 +138,11 @@ export function PaymentDialog({
   const isEditMode = mode === 'edit';
   const memoizedPayment = useMemo(() => payment, [payment?._id]);
 
-  const form = useForm<PaymentFormData>({
-    resolver: zodResolver(paymentSchema),
-    defaultValues: {
-      type: "sale",
-      paymentMethod: "cash",
-      amount: 0,
-      description: "",
-      customerId: "",
-      orderId: "",
-      installments: undefined,
-      checkNumber: "",
-      checkBank: "",
-      checkDate: "",
-      category: "",
-    },
-  });
-
   const watchedMethod = form.watch("paymentMethod");
   const watchedType = form.watch("type");
+  const selectedCustomerId = form.watch("customerId");
+  const legacyClientId = form.watch("legacyClientId");
+  const selectedOrderId = form.watch("orderId");
 
   // Efeito para mostrar/ocultar campos baseado no método de pagamento
   useEffect(() => {
@@ -132,15 +153,38 @@ export function PaymentDialog({
     setShowCheckFields(isCheck);
     
     if (!isCreditCard) {
-      form.setValue("installments", undefined);
+      form.setValue("installments", 1);
     }
     
     if (!isCheck) {
-      form.setValue("checkNumber", "");
-      form.setValue("checkBank", "");
-      form.setValue("checkDate", "");
+      form.setValue("check", undefined);
     }
   }, [watchedMethod, form]);
+
+  // Definir o ID do caixa quando disponível
+  useEffect(() => {
+    if (cashRegister) {
+      form.setValue("cashRegisterId", cashRegister);
+    }
+  }, [cashRegister, form]);
+
+  // Limpar campos de cliente ao alterar o tipo de pagamento para despesa
+  useEffect(() => {
+    if (watchedType === "expense") {
+      form.setValue("customerId", "");
+      form.setValue("legacyClientId", "");
+      form.setValue("orderId", "");
+      onEntityTypeSelect(null);
+    }
+  }, [watchedType, form, onEntityTypeSelect]);
+
+  // Buscar pedidos quando um cliente for selecionado
+  useEffect(() => {
+    if (selectedCustomerId && selectedEntityType === "customer") {
+      // Chamar fetchClientOrders do hook
+      fetchClientOrders(selectedCustomerId);
+    }
+  }, [selectedCustomerId, selectedEntityType, fetchClientOrders]);
 
   // Preencher o formulário quando estiver no modo de edição
   useEffect(() => {
@@ -151,31 +195,35 @@ export function PaymentDialog({
         type: memoizedPayment.type,
         paymentMethod: memoizedPayment.paymentMethod,
         amount: memoizedPayment.amount,
+        paymentDate: new Date(memoizedPayment.date),
         description: memoizedPayment.description || "",
         customerId: memoizedPayment.customerId || "",
+        legacyClientId: memoizedPayment.legacyClientId || "",
         orderId: memoizedPayment.orderId || "",
-        installments: memoizedPayment.installments,
-        checkNumber: memoizedPayment.check?.checkNumber || "",
-        checkBank: memoizedPayment.check?.bank || "",
-        checkDate: memoizedPayment.check?.checkDate ? new Date(memoizedPayment.check.checkDate).toISOString().split('T')[0] : "",
+        installments: typeof memoizedPayment.installments === 'number' ? memoizedPayment.installments : 1,
+        cashRegisterId: memoizedPayment.cashRegisterId || cashRegister || "",
+        check: memoizedPayment.check,
         category: memoizedPayment.category || "",
+        status: memoizedPayment.status || "completed",
       });
     } else {
       form.reset({
         type: "sale",
         paymentMethod: "cash",
         amount: 0,
+        paymentDate: new Date(),
         description: "",
         customerId: "",
+        legacyClientId: "",
         orderId: "",
-        installments: undefined,
-        checkNumber: "",
-        checkBank: "",
-        checkDate: "",
+        installments: 1,
+        cashRegisterId: cashRegister || "",
+        check: undefined,
         category: "",
+        status: "completed",
       });
     }
-  }, [memoizedPayment, isEditMode, open, form]);
+  }, [memoizedPayment, isEditMode, open, form, cashRegister]);
 
   const handleSubmit = async (data: PaymentFormData) => {
     if (!isCashRegisterOpen) {
@@ -191,15 +239,23 @@ export function PaymentDialog({
     
     try {
       const paymentData = {
-        ...data,
-        installments: showInstallments ? data.installments : 1,
-        checkNumber: showCheckFields ? data.checkNumber : undefined,
-        checkBank: showCheckFields ? data.checkBank : undefined,
-        checkDate: showCheckFields ? data.checkDate : undefined,
+        amount: data.amount,
+        type: data.type,
+        paymentMethod: data.paymentMethod,
+        date: data.paymentDate,
+        description: data.description,
+        category: data.category,
+        cashRegisterId: data.cashRegisterId,
+        customerId: data.customerId || undefined,
+        legacyClientId: data.legacyClientId || undefined,
+        orderId: data.orderId || undefined,
+        status: data.status,
+        installments: showInstallments ? data.installments : undefined,
+        check: showCheckFields ? data.check : undefined,
       };
 
-      // Aqui você implementaria a lógica de criação/edição
-      // Similar ao que existe no PaymentForm
+      // TODO: Implementar a lógica de criação/edição usando o hook usePayments
+      console.log('Payment data:', paymentData);
       
       toast({
         title: "Sucesso",
@@ -226,7 +282,7 @@ export function PaymentDialog({
 
   const getPaymentTypeOptions = () => [
     { value: "sale", label: "Venda" },
-    { value: "debt_payment", label: "Pagamento de Dívida" },
+    { value: "debt_payment", label: "Pagamento de Débito" },
     { value: "expense", label: "Despesa" },
   ];
 
@@ -235,15 +291,15 @@ export function PaymentDialog({
     { value: "credit", label: "Cartão de Crédito" },
     { value: "debit", label: "Cartão de Débito" },
     { value: "pix", label: "PIX" },
-    { value: "bank_slip", label: "Boleto Bancário" },
     { value: "check", label: "Cheque" },
+    { value: "bank_slip", label: "Boleto Bancário" },
     { value: "promissory_note", label: "Nota Promissória" },
     { value: "mercado_pago", label: "Mercado Pago" },
   ];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <DollarSign className="h-5 w-5" />
@@ -259,6 +315,79 @@ export function PaymentDialog({
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+            
+            {/* Informações Básicas */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Valor */}
+              <FormField
+                control={form.control}
+                name="amount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Valor (R$) *</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <DollarSign className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="0,00"
+                          className="pl-10"
+                          {...field}
+                          value={field.value === 0 ? "" : field.value}
+                          onChange={(e) => {
+                            const value = e.target.value === "" ? 0 : parseFloat(e.target.value);
+                            field.onChange(value);
+                          }}
+                        />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Data do Pagamento */}
+              <FormField
+                control={form.control}
+                name="paymentDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Data do Pagamento *</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={"outline"}
+                            className={`w-full pl-3 text-left font-normal ${
+                              !field.value ? "text-muted-foreground" : ""
+                            }`}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {field.value ? (
+                              format(field.value, "PPP", { locale: ptBR })
+                            ) : (
+                              <span>Selecione a data</span>
+                            )}
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Tipo de Pagamento */}
               <FormField
@@ -266,7 +395,7 @@ export function PaymentDialog({
                 name="type"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Tipo de Pagamento</FormLabel>
+                    <FormLabel>Tipo de Pagamento *</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
@@ -292,7 +421,7 @@ export function PaymentDialog({
                 name="paymentMethod"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Método de Pagamento</FormLabel>
+                    <FormLabel>Método de Pagamento *</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
@@ -313,27 +442,8 @@ export function PaymentDialog({
               />
             </div>
 
+            {/* Parcelas e Caixa */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Valor */}
-              <FormField
-                control={form.control}
-                name="amount"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Valor</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        placeholder="0,00"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
               {/* Parcelas (se cartão de crédito) */}
               {showInstallments && (
                 <FormField
@@ -342,7 +452,10 @@ export function PaymentDialog({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Parcelas</FormLabel>
-                      <Select onValueChange={(value) => field.onChange(Number(value))} defaultValue={field.value?.toString()}>
+                      <Select 
+                        onValueChange={(value) => field.onChange(Number(value))} 
+                        defaultValue={field.value?.toString()}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Selecione" />
@@ -361,22 +474,207 @@ export function PaymentDialog({
                   )}
                 />
               )}
+
+              {/* Status do Caixa */}
+              <FormField
+                control={form.control}
+                name="cashRegisterId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Caixa Atual *</FormLabel>
+                    <div className="border rounded-md p-3 bg-gray-50">
+                      {isLoadingCashRegister ? (
+                        <div className="flex items-center">
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          <span className="text-muted-foreground text-sm">Carregando caixa...</span>
+                        </div>
+                      ) : !isCashRegisterOpen || !cashRegister ? (
+                        <div className="text-red-500 text-sm">
+                          Nenhum caixa disponível. Você precisa abrir um caixa primeiro.
+                        </div>
+                      ) : (
+                        <div className="flex items-center space-x-2">
+                          <ClipboardCheck className="h-4 w-4 text-green-500" />
+                          <span className="text-sm">Caixa Aberto</span>
+                        </div>
+                      )}
+                    </div>
+                    <input type="hidden" {...field} value={cashRegister || ""} />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
 
-            {/* Descrição */}
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Descrição</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Descrição do pagamento" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {/* Seleção de Cliente - Apenas se não for despesa */}
+            {watchedType !== "expense" && (
+              <div className="space-y-4 border p-4 rounded-md bg-gray-50">
+                {/* Header com título e pedidos no mesmo nível */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {/* Coluna esquerda - Título, botões e campo de busca */}
+                  <div className="space-y-4">
+                    <h4 className="font-medium">Informações do Cliente</h4>
+                    
+                    <div className="flex space-x-4">
+                      <Button
+                        type="button"
+                        variant={selectedEntityType === "customer" ? "default" : "outline"}
+                        onClick={() => onEntityTypeSelect("customer")}
+                        size="sm"
+                      >
+                        <User className="mr-2 h-4 w-4" />
+                        Cliente
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={selectedEntityType === "legacyClient" ? "default" : "outline"}
+                        onClick={() => onEntityTypeSelect("legacyClient")}
+                        size="sm"
+                      >
+                        <Store className="mr-2 h-4 w-4" />
+                        Cliente Legado
+                      </Button>
+                    </div>
+
+                    {/* Campo de busca do cliente */}
+                    {selectedEntityType === "customer" && (
+                      <div className="space-y-2">
+                        <ClientSearch 
+                          customers={customers || []}
+                          form={form as any}
+                          onClientSelect={onClientSelect}
+                          fetchAllCustomers={fetchAllCustomers}
+                        />
+                        {selectedCustomerId && (
+                          <div className="text-sm text-green-700 bg-green-50 p-2 rounded">
+                            Cliente selecionado: {customers?.find((c: UserType) => c._id === selectedCustomerId)?.name}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Campo para cliente legado */}
+                    {selectedEntityType === "legacyClient" && (
+                      <div className="space-y-2">
+                        <Input
+                          placeholder="Buscar cliente legado..."
+                          value={legacyClientSearch}
+                          onChange={(e) => setLegacyClientSearch(e.target.value)}
+                        />
+                        {legacyClientId && (
+                          <div className="text-sm text-green-700 bg-green-50 p-2 rounded">
+                            Cliente legado selecionado: {legacyClients?.find((c: LegacyClient) => c._id === legacyClientId)?.name}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Coluna direita - Pedidos do Cliente (mesmo nível do título) */}
+                  {(selectedCustomerId || clientOrders.length > 0) && watchedType === "sale" && (
+                    <div className="space-y-3">
+                      <h5 className="font-medium text-sm">Pedidos do Cliente</h5>
+                      
+                      {isLoadingOrders ? (
+                        <div className="flex items-center justify-center py-4">
+                          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                          <span className="ml-2 text-sm text-muted-foreground">Carregando...</span>
+                        </div>
+                      ) : clientOrders && clientOrders.length > 0 ? (
+                        <div className="border rounded-md max-h-60 overflow-y-auto">
+                          <div className="space-y-2 p-3">
+                            {clientOrders.map((order: Order) => {
+                              const paymentStatus = order.paymentStatus === "paid" 
+                                ? "Pago" 
+                                : order.paymentStatus === "partially_paid" 
+                                  ? "Parcialmente Pago" 
+                                  : "Pendente";
+                                  
+                              const statusClass = order.paymentStatus === "paid" 
+                                ? "bg-green-100 text-green-800" 
+                                : order.paymentStatus === "partially_paid" 
+                                  ? "bg-yellow-100 text-yellow-800" 
+                                  : "bg-red-100 text-red-800";
+                                
+                              return (
+                                <div
+                                  key={order._id}
+                                  className={`p-3 border rounded cursor-pointer hover:bg-gray-50 transition-colors ${
+                                    selectedOrderId === order._id ? "bg-blue-50 border-blue-200" : ""
+                                  }`}
+                                  onClick={() => {
+                                    form.setValue("orderId", order._id);
+                                    onOrderSelect(order._id);
+                                  }}
+                                >
+                                  <div className="space-y-2">
+                                    <div className="flex items-center justify-between">
+                                      <span className="font-medium text-sm">
+                                        {order.serviceOrder ? `O.S. #${order.serviceOrder}` : `#${order._id.substring(0, 8)}`}
+                                      </span>
+                                      <Badge className={`text-xs ${statusClass}`}>
+                                        {paymentStatus}
+                                      </Badge>
+                                    </div>
+                                    <div className="text-sm">
+                                      <div className="font-medium text-green-700">
+                                        {formatCurrency(order.finalPrice)}
+                                      </div>
+                                      <div className="text-muted-foreground text-xs">
+                                        {formatDate(order.createdAt)}
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-xs text-muted-foreground">
+                                        {order.status === "pending" ? "Pendente" :
+                                         order.status === "in_production" ? "Em Produção" :
+                                         order.status === "ready" ? "Pronto" :
+                                         order.status === "delivered" ? "Entregue" :
+                                         "Cancelado"}
+                                      </span>
+                                      <Button
+                                        type="button"
+                                        variant={selectedOrderId === order._id ? "default" : "outline"}
+                                        size="sm"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          form.setValue("orderId", order._id);
+                                          onOrderSelect(order._id);
+                                        }}
+                                      >
+                                        {selectedOrderId === order._id ? "Selecionado" : "Selecionar"}
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-center py-4 text-muted-foreground border rounded-md">
+                          <p className="text-sm">Nenhum pedido encontrado</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Pedido selecionado (full width abaixo) */}
+                {selectedOrderId && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+                    <h6 className="text-sm font-medium text-blue-800">
+                      Pedido selecionado
+                    </h6>
+                    <p className="text-sm text-blue-700 mt-1">
+                      {clientOrders.find((order: Order) => order._id === selectedOrderId)?.serviceOrder 
+                        ? `O.S. #${clientOrders.find((order: Order) => order._id === selectedOrderId)?.serviceOrder}` 
+                        : `Pedido #${selectedOrderId.substring(0, 8)}`}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Campos específicos para cheque */}
             {showCheckFields && (
@@ -389,12 +687,12 @@ export function PaymentDialog({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
-                    name="checkNumber"
+                    name="check.bank"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Número do Cheque</FormLabel>
+                        <FormLabel>Banco *</FormLabel>
                         <FormControl>
-                          <Input placeholder="Número do cheque" {...field} />
+                          <Input placeholder="Ex: Banco do Brasil" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -403,12 +701,12 @@ export function PaymentDialog({
 
                   <FormField
                     control={form.control}
-                    name="checkBank"
+                    name="check.checkNumber"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Banco</FormLabel>
+                        <FormLabel>Número do Cheque *</FormLabel>
                         <FormControl>
-                          <Input placeholder="Nome do banco" {...field} />
+                          <Input placeholder="Ex: 000123" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -418,33 +716,98 @@ export function PaymentDialog({
 
                 <FormField
                   control={form.control}
-                  name="checkDate"
+                  name="check.accountHolder"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Data de Compensação</FormLabel>
+                      <FormLabel>Titular da Conta *</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} />
+                        <Input placeholder="Nome completo do titular" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="check.branch"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Agência *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Ex: 1234" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="check.accountNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Número da Conta *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Ex: 12345-6" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
               </div>
             )}
 
-            {/* Categoria */}
+            {/* Categoria para despesas */}
+            {watchedType === "expense" && (
+              <FormField
+                control={form.control}
+                name="category"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Categoria da Despesa *</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione a categoria" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="aluguel">Aluguel</SelectItem>
+                        <SelectItem value="utilidades">Água/Luz/Internet</SelectItem>
+                        <SelectItem value="fornecedores">Fornecedores</SelectItem>
+                        <SelectItem value="salarios">Salários</SelectItem>
+                        <SelectItem value="manutencao">Manutenção</SelectItem>
+                        <SelectItem value="marketing">Marketing</SelectItem>
+                        <SelectItem value="impostos">Impostos</SelectItem>
+                        <SelectItem value="outros">Outros</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
+            {/* Descrição */}
             <FormField
               control={form.control}
-              name="category"
+              name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Categoria</FormLabel>
+                  <FormLabel>Descrição/Observações</FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="Categoria do pagamento (opcional)"
-                      {...field}
+                    <Textarea 
+                      placeholder="Descrição ou observações sobre este pagamento..." 
+                      className="min-h-[80px]"
+                      {...field} 
                     />
                   </FormControl>
+                  <FormDescription>
+                    Adicione informações adicionais sobre este pagamento, se necessário
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

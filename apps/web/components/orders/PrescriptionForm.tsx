@@ -23,7 +23,8 @@ export default function PrescriptionForm({ form }: PrescriptionFormProps) {
   const [avInput, setAvInput] = useState<string>("");
   const [amInput, setAmInput] = useState<string>("");
 
-  useEffect(() => {
+  // Função para sincronizar valores dos campos
+  const syncFieldValues = () => {
     const nd = form.getValues("prescriptionData.nd");
     if (nd !== 0 && nd !== undefined) {
       setNdInput(nd.toString());
@@ -38,6 +39,43 @@ export default function PrescriptionForm({ form }: PrescriptionFormProps) {
     if (addition !== 0 && addition !== undefined) {
       setAdditionInput(addition.toString());
     }
+
+    // Sincronizar os campos Ponte, Aro, AV e AM
+    const bridge = form.getValues("prescriptionData.bridge");
+    if (bridge !== 0 && bridge !== undefined) {
+      setBridgeInput(bridge.toString());
+    }
+
+    const rim = form.getValues("prescriptionData.rim");
+    if (rim !== 0 && rim !== undefined) {
+      setRimInput(rim.toString());
+    }
+
+    const vh = form.getValues("prescriptionData.vh");
+    if (vh !== 0 && vh !== undefined) {
+      setAvInput(vh.toString());
+    }
+
+    const sh = form.getValues("prescriptionData.sh");
+    if (sh !== 0 && sh !== undefined) {
+      setAmInput(sh.toString());
+    }
+  };
+
+  useEffect(() => {
+    syncFieldValues();
+  }, [form]);
+
+  // Efeito adicional para sincronizar quando os valores mudarem
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name && name.includes("prescriptionData")) {
+        // Pequeno delay para garantir que o valor foi atualizado
+        setTimeout(syncFieldValues, 0);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, [form]);
 
   const handleNumericInput = (

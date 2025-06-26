@@ -71,6 +71,7 @@ export default function OrderClientProducts({
   const [loadedInstitutions, setLoadedInstitutions] = useState<any[]>([]);
   const [isInstitutionalOrder, setIsInstitutionalOrder] = useState(false);
   const [hasResponsible, setHasResponsible] = useState(false);
+  const [discountInput, setDiscountInput] = useState<string>("");
   
   const { 
     institutions, 
@@ -99,6 +100,14 @@ export default function OrderClientProducts({
       fetchAllInstitutions();
     }
   }, [isInstitutionalOrder, loadedInstitutions.length, fetchAllInstitutions]);
+
+  // Sincronizar o estado local do desconto com o valor do formulário
+  useEffect(() => {
+    const currentDiscount = form.getValues("discount");
+    if (currentDiscount !== undefined && currentDiscount !== null) {
+      setDiscountInput(currentDiscount === 0 ? "" : currentDiscount.toString());
+    }
+  }, [form]);
 
   return (
     <div className="grid grid-cols-12 gap-6 h-full">
@@ -322,8 +331,20 @@ export default function OrderClientProducts({
                         step="0.01"
                         placeholder="0,00"
                         onChange={(e) => {
-                          const value = e.target.value === '' ? '' : Number.parseFloat(e.target.value);
+                          const value = e.target.value === '' ? 0 : Number.parseFloat(e.target.value);
                           field.onChange(value);
+                          
+                          console.log("Entrada alterada:", value);
+                          console.log("Recalculando parcelas...");
+                          
+                          // Forçar recálculo das parcelas
+                          const currentInstallments = form.getValues("installments");
+                          if (currentInstallments && currentInstallments > 0) {
+                            // Trigger um pequeno timeout para garantir que o valor foi atualizado
+                            setTimeout(() => {
+                              form.trigger("installments");
+                            }, 0);
+                          }
                         }}
                         value={field.value === null || field.value === undefined || field.value === 0 ? '' : field.value}
                         className="h-8 text-sm bg-background text-foreground border-input focus:ring-primary"
@@ -362,11 +383,72 @@ export default function OrderClientProducts({
               )}
             </div>
 
-            {showInstallments && (form?.watch("installments") || 0) > 0 && (
-              <div className="p-2 bg-blue-100/10 rounded text-xs text-blue-800 border border-blue-100">
-                Valor das parcelas: {formatCurrency(calculateInstallmentValue())}
-              </div>
-            )}
+                        <FormField
+              control={form.control}
+              name="discount"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs">Desconto (opcional)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="0,00"
+                      value={discountInput}
+                      onChange={(e) => {
+                        const inputValue = e.target.value;
+                        setDiscountInput(inputValue);
+                        
+                        const numericValue = inputValue === '' ? 0 : parseFloat(inputValue) || 0;
+                        
+                        // Atualizar o valor no formulário
+                        field.onChange(numericValue);
+                        form.setValue("discount", numericValue);
+                        
+                        // Recalcular o preço final
+                        const totalPrice = form.getValues("totalPrice") || 0;
+                        const finalPrice = Math.max(0, totalPrice - numericValue);
+                        form.setValue("finalPrice", finalPrice);
+                        
+                        // Forçar atualização do valor das parcelas
+                        const currentInstallments = form.getValues("installments");
+                        if (currentInstallments && currentInstallments > 0) {
+                          setTimeout(() => {
+                            form.trigger("installments");
+                          }, 0);
+                        }
+                        
+                        console.log("Desconto digitado:", inputValue);
+                        console.log("Valor numérico:", numericValue);
+                        console.log("Total:", totalPrice);
+                        console.log("Final:", finalPrice);
+                      }}
+                      className="h-8 text-sm bg-background text-foreground border-input focus:ring-primary"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {showInstallments && (form?.watch("installments") || 0) > 0 && (() => {
+              const finalPrice = form.watch("finalPrice") || 0;
+              const paymentEntry = form.watch("paymentEntry") || 0;
+              const installments = form.watch("installments") || 1;
+              const remainingAmount = Math.max(0, finalPrice - paymentEntry);
+              const installmentValue = remainingAmount / installments;
+              
+              return (
+                <div className="p-2 bg-blue-100/10 rounded text-xs text-blue-800 border border-blue-100">
+                  <div className="space-y-1">
+                    <div>Valor das parcelas: {formatCurrency(installmentValue)}</div>
+                    <div className="text-xs text-gray-600">
+                      (Valor final: {formatCurrency(finalPrice)} - Entrada: {formatCurrency(paymentEntry)} = {formatCurrency(remainingAmount)} ÷ {installments}x)
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             <FormField
               control={form.control}

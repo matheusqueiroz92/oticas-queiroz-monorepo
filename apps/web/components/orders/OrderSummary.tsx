@@ -8,6 +8,23 @@ interface OrderSummaryProps {
   selectedProducts: Product[];
 }
 
+// Mapeamento de tipos de produtos para português
+const productTypeTranslations: { [key: string]: string } = {
+  'lenses': 'Lentes',
+  'prescription_frame': 'Armação com Grau',
+  'sunglasses': 'Óculos de Sol',
+  'frame': 'Armação',
+  'contact_lenses': 'Lentes de Contato',
+  'accessories': 'Acessórios',
+  'cleaning_products': 'Produtos de Limpeza',
+  'cases': 'Estojo',
+  'others': 'Outros'
+};
+
+const translateProductType = (type: string): string => {
+  return productTypeTranslations[type] || type;
+};
+
 export default function OrderSummary({ form, selectedProducts }: OrderSummaryProps) {
   const totalPrice = form.getValues("totalPrice") || 0;
   const discount = form.getValues("discount") || 0;
@@ -49,61 +66,76 @@ export default function OrderSummary({ form, selectedProducts }: OrderSummaryPro
      }}
     >
       <div 
-        className="p-2 border-b"
+        className="px-3 py-2 border-b"
         style={{ borderColor: isDark ? '#374151' : '#e5e7eb' }}
       >
-        <h3 
-          className="font-medium"
-          style={{ color: isDark ? '#60a5fa' : '#2563eb' }}
-        >
-          Resumo do Pedido
-        </h3>
-        {serviceOrder && (
-          <div 
-            className="text-xs mt-1"
-            style={{ color: isDark ? '#9ca3af' : '#6b7280' }}
+        <div className="flex items-center justify-between">
+          <h3 
+            className="font-semibold text-sm"
+            style={{ color: isDark ? '#60a5fa' : '#2563eb' }}
           >
-            O.S.: {serviceOrder}
-          </div>
-        )}
+            Resumo do Pedido
+          </h3>
+          {serviceOrder && (
+            <span 
+              className="text-xs font-medium px-2 py-1 rounded"
+              style={{ 
+                backgroundColor: isDark ? '#374151' : '#f3f4f6',
+                color: isDark ? '#9ca3af' : '#6b7280' 
+              }}
+            >
+              O.S.: {serviceOrder}
+            </span>
+          )}
+        </div>
       </div>
       
       <div className="p-3 space-y-3">
         {selectedProducts.length > 0 ? (
-          <div className="space-y-2">
+          <div className="space-y-3">
             {selectedProducts.map((product) => (
-              <div key={product._id} className="flex justify-between items-center">
-                <div className="flex items-center">
-                  <div 
-                    className="w-8 h-8 rounded flex items-center justify-center mr-2"
-                    style={{ backgroundColor: isDark ? '#374151' : '#f3f4f6' }}
+              <div key={product._id} className="space-y-1">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-start gap-2 flex-1 min-w-0">
+                    <div 
+                      className="w-6 h-6 rounded flex items-center justify-center flex-shrink-0 mt-0.5"
+                      style={{ backgroundColor: isDark ? '#374151' : '#f3f4f6' }}
+                    >
+                      <ShoppingBag 
+                        className="w-3 h-3"
+                        style={{ color: isDark ? '#9ca3af' : '#6b7280' }}
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p 
+                        className="text-sm font-medium leading-tight"
+                        style={{ 
+                          color: isDark ? '#f1f5f9' : '#111827',
+                          wordBreak: 'break-word',
+                          lineHeight: '1.3'
+                        }}
+                        title={product.name}
+                      >
+                        {product.name}
+                      </p>
+                      <p 
+                        className="text-xs mt-0.5"
+                        style={{ color: isDark ? '#9ca3af' : '#6b7280' }}
+                      >
+                        {translateProductType(product.productType)}
+                      </p>
+                    </div>
+                  </div>
+                  <span 
+                    className="text-sm font-semibold flex-shrink-0"
+                    style={{ 
+                      color: isDark ? '#60a5fa' : '#2563eb',
+                      minWidth: 'fit-content'
+                    }}
                   >
-                    <ShoppingBag 
-                      className="w-4 h-4"
-                      style={{ color: isDark ? '#9ca3af' : '#6b7280' }}
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p 
-                      className="text-sm font-medium truncate"
-                      style={{ color: isDark ? '#f1f5f9' : '#111827' }}
-                    >
-                      {product.name}
-                    </p>
-                    <p 
-                      className="text-xs"
-                      style={{ color: isDark ? '#9ca3af' : '#6b7280' }}
-                    >
-                      {product.productType}
-                    </p>
-                  </div>
+                    {formatCurrency(product.sellPrice || 0)}
+                  </span>
                 </div>
-                <span 
-                  className="text-sm font-medium"
-                  style={{ color: isDark ? '#f1f5f9' : '#111827' }}
-                >
-                  {formatCurrency(product.sellPrice || 0)}
-                </span>
               </div>
             ))}
           </div>
@@ -123,26 +155,53 @@ export default function OrderSummary({ form, selectedProducts }: OrderSummaryPro
         )}
         
         <div 
-          className="pt-2 border-t"
+          className="pt-3 border-t"
           style={{ borderColor: isDark ? '#374151' : '#e5e7eb' }}
         >
-          <div className="space-y-1">
-            <div className="flex justify-between text-sm">
-              <span style={{ color: isDark ? '#f1f5f9' : '#111827' }}>Subtotal</span>
-                              <span style={{ color: isDark ? '#f1f5f9' : '#111827' }}>{formatCurrency(totalPrice)}</span>
+          <div className="space-y-2">
+            <div className="flex justify-between items-center text-sm">
+              <span 
+                className="font-medium"
+                style={{ color: isDark ? '#f1f5f9' : '#111827' }}
+              >
+                Subtotal
+              </span>
+              <span 
+                className="font-medium"
+                style={{ color: isDark ? '#f1f5f9' : '#111827' }}
+              >
+                {formatCurrency(totalPrice)}
+              </span>
             </div>
             
-            <div className="flex justify-between text-sm">
-              <span style={{ color: isDark ? '#f1f5f9' : '#111827' }}>Desconto</span>
-                              <span style={{ color: isDark ? '#f1f5f9' : '#111827' }}>{formatCurrency(discount || 0)}</span>
-            </div>
+            {discount > 0 && (
+              <div className="flex justify-between items-center text-sm">
+                <span 
+                  className="font-medium"
+                  style={{ color: isDark ? '#f87171' : '#dc2626' }}
+                >
+                  Desconto
+                </span>
+                <span 
+                  className="font-medium"
+                  style={{ color: isDark ? '#f87171' : '#dc2626' }}
+                >
+                  -{formatCurrency(discount)}
+                </span>
+              </div>
+            )}
             
             <div 
-              className="flex justify-between font-medium pt-1 border-t mt-1"
+              className="flex justify-between items-center font-semibold pt-2 border-t text-base"
               style={{ borderColor: isDark ? '#374151' : '#e5e7eb' }}
             >
-                              <span style={{ color: isDark ? '#f1f5f9' : '#111827' }}>Total</span>
-              <span style={{ color: isDark ? '#60a5fa' : '#2563eb' }}>{formatCurrency(finalPrice)}</span>
+              <span style={{ color: isDark ? '#f1f5f9' : '#111827' }}>Total</span>
+              <span 
+                className="text-lg"
+                style={{ color: isDark ? '#60a5fa' : '#2563eb' }}
+              >
+                {formatCurrency(finalPrice)}
+              </span>
             </div>
           </div>
         </div>

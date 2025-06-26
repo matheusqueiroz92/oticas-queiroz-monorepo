@@ -3,7 +3,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { DollarSign, Loader2, AlertCircle } from "lucide-react";
 import { checkOpenCashRegister } from "@/app/_services/cashRegisterService";
 import { formatCurrency } from "@/app/_utils/formatters";
@@ -44,63 +43,77 @@ export function CashRegisterStatus({
 
   if (isLoading) {
     return (
-      <Card className="mb-4 p-3">
-        <CardContent className="p-2 flex items-center">
-          <Loader2 className="h-5 w-5 animate-spin mr-2" />
-          <span>Verificando status do caixa...</span>
-        </CardContent>
-      </Card>
+      <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+        <div className="flex items-center">
+          <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mr-3">
+            <Loader2 className="h-4 w-4 text-blue-600 dark:text-blue-400 animate-spin" />
+          </div>
+          <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+            Verificando status do caixa...
+          </span>
+        </div>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <Card className="mb-4 bg-yellow-50 border-yellow-200">
-        <CardContent className="p-4 flex items-center">
-          <AlertCircle className="h-5 w-5 text-yellow-600 mr-2" />
-          <span className="text-yellow-700">
+      <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+        <div className="flex items-center">
+          <div className="w-8 h-8 bg-yellow-100 dark:bg-yellow-900 rounded-full flex items-center justify-center mr-3">
+            <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+          </div>
+          <span className="text-sm font-medium text-yellow-700 dark:text-yellow-300">
             {error instanceof Error
               ? error.message
               : "Erro ao verificar status do caixa"}
           </span>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     );
   }
 
   if (!data?.isOpen || !data?.data) {
     return (
-      <Card className="mb-4 bg-red-50 border-red-200">
-        <CardContent className="p-4 flex justify-between items-center">
+      <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
+        <div className="flex justify-between items-center">
           <div className="flex items-center">
-            <DollarSign className="h-5 w-5 text-red-600 mr-2" />
+            <div className="w-8 h-8 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center mr-3">
+              <DollarSign className="h-4 w-4 text-red-600 dark:text-red-400" />
+            </div>
             <div>
-              <p className="font-medium text-red-700">Nenhum caixa aberto</p>
-              <p className="text-sm text-red-600">
+              <p className="font-medium text-red-700 dark:text-red-300 text-sm">Nenhum caixa aberto</p>
+              <p className="text-xs text-red-600 dark:text-red-400">
                 É necessário abrir um caixa para registrar operações.
               </p>
             </div>
           </div>
           {showOpenButton && (
-            <Button onClick={() => router.push("/cash-register/open")}>
+            <Button 
+              size="sm"
+              onClick={() => router.push("/cash-register/open")}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
               Abrir Caixa
             </Button>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     );
   }
 
   const cashRegister = data.data;
 
   return (
-    <Card className="mb-4 bg-green-50 border-green-200">
-      <CardContent className="p-4 flex justify-between items-center">
+    <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
+      <div className="flex justify-between items-center">
         <div className="flex items-center">
-          <DollarSign className="h-5 w-5 text-green-600 mr-2" />
+          <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mr-3">
+            <DollarSign className="h-4 w-4 text-green-600 dark:text-green-400" />
+          </div>
           <div>
-            <p className="font-medium text-green-700">Caixa Aberto</p>
-            <p className="text-sm text-green-600">
+            <p className="font-medium text-green-700 dark:text-green-300 text-sm">Caixa Aberto</p>
+            <p className="text-xs text-green-600 dark:text-green-400">
               Saldo atual: {formatCurrency(cashRegister.currentBalance)}
             </p>
           </div>
@@ -109,22 +122,26 @@ export function CashRegisterStatus({
           {showDetailsButton && (
             <Button
               variant="outline"
+              size="sm"
               onClick={() => router.push(`/cash-register/${cashRegister._id}`)}
+              className="border-green-300 text-green-700 hover:bg-green-100"
             >
               Ver Detalhes
             </Button>
           )}
           {cashRegister.status === "open" && (
             <Button
+              size="sm"
               onClick={() =>
                 router.push(`/cash-register/close/${cashRegister._id}`)
               }
+              className="bg-green-600 hover:bg-green-700 text-white"
             >
               Fechar Caixa
             </Button>
           )}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

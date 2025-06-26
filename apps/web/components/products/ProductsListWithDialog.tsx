@@ -4,6 +4,7 @@ import { PaginationItems } from "@/components/PaginationItems";
 import { ProductEmptyState } from "./ProductEmptyState";
 import { ProductGridWithActions } from "./ProductGridWithActions";
 import { ProductTableWithActions } from "./ProductTableWithActions";
+import { LayoutGrid, Table } from "lucide-react";
 
 interface ProductsListWithDialogProps {
   products: Product[];
@@ -77,24 +78,24 @@ export function ProductsListWithDialog({
   return (
     <div className="space-y-4">
       {/* Seletor de visualização - movido para o canto direito */}
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-end m-4">
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground mr-2">
             {filteredProducts.length} produtos encontrados
           </span>
           <Button
-            variant={viewMode === "grid" ? "default" : "outline"}
+            variant={viewMode === "grid" ? "default" : "ghost"}
             size="sm"
             onClick={() => setViewMode("grid")}
           >
-            Grid
+            <LayoutGrid className="w-4 h-4" />
           </Button>
           <Button
-            variant={viewMode === "table" ? "default" : "outline"}
+            variant={viewMode === "table" ? "default" : "ghost"}
             size="sm"
             onClick={() => setViewMode("table")}
           >
-            Tabela
+            <Table className="w-4 h-4" />
           </Button>
         </div>
       </div>

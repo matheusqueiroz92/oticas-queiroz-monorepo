@@ -1,5 +1,4 @@
 import React from "react";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -11,18 +10,9 @@ import {
 } from "@/components/ui/table";
 import { Loader2, FileText, Ban, CreditCard, ExternalLink, Banknote, BookText, TicketsPlane, NotepadText, Repeat } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PaginationItems } from "@/components/PaginationItems";
 import { formatCurrency, formatDate } from "@/app/_utils/formatters";
 import type { IPayment, PaymentStatus, PaymentType } from "@/app/_types/payment";
-import { CashRegisterStatus } from "@/components/cash-register/CashRegisterStatus";
 
 interface PaymentsListProps {
   payments: IPayment[];
@@ -56,19 +46,11 @@ export function PaymentsList({
   payments,
   isLoading,
   error,
-  search,
-  typeFilter,
-  statusFilter,
   currentPage,
   totalPages,
   totalItems,
   pageSize,
   showEmptyState,
-  setSearch,
-  setTypeFilter,
-  setStatusFilter,
-  applySearch,
-  clearFilters,
   cancelPayment,
   navigateToPaymentDetails,
   navigateToNewPayment,
@@ -117,70 +99,6 @@ export function PaymentsList({
 
   return (
     <>
-      <CashRegisterStatus showOpenButton />
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Filtros</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <Input
-                placeholder="Buscar pagamento..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full"
-              />
-            </div>
-            <div className="grid grid-cols-2 sm:flex gap-2">
-              <Select
-                value={typeFilter}
-                onValueChange={(value) =>
-                  setTypeFilter(value as PaymentType | "all")
-                }
-              >
-                <SelectTrigger className="w-[120px]">
-                  <SelectValue placeholder="Tipo" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="sale">Vendas</SelectItem>
-                  <SelectItem value="debt_payment">Débitos</SelectItem>
-                  <SelectItem value="expense">Despesas</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select
-                value={statusFilter}
-                onValueChange={(value) =>
-                  setStatusFilter(value as PaymentStatus | "all")
-                }
-              >
-                <SelectTrigger className="w-[120px]">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="completed">Concluídos</SelectItem>
-                  <SelectItem value="pending">Pendentes</SelectItem>
-                  <SelectItem value="cancelled">Cancelados</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Button onClick={applySearch}>Filtrar</Button>
-              <Button variant="outline" onClick={clearFilters}>
-                Limpar
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="flex justify-end mt-4">
-        <Button onClick={navigateToNewPayment}>Novo Pagamento</Button>
-      </div>
-
       {isLoading && (
         <div className="flex justify-center items-center py-12">
           <Loader2 className="h-8 w-8 animate-spin" />
@@ -208,8 +126,8 @@ export function PaymentsList({
 
       {!isLoading && !error && payments.length > 0 && (
         <>
-          <Table className="mt-4">
-            <TableHeader>
+          <Table>
+            <TableHeader className="bg-gray-100 dark:bg-slate-800/50">
               <TableRow>
                 <TableHead>Descrição</TableHead>
                 <TableHead>Tipo</TableHead>
@@ -256,31 +174,25 @@ export function PaymentsList({
                     <div className="flex space-x-2">
                       <Button
                         variant="outline"
-                        size="sm"
                         onClick={() => navigateToPaymentDetails(payment._id)}
                       >
-                        <ExternalLink className="h-4 w-4 mr-1" />
-                        Detalhes
+                        <ExternalLink className="h-4 w-4" />
                       </Button>
                       {payment.status !== "cancelled" && (
                         <Button
-                          variant="destructive"
-                          size="sm"
+                          variant="outline"
                           onClick={() => confirmCancelPayment(payment._id)}
                         >
-                          <Ban className="h-4 w-4 mr-1" />
-                          Cancelar
+                          <Ban className="h-4 w-4" />
                         </Button>
                       )}
                       {payment.paymentMethod === "mercado_pago" && payment.mercadoPagoId && (
                         <Button
                           variant="outline"
-                          size="sm"
                           className="text-blue-600"
                           onClick={() => window.open("https://www.mercadopago.com.br", "_blank")}
                         >
-                          <CreditCard className="h-4 w-4 mr-1" />
-                          MP
+                          <CreditCard className="h-4 w-4" />
                         </Button>
                       )}
                     </div>
