@@ -13,8 +13,6 @@ import { RecentOrdersCard } from "@/components/profile/RecentOrdersCard";
 import { useOrders } from "@/hooks/useOrders";
 import Cookies from "js-cookie";
 import { PageContainer } from "@/components/ui/page-container";
-import type { User } from "@/app/_types/user";
-import type { Order } from "@/app/_types/order";
 
 export default function ProfilePage() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -29,7 +27,7 @@ export default function ProfilePage() {
     getUserImageUrl,
   } = useProfile();
 
-  const { orders, isLoading: isLoadingOrders, getClientName } = useOrders();
+  const { orders, isLoading: isLoadingOrders } = useOrders();
 
   const handleEditClick = () => {
     setEditDialogOpen(true);
@@ -103,17 +101,6 @@ export default function ProfilePage() {
   return (
     <PageContainer>
       <div className="space-y-8">
-        {/* Header da página
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-            {user.name}
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">
-            {user.role === "admin" ? "Administrador" : 
-             user.role === "employee" ? "Funcionário" : "Cliente"}
-          </p>
-        </div> */}
-
         {/* Estatísticas do usuário */}
         <ProfileStats userRole={user.role} />
 
@@ -133,7 +120,6 @@ export default function ProfilePage() {
             {(user.role === "employee" || user.role === "admin") && (
               <RecentOrdersCard
                 orders={employeeOrders}
-                getClientName={getClientName}
                 onViewDetails={handleViewOrderDetails}
                 isLoading={isLoadingOrders}
               />

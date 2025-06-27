@@ -14,7 +14,17 @@ import { useLaboratories } from "@/hooks/useLaboratories";
 import { useEmployees } from "@/hooks/useEmployees";
 import { Employee } from "@/app/_types/employee";
 
-export const OrderFilters = ({ onUpdateFilters }: any) => {
+interface OrderFiltersProps {
+  onUpdateFilters: (filters: Record<string, any>) => void;
+  hideEmployeeFilter?: boolean;
+  hideClientFilter?: boolean;
+}
+
+export const OrderFilters = ({ 
+  onUpdateFilters, 
+  hideEmployeeFilter = false, 
+  hideClientFilter = false 
+}: OrderFiltersProps) => {
   const [dateRange, setDateRange] = useState({
     startDate: '',
     endDate: ''
@@ -176,32 +186,34 @@ export const OrderFilters = ({ onUpdateFilters }: any) => {
         </div>
         
         {/* Vendedor */}
-        <div className="space-y-1">
-          <Label htmlFor="employee" className="text-sm">Vendedor</Label>
-          <div className="relative">
-            <Select 
-              value={selectedEmployeeId} 
-              onValueChange={setSelectedEmployeeId}
-            >
-              <SelectTrigger id="employee" className="h-9 text-sm pl-7 border-gray-200">
-                <SelectValue placeholder="Selecione um vendedor" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os vendedores</SelectItem>
-                {isLoadingEmployees ? (
-                  <SelectItem value="loading" disabled>Carregando...</SelectItem>
-                ) : (
-                  employees.map((employee: Employee) => (
-                    <SelectItem key={employee._id} value={employee._id}>
-                      {employee.name}
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
-            <Users className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+        {!hideEmployeeFilter && (
+          <div className="space-y-1">
+            <Label htmlFor="employee" className="text-sm">Vendedor</Label>
+            <div className="relative">
+              <Select 
+                value={selectedEmployeeId} 
+                onValueChange={setSelectedEmployeeId}
+              >
+                <SelectTrigger id="employee" className="h-9 text-sm pl-7 border-gray-200">
+                  <SelectValue placeholder="Selecione um vendedor" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os vendedores</SelectItem>
+                  {isLoadingEmployees ? (
+                    <SelectItem value="loading" disabled>Carregando...</SelectItem>
+                  ) : (
+                    employees.map((employee: Employee) => (
+                      <SelectItem key={employee._id} value={employee._id}>
+                        {employee.name}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+              <Users className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            </div>
           </div>
-        </div>
+        )}
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">

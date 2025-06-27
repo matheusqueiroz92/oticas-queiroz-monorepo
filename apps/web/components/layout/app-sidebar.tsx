@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import {
   LayoutDashboard,
   Package,
@@ -15,6 +16,8 @@ import {
   Timer,
   Landmark,
   NotepadText,
+  ChevronDown,
+  ChevronRight,
   type LucideIcon,
 } from "lucide-react";
 import Image from "next/image";
@@ -39,7 +42,6 @@ import {
   redirectAfterLogout,
 } from "@/app/_services/authService";
 import LogoOticasQueiroz from "../../public/logo-oticas-queiroz-branca.png";
-import { Separator } from "../ui/separator";
 
 interface SubMenuItem {
   title: string;
@@ -85,19 +87,27 @@ const menuItems: MenuItem[] = [
     title: "Pedidos",
     icon: FileText,
     href: "/orders",
-    roles: ["admin", "employee"],
+    roles: ["admin", "employee", "customer"],
+    subItems: [
+      {
+        title: "Todos os Pedidos",
+        icon: FileText,
+        href: "/orders",
+        roles: ["admin", "employee"],
+      },
+      {
+        title: "Meus Pedidos",
+        icon: User,
+        href: "/my-orders",
+        roles: ["customer", "employee", "admin"],
+      },
+    ],
   },
   {
     title: "Produtos",
     icon: Package,
     href: "/products",
     roles: ["admin", "employee"],
-  },
-  {
-    title: "Meus Pedidos",
-    icon: FileText,
-    href: "/my-orders",
-    roles: ["customer"],
   },
   {
     title: "Meus Débitos",
@@ -153,11 +163,21 @@ export function AppSidebar() {
   const { isAdmin, isEmployee } = usePermissions();
   const pathname = usePathname();
   const [userRole, setUserRole] = useState("");
+  const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const role = Cookies.get("role") || "";
     setUserRole(role);
   }, []);
+
+  // Expandir automaticamente o menu se o usuário estiver em uma sub-rota
+  useEffect(() => {
+    menuItems.forEach((item) => {
+      if (item.subItems?.some((subItem) => pathname === subItem.href)) {
+        setExpandedMenus(prev => new Set(prev).add(item.href));
+      }
+    });
+  }, [pathname]);
 
   const isAdminByRole = userRole === "admin";
   const isEmployeeByRole = userRole === "employee";
@@ -183,6 +203,22 @@ export function AppSidebar() {
     if (canAccessEmployee && itemRoles.includes("employee")) return true;
     if (isCustomer && itemRoles.includes("customer")) return true;
     return false;
+  };
+
+  const toggleMenu = (href: string) => {
+    setExpandedMenus(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(href)) {
+        newSet.delete(href);
+      } else {
+        newSet.add(href);
+      }
+      return newSet;
+    });
+  };
+
+  const isMenuExpanded = (href: string): boolean => {
+    return expandedMenus.has(href);
   };
 
   return (
@@ -218,50 +254,82 @@ export function AppSidebar() {
           {menuItems.map((item) => {
             if (!shouldShowMenuItem(item.roles)) return null;
 
+            const hasSubItems = item.subItems && item.subItems.length > 0;
+            const hasVisibleSubItems = hasSubItems && item.subItems!.some(subItem => shouldShowMenuItem(subItem.roles));
+
             return (
-              <SidebarMenuItem key={item.href}>
-                <SidebarMenuButton
-                  asChild
-                  isActive={isActiveGroup(item)}
-                  tooltip={item.title}
-                  className={cn(
-                    "text-white hover:bg-white/10 data-[active=true]:bg-white/20",
-                    "group-data-[collapsible=icon]:justify-center"
-                  )}
-                >
-                  <Link href={item.href}>
-                    <item.icon className="h-5 w-5" />
-                    <span className="group-data-[collapsible=icon]:sr-only">
-                      {item.title}
-                    </span>
-                  </Link>
-                </SidebarMenuButton>
-
-                {/* Sub-items (se existirem) */}
-                {item.subItems?.map((subItem) => {
-                  if (!shouldShowMenuItem(subItem.roles)) return null;
-
-                  return (
-                    <SidebarMenuItem key={subItem.href} className="ml-4">
-                      <SidebarMenuButton
-                        asChild
-                        isActive={isActiveLink(subItem.href)}
-                        tooltip={subItem.title}
-                        size="sm"
-                        className={cn(
-                          "text-white/80 hover:bg-white/10 data-[active=true]:bg-white/20",
-                          "group-data-[collapsible=icon]:hidden"
+              <React.Fragment key={item.href}>
+                <SidebarMenuItem>
+                  {hasVisibleSubItems ? (
+                    // Item com sub-menu (botão expansível)
+                    <SidebarMenuButton
+                      onClick={() => toggleMenu(item.href)}
+                      isActive={isActiveGroup(item)}
+                      tooltip={item.title}
+                      className={cn(
+                        "text-white hover:bg-white/10 data-[active=true]:bg-white/20",
+                        "group-data-[collapsible=icon]:justify-center"
+                      )}
+                    >
+                      <item.icon className="h-5 w-5" />
+                      <span className="group-data-[collapsible=icon]:sr-only">
+                        {item.title}
+                      </span>
+                      <div className="ml-auto group-data-[collapsible=icon]:hidden">
+                        {isMenuExpanded(item.href) ? (
+                          <ChevronDown className="h-4 w-4 transition-transform duration-200" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4 transition-transform duration-200" />
                         )}
-                      >
-                        <Link href={subItem.href}>
-                          <subItem.icon className="h-4 w-4" />
-                          <span>{subItem.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
-              </SidebarMenuItem>
+                      </div>
+                    </SidebarMenuButton>
+                  ) : (
+                    // Item sem sub-menu (link normal)
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActiveGroup(item)}
+                      tooltip={item.title}
+                      className={cn(
+                        "text-white hover:bg-white/10 data-[active=true]:bg-white/20",
+                        "group-data-[collapsible=icon]:justify-center"
+                      )}
+                    >
+                      <Link href={item.href}>
+                        <item.icon className="h-5 w-5" />
+                        <span className="group-data-[collapsible=icon]:sr-only">
+                          {item.title}
+                        </span>
+                      </Link>
+                    </SidebarMenuButton>
+                  )}
+                </SidebarMenuItem>
+
+                {/* Sub-items (mostrados apenas se expandido) */}
+                {hasVisibleSubItems && isMenuExpanded(item.href) && (
+                  <div className="group-data-[collapsible=icon]:hidden">
+                    {item.subItems!.map((subItem) => {
+                      if (!shouldShowMenuItem(subItem.roles)) return null;
+
+                      return (
+                        <SidebarMenuItem key={subItem.href} className="ml-4">
+                          <SidebarMenuButton
+                            asChild
+                            isActive={isActiveLink(subItem.href)}
+                            tooltip={subItem.title}
+                            size="sm"
+                            className="text-white/80 hover:bg-white/10 data-[active=true]:bg-white/20"
+                          >
+                            <Link href={subItem.href}>
+                              <subItem.icon className="h-4 w-4" />
+                              <span>{subItem.title}</span>
+                            </Link>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      );
+                    })}
+                  </div>
+                )}
+              </React.Fragment>
             );
           })}
         </SidebarMenu>

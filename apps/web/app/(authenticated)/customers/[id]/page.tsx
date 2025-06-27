@@ -186,10 +186,6 @@ export default function CustomerDetailsPage() {
             <ArrowLeft className="h-4 w-4 mr-2" />
             Voltar
           </Button>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">{customer.name}</h1>
-            <p className="text-muted-foreground">Detalhes do cliente</p>
-          </div>
         </div>
         
         <Button onClick={handleEditCustomer} className="gap-2">

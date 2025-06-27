@@ -26,9 +26,9 @@ import {
   Mail,
   CalendarDays,
   CheckCircle,
-  RefreshCw,
   AlertTriangle,
   PencilIcon,
+  ArrowLeft,
 } from "lucide-react";
 import { useOrders } from "@/hooks/useOrders";
 import { useToast } from "@/hooks/useToast";
@@ -119,10 +119,10 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
     <div className="space-y-6 max-w-5xl mx-auto p-4">
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={onGoBack} className="h-8 w-8 p-0">
-            <ChevronLeft className="h-4 w-4" />
+          <Button variant="ghost" size="sm" onClick={onGoBack} className="hover:bg-muted">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Voltar
           </Button>
-          <h1 className="text-2xl font-bold text-primary">Detalhes do Pedido</h1>
         </div>
       </div>
 

@@ -83,18 +83,33 @@ export function usePageTitle() {
       default:
         // Para rotas dinâmicas, extrair o título da URL
         if (pathname.includes("/orders/")) {
-          return { title: "Detalhes do Pedido" };
+          return { 
+            title: "Detalhes do Pedido",
+            description: "Visualize os detalhes do pedido"
+          };
         }
         if (pathname.includes("/customers/")) {
-          return { title: "Detalhes do Cliente" };
+          return { 
+            title: "Detalhes do Cliente",
+            description: "Visualize os detalhes do cliente"
+          };
         }
         if (pathname.includes("/products/")) {
-          return { title: "Detalhes do Produto" };
+          return { 
+            title: "Detalhes do Produto",
+            description: "Visualize os detalhes do produto"
+          };
         }
         if (pathname.includes("/employees/")) {
-          return { title: "Detalhes do Funcionário" };
+          return { 
+            title: "Detalhes do Funcionário",
+            description: "Visualize os detalhes do funcionário"
+          };
         }
-        return { title: "Página" };
+        return { 
+          title: "Página",
+          description: "Página não encontrada"
+        };
     }
   };
 

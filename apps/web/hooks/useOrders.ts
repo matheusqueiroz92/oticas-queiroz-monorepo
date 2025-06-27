@@ -27,6 +27,7 @@ interface OrderFilters {
   page?: number;
   status?: string;
   employeeId?: string;
+  clientId?: string;
   paymentMethod?: string;
   laboratoryId?: string;
   startDate?: string;
@@ -53,7 +54,7 @@ export function useOrders(options: UseOrdersOptions = {}) {
   const router = useRouter();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { fetchUsers, getUserName } = useUsers();
+  const { getUserName } = useUsers();
   const { getLaboratoryName } = useLaboratories();
 
   const filterKey = JSON.stringify(filters);
@@ -198,6 +199,8 @@ export function useOrders(options: UseOrdersOptions = {}) {
   const totalPages = data?.pagination?.totalPages || 1;
   const totalOrders = data?.pagination?.total || 0;
   
+  const { fetchUsers } = useUsers();
+
   useEffect(() => {
     if (enableQueries && orders.length > 0) {
       const userIdsToFetch = [
@@ -208,10 +211,13 @@ export function useOrders(options: UseOrdersOptions = {}) {
       const uniqueUserIds = [...new Set(userIdsToFetch)];
       
       if (uniqueUserIds.length > 0) {
-        fetchUsers(uniqueUserIds);
+        // Usar timeout para evitar setState durante render
+        setTimeout(() => {
+          fetchUsers(uniqueUserIds);
+        }, 0);
       }
     }
-  }, [orders, fetchUsers, enableQueries]);
+  }, [orders, enableQueries, fetchUsers]);
 
   const handlePageChange = useCallback((page: number) => {
     setCurrentPage(page);
@@ -436,8 +442,8 @@ export function useOrders(options: UseOrdersOptions = {}) {
     router.push("/orders/new");
   }, [router]);
 
-  const navigateToMyOrders = useCallback((id: string) => {
-    router.push(`/orders/${id}/my-orders`);
+  const navigateToMyOrders = useCallback(() => {
+    router.push("/my-orders");
   }, [router]);
    
   const translateOrderStatus = useCallback((status: string): string => {
@@ -560,13 +566,9 @@ export function useOrders(options: UseOrdersOptions = {}) {
       }
     }
     const name = getUserName(cleanId);
-
-    if (name === "Carregando...") {
-      fetchUsers([cleanId]);
-    }
     
     return name || "Cliente não encontrado";
-  }, [getUserName, fetchUsers]);
+  }, [getUserName]);
    
   const getEmployeeName = useCallback((employeeId: string) => {
     if (!employeeId) return "N/A";
@@ -584,12 +586,8 @@ export function useOrders(options: UseOrdersOptions = {}) {
     }
     const name = getUserName(cleanId);
     
-    if (name === "Carregando...") {
-      fetchUsers([cleanId]);
-    }
-    
     return name || "Funcionário não encontrado";
-  }, [getUserName, fetchUsers]);
+  }, [getUserName]);
 
   const fetchOrderComplementaryDetails = useCallback(async (order: Order) => {
     if (!order) return { client: null, employee: null, laboratoryInfo: null };
