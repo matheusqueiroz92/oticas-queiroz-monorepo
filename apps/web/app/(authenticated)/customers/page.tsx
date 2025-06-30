@@ -12,6 +12,13 @@ import { useCustomers } from "@/hooks/useCustomers";
 import type { Column } from "@/app/_types/user";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { PageContainer } from "@/components/ui/page-container";
+import { 
+  ListPageHeader, 
+  FilterSelects, 
+  ActionButtons, 
+  AdvancedFilters,
+  ListPageContent 
+} from "@/components/ui/list-page-header";
 import {
   Select,
   SelectContent,
@@ -22,6 +29,7 @@ import {
 
 export default function CustomersPage() {
   const [newCustomerDialogOpen, setNewCustomerDialogOpen] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
   
   const {
     customers,
@@ -146,111 +154,101 @@ export default function CustomersPage() {
         </div>
 
         {/* Filtros e Busca */}
-        <Card>
-          <CardHeader className="bg-gray-100 dark:bg-slate-800/50">
-            <CardTitle className="text-lg">Lista de Clientes</CardTitle>
-            <div className="flex flex-col sm:flex-row gap-4 mt-4 sm:items-center">
-              {/* Área esquerda: Input de busca e selects */}
-              <div className="flex flex-1 flex-col sm:flex-row gap-4">
-                <div className="relative flex-1 max-w-md">
-                  <Input
-                    placeholder="Buscar por nome, email ou CPF"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="pl-9"
-                  />
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                </div>
-                <div className="flex gap-2">
-                  <Select defaultValue="todos">
-                    <SelectTrigger className="w-[140px]">
-                      <SelectValue placeholder="Todos os tipos" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="todos">Todos os tipos</SelectItem>
-                      <SelectItem value="vip">VIP</SelectItem>
-                      <SelectItem value="regular">Regular</SelectItem>
-                      <SelectItem value="novo">Novo</SelectItem>
-                    </SelectContent>
-                  </Select>
+        <ListPageHeader
+          title="Lista de Clientes"
+          searchValue={search}
+          searchPlaceholder="Buscar por nome, email ou CPF"
+          onSearchChange={setSearch}
+          showFilters={showFilters}
+          onToggleFilters={() => setShowFilters((prev) => !prev)}
+          activeFiltersCount={0}
+        >
+          <FilterSelects>
+            <Select defaultValue="todos">
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="Todos os tipos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os tipos</SelectItem>
+                <SelectItem value="vip">VIP</SelectItem>
+                <SelectItem value="regular">Regular</SelectItem>
+                <SelectItem value="novo">Novo</SelectItem>
+              </SelectContent>
+            </Select>
 
-                  <Select defaultValue="todos-status">
-                    <SelectTrigger className="w-[140px]">
-                      <SelectValue placeholder="Todos os status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="todos-status">Todos os status</SelectItem>
-                      <SelectItem value="ativo">Ativo</SelectItem>
-                      <SelectItem value="inativo">Inativo</SelectItem>
-                      <SelectItem value="bloqueado">Bloqueado</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+            <Select defaultValue="todos-status">
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="Todos os status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos-status">Todos os status</SelectItem>
+                <SelectItem value="ativo">Ativo</SelectItem>
+                <SelectItem value="inativo">Inativo</SelectItem>
+                <SelectItem value="bloqueado">Bloqueado</SelectItem>
+              </SelectContent>
+            </Select>
+          </FilterSelects>
 
-              {/* Área direita: Botões de ação */}
-              <div className="flex gap-2 justify-end sm:ml-auto">
-                <Button variant="outline" size="sm">
-                  <Filter className="w-4 h-4 mr-2" />
-                  Filtros
-                </Button>
-                <Button variant="outline" size="sm">
-                  <Download className="w-4 h-4 mr-2" />
-                  Exportar
-                </Button>
-                                 <Button onClick={() => setNewCustomerDialogOpen(true)} size="sm">
-                   <Plus className="w-4 h-4 mr-2" />
-                   Novo Cliente
-                 </Button>
-              </div>
+          <ActionButtons>
+            <Button variant="outline" size="sm">
+              <Download className="w-4 h-4 mr-2" />
+              Exportar
+            </Button>
+            <Button onClick={() => setNewCustomerDialogOpen(true)} size="sm">
+              <Plus className="w-4 h-4 mr-2" />
+              Novo Cliente
+            </Button>
+          </ActionButtons>
+
+          <AdvancedFilters>
+            <div></div>
+          </AdvancedFilters>
+        </ListPageHeader>
+
+        <ListPageContent>
+          {isLoading && (
+            <div className="flex justify-center items-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin" />
             </div>
-          </CardHeader>
+          )}
 
-          <CardContent className="p-0">
-            {isLoading && (
-              <div className="flex justify-center items-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin" />
-              </div>
-            )}
+          {error && (
+            <div className="p-6">
+              <ErrorAlert message={error} />
+            </div>
+          )}
 
-            {error && (
-              <div className="p-6">
-                <ErrorAlert message={error} />
-              </div>
-            )}
+          {showEmptyState && (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <UserX className="h-16 w-16 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold">Nenhum cliente encontrado</h3>
+              <p className="text-muted-foreground mt-2 mb-4">
+                {search ? "Tente ajustar os filtros de busca." : "Clique em 'Novo Cliente' para adicionar um cliente ao sistema."}
+              </p>
+              {!search && (
+                <Button onClick={() => setNewCustomerDialogOpen(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Novo Cliente
+                </Button>
+              )}
+            </div>
+          )}
 
-            {showEmptyState && (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <UserX className="h-16 w-16 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold">Nenhum cliente encontrado</h3>
-                <p className="text-muted-foreground mt-2 mb-4">
-                  {search ? "Tente ajustar os filtros de busca." : "Clique em 'Novo Cliente' para adicionar um cliente ao sistema."}
-                </p>
-                                 {!search && (
-                   <Button onClick={() => setNewCustomerDialogOpen(true)}>
-                     <Plus className="w-4 h-4 mr-2" />
-                     Novo Cliente
-                   </Button>
-                 )}
-              </div>
-            )}
-
-            {!isLoading && !error && customers.length > 0 && (
-              <div className="overflow-hidden">
-                <UserTable
-                  data={customers}
-                  columns={customerColumns}
-                  onDetailsClick={navigateToCustomerDetails}
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  setCurrentPage={setCurrentPage}
-                  totalItems={totalItems}
-                  pageSize={limit}
-                />
-              </div>
-            )}
-          </CardContent>
-        </Card>
+          {!isLoading && !error && customers.length > 0 && (
+            <div className="overflow-hidden">
+              <UserTable
+                data={customers}
+                columns={customerColumns}
+                onDetailsClick={navigateToCustomerDetails}
+                currentPage={currentPage}
+                totalPages={totalPages}
+                setCurrentPage={setCurrentPage}
+                totalItems={totalItems}
+                pageSize={limit}
+              />
+            </div>
+          )}
+        </ListPageContent>
 
         {/* Dialog de Novo Cliente */}
         <CustomerDialog

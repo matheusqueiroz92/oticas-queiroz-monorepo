@@ -20,7 +20,7 @@ interface OrderTableProps {
     render?: (item: Order) => React.ReactNode;
   }[];
   onDetailsClick: (id: string) => void;
-  onEditClick: (id: string) => void;
+  onEditClick: (order: Order) => void;
   currentPage: number;
   totalPages: number;
   setCurrentPage: (page: number) => void;
@@ -110,7 +110,7 @@ export const OrdersList: React.FC<OrderTableProps> = ({
                 
                 <Button
                   variant="outline"
-                  onClick={() => onEditClick(item._id)}
+                  onClick={() => onEditClick(item)}
                 >
                   <Pencil className="h-4 w-4 mr-1" />
                 </Button>

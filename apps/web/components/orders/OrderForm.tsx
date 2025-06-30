@@ -41,6 +41,7 @@ const steps = [
 
 interface OrderFormProps {
   isEditing?: boolean;
+  initialData?: Partial<OrderFormValues>;
   hasLenses: boolean;
   setHasLenses: React.Dispatch<React.SetStateAction<boolean>>;
   showInstallments: boolean;
@@ -64,6 +65,7 @@ interface OrderFormProps {
 
 export function OrderForm({
   isEditing = false,
+  initialData,
   hasLenses,
   setHasLenses,
   showInstallments,
@@ -95,43 +97,120 @@ export function OrderForm({
   const form = useForm<OrderFormValues>({
     resolver: zodResolver(orderFormSchema),
     defaultValues: {
-      employeeId: "",
-      clientId: "",
-      hasResponsible: false,
-      responsibleClientId: "",
-      products: [],
-      paymentMethod: "",
-      paymentStatus: "pending",
-      paymentEntry: 0,
-      installments: undefined,
-      orderDate: "",
-      deliveryDate: "",
-      status: "pending",
-      laboratoryId: "",
-      observations: "",
-      totalPrice: 0,
-      discount: 0,
-      finalPrice: 0,
+      employeeId: initialData?.employeeId || "",
+      clientId: initialData?.clientId || "",
+      hasResponsible: initialData?.hasResponsible || false,
+      responsibleClientId: initialData?.responsibleClientId || "",
+      products: initialData?.products || [],
+      paymentMethod: initialData?.paymentMethod || "",
+      paymentStatus: initialData?.paymentStatus || "pending",
+      paymentEntry: initialData?.paymentEntry || 0,
+      installments: initialData?.installments || undefined,
+      orderDate: initialData?.orderDate || "",
+      deliveryDate: initialData?.deliveryDate || "",
+      status: initialData?.status || "pending",
+      laboratoryId: initialData?.laboratoryId || "",
+      observations: initialData?.observations || "",
+      totalPrice: initialData?.totalPrice || 0,
+      discount: initialData?.discount || 0,
+      finalPrice: initialData?.finalPrice || 0,
       prescriptionData: {
-        doctorName: "",
-        clinicName: "",
-        appointmentDate: "",
-        rightEye: { sph: "", cyl: "", axis: 0, pd: 0 },
-        leftEye: { sph: "", cyl: "", axis: 0, pd: 0 },
-        nd: 0,
-        oc: 0,
-        addition: 0,
-        bridge: 0,
-        rim: 0,
-        vh: 0,
-        sh: 0,
+        doctorName: initialData?.prescriptionData?.doctorName || "",
+        clinicName: initialData?.prescriptionData?.clinicName || "",
+        appointmentDate: initialData?.prescriptionData?.appointmentDate || "",
+        rightEye: { 
+          sph: initialData?.prescriptionData?.rightEye?.sph || "", 
+          cyl: initialData?.prescriptionData?.rightEye?.cyl || "", 
+          axis: initialData?.prescriptionData?.rightEye?.axis || 0, 
+          pd: initialData?.prescriptionData?.rightEye?.pd || 0 
+        },
+        leftEye: { 
+          sph: initialData?.prescriptionData?.leftEye?.sph || "", 
+          cyl: initialData?.prescriptionData?.leftEye?.cyl || "", 
+          axis: initialData?.prescriptionData?.leftEye?.axis || 0, 
+          pd: initialData?.prescriptionData?.leftEye?.pd || 0 
+        },
+        nd: initialData?.prescriptionData?.nd || 0,
+        oc: initialData?.prescriptionData?.oc || 0,
+        addition: initialData?.prescriptionData?.addition || 0,
+        bridge: initialData?.prescriptionData?.bridge || 0,
+        rim: initialData?.prescriptionData?.rim || 0,
+        vh: initialData?.prescriptionData?.vh || 0,
+        sh: initialData?.prescriptionData?.sh || 0,
       },
     },
     mode: "onChange",
   });
 
+  // Effect para resetar o formulário quando initialData mudar
   useEffect(() => {
-    if (mounted) {
+    if (initialData && mounted) {
+      
+      // Resetar o formulário com os novos dados
+      form.reset({
+        employeeId: initialData.employeeId || "",
+        clientId: initialData.clientId || "",
+        hasResponsible: initialData.hasResponsible || false,
+        responsibleClientId: initialData.responsibleClientId || "",
+        products: initialData.products || [],
+        paymentMethod: initialData.paymentMethod || "",
+        paymentStatus: initialData.paymentStatus || "pending",
+        paymentEntry: initialData.paymentEntry || 0,
+        installments: initialData.installments || undefined,
+        orderDate: initialData.orderDate || "",
+        deliveryDate: initialData.deliveryDate || "",
+        status: initialData.status || "pending",
+        laboratoryId: initialData.laboratoryId || "",
+        observations: initialData.observations || "",
+        totalPrice: initialData.totalPrice || 0,
+        discount: initialData.discount || 0,
+        finalPrice: initialData.finalPrice || 0,
+        prescriptionData: {
+          doctorName: initialData.prescriptionData?.doctorName || "",
+          clinicName: initialData.prescriptionData?.clinicName || "",
+          appointmentDate: initialData.prescriptionData?.appointmentDate || "",
+          rightEye: { 
+            sph: initialData.prescriptionData?.rightEye?.sph || "", 
+            cyl: initialData.prescriptionData?.rightEye?.cyl || "", 
+            axis: initialData.prescriptionData?.rightEye?.axis || 0, 
+            pd: initialData.prescriptionData?.rightEye?.pd || 0 
+          },
+          leftEye: { 
+            sph: initialData.prescriptionData?.leftEye?.sph || "", 
+            cyl: initialData.prescriptionData?.leftEye?.cyl || "", 
+            axis: initialData.prescriptionData?.leftEye?.axis || 0, 
+            pd: initialData.prescriptionData?.leftEye?.pd || 0 
+          },
+          nd: initialData.prescriptionData?.nd || 0,
+          oc: initialData.prescriptionData?.oc || 0,
+          addition: initialData.prescriptionData?.addition || 0,
+          bridge: initialData.prescriptionData?.bridge || 0,
+          rim: initialData.prescriptionData?.rim || 0,
+          vh: initialData.prescriptionData?.vh || 0,
+          sh: initialData.prescriptionData?.sh || 0,
+        },
+      });
+      
+      // Configurar produtos selecionados
+      if (initialData.products && initialData.products.length > 0) {
+        setSelectedProducts(initialData.products);
+      }
+    }
+  }, [initialData, mounted, form]);
+
+  // Effect separado para configurar o cliente selecionado quando ambos initialData e customersData estiverem disponíveis
+  useEffect(() => {
+    if (initialData?.clientId && customersData && customersData.length > 0 && mounted) {
+      const customer = customersData.find(c => c._id === initialData.clientId);
+      if (customer && (!selectedCustomer || selectedCustomer._id !== customer._id)) {
+        setSelectedCustomer(customer);
+      }
+    }
+  }, [initialData?.clientId, customersData, mounted, selectedCustomer]);
+
+  useEffect(() => {
+    if (mounted && !initialData) {
+      // Valores padrão para novo pedido
       const today = new Date().toISOString().split("T")[0];
       form.setValue("orderDate", today);
       form.setValue("deliveryDate", today);
@@ -142,7 +221,7 @@ export function OrderForm({
         form.setValue("employeeId", loggedEmployee.id);
       }
     }
-  }, [mounted, form, loggedEmployee]);
+  }, [mounted, form, loggedEmployee, initialData]);
 
   const { isSubmitting } = form.formState;
 

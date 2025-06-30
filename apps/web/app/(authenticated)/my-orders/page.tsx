@@ -1,16 +1,22 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, FileX, RefreshCw, Filter, Search, X, User, ShoppingCart, Plus } from "lucide-react";
+import { Loader2, FileX, X, User, ShoppingCart, Plus } from "lucide-react";
 import { useOrders } from "@/hooks/useOrders";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/useToast";
+
 import { OrderExportButton } from "@/components/orders/exports/OrderExportButton";
 import { OrderFilters } from "@/components/orders/OrderFilters";
 import { OrdersList } from "@/components/orders/OrdersList";
 import { ErrorAlert } from "@/components/ErrorAlert";
+import { 
+  ListPageHeader, 
+  FilterSelects, 
+  ActionButtons, 
+  AdvancedFilters,
+  ListPageContent 
+} from "@/components/ui/list-page-header";
 import { Order } from "@/app/_types/order";
 import { formatCurrency, formatDate } from "@/app/_utils/formatters";
 import { PageContainer } from "@/components/ui/page-container";
@@ -28,22 +34,17 @@ import {
   DollarSign,
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { 
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import Cookies from "js-cookie";
+import { OrderDialog } from "@/components/orders/OrderDialog";
 
 export default function MyOrdersPage() {
   const [showFilters, setShowFilters] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [loggedUserId, setLoggedUserId] = useState<string>("");
   const [loggedUserName, setLoggedUserName] = useState<string>("");
   const [loggedUserRole, setLoggedUserRole] = useState<string>("");
-  
-  const { toast } = useToast();
+  const [orderDialogMode, setOrderDialogMode] = useState<"create" | "edit">("create");
+  const [orderToEdit, setOrderToEdit] = useState<any>(null);
+  const [orderDialogOpen, setOrderDialogOpen] = useState(false);  
 
   // Carregar dados do usuário logado
   useEffect(() => {
@@ -72,12 +73,9 @@ export default function MyOrdersPage() {
     search,
     filters,
     setSearch,
-    clearFilters,
     setCurrentPage,
     updateFilters,
     navigateToOrderDetails,
-    navigateToEditOrder,
-    refreshOrdersList,
     getClientName,
     getEmployeeName,
     getLaboratoryName,
@@ -125,27 +123,7 @@ export default function MyOrdersPage() {
     }
   }, [loggedUserId, loggedUserRole, filters, updateFilters, isCustomer, isEmployee]);
   
-  const handleManualRefresh = async () => {
-    setIsRefreshing(true);
-    try {
-      await refreshOrdersList();
-      toast({
-        title: "Atualizado",
-        description: isCustomer 
-          ? "Lista dos seus pedidos atualizada com sucesso."
-          : "Lista dos seus pedidos registrados atualizada com sucesso.",
-      });
-    } catch (error) {
-      console.error("Erro ao atualizar lista:", error);
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Falha ao atualizar lista de pedidos.",
-      });
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
+
 
   const getActiveFiltersCount = () => {
     let count = 0;
@@ -159,8 +137,16 @@ export default function MyOrdersPage() {
     return count;
   };
 
-  const handleClearSearch = () => {
-    setSearch('');
+  const handleOpenNewOrder = () => {
+    setOrderDialogMode('create');
+    setOrderToEdit(null);
+    setOrderDialogOpen(true);
+  };
+
+  const handleEditOrder = (order: any) => {
+    setOrderDialogMode('edit');
+    setOrderToEdit(order);
+    setOrderDialogOpen(true);
   };
 
   const handleClearFilters = () => {
@@ -284,11 +270,11 @@ export default function MyOrdersPage() {
     };
   };
 
-  const { title, description } = getPageTitleAndDescription();
-  const totalValue = orders.reduce((sum, order) => sum + (order.finalPrice || order.totalPrice), 0);
+  const { title } = getPageTitleAndDescription();
 
   // Estatísticas para os cards
   const totalPedidos = orders.length;
+  
   const pedidosHoje = orders.filter(order => {
     const created = new Date(order.createdAt || order.orderDate);
     const hoje = new Date();
@@ -298,8 +284,11 @@ export default function MyOrdersPage() {
       created.getFullYear() === hoje.getFullYear()
     );
   }).length;
+  
   const emProducao = orders.filter(order => order.status === "in_production").length;
+  
   const prontos = orders.filter(order => order.status === "ready").length;
+  
   const totalMes = orders.filter(order => {
     const created = new Date(order.createdAt || order.orderDate);
     const hoje = new Date();
@@ -387,9 +376,9 @@ export default function MyOrdersPage() {
           </div>
 
           {/* Filtros e Busca */}
-          <Card>
-            <CardHeader className="bg-gray-100 dark:bg-slate-800/50">
-              <CardTitle className="text-lg flex items-center gap-2">
+          <ListPageHeader
+            title={
+              <div className="flex items-center gap-2">
                 {isCustomer ? (
                   <>
                     <ShoppingCart className="h-5 w-5 text-blue-600" />
@@ -401,142 +390,126 @@ export default function MyOrdersPage() {
                     {title}
                   </>
                 )}
-              </CardTitle>
-              <div className="flex flex-col sm:flex-row gap-4 mt-4 sm:items-center">
-                {/* Área esquerda: Input de busca e selects */}
-                <div className="flex flex-1 flex-col sm:flex-row gap-4">
-                  <div className="relative flex-1 max-w-md">
-                    <Input
-                      placeholder={isCustomer ? "Buscar por O.S. ou vendedor..." : "Buscar por cliente, CPF ou O.S."}
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      className="pl-9"
-                    />
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  </div>
-                  
-                  <Select defaultValue="todos">
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Todos os tipos" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="todos">Status do pedido</SelectItem>
-                      <SelectItem value="pending">Pendente</SelectItem>
-                      <SelectItem value="in_production">Em produção</SelectItem>
-                      <SelectItem value="ready">Pronto</SelectItem>
-                      <SelectItem value="delivered">Entregue</SelectItem>
-                      <SelectItem value="cancelled">Cancelado</SelectItem>
-                    </SelectContent>
-                  </Select>
-
-                  <Select defaultValue="todos-status">
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Todos os status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="todos-status">Status do pagamento</SelectItem>
-                      <SelectItem value="pending">Pendente</SelectItem>
-                      <SelectItem value="partially_paid">Parcialmente pago</SelectItem>
-                      <SelectItem value="paid">Pago</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Área direita: Botões de ação */}
-                <div className="flex gap-2 justify-end sm:ml-auto">
-                  <Button variant="outline" size="sm" onClick={() => setShowFilters((prev) => !prev)}>
-                    <Filter className="w-4 h-4 mr-2" />
-                    Filtros
-                    {getActiveFiltersCount() > 0 && (
-                      <Badge variant="secondary" className="ml-1 h-5 w-5 text-xs rounded-full p-0 flex items-center justify-center">
-                        {getActiveFiltersCount()}
-                      </Badge>
-                    )}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={handleManualRefresh}
-                    disabled={isRefreshing || isLoading}
-                    size="sm"
-                  >
-                    <RefreshCw className={`h-4 w-4 mr-1 ${isRefreshing ? 'animate-spin' : ''}`} />
-                    Atualizar
-                  </Button>
-                  <OrderExportButton 
-                    filters={isCustomer ? {clientId: loggedUserId} : {employeeId: loggedUserId}}
-                    buttonText="Exportar"
-                    variant="outline"
-                    disabled={isLoading || orders.length === 0}
-                    size="sm"
-                  />
-                </div>
               </div>
-            </CardHeader>
+            }
+            searchValue={search}
+            searchPlaceholder={isCustomer ? "Buscar por O.S. ou vendedor..." : "Buscar por cliente, CPF ou O.S."}
+            onSearchChange={setSearch}
+            showFilters={showFilters}
+            onToggleFilters={() => setShowFilters((prev) => !prev)}
+            activeFiltersCount={getActiveFiltersCount()}
+          >
+            <FilterSelects>
+              <Select defaultValue="todos">
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Todos os tipos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Status do pedido</SelectItem>
+                  <SelectItem value="pending">Pendente</SelectItem>
+                  <SelectItem value="in_production">Em produção</SelectItem>
+                  <SelectItem value="ready">Pronto</SelectItem>
+                  <SelectItem value="delivered">Entregue</SelectItem>
+                  <SelectItem value="cancelled">Cancelado</SelectItem>
+                </SelectContent>
+              </Select>
 
-            {showFilters && (
+              <Select defaultValue="todos-status">
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Todos os status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos-status">Status do pagamento</SelectItem>
+                  <SelectItem value="pending">Pendente</SelectItem>
+                  <SelectItem value="partially_paid">Parcialmente pago</SelectItem>
+                  <SelectItem value="paid">Pago</SelectItem>
+                </SelectContent>
+              </Select>
+            </FilterSelects>
+
+            <ActionButtons>
+              <OrderExportButton 
+                filters={isCustomer ? {clientId: loggedUserId} : {employeeId: loggedUserId}}
+                buttonText="Exportar"
+                variant="outline"
+                disabled={isLoading || orders.length === 0}
+                size="sm"
+              />
+              <Button size="sm" onClick={handleOpenNewOrder}>
+                <Plus className="w-4 h-4 mr-2" /> Novo Pedido
+              </Button>
+            </ActionButtons>
+
+            <AdvancedFilters>
               <OrderFilters 
                 onUpdateFilters={handleUpdateFilters}
-                hideEmployeeFilter={isEmployee} // Esconder filtro de funcionário se for funcionário
-                hideClientFilter={isCustomer}   // Esconder filtro de cliente se for cliente
+                hideEmployeeFilter={isEmployee}
+                hideClientFilter={isCustomer}
               />
+            </AdvancedFilters>
+          </ListPageHeader>
+
+          <ListPageContent>
+            {isLoading && (
+              <div className="flex justify-center items-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin" />
+              </div>
             )}
 
-            <CardContent className="p-0">
-              {isLoading && (
-                <div className="flex justify-center items-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin" />
-                </div>
-              )}
+            {error && (
+              <div className="p-6">
+                <ErrorAlert message={error} />
+              </div>
+            )}
 
-              {error && (
-                <div className="p-6">
-                  <ErrorAlert message={error} />
-                </div>
-              )}
+            {showEmptyState && (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <FileX className="h-16 w-16 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold">Nenhum pedido encontrado</h3>
+                <p className="text-muted-foreground mt-2 mb-4">
+                  {isCustomer 
+                    ? "Você ainda não possui pedidos ou nenhum corresponde aos filtros aplicados."
+                    : "Você ainda não registrou pedidos ou nenhum corresponde aos filtros aplicados."
+                  }
+                </p>
+                {(search || getActiveFiltersCount() > 0) && (
+                  <Button 
+                    variant="outline" 
+                    onClick={handleClearFilters}
+                  >
+                    <X className="h-4 w-4 mr-1" />
+                    Limpar Filtros
+                  </Button>
+                )}
+              </div>
+            )}
 
-              {showEmptyState && (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <FileX className="h-16 w-16 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-semibold">Nenhum pedido encontrado</h3>
-                  <p className="text-muted-foreground mt-2 mb-4">
-                    {isCustomer 
-                      ? "Você ainda não possui pedidos ou nenhum corresponde aos filtros aplicados."
-                      : "Você ainda não registrou pedidos ou nenhum corresponde aos filtros aplicados."
-                    }
-                  </p>
-                  {(search || getActiveFiltersCount() > 0) && (
-                    <Button 
-                      variant="outline" 
-                      onClick={handleClearFilters}
-                    >
-                      <X className="h-4 w-4 mr-1" />
-                      Limpar Filtros
-                    </Button>
-                  )}
-                </div>
-              )}
-
-              {!isLoading && !error && orders.length > 0 && (
-                <div className="overflow-hidden">
-                  <OrdersList
-                    data={orders}
-                    columns={getOrderColumns()}
-                    onDetailsClick={navigateToOrderDetails}
-                    onEditClick={navigateToEditOrder}
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    setCurrentPage={setCurrentPage}
-                    totalItems={totalOrders}
-                    sortField="createdAt"
-                    sortDirection="desc"
-                    key={`my-orders-table-${search}-${JSON.stringify(orders.length)}-${currentPage}`}
-                  />
-                </div>
-              )}
-            </CardContent>
-          </Card>
+            {!isLoading && !error && orders.length > 0 && (
+              <div className="overflow-hidden">
+                <OrdersList
+                  data={orders}
+                  columns={getOrderColumns()}
+                  onDetailsClick={navigateToOrderDetails}
+                  onEditClick={handleEditOrder}
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  setCurrentPage={setCurrentPage}
+                  totalItems={totalOrders}
+                  sortField="createdAt"
+                  sortDirection="desc"
+                  key={`my-orders-table-${search}-${JSON.stringify(orders.length)}-${currentPage}`}
+                />
+              </div>
+            )}
+          </ListPageContent>
         </div>
       </PageContainer>
+      <OrderDialog
+        open={orderDialogOpen}
+        onOpenChange={setOrderDialogOpen}
+        mode={orderDialogMode}
+        order={orderToEdit}
+      />
     </>
   );
 } 
