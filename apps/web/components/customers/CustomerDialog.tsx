@@ -58,7 +58,7 @@ export function CustomerDialog({
   onOpenChange,
   onSuccess,
   customer,
-  mode = 'create',
+  mode,
 }: CustomerDialogProps) {
   const { createUserMutation, updateUserMutation, getUserImageUrl } = useUsers();
   const { toast } = useToast();
@@ -68,8 +68,9 @@ export function CustomerDialog({
   // Memoizar o cliente para evitar renderizações desnecessárias
   const memoizedCustomer = useMemo(() => customer, [customer?._id]);
 
-  const isEditMode = mode === 'edit';
-  
+  // Detectar modo automaticamente se não foi especificado
+  const isEditMode = mode === 'edit' || (mode === undefined && !!memoizedCustomer && !!memoizedCustomer._id);
+
   const form = useForm<CustomerFormData>({
     resolver: zodResolver(customerSchema),
     defaultValues: {
@@ -86,7 +87,9 @@ export function CustomerDialog({
 
   // Preencher o formulário quando estiver no modo de edição
   useEffect(() => {
-    if (!open) return; // Não fazer nada se o dialog estiver fechado
+    if (!open) {
+      return; // Não fazer nada se o dialog estiver fechado
+    }
 
     // Usar uma flag para evitar loops infinitos
     const handleFormReset = () => {
@@ -129,7 +132,6 @@ export function CustomerDialog({
     };
     
     handleFormReset();
-    // Removemos getUserImageUrl da lista de dependências para evitar loops
   }, [memoizedCustomer, isEditMode, open, form]);
 
   const handleSubmit = async (data: CustomerFormData) => {

@@ -1,13 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { Input } from "@/components/ui/input";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { UserTable } from "@/components/profile/UserTable";
 import { CustomerDialog } from "@/components/customers/CustomerDialog";
-import { Loader2, UserX, Search, Users, Crown, Calendar, DollarSign, Plus, Filter, Download } from "lucide-react";
+import { Loader2, UserX, Users, Crown, Calendar, DollarSign, Plus, Download } from "lucide-react";
 import { useCustomers } from "@/hooks/useCustomers";
 import type { Column } from "@/app/_types/user";
 import { ErrorAlert } from "@/components/ErrorAlert";
@@ -29,6 +28,8 @@ import {
 
 export default function CustomersPage() {
   const [newCustomerDialogOpen, setNewCustomerDialogOpen] = useState(false);
+  const [editCustomerDialogOpen, setEditCustomerDialogOpen] = useState(false);
+  const [customerToEdit, setCustomerToEdit] = useState<any>(undefined);
   const [showFilters, setShowFilters] = useState(false);
   
   const {
@@ -53,7 +54,7 @@ export default function CustomersPage() {
   const vipCustomers = customers.filter(customer => (customer.purchases?.length || 0) >= 5).length;
   
   // Alterar aqui para mostrar os clientes novos este mês, pois está sendo simulado
-  const newThisMonth = customers.filter(customer => {
+  const newThisMonth = customers.filter(() => {
     return Math.random() > 0.7; // 30% dos clientes são "novos"
   }).length;
   
@@ -77,7 +78,19 @@ export default function CustomersPage() {
     },
   ];
 
+  const handleEditCustomer = (customer: any) => {
+    setCustomerToEdit(customer);
+    setEditCustomerDialogOpen(true);
+  };
+
   const showEmptyState = !isLoading && !error && customers.length === 0;
+
+  useEffect(() => {
+    // Só limpar o estado quando o dialog for fechado
+    if (!editCustomerDialogOpen) {
+      setCustomerToEdit(undefined);
+    }
+  }, [editCustomerDialogOpen]);
 
   return (
     <PageContainer>
@@ -240,6 +253,7 @@ export default function CustomersPage() {
                 data={customers}
                 columns={customerColumns}
                 onDetailsClick={navigateToCustomerDetails}
+                onEditClick={handleEditCustomer}
                 currentPage={currentPage}
                 totalPages={totalPages}
                 setCurrentPage={setCurrentPage}
@@ -258,6 +272,17 @@ export default function CustomersPage() {
             // Recarregar a lista de clientes após cadastro
             refetch();
           }}
+        />
+
+        {/* Dialog de Edição de Cliente */}
+        <CustomerDialog
+          open={editCustomerDialogOpen}
+          onOpenChange={setEditCustomerDialogOpen}
+          onSuccess={() => {
+            // Recarregar a lista de clientes após edição
+            refetch();
+          }}
+          customer={customerToEdit}
         />
       </div>
     </PageContainer>

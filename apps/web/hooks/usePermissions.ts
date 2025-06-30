@@ -29,7 +29,7 @@ export function usePermissions() {
   const canViewOwnOrders = isCustomer;
 
   // Permissões de produtos
-  const canManageProducts = isAdmin;
+  const canManageProducts = isAdmin || isEmployee;
   const canViewProducts = isAdmin || isEmployee;
 
   return {

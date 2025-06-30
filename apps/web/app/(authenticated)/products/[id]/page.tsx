@@ -9,14 +9,12 @@ import {
   ArrowLeft, 
   Edit, 
   Package, 
-  ShoppingCart, 
   Star, 
   Eye,
   DollarSign,
   Layers,
   Palette,
   Hash,
-  Camera,
   Calendar,
   User,
   AlertTriangle,
@@ -25,15 +23,12 @@ import {
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useProducts } from "@/hooks/useProducts";
-import { usePermissions } from "@/hooks/usePermissions";
-import { getProductTypeName } from "@/app/_services/productService";
 import { ProductDialog } from "@/components/products/ProductDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ProductDetailsPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { canManageProducts } = usePermissions();
   const [showEditDialog, setShowEditDialog] = useState(false);
   
   const {
@@ -43,6 +38,8 @@ export default function ProductDetailsPage() {
     fetchProductById,
     formatCurrency,
   } = useProducts();
+
+  // Remover debug de permissões - não necessário mais
 
   useEffect(() => {
     if (id) {
@@ -144,18 +141,12 @@ export default function ProductDetailsPage() {
             <ArrowLeft className="h-4 w-4 mr-2" />
             Voltar
           </Button>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">{currentProduct.name}</h1>
-            <p className="text-muted-foreground">Detalhes do produto</p>
-          </div>
         </div>
         
-        {canManageProducts && (
-          <Button onClick={() => setShowEditDialog(true)} className="gap-2">
-            <Edit className="h-4 w-4" />
-            Editar Produto
-          </Button>
-        )}
+        <Button onClick={() => setShowEditDialog(true)} className="gap-2">
+          <Edit className="h-4 w-4" />
+          Editar Produto
+        </Button>
       </div>
 
       {/* Main Content */}

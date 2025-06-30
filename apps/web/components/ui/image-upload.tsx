@@ -34,6 +34,25 @@ export function ImageUpload({
       setPreview(existingImageUrl);
     }
   }, [existingImageUrl]);
+
+  // Cleanup para garantir que a câmera seja desligada quando o componente for desmontado
+  useEffect(() => {
+    return () => {
+      // Forçar parada da câmera quando o componente for desmontado
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
+      setIsCapturing(false);
+    };
+  }, []);
+
+  // Parar câmera quando o componente for desabilitado
+  useEffect(() => {
+    if (disabled && isCapturing) {
+      stopCamera();
+    }
+  }, [disabled, isCapturing]);
   
 
   // Detectar se é dispositivo móvel

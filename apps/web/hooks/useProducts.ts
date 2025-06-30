@@ -66,55 +66,37 @@ export function useProducts() {
   const totalProducts = data?.pagination?.total || 0;
 
   const createProductMutation = useMutation({
-    mutationFn: createProduct,
-    onSuccess: (newProduct) => {
-      toast({
-        title: "Produto criado",
-        description: "O produto foi criado com sucesso.",
-      });
-
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.PRODUCTS.ALL });
-
-      return newProduct;
+    mutationFn: async (formData: FormData) => {
+      const response = await createProduct(formData);
+      return response;
     },
-    onError: (error: unknown) => {
+    onSuccess: (data) => {
+      // Invalidar queries relevantes
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.PRODUCTS.ALL });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.PRODUCTS.PAGINATED() });
+    },
+    onError: (error: any) => {
+      // O toast será mostrado no componente
       console.error("Erro ao criar produto:", error);
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description:
-          typeof error === "object" && error !== null && "message" in error
-            ? String(error.message)
-            : "Não foi possível criar o produto.",
-      });
     },
   });
 
   const updateProductMutation = useMutation({
-    mutationFn: ({ id, formData }: { id: string; formData: FormData }) =>
-      updateProduct(id, formData),
-    onSuccess: (updatedProduct) => {
-      toast({
-        title: "Produto atualizado",
-        description: "O produto foi atualizado com sucesso.",
-      });
-
-      queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.PRODUCTS.DETAIL(updatedProduct._id),
-      });
-      queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.PRODUCTS.PAGINATED(),
-      });
-
-      return updatedProduct;
+    mutationFn: async ({ id, formData }: { id: string, formData: FormData }) => {
+      const response = await updateProduct(id, formData);
+      return response;
     },
-    onError: (error: unknown, variables) => {
-      console.error(`Erro ao atualizar produto com ID ${variables.id}:`, error);
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Não foi possível atualizar o produto.",
-      });
+    onSuccess: (data) => {
+      // Atualizar o cache com os novos dados
+      queryClient.setQueryData(QUERY_KEYS.PRODUCTS.DETAIL(data._id), data);
+      
+      // Invalidar queries relevantes
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.PRODUCTS.ALL });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.PRODUCTS.PAGINATED() });
+    },
+    onError: (error: any) => {
+      // O toast será mostrado no componente
+      console.error("Erro ao atualizar produto:", error);
     },
   });
 
@@ -246,6 +228,9 @@ export function useProducts() {
     isCreating: createProductMutation.isPending,
     isUpdating: updateProductMutation.isPending,
     isDeleting: deleteProductMutation.isPending,
+    createProductMutation,
+    updateProductMutation,
+    deleteProductMutation,
     setCurrentPage,
     updateFilters,
     fetchProductById,

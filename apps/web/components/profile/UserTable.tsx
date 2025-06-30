@@ -10,12 +10,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PaginationItems } from "@/components/PaginationItems";
-import { Eye } from "lucide-react";
+import { Eye, Pencil } from "lucide-react";
 
 interface UserTableProps {
   data: User[];
   columns: Column[];
   onDetailsClick: (id: string) => void;
+  onEditClick?: (user: User) => void;
   currentPage: number;
   totalPages: number;
   setCurrentPage: (page: number) => void;
@@ -29,6 +30,7 @@ export function UserTable({
   data,
   columns,
   onDetailsClick,
+  onEditClick,
   currentPage,
   totalPages,
   setCurrentPage,
@@ -90,13 +92,25 @@ export function UserTable({
                 </TableCell>
               ))}
               <TableCell>
-                <Button
-                  variant="outline"
-                  onClick={() => onDetailsClick(item._id)}
-                >
-                  <Eye className="w-4 h-4 mr-2" />
-                  Detalhes
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onDetailsClick(item._id)}
+                  >
+                    <Eye className="h-4 w-4 mr-1" />
+                  </Button>
+                  
+                  {onEditClick && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onEditClick(item)}
+                    >
+                      <Pencil className="h-4 w-4 mr-1" />
+                    </Button>
+                  )}
+                </div>
               </TableCell>
             </TableRow>
           ))}

@@ -3,7 +3,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, Package, DollarSign, Tag } from "lucide-react";
+import { Loader2, Package, Tag, Image as ImageIcon } from "lucide-react";
 import React, { useState, useEffect, useMemo } from "react";
 
 import {
@@ -37,55 +37,24 @@ import { useToast } from "@/hooks/useToast";
 import { Product } from "@/app/_types/product";
 import { getProductTypeName } from "@/app/_services/productService";
 
-// Schema de validação baseado no schema existente
-const baseProductSchema = z.object({
-  name: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
-  productType: z.enum(["lenses", "clean_lenses", "prescription_frame", "sunglasses_frame"], {
-    required_error: "Selecione um tipo de produto",
-  }),
+const productSchema = z.object({
+  name: z.string().min(1, "Nome é obrigatório"),
+  productType: z.enum(["lenses", "clean_lenses", "prescription_frame", "sunglasses_frame"]),
   description: z.string().optional(),
-  image: z.any().optional(),
   brand: z.string().optional(),
-  sellPrice: z.coerce.number().min(0, "Preço de venda deve ser maior que zero"),
-  costPrice: z.coerce.number().min(0, "Preço de custo inválido").optional(),
+  sellPrice: z.coerce.number().min(0.01, "Preço de venda é obrigatório"),
+  costPrice: z.coerce.number().optional(),
+  image: z.any().optional(),
+  lensType: z.string().optional(),
+  typeFrame: z.string().optional(),
+  color: z.string().optional(),
+  shape: z.string().optional(),
+  reference: z.string().optional(),
+  stock: z.coerce.number().optional(),
+  modelSunglasses: z.string().optional(),
 });
 
-const lensSchema = baseProductSchema.extend({
-  productType: z.literal("lenses"),
-  lensType: z.string().min(2, "Tipo de lente é obrigatório"),
-});
-
-const cleanLensSchema = baseProductSchema.extend({
-  productType: z.literal("clean_lenses"),
-});
-
-const frameBaseSchema = {
-  typeFrame: z.string().min(2, "Tipo de armação é obrigatório"),
-  color: z.string().min(2, "Cor é obrigatória"),
-  shape: z.string().min(2, "Formato é obrigatório"),
-  reference: z.string().min(2, "Referência é obrigatória"),
-  stock: z.coerce.number().min(0, "Estoque deve ser maior ou igual a zero").optional(),
-};
-
-const prescriptionFrameSchema = baseProductSchema.extend({
-  productType: z.literal("prescription_frame"),
-  ...frameBaseSchema,
-});
-
-const sunglassesFrameSchema = baseProductSchema.extend({
-  productType: z.literal("sunglasses_frame"),
-  modelSunglasses: z.string().min(2, "Modelo é obrigatório"),
-  ...frameBaseSchema,
-});
-
-const productFormSchema = z.discriminatedUnion("productType", [
-  lensSchema,
-  cleanLensSchema,
-  prescriptionFrameSchema,
-  sunglassesFrameSchema
-]);
-
-type ProductFormData = z.infer<typeof productFormSchema>;
+type ProductFormData = z.infer<typeof productSchema>;
 
 interface ProductDialogProps {
   open: boolean;
@@ -100,9 +69,9 @@ export function ProductDialog({
   onOpenChange,
   onSuccess,
   product,
-  mode = 'create',
+  mode,
 }: ProductDialogProps) {
-  const { handleCreateProduct, handleUpdateProduct, isCreating, isUpdating } = useProducts();
+  const { createProductMutation, updateProductMutation } = useProducts();
   const { toast } = useToast();
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imageUrl, setImageUrl] = useState<string | undefined>(undefined);
@@ -110,10 +79,11 @@ export function ProductDialog({
   // Memoizar o produto para evitar renderizações desnecessárias
   const memoizedProduct = useMemo(() => product, [product?._id]);
 
-  const isEditMode = mode === 'edit';
-  
+  // Detectar modo automaticamente se não foi especificado
+  const isEditMode = mode === 'edit' || (mode === undefined && !!memoizedProduct && !!memoizedProduct._id);
+
   const form = useForm<ProductFormData>({
-    resolver: zodResolver(productFormSchema),
+    resolver: zodResolver(productSchema),
     defaultValues: {
       name: "",
       productType: "lenses",
@@ -122,76 +92,105 @@ export function ProductDialog({
       sellPrice: 0,
       costPrice: 0,
       image: undefined,
-    } as any,
+      lensType: "",
+      typeFrame: "",
+      color: "",
+      shape: "",
+      reference: "",
+      stock: 0,
+      modelSunglasses: "",
+    },
   });
 
-  // Observar mudanças no tipo de produto para resetar campos específicos
   const watchedProductType = form.watch("productType");
 
   // Preencher o formulário quando estiver no modo de edição
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      return; // Não fazer nada se o dialog estiver fechado
+    }
 
-    const handleFormReset = () => {
-      if (isEditMode && memoizedProduct) {
-        // Criar objeto base com campos comuns
-        const baseData: any = {
-          name: memoizedProduct.name || "",
-          productType: memoizedProduct.productType,
-          description: memoizedProduct.description || "",
-          brand: memoizedProduct.brand || "",
-          sellPrice: memoizedProduct.sellPrice || 0,
-          costPrice: memoizedProduct.costPrice || 0,
-        };
-
-        // Adicionar campos específicos baseados no tipo
-        switch (memoizedProduct.productType) {
-          case "lenses":
-            if ('lensType' in memoizedProduct) {
-              baseData.lensType = memoizedProduct.lensType || "";
-            }
-            break;
-          case "prescription_frame":
-            if ('typeFrame' in memoizedProduct) {
-              baseData.typeFrame = memoizedProduct.typeFrame || "";
-              baseData.color = memoizedProduct.color || "";
-              baseData.shape = memoizedProduct.shape || "";
-              baseData.reference = memoizedProduct.reference || "";
-              baseData.stock = memoizedProduct.stock || 0;
-            }
-            break;
-          case "sunglasses_frame":
-            if ('modelSunglasses' in memoizedProduct) {
-              baseData.modelSunglasses = memoizedProduct.modelSunglasses || "";
-              baseData.typeFrame = memoizedProduct.typeFrame || "";
-              baseData.color = memoizedProduct.color || "";
-              baseData.shape = memoizedProduct.shape || "";
-              baseData.reference = memoizedProduct.reference || "";
-              baseData.stock = memoizedProduct.stock || 0;
-            }
-            break;
+    // Fechar todos os dropdowns abertos para evitar conflitos de aria-hidden
+    const closeAllDropdowns = () => {
+      // Fechar dropdowns do Radix UI
+      document.querySelectorAll('[data-radix-popper-content-wrapper]').forEach((element) => {
+        const htmlElement = element as HTMLElement;
+        if (htmlElement.style.display !== 'none') {
+          // Simular ESC para fechar dropdowns
+          const escEvent = new KeyboardEvent('keydown', {
+            key: 'Escape',
+            code: 'Escape',
+            keyCode: 27,
+            which: 27,
+            bubbles: true,
+            cancelable: true
+          });
+          document.dispatchEvent(escEvent);
         }
-
-        form.reset(baseData);
-        
-        // Definir URL da imagem se existir
-        if (memoizedProduct?.image) {
-          setImageUrl(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}${memoizedProduct.image}`);
-        }
-      } else {
-        // Resetar o formulário quando abrir no modo de criação
-        form.reset({
-          name: "",
-          productType: "lenses",
-          description: "",
-          brand: "",
-          sellPrice: 0,
-          costPrice: 0,
-          image: undefined,
-        } as any);
-        setSelectedImage(null);
-        setImageUrl(undefined);
+      });
+      
+      // Remover foco de elementos ativos
+      const activeElement = document.activeElement as HTMLElement;
+      if (activeElement && activeElement.blur) {
+        activeElement.blur();
       }
+    };
+
+    // Usar uma flag para evitar loops infinitos
+    const handleFormReset = () => {
+      // Fechar dropdowns primeiro
+      closeAllDropdowns();
+      
+      // Aguardar um frame para garantir que dropdowns fecharam
+      requestAnimationFrame(() => {
+        if (isEditMode && memoizedProduct) {
+          form.reset({
+            name: memoizedProduct.name || "",
+            productType: memoizedProduct.productType,
+            description: memoizedProduct.description || "",
+            brand: memoizedProduct.brand || "",
+            sellPrice: memoizedProduct.sellPrice || 0,
+            costPrice: memoizedProduct.costPrice || 0,
+            lensType: (memoizedProduct as any).lensType || "",
+            typeFrame: (memoizedProduct as any).typeFrame || "",
+            color: (memoizedProduct as any).color || "",
+            shape: (memoizedProduct as any).shape || "",
+            reference: (memoizedProduct as any).reference || "",
+            stock: (memoizedProduct as any).stock || 0,
+            modelSunglasses: (memoizedProduct as any).modelSunglasses || "",
+          });
+          
+          if (memoizedProduct?.image) {
+            try {
+              const imageFullUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}${memoizedProduct.image}`;
+              setImageUrl(imageFullUrl);
+            } catch (error) {
+              console.error("Erro ao processar URL da imagem:", error);
+              setImageUrl(undefined);
+            }
+          }
+        } else {
+          // Resetar o formulário quando abrir no modo de criação
+          form.reset({
+            name: "",
+            productType: "lenses",
+            description: "",
+            brand: "",
+            sellPrice: 0,
+            costPrice: 0,
+            image: undefined,
+            lensType: "",
+            typeFrame: "",
+            color: "",
+            shape: "",
+            reference: "",
+            stock: 0,
+            modelSunglasses: "",
+          });
+          setSelectedImage(null);
+          setImageUrl(undefined);
+        }
+      });
     };
     
     handleFormReset();
@@ -201,12 +200,17 @@ export function ProductDialog({
     try {
       const formData = new FormData();
       
-      // Adicionar dados básicos
+      // Adicionar dados obrigatórios
       formData.append("name", data.name);
       formData.append("productType", data.productType);
       formData.append("sellPrice", data.sellPrice.toString());
       
-      // Adicionar dados opcionais se preenchidos
+      // Adicionar imagem se selecionada
+      if (selectedImage) {
+        formData.append("image", selectedImage);
+      }
+      
+      // Adicionar dados opcionais apenas se preenchidos
       if (data.description && data.description.trim()) {
         formData.append("description", data.description);
       }
@@ -217,46 +221,29 @@ export function ProductDialog({
         formData.append("costPrice", data.costPrice.toString());
       }
       
-      // Adicionar imagem se selecionada
-      if (selectedImage) {
-        formData.append("productImage", selectedImage);
+      // Campos específicos por tipo
+      if (data.productType === "lenses" && data.lensType && data.lensType.trim()) {
+        formData.append("lensType", data.lensType);
       }
       
-      // Adicionar campos específicos baseados no tipo
-      switch (data.productType) {
-        case "lenses":
-          if ('lensType' in data && data.lensType) {
-            formData.append("lensType", data.lensType);
-          }
-          break;
-        case "prescription_frame":
-          if ('typeFrame' in data) {
-            formData.append("typeFrame", data.typeFrame || "");
-            formData.append("color", data.color || "");
-            formData.append("shape", data.shape || "");
-            formData.append("reference", data.reference || "");
-            if (data.stock !== undefined && data.stock >= 0) {
-              formData.append("stock", data.stock.toString());
-            }
-          }
-          break;
-        case "sunglasses_frame":
-          if ('modelSunglasses' in data) {
-            formData.append("modelSunglasses", data.modelSunglasses || "");
-            formData.append("typeFrame", data.typeFrame || "");
-            formData.append("color", data.color || "");
-            formData.append("shape", data.shape || "");
-            formData.append("reference", data.reference || "");
-            if (data.stock !== undefined && data.stock >= 0) {
-              formData.append("stock", data.stock.toString());
-            }
-          }
-          break;
+      if (data.productType === "prescription_frame" || data.productType === "sunglasses_frame") {
+        if (data.typeFrame && data.typeFrame.trim()) formData.append("typeFrame", data.typeFrame);
+        if (data.color && data.color.trim()) formData.append("color", data.color);
+        if (data.shape && data.shape.trim()) formData.append("shape", data.shape);
+        if (data.reference && data.reference.trim()) formData.append("reference", data.reference);
+        if (data.stock !== undefined && data.stock >= 0) formData.append("stock", data.stock.toString());
+        
+        if (data.productType === "sunglasses_frame" && data.modelSunglasses && data.modelSunglasses.trim()) {
+          formData.append("modelSunglasses", data.modelSunglasses);
+        }
       }
 
       if (isEditMode && memoizedProduct) {
         // Atualizar produto existente
-        await handleUpdateProduct(memoizedProduct._id, formData);
+        await updateProductMutation.mutateAsync({
+          id: memoizedProduct._id,
+          formData
+        });
         
         toast({
           title: "Produto atualizado",
@@ -264,13 +251,29 @@ export function ProductDialog({
         });
       } else {
         // Criar novo produto
-        await handleCreateProduct(formData);
+        await createProductMutation.mutateAsync(formData);
         
         toast({
           title: "Produto cadastrado",
           description: "O produto foi cadastrado com sucesso.",
         });
       }
+      
+      // Fechar dropdowns antes de resetar
+      document.querySelectorAll('[data-radix-popper-content-wrapper]').forEach((element) => {
+        const htmlElement = element as HTMLElement;
+        if (htmlElement.style.display !== 'none') {
+          const escEvent = new KeyboardEvent('keydown', {
+            key: 'Escape',
+            code: 'Escape',
+            keyCode: 27,
+            which: 27,
+            bubbles: true,
+            cancelable: true
+          });
+          document.dispatchEvent(escEvent);
+        }
+      });
       
       // Resetar formulário e fechar dialog
       form.reset();
@@ -293,139 +296,49 @@ export function ProductDialog({
   };
 
   const handleCancel = () => {
+    // Fechar dropdowns antes de resetar
+    document.querySelectorAll('[data-radix-popper-content-wrapper]').forEach((element) => {
+      const htmlElement = element as HTMLElement;
+      if (htmlElement.style.display !== 'none') {
+        const escEvent = new KeyboardEvent('keydown', {
+          key: 'Escape',
+          code: 'Escape',
+          keyCode: 27,
+          which: 27,
+          bubbles: true,
+          cancelable: true
+        });
+        document.dispatchEvent(escEvent);
+      }
+    });
+    
+    // Remover foco
+    const activeElement = document.activeElement as HTMLElement;
+    if (activeElement && activeElement.blur) {
+      activeElement.blur();
+    }
+    
+    // Resetar formulário
     form.reset();
     setSelectedImage(null);
     setImageUrl(undefined);
     onOpenChange(false);
   };
 
-  const isPending = isEditMode ? isUpdating : isCreating;
-
-  // Renderizar campos específicos baseados no tipo de produto
-  const renderProductTypeFields = () => {
-    switch (watchedProductType) {
-      case "lenses":
-        return (
-          <FormField
-            control={form.control}
-            name="lensType"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Tipo de Lente</FormLabel>
-                <FormControl>
-                  <Input placeholder="Ex: Monofocal, Multifocal, Progressiva" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        );
-      
-      case "prescription_frame":
-      case "sunglasses_frame":
-        return (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {watchedProductType === "sunglasses_frame" && (
-              <FormField
-                control={form.control}
-                name="modelSunglasses"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Modelo</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Modelo dos óculos de sol" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
-            
-            <FormField
-              control={form.control}
-              name="typeFrame"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Tipo de Armação</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Ex: Acetato, Metal, TR90" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="color"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Cor</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Cor da armação" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="shape"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Formato</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Ex: Redondo, Quadrado, Aviador" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="reference"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Referência</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Código/referência do produto" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="stock"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Estoque</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="number" 
-                      min="0" 
-                      placeholder="Quantidade em estoque" 
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-        );
-      
-      default:
-        return null;
-    }
-  };
+  const isPending = isEditMode ? updateProductMutation.isPending : createProductMutation.isPending;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+    <Dialog open={open} onOpenChange={onOpenChange} modal={true}>
+      <DialogContent 
+        className="max-w-4xl max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(e) => {
+          // Prevenir fechamento acidental por cliques em dropdowns
+          const target = e.target as Element;
+          if (target?.closest('[data-radix-popper-content-wrapper]')) {
+            e.preventDefault();
+          }
+        }}
+      >
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold flex items-center gap-2">
             <Package className="w-6 h-6 text-blue-600" />
@@ -433,7 +346,7 @@ export function ProductDialog({
           </DialogTitle>
           <DialogDescription>
             {isEditMode 
-              ? 'Edite as informações do produto no sistema'
+              ? 'Edite as informações do produto'
               : 'Cadastre um novo produto no sistema'
             }
           </DialogDescription>
@@ -441,10 +354,11 @@ export function ProductDialog({
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-            {/* Campo de Imagem */}
+            {/* Campo de Imagem - Primeiro */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold flex items-center gap-2">
-                Imagem do Produto
+                <ImageIcon className="w-5 h-5 text-blue-600" />
+                Foto do Produto
               </h3>
               
               <ImageUpload
@@ -483,7 +397,7 @@ export function ProductDialog({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Tipo de Produto</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Selecione o tipo" />
@@ -500,7 +414,7 @@ export function ProductDialog({
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="brand"
@@ -508,41 +422,13 @@ export function ProductDialog({
                     <FormItem>
                       <FormLabel>Marca</FormLabel>
                       <FormControl>
-                        <Input placeholder="Marca do produto (opcional)" {...field} />
+                        <Input placeholder="Marca (opcional)" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-              </div>
 
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Descrição</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="Descrição detalhada do produto (opcional)"
-                        className="min-h-[80px]"
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            {/* Preços */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold flex items-center gap-2">
-                <DollarSign className="w-5 h-5 text-green-600" />
-                Preços
-              </h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="sellPrice"
@@ -568,13 +454,13 @@ export function ProductDialog({
                   name="costPrice"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Preço de Custo (opcional)</FormLabel>
+                      <FormLabel>Preço de Custo</FormLabel>
                       <FormControl>
                         <Input 
                           type="number" 
                           step="0.01"
                           min="0"
-                          placeholder="0,00" 
+                          placeholder="0,00 (opcional)" 
                           {...field}
                         />
                       </FormControl>
@@ -583,19 +469,144 @@ export function ProductDialog({
                   )}
                 />
               </div>
+
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Descrição</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Descrição do produto (opcional)"
+                        className="min-h-[80px]"
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
 
-            {/* Campos específicos do tipo de produto */}
-            {renderProductTypeFields() && (
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <Package className="w-5 h-5 text-purple-600" />
-                  Informações Específicas - {getProductTypeName(watchedProductType)}
-                </h3>
-                
-                {renderProductTypeFields()}
-              </div>
-            )}
+            {/* Campos específicos por tipo */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <Package className="w-5 h-5 text-purple-600" />
+                Informações Específicas - {getProductTypeName(watchedProductType)}
+              </h3>
+
+              {watchedProductType === "lenses" && (
+                <FormField
+                  control={form.control}
+                  name="lensType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo de Lente</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ex: Monofocal, Multifocal, Progressiva" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+
+              {(watchedProductType === "prescription_frame" || watchedProductType === "sunglasses_frame") && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {watchedProductType === "sunglasses_frame" && (
+                    <FormField
+                      control={form.control}
+                      name="modelSunglasses"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Modelo</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Modelo dos óculos de sol" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+
+                  <FormField
+                    control={form.control}
+                    name="typeFrame"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tipo de Armação</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Ex: Acetato, Metal, TR90" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="color"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Cor</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Cor da armação" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="shape"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Formato</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Ex: Redondo, Quadrado, Aviador" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="reference"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Referência</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Referência do produto" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="stock"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Estoque</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            min="0"
+                            placeholder="Quantidade em estoque" 
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              )}
+            </div>
 
             {/* Botões */}
             <div className="flex justify-end space-x-2 pt-4 border-t">
@@ -627,4 +638,4 @@ export function ProductDialog({
       </DialogContent>
     </Dialog>
   );
-}
+} 

@@ -52,9 +52,15 @@ export function ProductTableWithActions({
   };
 
   const handleEditSuccess = () => {
-    setShowEditDialog(false);
-    setEditingProduct(null);
     onRefresh();
+  };
+
+  const handleEditDialogClose = (open: boolean) => {
+    setShowEditDialog(open);
+    if (!open) {
+      // Limpar o produto sendo editado quando o dialog for fechado
+      setEditingProduct(null);
+    }
   };
 
   const handleDeleteConfirm = async () => {
@@ -198,7 +204,7 @@ export function ProductTableWithActions({
       {/* Dialog de Edição */}
       <ProductDialog
         open={showEditDialog}
-        onOpenChange={setShowEditDialog}
+        onOpenChange={handleEditDialogClose}
         onSuccess={handleEditSuccess}
         product={editingProduct || undefined}
         mode="edit"

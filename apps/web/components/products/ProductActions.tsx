@@ -55,6 +55,10 @@ export function ProductActions({ product, onViewDetails, onRefresh }: ProductAct
     }
   };
 
+  const handleEditDialogClose = (open: boolean) => {
+    setShowEditDialog(open);
+  };
+
   const handleDelete = async () => {
     if (!product) return;
     
@@ -131,7 +135,7 @@ export function ProductActions({ product, onViewDetails, onRefresh }: ProductAct
       {/* Dialog de Edição */}
       <ProductDialog
         open={showEditDialog}
-        onOpenChange={setShowEditDialog}
+        onOpenChange={handleEditDialogClose}
         onSuccess={handleEditSuccess}
         product={product}
         mode="edit"
