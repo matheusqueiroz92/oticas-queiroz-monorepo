@@ -128,4 +128,6 @@ export interface OrderFormValues {
   [key: string]: unknown;
 }
 
+export type OrderStatus = "pending" | "in_production" | "ready" | "delivered" | "cancelled";
+
 export type OrderFormReturn = UseFormReturn<OrderFormValues, any, undefined>;

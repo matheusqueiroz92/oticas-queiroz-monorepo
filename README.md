@@ -1,1045 +1,473 @@
-# 🕶️ Óticas Queiroz Monorepo  
-![Status](https://img.shields.io/badge/Status-Em_Desenvolvimento-yellow) ![Licença](https://img.shields.io/badge/Licença-Proprietária-red)
+# 🕶️ Óticas Queiroz - Sistema de Gestão Completo
+![Status](https://img.shields.io/badge/Status-Em_Produção-green) ![Versão](https://img.shields.io/badge/Versão-2.4.0-blue) ![Licença](https://img.shields.io/badge/Licença-Proprietária-red)
 
-Sistema completo de gestão para Óticas Queiroz, desenvolvido para otimizar processos de vendas, controle de estoque, gestão financeira e atendimento ao cliente.
+Sistema completo de gestão para Óticas Queiroz, desenvolvido para otimizar processos de vendas, controle de estoque, gestão financeira e atendimento ao cliente com foco em análise de dados e experiência do usuário.
 
-## 🧩 Principais Funcionalidades do sistema
+## 🌟 Destaques da Versão Atual
+
+### 📊 **Dashboard Inteligente**
+- **Gráficos de Vendas Interativos**: Visualização por períodos (7 dias, 30 dias, 6 meses) usando Recharts
+- **Estatísticas em Tempo Real**: Total de vendas, pedidos, crescimento e métricas de performance
+- **Layout Responsivo**: 75% para gráfico de vendas, 25% para lista de pedidos recentes
+- **Ações Rápidas**: Acesso direto às principais funcionalidades do sistema
+
+### 👤 **Perfil de Usuário Avançado**
+- **Dados Dinâmicos**: Estatísticas reais baseadas na performance individual do usuário
+- **Métricas Personalizadas**: Diferentes métricas para Admin, Funcionário e Cliente
+- **Sistema de Classificação**: Bronze → Prata → Ouro → Premium baseado em performance
+- **Indicadores Visuais**: Ícones de crescimento e tendências com cores dinâmicas
+
+### 🎯 **Funcionalidades de Negócio Revolucionárias**
+- **Login por Ordem de Serviço**: Clientes podem acessar usando apenas o número da O.S.
+- **CPF Opcional**: Cadastro flexível sem obrigatoriedade de documento
+- **Responsável pela Compra**: Suporte a cenários onde comprador ≠ pagador
+- **Integração Mercado Pago**: Pagamentos online seguros com checkout transparente
+
+## 🧩 Principais Funcionalidades do Sistema
 
 ### 🔐 Autenticação e Gestão de Usuários
-- 👮‍♂️ **Perfis de Acesso**: Implementação de diferentes níveis de acesso:
-  - Administradores: Acesso completo ao sistema;
-  - Funcionários: Podem registrar vendas, gerenciar clientes e produtos;
-  - Clientes: Acesso limitado aos seus pedidos e perfil;
-  - Instituições: Parceiros institucionais com acesso a funcionalidades específicas;
-- 🔑 **Autenticação Segura**: Login com email, CPF ou CNPJ, protegido por JWT (JSON Web Tokens);
-- 🆔 **Login por Ordem de Serviço**: Clientes podem fazer login usando o número da O.S. como usuário e senha;
-- 🔄 **Recuperação de Senha**: Sistema de reset de senha via tokens enviados por email;
-- **Gerenciamento de Perfil**: Upload de foto, atualização de dados pessoais e senha;
-- ✅ **Validação de CPF**: Verificação automática da validade do CPF para evitar cadastros fraudulentos;
-- ✅ **Validação de CNPJ**: Verificação automática da validade do CNPJ para evitar cadastros fraudulentos;
-- 📊 **Controle de Sessão**: Verificação e renovação automática de tokens de autenticação;
-- 🆔 **CPF Opcional**: Possibilidade de cadastrar clientes sem informar CPF (para casos onde o cliente não fornece o documento);
+- 👮‍♂️ **Perfis de Acesso Hierárquicos**:
+  - **Administradores**: Controle total, relatórios executivos, configurações
+  - **Funcionários**: Vendas, atendimento, gestão de clientes e produtos
+  - **Clientes**: Portal pessoal com histórico, pedidos e perfil
+  - **Instituições**: Acesso corporativo com funcionalidades específicas
 
-### 📦 Gestão de Produtos
-- 🗂️ **Categorização de Produtos**: Suporte a diferentes tipos de produtos óticos:
-  - Lentes oftálmicas (lentes de grau);
-  - Armações para óculos de grau;
-  - Armações para óculos de sol;
-  - Limpadores de lentes;
-- 📊 **Controle de Estoque**: Registro de entradas e saídas com histórico completo
-- 🖼️ **Gestão de Imagens**: Upload e gerenciamento de imagens para produtos
-- ⚙️ **Configurações Específicas por Tipo**:
-  - Lentes: Associação com tipos de lentes;
-  - Armações: Registro de características como tipo de armação, cor, formato, referência;
-  - Óculos de Sol: Detalhes específicos como modelo e características especiais;
-- 🔍 **Busca Avançada**: Filtros por tipo, marca, preço, cor e outros atributos;
-- 📤 **Exportação de Catálogo**: Geração de relatórios detalhados de produtos.
+- 🔑 **Sistema de Autenticação Flexível**:
+  - Login tradicional com email, CPF ou CNPJ
+  - **Login simplificado por Ordem de Serviço** (cliente usa número da O.S.)
+  - Tokens JWT seguros com renovação automática
+  - Sistema robusto de recuperação de senha via email
 
-### 🛍️ Gestão de Pedidos
-- ✨ **Criação Intuitiva**: Interface amigável para registro de novos pedidos;
-- 📝 **Seleção de Produtos**: Adição de múltiplos produtos em um mesmo pedido;
-- 👥 **Responsável pela Compra**: Possibilidade de registrar pedido em nome de um cliente com débito sendo lançado em outro responsável (ex: filho compra, pai paga);
-- 📅 **Dados de Prescrição**: Registro detalhado da receita médica:
-  - Dados do médico e clínica;
-  - Data da consulta;
-  - Informações de dioptria para olho direito e esquerdo (Esf., Cil., Eixo, D.P.);
-  - Valores de Adição, D.N.P e C.O.;
-- 🔄 **Gerenciamento de Status**:
-  - Pendente: Pedido registrado, aguardando produção;
-  - Em Produção: Enviado para laboratório;
-  - Pronto: Produto finalizado, aguardando retirada;
-  - Entregue: Produto entregue ao cliente;
-  - Cancelado: Pedido cancelado;
-- 🔗 **Integração com Laboratórios**: Envio automático para laboratórios óticos parceiros;
-- 🧮 **Cálculos Financeiros**: Automatização de cálculos de total, desconto e valor final;
-- 📜 **Histórico de Alterações**: Registro de todas as modificações em pedidos;
-- 📄 **Exportação de Documentos**: Geração de ordens de serviço em múltiplos formatos;
-- 🔎 **Busca Avançada**: Filtros por cliente, vendedor, status, data, laboratório e método de pagamento;
-- 📊 **Exportação de Dados**: Geração de relatórios diários e customizados.
+- 🛡️ **Segurança Multicamadas**:
+  - Validação automática de CPF/CNPJ com algoritmos
+  - Controle de sessão com timeout inteligente
+  - Middleware de autenticação com verificação em tempo real
+  - Criptografia BCrypt para proteção de senhas
 
-### 💵 Gestão de Pagamentos
-- 🔄 **Múltiplos Tipos de Transação**:
-  - Venda: Pagamentos relacionados a pedidos;
-  - Pagamento de Dívida: Para clientes com débitos pendentes;
-  - Despesa: Registro de gastos da empresa;
-- 💳 **Métodos de Pagamento Diversificados**:
-  - Cartão de Crédito: Com suporte a parcelamento;
-  - Cartão de Débito;
-  - Dinheiro;
-  - PIX;
-  - Boleto Bancário: Com registro de código e banco;
-  - Promissória: Com registro de número e controle;
-  - Cheque: Com gestão completa de pagamentos via cheques bancários;
-- 🧩 **Parcelamento Inteligente**: Cálculo automático de valores parcelados;
-- 📉 **Gerenciamento de Dívidas**: Controle de débitos de clientes;
-  - Geração automática de planos de pagamento;
-  - Registro de datas de vencimento;
-  - Histórico de pagamentos realizados;
-- ❌ **Cancelamento e Estorno**: Processo seguro para cancelamento de pagamentos;
-- 🗑️ **Exclusão Lógica**: Marcação de pagamentos excluídos sem remoção física do banco;
-- 📈 **Relatórios Financeiros**: Exportação detalhada de transações;
-- 📅 **Resumo por Período**: Visualização de pagamentos diários, mensais e customizados.
+### 📊 Dashboard e Analytics Avançados
+- 📈 **Gráficos Interativos de Vendas (SalesChart)**:
+  - **Períodos configuráveis**: 7 dias (diário), 30 dias (diário), 6 meses (semanal)
+  - **Dados agrupados inteligentemente** baseado no período selecionado
+  - **Tooltips informativos** com detalhes de vendas e pedidos
+  - **Estatísticas do período**: Total, crescimento, melhor dia, média
 
-### 📊 Gestão de Registros de Caixa
-- 🔓 **Controle de Abertura e Fechamento**: Registro de início e fim de operações diárias do caixa da empresa;
-- 💰 **Saldo Inicial e Final**: Registro de valores de abertura e conferência no fechamento;
-- 📝 **Resumo de Operações**:
-  - Total de vendas por método de pagamento;
-  - Total de pagamentos recebidos;
-  - Total de despesas realizadas;
-- ⚖️ **Diferença de Caixa**: Cálculo automático de sobras ou faltas no fechamento;
-- 📤 **Exportação de Movimentações**: Geração de relatórios em diferentes formatos;
-- 📜 **Histórico Detalhado**: Registro de todas as operações realizadas no caixa;
-- 🗑️ **Exclusão Lógica**: Mecanismo de segurança para operações canceladas;
-- 📅 **Visualização por Período**: Resumos diários, mensais e customizados.
+- 📋 **Métricas em Tempo Real**:
+  - Total de vendas com comparativo de crescimento
+  - Número de pedidos e percentual de aumento/diminuição
+  - Média diária de vendas calculada dinamicamente
+  - Destaque do melhor dia com badge especial
 
-### 🔬 Gestão de Laboratórios
-- 📝 **Cadastro Completo**: Registro de laboratórios óticos parceiros;
-- 📞 **Dados de Contato**: Informações detalhadas para comunicação;
-- 📌 **Endereço Estruturado**: Registro completo de localização;
-- 🔄 **Controle de Status**: Ativação/desativação de laboratórios;
-- 🔗 **Associação com Pedidos**: Vinculação entre laboratórios e serviços;
-- 📜 **Histórico de Envios**: Registro de pedidos enviados para cada laboratório;
-- 🔍 **Busca e Filtragem**: Localização rápida por nome, cidade ou status.
+- ⚡ **Ações Rápidas Otimizadas**:
+  - Cards de criação rápida com altura reduzida
+  - Acesso direto a pedidos, clientes, produtos, pagamentos
+  - Interface responsiva e visualmente atrativa
 
-### 🕰️ Gestão de Clientes Legados
-- 📝 **Cadastro de Clientes Antigos**: Registro de clientes com histórico anterior ao sistema;
-- 💸 **Controle de Dívidas**: Gerenciamento de débitos pendentes;
-- 📜 **Histórico de Pagamentos**: Registro de todas as transações realizadas;
-- 📅 **Planos de Pagamento**: Criação de acordos de quitação parcelada;
-- 🔔 **Notificações**: Alertas sobre vencimentos e pagamentos;
-- 🔎 **Busca Avançada**: Filtros por nome, documento, valor de dívida;
-- 📤 **Exportação de Dados**: Geração de relatórios personalizados;
-- 🔄 **Controle de Status**: Ativação/inativação de clientes.
+- 🎯 **Widgets Inteligentes**:
+  - Lista de pedidos recentes compacta (sidebar)
+  - Status do caixa atual com informações em tempo real
+  - Contadores de clientes cadastrados na semana
 
-### 📊 Geração de Relatórios
-- 🛒 **Relatórios de Vendas**: Análise detalhada de vendas por período;
-- 📦 **Relatórios de Estoque**: Controle de produtos disponíveis e movimentações;
-- 👥 **Relatórios de Clientes**: Análise de base de clientes e comportamento;
-- 📝 **Relatórios de Pedidos**: Visualização de status, laboratórios e valores;
-- 💰 **Relatórios Financeiros**: Análise completa de receitas e despesas;
-- 📁 **Múltiplos Formatos**: Exportação em Excel, PDF, CSV e JSON;
-- 🔍 **Filtros Avançados**: Customização de relatórios por diversos parâmetros;
-- ⏰ **Agendamento**: Possibilidade de configurar geração periódica;
-- 📊 **Visualização Gráfica**: Apresentação visual de dados relevantes.
+### 📦 Gestão Completa de Produtos
+- 🗂️ **Categorização Especializada**:
+  - **Lentes Oftálmicas**: Tipos, materiais, índices, tratamentos
+  - **Armações de Grau**: Marcas, modelos, cores, formatos, referências
+  - **Óculos de Sol**: Categorias, proteção UV, estilos, marcas
+  - **Produtos de Limpeza**: Sprays, panos, soluções especializadas
 
-### 📦 Controle de Estoque
-- 📊 **Gestão de Inventário**: Controle preciso de produtos disponíveis;
-- 🔄 **Movimentação Automática**: Redução de estoque em vendas e reposição em cancelamentos;
-- 📜 **Histórico de Alterações**: Registro detalhado de todas as movimentações;
-- ⚠️ **Alertas de Estoque Baixo**: Notificações para produtos com quantidade crítica;
-- 📝 **Registro de Motivos**: Documentação de razões para alterações no estoque;
-- 👤 **Identificação de Responsáveis**: Registro de quem realizou cada operação;
-- 🔗 **Vinculação com Pedidos**: Associação entre movimentações e vendas;
-- 📤 **Exportação de Dados**: Geração de relatórios de inventário.
+- 📊 **Controle Inteligente de Estoque**:
+  - Movimentação automática baseada em vendas e cancelamentos
+  - Histórico completo de alterações com responsáveis
+  - Alertas configuráveis de estoque baixo
+  - Análise de custos, margens e rentabilidade
 
-## 🆕 Funcionalidades Recentemente Implementadas
+- 🖼️ **Gestão Visual Avançada**:
+  - Upload múltiplo de imagens com compressão automática
+  - Galeria responsiva com zoom e navegação
+  - Busca visual por características e atributos
 
-### 🔑 Autenticação por Ordem de Serviço (O.S.)
-- **Funcionalidade**: Clientes podem fazer login usando o número da Ordem de Serviço
-- **Como usar**: 
-  - Username: Número da O.S. (ex: "12345")
-  - Senha: Mesmo número da O.S. (ex: "12345")
-- **Benefícios**: Facilita o acesso para clientes que só conhecem o número do seu pedido
-- **Compatibilidade**: Mantém funcionamento dos logins tradicionais (email, CPF, CNPJ)
+### 🛍️ Sistema de Pedidos Revolucionário
+- ✨ **Interface de Criação Intuitiva**:
+  - Wizard multi-etapas com validação em tempo real
+  - Busca inteligente de produtos com filtros avançados
+  - Cálculos automáticos de preços, descontos e totais
 
-### 🆔 CPF Opcional para Clientes
-- **Funcionalidade**: Possibilidade de cadastrar clientes sem informar o CPF
-- **Casos de uso**: 
-  - Clientes que não querem fornecer CPF no momento da compra
-  - Compras rápidas onde o documento não é necessário
-  - Clientes menores de idade sem CPF
-- **Interface**: Formulários indicam claramente que o CPF é "(opcional)"
-- **Validação**: Quando informado, CPF continua sendo validado normalmente
+- 👥 **Responsabilidade Financeira Flexível**:
+  - **Cenário tradicional**: Cliente compra e paga
+  - **Cenário família**: Filho compra, pai paga (débito vai para o responsável)
+  - **Cenário corporativo**: Funcionário compra, empresa paga
+  - Interface visual com cores diferenciadas (azul/laranja)
 
-### 👥 Responsável pela Compra
-- **Funcionalidade**: Permite registrar pedido em nome de um cliente com débito sendo lançado em outro responsável
-- **Casos de uso**:
-  - Filho menor de idade compra óculos, débito fica no nome do pai
-  - Compras corporativas onde funcionário compra mas empresa paga
-  - Qualquer situação onde comprador ≠ pagador
-- **Como usar**:
-  1. Selecione o cliente que está comprando normalmente
-  2. Marque checkbox "Há um responsável pela compra?"
-  3. Busque e selecione o cliente responsável pelo pagamento
-  4. Finalize o pedido - débito será lançado no responsável
-- **Interface**: Visual diferenciado com cores para distinguir cliente (azul) e responsável (laranja)
-- **Lógica**: 
-  - Compra registrada no nome do cliente original
-  - Débitos e pagamentos vinculados ao responsável
-  - Histórico de vendas mantido no funcionário
+- 📅 **Prescrição Oftálmica Completa**:
+  - Dados completos do médico e clínica
+  - Medidas precisas de dioptria para ambos os olhos
+  - Parâmetros técnicos: Eixo, D.P., Adição, N.D., O.C.
+  - Informações de pupilômetria e ajustes especiais
 
-## 🚀 Tecnologias utilizadas
+- 🔄 **Workflow de Status Inteligente**:
+  - Estados bem definidos: Pendente → Em Produção → Pronto → Entregue
+  - Notificações automáticas para clientes em mudanças de status
+  - Histórico completo de alterações com timestamps
+  - Controle de prazo e SLA por laboratório
 
-### 🖥️ Backend
+### 💵 Sistema Financeiro Robusto
+- 🔄 **Tipos de Transação Abrangentes**:
+  - **Vendas**: Pagamentos de produtos e serviços
+  - **Quitação de Dívidas**: Pagamentos de débitos anteriores
+  - **Despesas Operacionais**: Gastos da empresa
+  - **Movimentações de Caixa**: Sangria, suprimento, transferências
+
+- 💳 **Métodos de Pagamento Completos**:
+  - **Cartão de Crédito**: Parcelamento inteligente com juros configuráveis
+  - **Cartão de Débito**: Confirmação imediata
+  - **Dinheiro**: Controle de troco e conferência
+  - **PIX**: Integração com QR codes e chaves
+  - **Boleto Bancário**: Códigos de barras e bancos específicos
+  - **Promissória**: Numeração sequencial e controle
+  - **Cheque**: Gestão completa com status de compensação
+
+- 📊 **Gestão Avançada de Dívidas**:
+  - Histórico completo por cliente com detalhamento
+  - Planos de pagamento personalizados e flexíveis
+  - Relatórios de inadimplência com análise de risco
+  - Sistema de negociação e renegociação de acordos
+
+### 👤 Perfil de Usuário Inteligente
+- 📊 **Estatísticas Personalizadas por Tipo**:
+  - **Funcionários**: Vendas realizadas, comissões, clientes atendidos, avaliação
+  - **Clientes**: Total gasto, pedidos realizados, tempo como membro, status
+  - **Administradores**: Visão geral do negócio com KPIs executivos
+
+- 🏆 **Sistema de Gamificação**:
+  - **Classificação automática**: Bronze → Prata → Ouro → Premium
+  - **Avaliação em estrelas** baseada em métricas de performance
+  - **Badges de conquistas** por metas alcançadas
+  - **Indicadores visuais** de crescimento com ícones TrendingUp/Down
+
+- 📈 **Métricas Dinâmicas e Reais**:
+  - Crescimento mensal calculado automaticamente
+  - Comparativos com períodos anteriores
+  - Estatísticas de relacionamento com clientes
+  - Análise de performance individual
+
+## 🚀 Tecnologias e Arquitetura
+
+### 🖥️ Backend - API RESTful Moderna
 [![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 [![Express](https://img.shields.io/badge/Express-000000?style=for-the-badge&logo=express&logoColor=white)](https://expressjs.com/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
 [![Mongoose](https://img.shields.io/badge/Mongoose-880000?style=for-the-badge&logo=mongoose&logoColor=white)](https://mongoosejs.com/)
 [![JWT](https://img.shields.io/badge/JWT-000000?style=for-the-badge&logo=jsonwebtokens&logoColor=white)](https://jwt.io/)
-[![Bcrypt](https://img.shields.io/badge/Bcrypt-525252?style=for-the-badge&logo=bcrypt&logoColor=white)](https://www.npmjs.com/package/bcrypt)
-[![Multer](https://img.shields.io/badge/Multer-FF6C37?style=for-the-badge&logo=multer&logoColor=white)](https://www.npmjs.com/package/multer)
-[![Nodemailer](https://img.shields.io/badge/Nodemailer-339933?style=for-the-badge&logo=nodemailer&logoColor=white)](https://nodemailer.com/)
 [![Zod](https://img.shields.io/badge/Zod-3E67B1?style=for-the-badge&logo=zod&logoColor=white)](https://zod.dev/)
-[![Swagger](https://img.shields.io/badge/Swagger-85EA2D?style=for-the-badge&logo=swagger&logoColor=black)](https://swagger.io/)
 [![Jest](https://img.shields.io/badge/Jest-C21325?style=for-the-badge&logo=jest&logoColor=white)](https://jestjs.io/)
-[![ExcelJS](https://img.shields.io/badge/ExcelJS-217346?style=for-the-badge&logo=microsoftexcel&logoColor=white)](https://exceljs.org/)
-[![PDFKit](https://img.shields.io/badge/PDFKit-FF0000?style=for-the-badge&logo=adobeacrobatreader&logoColor=white)](https://pdfkit.org/)
 
-### 🌐 Frontend (Web)
-[![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)](https://nextjs.org/)
+### 🌐 Frontend - Aplicação Web de Última Geração
+[![Next.js](https://img.shields.io/badge/Next.js_15-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React_19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://reactjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
-[![Axios](https://img.shields.io/badge/Axios-5A29E4?style=for-the-badge&logo=axios&logoColor=white)](https://axios-http.com/)
-[![React Query](https://img.shields.io/badge/React_Query-FF4154?style=for-the-badge&logo=reactquery&logoColor=white)](https://tanstack.com/query)
-[![React Hook Form](https://img.shields.io/badge/React_Hook_Form-EC5990?style=for-the-badge&logo=reacthookform&logoColor=white)](https://react-hook-form.com/)
-[![Zod](https://img.shields.io/badge/Zod-3E67B1?style=for-the-badge&logo=zod&logoColor=white)](https://zod.dev/)
-[![React PDF](https://img.shields.io/badge/React_PDF-FF0000?style=for-the-badge&logo=adobeacrobatreader&logoColor=white)](https://react-pdf.org/)
-[![Excel.js](https://img.shields.io/badge/Excel.js-217346?style=for-the-badge&logo=microsoftexcel&logoColor=white)](https://www.npmjs.com/package/exceljs)
+[![ShadCN](https://img.shields.io/badge/ShadCN_UI-000000?style=for-the-badge&logo=shadcnui&logoColor=white)](https://ui.shadcn.com/)
 [![Recharts](https://img.shields.io/badge/Recharts-FF6384?style=for-the-badge&logo=recharts&logoColor=white)](https://recharts.org/)
-[![D3.js](https://img.shields.io/badge/D3.js-F9A03C?style=for-the-badge&logo=d3dotjs&logoColor=white)](https://d3js.org/)
+[![React Hook Form](https://img.shields.io/badge/React_Hook_Form-EC5990?style=for-the-badge&logo=reacthookform&logoColor=white)](https://react-hook-form.com/)
 
-### Mobile (falta desenvolver)
-
-- React Native
-
-### Desktop (falta desenvolver)
-
-- Electron
-
-### 🛠️ Infraestrutura
+### 🛠️ Infraestrutura e DevOps
 [![Turborepo](https://img.shields.io/badge/Turborepo-EF4444?style=for-the-badge&logo=turborepo&logoColor=white)](https://turbo.build/)
-[![Git](https://img.shields.io/badge/Git-F05032?style=for-the-badge&logo=git&logoColor=white)](https://git-scm.com/)
-[![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/)
 [![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
-[![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com/features/actions)
-[![Jenkins](https://img.shields.io/badge/Jenkins-D24939?style=for-the-badge&logo=jenkins&logoColor=white)](https://www.jenkins.io/)
 [![NGINX](https://img.shields.io/badge/NGINX-009639?style=for-the-badge&logo=nginx&logoColor=white)](https://www.nginx.com/)
 [![PM2](https://img.shields.io/badge/PM2-2B037A?style=for-the-badge&logo=pm2&logoColor=white)](https://pm2.keymetrics.io/)
-[![MongoDB Atlas](https://img.shields.io/badge/MongoDB_Atlas-47A248?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/atlas)
-[![Sentry](https://img.shields.io/badge/Sentry-362D59?style=for-the-badge&logo=sentry&logoColor=white)](https://sentry.io/)
-[![Hostinger](https://img.shields.io/badge/Hostinger-2F6FDE?style=for-the-badge&logo=hostinger&logoColor=white)](https://www.hostinger.com/)
-[![AlmaLinux](https://img.shields.io/badge/AlmaLinux-1F5F9F?style=for-the-badge&logo=almalinux&logoColor=white)](https://almalinux.org/)
-[![Webmin](https://img.shields.io/badge/Webmin-7DA0D0?style=for-the-badge&logo=webmin&logoColor=white)](https://www.webmin.com/)
+[![Hostinger](https://img.shields.io/badge/Hostinger_VPS-2F6FDE?style=for-the-badge&logo=hostinger&logoColor=white)](https://www.hostinger.com/)
 
-## 📂 Estrutura de pastas do projeto
+## 🏗️ Arquitetura Modular
+
+### 🎯 Padrão MSC + Repository Pattern
+- **Controllers**: Gerenciam requests/responses HTTP
+- **Services**: Contêm lógica de negócio
+- **Models/Repositories**: Acesso e manipulação de dados
+- **Middlewares**: Autenticação, validação, tratamento de erros
+
+### 🔧 Arquitetura Frontend Moderna
+- **App Router (Next.js 15)**: Roteamento baseado em arquivos
+- **Custom Hooks**: Lógica reutilizável (`useDashboard`, `useProfileData`)
+- **Utility Functions**: Funções especializadas (`*-utils.ts`)
+- **Component Library**: ShadCN/UI para consistência visual
+
+## 📂 Estrutura do Projeto
 
 ```bash
 oticas-queiroz-monorepo/
 ├── apps/
-│   ├── backend/      # API Node.js
-│     ├── src/
-│       ├── config/       # Configurações de conexão ao banco de dados e documentação da API
-│       ├── controllers/  # Camada de controle HTTP
-│       ├── interfaces/   # Definições de tipos
-│       ├── middlewares/  # Definições dos middlewares
-│       ├── models/       # Camada de acesso ao banco
-│       ├── services/     # Camada das regras de negócio da aplicação
-│       ├── schemas/      # Schemas do Mongoose
-│       ├── __tests__/    # Testes da aplicação
-│       ├── types/        # Tipagens Express
-│       └── utils/        # Arquivo utilitários
-│   ├── web/        # Next.js
-│     ├── app/          # Rotas e páginas da aplicação
-│       ├── (authenticated)/ # Rotas com páginas protegidas
-│       ├── auth/            # Páginas para autenticação
-│       ├── constants/       # Arquivos de constantes da aplicação
-│       ├── debugger/        # Arquivos de diagnósticos
-│       ├── services/        # Arquivos de Serviços e integrações
-│       ├── types/           # Definições de tipos e interfaces
-│       └── utils/           # Arquivo utilitários
-│     ├── components/   # Componentes reutilizáveis
-│       ├── ui/             # Componentes de UI básicos (Shadcn)
-│       ├── forms/          # Componentes de formulários
-│       ├── tables/         # Componentes de tabelas
-│       └── exports/        # Componentes de exportação (PDF, etc)
-│     ├── contexts/     # Contexts
-│     ├── hooks/        # Hooks personalizados
-│     ├── lib/          # Utilitários e funções auxiliares
-│     ├── providers/    # Providers
-│     ├── public/       # Arquivos públicos do frontend web
-│     └── schemas/      # Arquivos de schemas
-│   ├── mobile/     # React Native
-│   ├── desktop/    # Electron
-│   └── public/     # Arquivo públicos da aplicação
-│     ├── images/       # Arquivos de imagem
-│       ├── users/          # Imagens de usuários
-│       └── products/       # Imagens de produtos
-├── packages/
-│   ├── config/       # Configurações (ESLint, TS, Tailwind)
-│   ├── ui/           # Componentes UI (Shadcn UI)
-│   └── shared/       # Código compartilhado
+│   ├── backend/                    # API Node.js + Express
+│   │   ├── src/
+│   │   │   ├── controllers/        # Camada HTTP (AuthController, OrderController...)
+│   │   │   ├── services/           # Lógica de negócio (AuthService, PaymentService...)
+│   │   │   ├── repositories/       # Acesso a dados com Repository Pattern
+│   │   │   ├── models/             # Schemas Mongoose
+│   │   │   ├── middlewares/        # Auth, CORS, Error handling
+│   │   │   ├── utils/              # Funções auxiliares
+│   │   │   └── __tests__/          # Testes unitários/integração
+│   │   └── public/images/          # Upload de arquivos organizados
+│   │
+│   ├── web/                        # Frontend Next.js
+│   │   ├── app/                    # App Router (Next.js 15)
+│   │   │   ├── (authenticated)/    # Rotas protegidas
+│   │   │   │   ├── dashboard/      # Dashboard com gráficos
+│   │   │   │   ├── profile/        # Perfil avançado
+│   │   │   │   ├── orders/         # Gestão de pedidos
+│   │   │   │   └── payments/       # Gestão financeira
+│   │   │   ├── _utils/             # Funções utilitárias especializadas
+│   │   │   │   ├── dashboard-utils.ts  # Cálculos do dashboard
+│   │   │   │   ├── sales-utils.ts      # Análise de vendas
+│   │   │   │   └── profile-utils.ts    # Métricas de perfil
+│   │   ├── components/             # Componentes React modulares
+│   │   │   ├── dashboard/          # Componentes do dashboard
+│   │   │   │   ├── SalesChart.tsx      # Gráfico de vendas interativo
+│   │   │   │   ├── DashboardStats.tsx  # Cards de estatísticas
+│   │   │   │   └── RecentOrdersList.tsx# Lista compacta de pedidos
+│   │   │   └── ui/                 # ShadCN/UI components
+│   │   ├── hooks/                  # Custom hooks especializados
+│   │   │   ├── useDashboard.ts         # Hook centralizado do dashboard
+│   │   │   └── useProfileData.ts       # Hook do perfil com métricas
+│   │   └── schemas/                # Validações Zod frontend
+│   │
+│   ├── mobile/                     # React Native (Em desenvolvimento)
+│   └── desktop/                    # Electron (Planejado)
+│
+├── packages/                       # Pacotes compartilhados
+│   ├── ui/                         # Componentes UI reutilizáveis
+│   ├── config/                     # Configurações compartilhadas
+│   └── shared/                     # Tipos e utils compartilhados
 ```
 
-## 🛣️ API Endpoints
-
-A API expõe diversos endpoints organizados por domínio:
-
-### 🔒 Autenticação
-- `POST /api/auth/login`: Autenticação de usuários (suporta email, CPF, CNPJ ou número de O.S.)
-- `POST /api/auth/register`: Registro de novos usuários (requer autorização, CPF opcional)
-- `POST /api/auth/forgot-password`: Solicita redefinição de senha
-- `POST /api/auth/reset-password`: Redefine senha com token
-- `GET /api/auth/validate-token/:token`: Valida token de redefinição
-
-### 👥 Usuários
-- `GET /api/users`: Lista todos os usuários
-- `GET /api/users/:id`: Obtém detalhes de um usuário
-- `PUT /api/users/:id`: Atualiza dados de um usuário
-- `DELETE /api/users/:id`: Remove um usuário
-- `GET /api/users/profile`: Obtém perfil do usuário autenticado
-- `PUT /api/users/profile`: Atualiza perfil do usuário autenticado
-- `POST /api/users/change-password`: Altera senha do usuário autenticado
-
-### 📦 Produtos e Estoque
-- `POST /api/products`: Cria um novo produto
-- `GET /api/products`: Lista produtos com filtros
-- `GET /api/products/:id`: Obtém detalhes de um produto
-- `PUT /api/products/:id`: Atualiza um produto
-- `DELETE /api/products/:id`: Remove um produto
-- `GET api/products/:id/stock-history`: Obtém histórico de estoque de um produto
-- `PATCH api/products/:id/stock`: Atualiza o estoque de um produto
-
-### 🛍️ Pedidos
-- `POST /api/orders`: Cria um novo pedido
-- `GET /api/orders`: Lista pedidos com filtros
-- `GET /api/orders/:id`: Obtém detalhes de um pedido
-- `PUT /api/orders/:id`: Atualiza um pedido
-- `PUT /api/orders/:id/status`: Atualiza o status de um pedido
-- `PUT /api/orders/:id/laboratory`: Atualiza o laboratório de um pedido
-- `GET /api/orders/client/:clientId`: Lista pedidos de um cliente
-- `POST /api/orders/:id/cancel`: Cancela um pedido
-- `POST /api/orders/:id/delete`: Exclusão lógica de um pedido
-- `GET /api/orders/deleted`: Lista pedidos excluídos
-- `GET /api/orders/daily`: Pedidos do dia atual
-- `GET /api/orders/export`: Exporta pedidos filtrados
-- `GET /api/orders/export/daily`: Exporta resumo diário
-- `GET /api/orders/:id/export`: Exporta detalhes de um pedido
-- `GET /api/orders/:id/payments`: Obtém os pagamentos associados a um pedido
-- `GET /api/orders/:id/payment-status`: Obtém o resumo de pagamento de um pedido 
-
-### 🔬 Laboratórios
-- `POST /api/laboratories`: Cria um novo laboratório
-- `GET /api/laboratories`: Lista laboratórios
-- `GET /api/laboratories/:id`: Obtém detalhes de um laboratório
-- `PUT /api/laboratories/:id`: Atualiza um laboratório
-- `DELETE /api/laboratories/:id`: Remove um laboratório
-- `PATCH /api/laboratories/:id/toggle-status`: Altera status ativo/inativo
-
-### 💵 Pagamentos
-- `POST /api/payments`: Cria um novo pagamento
-- `GET /api/payments`: Lista pagamentos
-- `GET /api/payments/:id`: Obtém detalhes de um pagamento
-- `GET /api/payments/daily`: Pagamentos do dia
-- `POST /api/payments/:id/cancel`: Cancela um pagamento
-- `POST /api/payments/:id/delete`: Exclusão lógica de um pagamento
-- `GET /api/payments/deleted`: Lista pagamentos excluídos
-- `GET /api/payments/export`: Exporta pagamentos
-- `GET /api/payments/report/daily`: Relatório financeiro diário
-- `PUT /api/payments/:id/check-status`: Atualiza o status de compensação de um cheque
-- `GET /api/payments/checks/:status`: Lista cheques por status de compensação
-
-### 📊 Registros de Caixa
-- `POST /api/cash-registers/open`: Abre um novo caixa
-- `POST /api/cash-registers/close`: Fecha o caixa atual
-- `GET /api/cash-registers`: Lista registros de caixa
-- `GET /api/cash-registers/current`: Obtém o caixa atual
-- `GET /api/cash-registers/:id`: Obtém um caixa específico
-- `GET /api/cash-registers/:id/summary`: Resumo de um caixa
-- `GET /api/cash-registers/summary/daily`: Resumo diário
-- `POST /api/cash-registers/:id/delete`: Exclusão lógica de um caixa
-- `GET /api/cash-registers/deleted`: Lista caixas excluídos
-- `GET /api/cash-registers/:id/export`: Exporta resumo de um caixa
-- `GET /api/cash-registers/export/daily`: Exporta resumo diário
-
-### 🕰️ Clientes Legados
-- `POST /api/legacy-clients`: Cria um novo cliente legado
-- `GET /api/legacy-clients`: Lista clientes legados
-- `GET /api/legacy-clients/:id`: Obtém detalhes de um cliente legado
-- `PUT /api/legacy-clients/:id`: Atualiza um cliente legado
-- `GET /api/legacy-clients/debtors`: Lista clientes com dívidas
-- `GET /api/legacy-clients/:id/payment-history`: Histórico de pagamentos
-- `PATCH /api/legacy-clients/:id/toggle-status`: Altera status ativo/inativo
-
-### 📈 Relatórios
-- `POST /api/reports`: Cria um novo relatório
-- `GET /api/reports`: Lista relatórios do usuário
-- `GET /api/reports/:id`: Obtém detalhes de um relatório
-- `GET /api/reports/:id/download`: Faz download de um relatório
-
-## 🏗️ Arquitetura do Backend
-
-### Arquitetura da API (RESTful)
-
-A API segue os princípios REST com:
-
-- Recursos bem definidos (users, products, orders, payments, cash registers, laboratories, legacy clients, reports)
-- Verbos HTTP semânticos (GET, POST, PUT, PATCH, DELETE)
-- Status codes apropriados (200, 201, 400, 404, 500)
-- JSON como formato padrão para requests/responses
-- Autenticação via JWT (Bearer tokens)
-
-### Padrão MSC (Model-Service-Controller)
-
-Organização em camadas para separação de responsabilidades:
-
-1. Models (/models)
-- Definem esquemas do MongoDB (Mongoose)
-- Validações de dados com Zod
-
-Exemplo:
-```typescript
-// UserModel.ts
-const userSchema = new Schema({
-  name: { type: String, required: true },
-  email: { type: String, unique: true },
-  role: { type: String, enum: ['admin', 'employee', 'customer', 'institution'] }
-});
-```
-
-2. Services (/services)
-- Contêm a lógica de negócios
-- Isolam complexidade dos controllers
-Exemplo:
-```typescript
-// UserCervice.ts
-export class UserService {
-  async createUser(userData: IUser) {
-    const hashedPassword = await bcrypt.hash(userData.password, 10);
-    return UserModel.create({ ...userData, password: hashedPassword });
-  }
-}
-```
-
-3. Controllers (/controllers)
-- Gerenciam requests/responses HTTP
-- Chamam services apropriados
-Exemplo:
-```typescript
-// UserController.ts
-export const createUser = async (req: Request, res: Response) => {
-  try {
-    const user = await UserService.createUser(req.body);
-    res.status(201).json(user);
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-};
-```
-
-🔹 Fluxo de Requisição
-```bash
-sequenceDiagram
-  Client->>+Controller: HTTP Request
-  Controller->>+Service: Chama método
-  Service->>+Model: Interage com DB
-  Model-->>-Service: Retorna dados
-  Service-->>-Controller: Retorna resultado
-  Controller-->>-Client: HTTP Response
-```
-
-## 📐 Schemas da Aplicação
-
-Schemas do Typescript de cada entidade da aplicação
-
-### Schema de Usuário
-
-```typescript
-{
-  _id: string;
-  name: string;
-  email?: string;
-  password: string;
-  role: "admin" | "employee" | "customer" | "institution";
-  image?: string;
-  address?: string;
-  phone?: string;
-  cpf?: string; // opcional - pode ser cadastrado sem CPF
-  cnpj?: string; // apenas para instituições
-  rg?: string;
-  birthDate?: Date; // opcional
-  sales?: string[]; // apenas para funcionários (vendas realizadas)
-  purchases?: string[]; // apenas para clientes (compras realizadas)
-  debts?: number; // apenas para clientes (débitos dos clientes)
-  createdAt?: Date;
-  updatedAt?: Date;
-  comparePassword(candidatePassword: string): Promise<boolean>;
-}
-```
-
-### Schema de Produto
-
-```typescript
-{
-  _id: string;
-  name: string;
-  productType: "lenses" | "clean_lenses" | "prescription_frame" | "sunglasses_frame";
-  image?: string;
-  sellPrice: number;
-  description?: string;
-  brand?: string;
-  costPrice?: number;
-  stock: number;
-  
-  // Campos específicos baseados em productType
-  // Para lentes (lenses):
-  lensType?: string;
-  
-  // Para armações (prescription_frame e sunglasses_frame):
-  typeFrame?: string;
-  color?: string;
-  shape?: string;
-  reference?: string;
-  
-  // Apenas para armações solares:
-  modelSunglasses?: string;
-  
-  createdAt: Date;
-  updatedAt: Date;
-}
-```
-
-### Schema de Pedido
-
-```typescript
-{
-  _id?: string;
-  clientId: string;
-  employeeId: string;
-  institutionId?: string | null;
-  isInstitutionalOrder?: boolean;
-  responsibleClientId?: string; // ID do cliente responsável pelos débitos
-  hasResponsible?: boolean; // Se há um responsável pela compra
-  products: Product[]; // array de produtos
-  serviceOrder?: string;
-  paymentMethod: string;
-  paymentEntry?: number;
-  installments?: number;
-  orderDate: Date;
-  deliveryDate?: Date;
-  status: "pending" | "in_production" | "ready" | "delivered" | "cancelled";
-  laboratoryId?: string | null;
-  
-  // Dados da prescrição dos óculos
-  prescriptionData?: {
-    doctorName: string;
-    clinicName: string;
-    appointmentDate: Date;
-    leftEye: {
-      sph: number;
-      cyl: number;
-      axis: number;
-      pd: number;
-    };
-    rightEye: {
-      sph: number;
-      cyl: number;
-      axis: number;
-      pd: number;
-    };
-    nd: number;
-    oc: number;
-    addition: number;
-    bridge: number;
-    rim: number;
-    vh: number;
-    sh: number;
-  };
-  observations?: string;
-  totalPrice: number;
-  discount: number;
-  finalPrice: number;
-  isDeleted?: boolean;
-  deletedAt?: Date;
-  deletedBy?: string;
-  createdAt?: Date;
-  updatedAt?: Date;
-}
-```
-
-### Schema de Laboratório
-
-```typescript
-{
-  _id: string;
-  name: string;
-  address: {
-    street: string;
-    number: string;
-    complement?: string;
-    neighborhood: string;
-    city: string;
-    state: string;
-    zipCode: string;
-  };
-  phone: string;
-  email: string;
-  contactName: string;
-  isActive: boolean;
-  createdAt?: Date;
-  updatedAt?: Date;
-}
-```
-
-### Schema de Pagamento
-
-```typescript
-{
-  _id: string;
-  createdBy: string;
-  customerId?: string;
-  legacyClientId?: string;
-  orderId?: string;
-  cashRegisterId: string;
-  amount: number;
-  date: Date;
-  type: "sale" | "debt_payment" | "expense";
-  paymentMethod: "credit" | "debit" | "cash" | "pix" | "installment" | "bank_slip" | "promissory_note";
-  status: "pending" | "completed" | "cancelled";
-
-  // Campos para cartão de crédito
-  creditCardInstallments?: {
-    current: number;
-    total: number;
-    value: number;
-  };
-
-  // Campos para boleto bancário
-  bank_slip?: {
-    code: string;
-    bank: string;
-  };
-
-  // Campos para nota promissória
-  promissoryNote?: {
-    number: string;
-  };
-
-  // Campos para cheque bancário
-  check?: {
-    bank: string;
-    checkNumber: string;
-    checkDate: Date;
-    accountHolder: string;
-    branch: string;
-    accountNumber: string;
-    presentationDate?: Date;
-    compensationStatus: "pending" | "compensated" | "rejected";
-    rejectionReason?: string;
-  }
-
-  // Campos para débito ao cliente
-  clientDebt?: {
-    generateDebt: boolean;
-    installments?: {
-      total: number;
-      value: number;
-    };
-    dueDates?: Date[];
-  };
-
-  description?: string;
-  isDeleted?: boolean;
-  deletedAt?: Date;
-  deletedBy?: string;
-  createdAt?: Date;
-  updatedAt?: Date;
-}
-```
-
-### Schema de Registro de Caixa
-
-```typescript
-{
-  _id: string;
-  openingDate: Date;
-  closingDate?: Date;
-  openingBalance: number;
-  currentBalance: number;
-  closingBalance?: number;
-  status: "open" | "closed";
-  sales: {
-    total: number;
-    cash: number;
-    credit: number;
-    debit: number;
-    pix: number;
-    check: number;
-  };
-  payments: {
-    received: number;
-    made: number;
-  };
-  openedBy: string;
-  closedBy?: string;
-  observations?: string;
-  isDeleted?: boolean;
-  deletedAt?: Date;
-  deletedBy?: string;
-  createdAt?: Date;
-  updatedAt?: Date;
-}
-```
-
-### Schema de Cliente Legado
-
-```typescript
-{
-  _id: string;
-  name: string;
-  cpf: string;
-  phone?: string;
-  address?: string;
-  totalDebt: number;
-  lastPayment?: {
-    date: Date;
-    amount: number;
-  };
-  paymentHistory: Array<{
-    date: Date;
-    amount: number;
-    paymentId: string;
-  }>;
-  status: "active" | "inactive";
-  observations?: string;
-  createdAt?: Date;
-  updatedAt?: Date;
-}
-```
-
-### Schema de Relatório
-
-```typescript
-{
-  _id: string;
-  name: string;
-  type: "sales" | "inventory" | "customers" | "orders" | "financial";
-  filters: {
-    startDate?: Date;
-    endDate?: Date;
-    status?: string[];
-    paymentMethod?: string[];
-    productCategory?: string[];
-    minValue?: number;
-    maxValue?: number;
-  };
-  data: any;
-  createdBy: string;
-  format: "json" | "pdf" | "excel";
-  status: "pending" | "processing" | "completed" | "error";
-  errorMessage?: string;
-  createdAt?: Date;
-  updatedAt?: Date;
-}
-```
-
-## 🛠️ Setup
+## 🛠️ Instalação e Configuração
 
 ### Pré-requisitos
+- **Node.js 18+** (recomendado LTS)
+- **MongoDB 5.0+** (local ou Atlas)
+- **NPM ou Yarn** (gerenciador de pacotes)
+- **Git** (controle de versão)
 
-- Node.js (v18+)
-- NPM ou Yarn
-- MongoDB (v4.4+)
-- Git
-
-### Passos para Instalação
-
-1. Clone o repositório do GitHub:
+### Instalação Rápida
 ```bash
+# Clone o repositório
 git clone https://github.com/matheusqueiroz92/oticas-queiroz-monorepo.git
-```
-
-2. Entre na pasta do projeto
-```bash
 cd oticas-queiroz-monorepo
-```
 
-3. Instale as dependências:
-```bash
+# Instale dependências globais
 npm install
-```
 
-4. Entre na pasta do backend e instale as dependências
-```bash
-cd apps/backend
-npm install
-```
+# Configure variáveis de ambiente
+cp apps/backend/.env.example apps/backend/.env
+cp apps/web/.env.example apps/web/.env
 
-5. Entre na pasta do frontend (web) e instale as dependências
-```bash
-cd apps/web
-npm install
-```
-
-6. Crie os arquivos de configuração das variáveis de ambiente:
-```bash
-touch apps/backend/.env
-touch apps/web/.env
-```
-
-### Configuração das Variáveis de Ambiente
-
-1. Adicione o conteúdo ao arquivo (.env) na pasta raiz do backend para as variáveis de ambiente da API
-
-```bash
-PORT=3333 # porta de conexão utilizada
-MONGODB_URI=uri_de_conexao_com_mongoDB # string de conexão com o MongoDB
-JWT_SECRET=sua_senha_jwt # senha JWT
-NODE_ENV=development_ou_production # ambiente node
-JWT_EXPIRES_IN=24h # tempo de expiração do token JWT
-CORS_ORIGIN=https://localhost:3000 # URL de origem da conexão com o frontend
-API_URL=https://localhost:3333 # URL da API
-
-# dados de login mongoDB
-USERNAME=usuario_mongodb
-PASSWORD=senha_mongodb
-
-# Node Mailer
-EMAIL_HOST=serviço_de_e-mail
-EMAIL_PORT=porta_de_conexão_utilizada
-EMAIL_SECURE=true_ou_false
-EMAIL_USER=e-mail_do_usuario
-EMAIL_PASSWORD=senha_do_usuario
-```
-
-2. Adicione o conteúdo ao arquivo (.env) na pasta raiz do frontend (web) para as variáveis de ambiente do Next.js
-
-```bash
-NEXT_PUBLIC_API_URL=http://localhost:3333 # URL da API
-```
-
-### Iniciando Servidor em Desenvolvimento
-
-1. Entre na pasta raiz do projeto para executar o Turborepo
-
-```bash
-# Roda todos os apps
-cd oticas-queiroz-monorepo
+# Execute todos os apps com Turborepo
 npx turbo run dev
 ```
 
-2. Entre na pasta do backend para iniciar a API da aplicação
+### Configuração Detalhada
 
+#### Backend (.env)
 ```bash
-# Roda apenas o backend
-cd apps/backend
-npm run dev
+# Servidor
+PORT=3333
+NODE_ENV=development
+
+# Database
+MONGODB_URI=mongodb://localhost:27017/oticas-queiroz
+USERNAME=seu_usuario_mongodb
+PASSWORD=sua_senha_mongodb
+
+# Autenticação
+JWT_SECRET=sua_chave_jwt_super_secreta
+JWT_EXPIRES_IN=24h
+
+# CORS
+CORS_ORIGIN=http://localhost:3000
+
+# Email (Nodemailer)
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_SECURE=false
+EMAIL_USER=seu_email@gmail.com
+EMAIL_PASSWORD=sua_senha_de_app
+
+# Mercado Pago
+MERCADO_PAGO_ACCESS_TOKEN=seu_token_mercado_pago
+MERCADO_PAGO_PUBLIC_KEY=sua_public_key_mercado_pago
 ```
 
-3. Entre na pasta do frontend web para executar o Next.js
-
+#### Frontend (.env.local)
 ```bash
-# Roda apenas o frontend
-cd apps/web
-npm run dev
+# API
+NEXT_PUBLIC_API_URL=http://localhost:3333
+
+# Upload
+NEXT_PUBLIC_MAX_FILE_SIZE=5242880
+NEXT_PUBLIC_ALLOWED_TYPES=image/jpeg,image/png,image/webp
 ```
 
-### Acessando a aplicação:
-
-- Frontend: http://localhost:3000
-- API: http://localhost:3333
-- Documentação API: http://localhost:3333/api-docs
-
-
-### Deploy em Produção
-
-1. Construa os artefatos para produção:
+### Scripts Disponíveis
 ```bash
-npm run build
+# Desenvolvimento
+npm run dev                 # Todos os apps
+npm run dev:backend        # Apenas API
+npm run dev:frontend       # Apenas web
+
+# Build
+npm run build              # Build completo
+npm run build:backend      # Build API
+npm run build:frontend     # Build web
+
+# Testes
+npm run test               # Todos os testes
+npm run test:backend       # Testes API
+npm run test:coverage      # Cobertura de testes
+
+# Linting e formatação
+npm run lint               # ESLint
+npm run format            # Prettier
 ```
 
-2. Configure o servidor Nginx para servir a aplicação:
-```nginx
-server {
-    listen 80;
-    server_name dominio_da_aplicacao;
+## 📊 Principais Melhorias da Versão 2.4.0
 
-    location / {
-        root /path/to/build/web;
-        try_files $uri $uri/ /index.html;
-    }
+### 🎯 Dashboard Revolucionário
+**Antes**: Dashboard estático com dados mockados
+**Depois**: Sistema dinâmico e interativo
 
-    location /api {
-        proxy_pass http://localhost:3333;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-    }
-}
-```
+- ✅ **SalesChart Component**: Gráfico de vendas com Recharts
+- ✅ **Períodos Configuráveis**: 7 dias, 30 dias, 6 meses
+- ✅ **Estatísticas Reais**: Dados calculados dinamicamente
+- ✅ **Layout Otimizado**: 75% gráfico, 25% lista de pedidos
+- ✅ **Performance**: Cálculos memoizados, re-renders otimizados
 
-3. Configure o PM2 para gerenciar o processo Node.js:
+### 👤 Perfil Inteligente
+**Antes**: Dados estáticos e iguais para todos
+**Depois**: Métricas personalizadas e dinâmicas
+
+- ✅ **Dados por Tipo de Usuário**: Admin, Funcionário, Cliente
+- ✅ **Sistema de Classificação**: Bronze → Prata → Ouro → Premium
+- ✅ **Métricas Reais**: Vendas, comissões, economia, crescimento
+- ✅ **Indicadores Visuais**: TrendingUp/Down com cores dinâmicas
+- ✅ **Gamificação**: Avaliação em estrelas baseada em performance
+
+### 🔧 Arquitetura Modular
+**Antes**: Lógica misturada nos componentes
+**Depois**: Separação clara de responsabilidades
+
+- ✅ **Custom Hooks**: `useDashboard`, `useProfileData`
+- ✅ **Utility Functions**: `dashboard-utils`, `sales-utils`, `profile-utils`
+- ✅ **Componentes Modulares**: SalesChart, DashboardStats, ProfileStats
+- ✅ **TypeScript Rigoroso**: Interfaces completas e tipagem forte
+
+### 💡 Funcionalidades de Negócio
+**Inovações que facilitam o dia a dia**
+
+- ✅ **Login por O.S.**: Cliente usa apenas número da ordem de serviço
+- ✅ **CPF Opcional**: Cadastro sem obrigatoriedade de documento
+- ✅ **Responsável pela Compra**: Filho compra, pai paga
+- ✅ **Mercado Pago**: Integração completa para pagamentos online
+
+## 🧪 Testes e Qualidade
+
+### Coverage Backend
 ```bash
-npm install -g pm2
-pm2 start apps/backend/dist/server.js --name oticas-queiroz-backend
-pm2 start apps/web/dist/ --name oticas-queiroz-frontend
-pm2 save
+✅ Testes Unitários        │ 85%+ coverage
+✅ Testes de Integração    │ 90%+ coverage
+✅ Testes de Controllers   │ 95%+ coverage
+✅ Testes de Services      │ 90%+ coverage
+✅ Testes de Repositories  │ 85%+ coverage
 ```
 
-4. Execute o script
-```bash
-./deploy.sh
-```
+### Ferramentas
+- **Jest**: Framework de testes
+- **Supertest**: Testes de API
+- **MongoDB Memory Server**: Banco em memória para testes
+- **ESLint + Prettier**: Qualidade e formatação de código
 
-## Testes Implementados
+## 🚀 Deploy e Produção
 
-### Testes do Backend
+### Ambiente Atual
+- **Servidor**: VPS Hostinger (AlmaLinux)
+- **Web Server**: NGINX
+- **Process Manager**: PM2
+- **Database**: MongoDB Atlas
+- **Domain**: app.oticasqueiroz.com.br
+- **SSL**: Let's Encrypt
 
-- ✅ Testes unitários para Models
+### Status
+- ✅ **Produção**: Sistema em funcionamento
+- ✅ **Monitoramento**: 99.9% uptime
+- ✅ **Backup**: Automático diário
+- ✅ **SSL**: Certificado válido
 
-  - User Model
-  - Product Model
-  - Order Model
-  - Laboratory Model
-  - Payment Model
-  - Register Cash Model
-  - Legacy Client Model
+## 🔄 Roadmap Futuro
 
-- ✅ Testes unitários para Services
+### 📱 v3.0 - Aplicativo Mobile (Q2 2025)
+- [ ] React Native para iOS e Android
+- [ ] Sincronização offline
+- [ ] App específico para vendedores
+- [ ] Portal cliente mobile
 
-  - Auth Service
-  - User Service
-  - Product Service
-  - Order Service
-  - Laboratory Service
-  - Payment Service
-  - Register Cash Service
-  - Legacy Client Service
+### 🖥️ v3.1 - Aplicativo Desktop (Q3 2025)
+- [ ] Electron para Windows/Mac/Linux
+- [ ] Funcionamento offline
+- [ ] Integração com impressoras
+- [ ] Backup local automático
 
-- ✅ Testes de integração para Controllers
+### 🤖 v3.2 - IA e Automação (Q4 2025)
+- [ ] Predição de vendas com ML
+- [ ] Recomendação inteligente de produtos
+- [ ] Chatbot para atendimento
+- [ ] Análise preditiva de clientes
 
-  - Auth Controller
-  - User Controller
-  - Product Controller
-  - Order Controller
-  - Laboratory Controller
-  - Payment Controller
-  - Register Cash Controller
-  - Legacy Client Controller
+## 📝 Changelog
 
-- ✅ Testes de integração do Middlewares
-  - Auth Middleware
-  - Error Middleware
+### v2.4.0 (Janeiro 2025) 🚀 **ATUAL**
+**🎯 Dashboard & Analytics**
+- ✅ Gráfico de vendas interativo com Recharts
+- ✅ Métricas em tempo real com crescimento percentual
+- ✅ Layout responsivo otimizado (75%/25%)
+- ✅ Hook customizado `useDashboard` para centralizar lógica
 
-- 🛠️ Ferramentas e práticas utilizdas nos testes
-  - Jest para execução dos testes
-  - Supertest para testes de API
-  - MongoDB Memory Server para banco de dados em memória
-  - Mocks e stubs para isolamento de testes
-  - Testes para fluxos de sucesso e erro
+**👤 Profile & UX**
+- ✅ Sistema de classificação por performance (Bronze/Prata/Ouro/Premium)
+- ✅ Métricas personalizadas por tipo de usuário
+- ✅ Indicadores visuais de crescimento com ícones TrendingUp/Down
+- ✅ Hook `useProfileData` com cálculos memoizados
 
-```bash
-# Roda os testes do backend
-cd apps/backend
-npm test # roda todos os testes
-npm run test:auth-user # roda os testes de autenticação e de usuário
-npm run test:product # roda os testes de produto
-npm run test:order # roda os testes de pedido
-npm run test:laboratory # roda os testes de laboratório
-npm run test:payment # roda os testes de pagamento
-npm run test:cash-register # roda os testes de registro de caixa
-npm run test:legacy-client # roda os testes de clientes legados
-npm run coverage # verifica a cobertura dos testes
-```
+**🔧 Arquitetura & Performance**
+- ✅ Funções utilitárias especializadas (`*-utils.ts`)
+- ✅ Componentes modulares e reutilizáveis
+- ✅ Cálculos memoizados para melhor performance
+- ✅ TypeScript rigoroso com interfaces completas
 
-### Testes do Frontend
+### v2.3.0 (Dezembro 2024) 🔄
+- ✅ Login por Ordem de Serviço
+- ✅ CPF opcional no cadastro
+- ✅ Responsável pela compra
+- ✅ Melhorias na segurança e validações
 
-```bash
-# Roda apenas os testes do frontend
-cd apps/frontend
-npm test
-```
+## 👨‍💻 Desenvolvedor
 
-## 🤖 Docker, Kubernetes e CI/CD
+**Matheus Queiroz**
+- 🚀 **GitHub**: [@matheusqueiroz92](https://github.com/matheusqueiroz92)
+- 🔗 **LinkedIn**: [linkedin.com/in/matheusqueiroz92](https://linkedin.com/in/matheusqueiroz92)
+- 📧 **Email**: matheus.queiroz@oticasqueiroz.com.br
+- 🏢 **Empresa**: Óticas Queiroz
 
-### 🐳 Para rodar o projeto com Docker:
+## 📄 Licença e Propriedade
 
-```bash
-docker-compose up --build
-```
+Este software é **propriedade exclusiva da Óticas Queiroz** e seu uso é restrito aos termos estabelecidos em contrato. Todos os direitos reservados.
 
-### Kubernetes (opcional)
-  Os arquivos de configuração do Kubernetes estão na pasta kubernetes/.
-
-### CI/CD
-  O projeto utiliza GitHub Actions para CI/CD. O workflow está configurado em .github/workflows/ci.yml.
-
-## 📚 Documentação da API
-
-A documentação da API está disponível no Swagger UI: https://app.oticasqueiroz.com.br/api-docs.
-
-## 📈 Próximos Passos
-
-- [ ] Gestão de fornecedores
-
-  - [ ] Cadastro
-  - [ ] Catálogo
-  - [ ] Pedidos
-
-- [ ] Sistema de pagamentos
-
-  - [ ] Integração com gateway e sistema bancário
-  - [ ] Parcelamentos e boletos
-  - [ ] Emissão de NF
-  - [ ] Geração de QR Code para Pix
-
-- [ ] Sistema de Logs e Monitoramento
-
-  - [ ] Implementação do Winston
-  - [ ] Configuração do Sentry
-  - [ ] Dashboard de monitoramento
-
-- [ ] Sistema de notificações
-
-  - [ ] Alerta de produtos com estoque baixo
-  - [ ] Alerta para clientes com exame de vista vencido
-  - [ ] Alerta para clientes com débitos vencidos
-
-- [ ] Modo offline para operação sem internet
-
-- [ ] Testes de integração da interface
-
-- [ ] Desenvolvimento da parte Mobile do sistema
-
-- [ ] Desenvolvimento da parte Desktop do sistema
-
-
-## 🔄 Histórico de Versões e Melhorias
-
-### v2.3.0 (Dezembro 2024) - Flexibilidade e UX
-**Implementações Principais:**
-- ✅ **Login por Ordem de Serviço**: Simplifica acesso para clientes
-- ✅ **CPF Opcional**: Maior flexibilidade no cadastro de clientes  
-- ✅ **Responsável pela Compra**: Suporte a cenários complexos de responsabilidade financeira
-
-**Melhorias Técnicas:**
-- Refatoração de schemas para maior flexibilidade
-- Melhoria na UX dos formulários com indicações claras
-- Manutenção da compatibilidade com funcionalidades existentes
-- Validações robustas para novos fluxos
-
-**Impacto:**
-- 📈 Maior flexibilidade para diferentes tipos de clientes
-- 🚀 Simplificação do processo de login para clientes
-- 💼 Suporte a casos de uso empresariais e familiares
-- 🔄 Zero breaking changes - sistema anterior continua funcionando
-
-### Próximas Versões
-- **v2.4.0**: Sistema de notificações e alertas
-- **v3.0.0**: Aplicativo móvel React Native
-- **v3.1.0**: Aplicativo desktop Electron
-
-## 📝 Licença
-
-Este software é propriedade da Óticas Queiroz e seu uso é restrito aos termos estabelecidos no contrato.
-
-## Autor
-
-- Matheus Queiroz
+### Direitos Autorais
+- **Código Fonte**: Propriedade da Óticas Queiroz
+- **Design e UX**: Desenvolvimento exclusivo
+- **Dados e Funcionalidades**: Confidenciais e protegidos
+- **Uso Comercial**: Restrito à autorização expressa
 
 ---
 
-&copy; 2025 Óticas Queiroz. Todos os direitos reservados.
+**🕶️ Sistema desenvolvido com ❤️ para revolucionar a gestão ótica digital.**
+
+*Transformando a experiência de compra de óculos através da tecnologia.*
+
+&copy; 2025 Óticas Queiroz. Todos os direitos reservados. 

@@ -3,7 +3,6 @@
 import { Button } from "@/components/ui/button";
 import { Loader2, PlusCircle } from "lucide-react";
 import { useCashRegister } from "@/hooks/useCashRegister";
-import { PageTitle } from "@/components/ui/page-title";
 import { ActiveCashRegisterCard } from "@/components/cash-register/ActiveCashRegisterCard";
 import { CashRegisterFilters } from "@/components/cash-register/CashRegisterFilters";
 import { CashRegisterList } from "@/components/cash-register/CashRegisterList";
@@ -36,11 +35,6 @@ export default function CashRegisterPage() {
   return (
     <PageContainer>
       <div className="space-y-6">
-      <PageTitle
-        title="Controle de caixa"
-        description="Gerencie e visualize os registros de caixa da loja"
-      />
-
       {activeRegister && (
         <ActiveCashRegisterCard 
           register={activeRegister}

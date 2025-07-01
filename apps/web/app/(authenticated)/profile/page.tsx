@@ -1,78 +1,30 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { useProfile } from "@/hooks/useProfile";
 import { ProfileCard } from "@/components/profile/ProfileCard";
 import { ProfileStats } from "@/components/profile/ProfileStats";
 import { ProfileEditDialog } from "@/components/profile/ProfileEditDialog";
 import { RecentOrdersCard } from "@/components/profile/RecentOrdersCard";
-import { useOrders } from "@/hooks/useOrders";
-import Cookies from "js-cookie";
 import { PageContainer } from "@/components/ui/page-container";
+import { useProfileData } from "@/hooks/useProfileData";
 
 export default function ProfilePage() {
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const router = useRouter();
-
   const {
-    profile: user,
-    isLoadingProfile: loading,
+    user,
+    loading,
     isUpdatingProfile,
-    handleUpdateProfile,
-    refetchProfile,
+    isLoadingOrders,
     getUserImageUrl,
-  } = useProfile();
-
-  const { orders, isLoading: isLoadingOrders } = useOrders();
-
-  const handleEditClick = () => {
-    setEditDialogOpen(true);
-  };
-
-  const handleSubmit = async (data: any) => {
-    try {
-      const formData = new FormData();
-
-      // Adicionar dados do formulário
-      Object.entries(data).forEach(([key, value]) => {
-        if (key === "address" && typeof value === "object" && value !== null) {
-          // Serializar endereço como JSON
-          formData.append(key, JSON.stringify(value));
-        } else if (key !== "image" && value !== undefined && value !== null) {
-          formData.append(key, String(value));
-        }
-      });
-
-      // Adicionar imagem se fornecida
-      if (data.image) {
-        formData.append("userImage", data.image);
-      }
-
-      const updatedUser = await handleUpdateProfile(formData);
-
-      if (updatedUser && updatedUser.name !== Cookies.get("name")) {
-        Cookies.set("name", updatedUser.name, { expires: 1 });
-      }
-
-      refetchProfile();
-    } catch (error) {
-      console.error("Erro ao atualizar perfil:", error);
-    }
-  };
-
-  const handleViewOrderDetails = (id: string) => {
-    router.push(`/orders/${id}`);
-  };
-
-  // Filtrar pedidos do funcionário logado
-  const employeeOrders = orders.filter(order => {
-    const userId = Cookies.get("userId");
-    return userId && (order.employeeId === userId || order.employeeId.toString() === userId);
-  });
+    profileData,
+    editDialogOpen,
+    handleEditClick,
+    handleCloseEdit,
+    handleSubmit,
+    handleViewOrderDetails,
+    handleBackToDashboard,
+  } = useProfileData();
 
   if (loading) {
     return (
@@ -84,17 +36,17 @@ export default function ProfilePage() {
 
   if (!user) {
     return (
-      <div className="space-y-6 max-w-auto mx-auto p-1 md:p-2">
+      <PageContainer>
         <Alert variant="destructive">
           <AlertTitle>Erro</AlertTitle>
           <AlertDescription>
             Não foi possível carregar seu perfil. Por favor, tente novamente mais tarde.
           </AlertDescription>
-          <Button className="mt-4" onClick={() => router.push("/dashboard")}>
+          <Button className="mt-4" onClick={handleBackToDashboard}>
             Voltar para o Dashboard
           </Button>
         </Alert>
-      </div>
+      </PageContainer>
     );
   }
 
@@ -102,7 +54,11 @@ export default function ProfilePage() {
     <PageContainer>
       <div className="space-y-8">
         {/* Estatísticas do usuário */}
-        <ProfileStats userRole={user.role} />
+        <ProfileStats 
+          userRole={user.role} 
+          profileData={profileData}
+          isLoading={loading}
+        />
 
         {/* Grid principal */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -119,7 +75,7 @@ export default function ProfilePage() {
           <div className="lg:col-span-2">
             {(user.role === "employee" || user.role === "admin") && (
               <RecentOrdersCard
-                orders={employeeOrders}
+                orders={profileData.userOrders}
                 onViewDetails={handleViewOrderDetails}
                 isLoading={isLoadingOrders}
               />
@@ -142,7 +98,7 @@ export default function ProfilePage() {
         {/* Dialog de edição */}
         <ProfileEditDialog
           open={editDialogOpen}
-          onOpenChange={setEditDialogOpen}
+          onOpenChange={handleCloseEdit}
           user={user}
           onSubmit={handleSubmit}
           isSubmitting={isUpdatingProfile}

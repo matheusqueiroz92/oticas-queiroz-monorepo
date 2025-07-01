@@ -9,6 +9,7 @@ import { Loader2, FileX, Plus, Filter, Search } from "lucide-react";
 import { useOrders } from "@/hooks/useOrders";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/useToast";
+import { StatCard } from "@/components/ui/StatCard";
 import { OrderExportButton } from "@/components/orders/exports/OrderExportButton";
 import { OrderFilters } from "@/components/orders/OrderFilters";
 import { PageContainer } from "@/components/ui/page-container";
@@ -210,70 +211,53 @@ export default function OrdersPage() {
         <div className="space-y-8">
           {/* Cards de Estatísticas */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Total de Pedidos
-                </CardTitle>
-                <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-                  <ShoppingBag className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{totalPedidos.toLocaleString()}</div>
-                <Badge variant="secondary" className="bg-blue-500 text-white border-0 text-xs mt-1">
-                  +{pedidosHoje} hoje
-                </Badge>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Em Produção
-                </CardTitle>
-                <div className="w-8 h-8 bg-orange-100 dark:bg-orange-900 rounded-full flex items-center justify-center">
-                  <Package className="w-4 h-4 text-orange-600 dark:text-orange-400" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{emProducao}</div>
-                <Badge variant="secondary" className="bg-orange-500 text-white border-0 text-xs mt-1">
-                  {totalPedidos > 0 ? ((emProducao / totalPedidos) * 100).toFixed(1) : 0}% do total
-                </Badge>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Prontos
-                </CardTitle>
-                <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
-                  <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{prontos}</div>
-                <Badge variant="secondary" className="bg-green-500 text-white border-0 text-xs mt-1">
-                  Aguardando entrega
-                </Badge>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Valor Total
-                </CardTitle>
-                <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center">
-                  <DollarSign className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{formatCurrency(totalMes)}</div>
-                <Badge variant="secondary" className="bg-purple-500 text-white border-0 text-xs mt-1">
-                  Este mês
-                </Badge>
-              </CardContent>
-            </Card>
+            <StatCard
+              title="Total de Pedidos"
+              value={totalPedidos.toLocaleString()}
+              icon={ShoppingBag}
+              iconColor="text-blue-600 dark:text-blue-400"
+              bgColor="bg-blue-100 dark:bg-blue-900"
+              badge={{
+                text: `+${pedidosHoje} hoje`,
+                className: "bg-blue-500 text-white border-0"
+              }}
+            />
+
+            <StatCard
+              title="Em Produção"
+              value={emProducao}
+              icon={Package}
+              iconColor="text-orange-600 dark:text-orange-400"
+              bgColor="bg-orange-100 dark:bg-orange-900"
+              badge={{
+                text: `${totalPedidos > 0 ? ((emProducao / totalPedidos) * 100).toFixed(1) : 0}% do total`,
+                className: "bg-orange-500 text-white border-0"
+              }}
+            />
+
+            <StatCard
+              title="Prontos"
+              value={prontos}
+              icon={CheckCircle2}
+              iconColor="text-green-600 dark:text-green-400"
+              bgColor="bg-green-100 dark:bg-green-900"
+              badge={{
+                text: "Aguardando entrega",
+                className: "bg-green-500 text-white border-0"
+              }}
+            />
+
+            <StatCard
+              title="Valor Total"
+              value={formatCurrency(totalMes)}
+              icon={DollarSign}
+              iconColor="text-purple-600 dark:text-purple-400"
+              bgColor="bg-purple-100 dark:bg-purple-900"
+              badge={{
+                text: "Este mês",
+                className: "bg-purple-500 text-white border-0"
+              }}
+            />
           </div>
 
           {/* Filtros e Busca */}

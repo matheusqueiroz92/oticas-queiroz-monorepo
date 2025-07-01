@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { StatCard } from "@/components/dashboard/StatCard";
+import { StatCard } from "@/components/ui/StatCard";
 import { DollarSign, TrendingUp, TrendingDown, CreditCard } from "lucide-react";
 import { IPayment } from "@/app/_types/payment";
 import { formatCurrency } from "@/app/_utils/formatters";

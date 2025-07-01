@@ -2,10 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { UserTable } from "@/components/profile/UserTable";
 import { CustomerDialog } from "@/components/customers/CustomerDialog";
+import { StatCard } from "@/components/ui/StatCard";
 import { Loader2, UserX, Users, Crown, Calendar, DollarSign, Plus, Download } from "lucide-react";
 import { useCustomers } from "@/hooks/useCustomers";
 import type { Column } from "@/app/_types/user";
@@ -48,7 +47,7 @@ export default function CustomersPage() {
   } = useCustomers();
 
   // Total de clientes
-  const totalCustomers = customers.length;
+  const totalCustomers = totalItems || 0;
   
   // Clientes VIP com mais de 5 compras
   const vipCustomers = customers.filter(customer => (customer.purchases?.length || 0) >= 5).length;
@@ -97,73 +96,53 @@ export default function CustomersPage() {
       <div className="space-y-8">
         {/* Cards de Estatísticas */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Total de Clientes
-              </CardTitle>
-              <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-                <Users className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{totalCustomers.toLocaleString()}</div>
-              <Badge variant="secondary" className="bg-blue-500 text-white border-0 text-xs mt-1">
-                +{Math.floor(totalCustomers * 0.1)} este mês
-              </Badge>
-            </CardContent>
-          </Card>
+          <StatCard
+            title="Total de Clientes"
+            value={totalCustomers.toLocaleString()}
+            icon={Users}
+            iconColor="text-blue-600 dark:text-blue-400"
+            bgColor="bg-blue-100 dark:bg-blue-900"
+            badge={{
+              text: `+${Math.floor(totalCustomers * 0.1)} esta semana`,
+              className: "bg-blue-500 text-white border-0"
+            }}
+          />
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Clientes VIP
-              </CardTitle>
-              <div className="w-8 h-8 bg-yellow-100 dark:bg-yellow-900 rounded-full flex items-center justify-center">
-                <Crown className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{vipCustomers}</div>
-              <Badge variant="secondary" className="bg-yellow-500 text-white border-0 text-xs mt-1">
-                5+ compras
-              </Badge>
-            </CardContent>
-          </Card>
+          <StatCard
+            title="Clientes VIP"
+            value={vipCustomers}
+            icon={Crown}
+            iconColor="text-yellow-600 dark:text-yellow-400"
+            bgColor="bg-yellow-100 dark:bg-yellow-900"
+            badge={{
+              text: "5+ compras",
+              className: "bg-yellow-500 text-white border-0"
+            }}
+          />
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Novos este Mês
-              </CardTitle>
-              <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
-                <Calendar className="w-4 h-4 text-green-600 dark:text-green-400" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{newThisMonth}</div>
-              <Badge variant="secondary" className="bg-green-500 text-white border-0 text-xs mt-1">
-                este mês
-              </Badge>
-            </CardContent>
-          </Card>
+          <StatCard
+            title="Novos este Mês"
+            value={newThisMonth}
+            icon={Calendar}
+            iconColor="text-green-600 dark:text-green-400"
+            bgColor="bg-green-100 dark:bg-green-900"
+            badge={{
+              text: "este mês",
+              className: "bg-green-500 text-white border-0"
+            }}
+          />
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Clientes Ativos
-              </CardTitle>
-              <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center">
-                <DollarSign className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{activeCustomers}</div>
-              <Badge variant="secondary" className="bg-purple-500 text-white border-0 text-xs mt-1">
-                com compras
-              </Badge>
-            </CardContent>
-          </Card>
+          <StatCard
+            title="Clientes Ativos"
+            value={activeCustomers}
+            icon={DollarSign}
+            iconColor="text-purple-600 dark:text-purple-400"
+            bgColor="bg-purple-100 dark:bg-purple-900"
+            badge={{
+              text: "com compras",
+              className: "bg-purple-500 text-white border-0"
+            }}
+          />
         </div>
 
         {/* Filtros e Busca */}
@@ -218,6 +197,7 @@ export default function CustomersPage() {
           </AdvancedFilters>
         </ListPageHeader>
 
+        {/* Lista de Clientes */}
         <ListPageContent>
           {isLoading && (
             <div className="flex justify-center items-center py-12">

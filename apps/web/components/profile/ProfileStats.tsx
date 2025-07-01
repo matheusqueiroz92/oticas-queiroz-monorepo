@@ -1,151 +1,142 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { 
   DollarSign, 
   ShoppingBag, 
   Users, 
   Star,
-  Calendar
+  Calendar,
+  TrendingUp,
+  TrendingDown
 } from "lucide-react";
+import { StatCard } from "@/components/ui/StatCard";
+import { formatCurrency } from "@/app/_utils/profile-utils";
+
+interface ProfileStatsData {
+  totalSales: number;
+  totalSalesAllTime: number;
+  ordersCompleted: number;
+  ordersCompletedAllTime: number;
+  customersServed: number;
+  customersServedAllTime: number;
+  membershipDuration: string;
+  customerStatus: string;
+  userRating: number;
+  ordersGrowth: number;
+  starRating: string;
+}
 
 interface ProfileStatsProps {
   userRole: string;
-  stats?: {
-    totalSales?: number;
-    ordersCompleted?: number;
-    customersServed?: number;
-    rating?: number;
-  };
+  profileData: ProfileStatsData;
+  isLoading?: boolean;
 }
 
-export function ProfileStats({ userRole, stats }: ProfileStatsProps) {
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
-  };
+export function ProfileStats({ userRole, profileData, isLoading = false }: ProfileStatsProps) {
 
-  // Estatísticas mockadas baseadas no role
+  // Gerar estatísticas baseadas em dados reais
   const getStatsForRole = () => {
+    const isPositiveGrowth = profileData.ordersGrowth >= 0;
+    const growthColor = isPositiveGrowth ? "text-green-600" : "text-red-600";
+    const growthText = `${isPositiveGrowth ? '+' : ''}${profileData.ordersGrowth}% este mês`;
+    const GrowthIconComponent = isPositiveGrowth ? TrendingUp : TrendingDown;
+
     switch (userRole) {
       case "admin":
-        return [
-          {
-            title: "Vendas Este Mês",
-            value: formatCurrency(stats?.totalSales || 45280),
-            icon: DollarSign,
-            color: "text-green-600",
-            bgColor: "bg-green-100",
-            badge: "5",
-            badgeColor: "bg-green-500"
-          },
-          {
-            title: "Pedidos Realizados",
-            value: stats?.ordersCompleted?.toString() || "127",
-            icon: ShoppingBag,
-            color: "text-blue-600",
-            bgColor: "bg-blue-100",
-            badge: "12% este mês",
-            badgeColor: "bg-blue-500"
-          },
-          {
-            title: "Clientes Atendidos",
-            value: stats?.customersServed?.toString() || "89",
-            icon: Users,
-            color: "text-purple-600",
-            bgColor: "bg-purple-100",
-            badge: "este mês",
-            badgeColor: "bg-purple-500"
-          },
-          {
-            title: "Avaliação Média",
-            value: stats?.rating?.toFixed(1) || "4.8",
-            icon: Star,
-            color: "text-yellow-600",
-            bgColor: "bg-yellow-100",
-            badge: "★★★★★",
-            badgeColor: "bg-yellow-500"
-          }
-        ];
       case "employee":
         return [
           {
             title: "Vendas Este Mês",
-            value: formatCurrency(stats?.totalSales || 28500),
+            value: formatCurrency(profileData.totalSales),
             icon: DollarSign,
-            color: "text-green-600",
-            bgColor: "bg-green-100",
-            badge: "3",
-            badgeColor: "bg-green-500"
+            iconColor: "text-green-600",
+            bgColor: "bg-green-100 dark:bg-green-100/10",
+            description: (
+              <>
+                <GrowthIconComponent className={`h-4 w-4 inline mr-1 ${growthColor}`} />
+                {growthText}
+              </>
+            )
           },
           {
             title: "Pedidos Realizados",
-            value: stats?.ordersCompleted?.toString() || "84",
+            value: profileData.ordersCompleted.toString(),
             icon: ShoppingBag,
-            color: "text-blue-600",
-            bgColor: "bg-blue-100",
-            badge: "8% este mês",
-            badgeColor: "bg-blue-500"
+            iconColor: "text-blue-600",
+            bgColor: "bg-blue-100 dark:bg-blue-100/10",
+            badge: { 
+              text: `${profileData.ordersCompletedAllTime} total`, 
+              className: "bg-blue-500 text-white border-0" 
+            }
           },
           {
             title: "Clientes Atendidos",
-            value: stats?.customersServed?.toString() || "56",
+            value: profileData.customersServed.toString(),
             icon: Users,
-            color: "text-purple-600",
-            bgColor: "bg-purple-100",
-            badge: "este mês",
-            badgeColor: "bg-purple-500"
+            iconColor: "text-purple-600",
+            bgColor: "bg-purple-100 dark:bg-purple-100/10",
+            badge: { 
+              text: `${profileData.customersServedAllTime} total`, 
+              className: "bg-purple-500 text-white border-0" 
+            }
           },
           {
             title: "Avaliação Média",
-            value: stats?.rating?.toFixed(1) || "4.6",
+            value: profileData.userRating.toFixed(1),
             icon: Star,
-            color: "text-yellow-600",
-            bgColor: "bg-yellow-100",
-            badge: "★★★★☆",
-            badgeColor: "bg-yellow-500"
+            iconColor: "text-yellow-600",
+            bgColor: "bg-yellow-100 dark:bg-yellow-100/10",
+            badge: { 
+              text: profileData.starRating, 
+              className: "bg-yellow-500 text-white border-0" 
+            }
           }
         ];
       case "customer":
         return [
           {
             title: "Total Gasto",
-            value: formatCurrency(stats?.totalSales || 2850),
+            value: formatCurrency(profileData.totalSalesAllTime),
             icon: DollarSign,
-            color: "text-green-600",
-            bgColor: "bg-green-100",
-            badge: "histórico",
-            badgeColor: "bg-green-500"
+            iconColor: "text-green-600",
+            bgColor: "bg-green-100 dark:bg-green-100/10",
+            badge: { 
+              text: "histórico", 
+              className: "bg-green-500 text-white border-0" 
+            }
           },
           {
             title: "Pedidos Feitos",
-            value: stats?.ordersCompleted?.toString() || "12",
+            value: profileData.ordersCompletedAllTime.toString(),
             icon: ShoppingBag,
-            color: "text-blue-600",
-            bgColor: "bg-blue-100",
-            badge: "total",
-            badgeColor: "bg-blue-500"
+            iconColor: "text-blue-600",
+            bgColor: "bg-blue-100 dark:bg-blue-100/10",
+            badge: { 
+              text: "total", 
+              className: "bg-blue-500 text-white border-0" 
+            }
           },
           {
             title: "Membro há",
-            value: "2 anos",
+            value: profileData.membershipDuration,
             icon: Calendar,
-            color: "text-purple-600",
-            bgColor: "bg-purple-100",
-            badge: "ativo",
-            badgeColor: "bg-purple-500"
+            iconColor: "text-purple-600",
+            bgColor: "bg-purple-100 dark:bg-purple-100/10",
+            badge: { 
+              text: "ativo", 
+              className: "bg-purple-500 text-white border-0" 
+            }
           },
           {
             title: "Status",
-            value: "Premium",
+            value: profileData.customerStatus,
             icon: Star,
-            color: "text-yellow-600",
-            bgColor: "bg-yellow-100",
-            badge: "VIP",
-            badgeColor: "bg-yellow-500"
+            iconColor: "text-yellow-600",
+            bgColor: "bg-yellow-100 dark:bg-yellow-100/10",
+            badge: { 
+              text: profileData.customerStatus === "Premium" ? "VIP" : "Cliente", 
+              className: "bg-yellow-500 text-white border-0" 
+            }
           }
         ];
       default:
@@ -158,25 +149,17 @@ export function ProfileStats({ userRole, stats }: ProfileStatsProps) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
       {statsData.map((stat, index) => (
-        <Card key={index} className="relative overflow-hidden">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              {stat.title}
-            </CardTitle>
-            <div className={`w-8 h-8 ${stat.bgColor} rounded-full flex items-center justify-center`}>
-              <stat.icon className={`w-4 h-4 ${stat.color}`} />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold mb-1">{stat.value}</div>
-            <Badge 
-              variant="secondary" 
-              className={`text-xs ${stat.badgeColor} text-white border-0`}
-            >
-              {stat.badge}
-            </Badge>
-          </CardContent>
-        </Card>
+        <StatCard
+          key={index}
+          title={stat.title}
+          value={stat.value}
+          icon={stat.icon}
+          iconColor={stat.iconColor}
+          bgColor={stat.bgColor}
+          badge={stat.badge}
+          description={stat.description}
+          isLoading={isLoading}
+        />
       ))}
     </div>
   );

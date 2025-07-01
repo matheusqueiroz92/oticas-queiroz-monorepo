@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { usePayments } from "@/hooks/usePayments";
 import { Loader2, DollarSign, Plus, Search, Filter, Download } from "lucide-react";
+import { StatCard } from "@/components/ui/StatCard";
 import { PaymentsList } from "@/components/payments/PaymentsList";
 import { PaymentsStatistics } from "@/components/payments/PaymentsStatistics";
 import { PaymentActions } from "@/components/payments/PaymentActions";
@@ -82,70 +83,41 @@ export default function PaymentsPage() {
         <div className="space-y-8">
           {/* Cards de Estatísticas */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Total de Pagamentos
-                </CardTitle>
-                <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-                  <DollarSign className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{totalPagamentos.toLocaleString()}</div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  +{pagamentosHoje} hoje
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Vendas
-                </CardTitle>
-                <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
-                  <Plus className="w-4 h-4 text-green-600 dark:text-green-400" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{vendas}</div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  {totalPagamentos > 0 ? ((vendas / totalPagamentos) * 100).toFixed(1) : 0}% do total
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Despesas
-                </CardTitle>
-                <div className="w-8 h-8 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center">
-                  <DollarSign className="w-4 h-4 text-red-600 dark:text-red-400" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{despesas}</div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  {totalPagamentos > 0 ? ((despesas / totalPagamentos) * 100).toFixed(1) : 0}% do total
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Valor Total
-                </CardTitle>
-                <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center">
-                  <DollarSign className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{formatCurrency(totalMes)}</div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  Este mês
-                </div>
-              </CardContent>
-            </Card>
+            <StatCard
+              title="Total de Pagamentos"
+              value={totalPagamentos.toLocaleString()}
+              icon={DollarSign}
+              iconColor="text-blue-600 dark:text-blue-400"
+              bgColor="bg-blue-100 dark:bg-blue-900"
+              description={`+${pagamentosHoje} hoje`}
+            />
+
+            <StatCard
+              title="Vendas"
+              value={vendas}
+              icon={Plus}
+              iconColor="text-green-600 dark:text-green-400"
+              bgColor="bg-green-100 dark:bg-green-900"
+              description={`${totalPagamentos > 0 ? ((vendas / totalPagamentos) * 100).toFixed(1) : 0}% do total`}
+            />
+
+            <StatCard
+              title="Despesas"
+              value={despesas}
+              icon={DollarSign}
+              iconColor="text-red-600 dark:text-red-400"
+              bgColor="bg-red-100 dark:bg-red-900"
+              description={`${totalPagamentos > 0 ? ((despesas / totalPagamentos) * 100).toFixed(1) : 0}% do total`}
+            />
+
+            <StatCard
+              title="Valor Total"
+              value={formatCurrency(totalMes)}
+              icon={DollarSign}
+              iconColor="text-purple-600 dark:text-purple-400"
+              bgColor="bg-purple-100 dark:bg-purple-900"
+              description="Este mês"
+            />
           </div>
 
           <div className="mb-4">

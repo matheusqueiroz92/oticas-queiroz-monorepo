@@ -50,7 +50,6 @@ export const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
   onCancel,
   onSubmit,
   isSubmitting,
-  previewImage,
   setPreviewImage
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);

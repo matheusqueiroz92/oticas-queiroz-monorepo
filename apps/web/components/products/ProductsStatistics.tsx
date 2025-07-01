@@ -1,8 +1,8 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Package, AlertTriangle, XCircle, DollarSign } from "lucide-react";
 import { Product } from "@/app/_types/product";
+import { StatCard } from "@/components/ui/StatCard";
 
 interface ProductsStatisticsProps {
   products: Product[];
@@ -37,50 +37,54 @@ export function ProductsStatistics({ products, formatCurrency }: ProductsStatist
   }, 0);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total de Produtos</CardTitle>
-          <Package className="h-4 w-4 text-blue-600" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{totalProducts}</div>
-          <p className="text-xs text-muted-foreground">produtos cadastrados</p>
-        </CardContent>
-      </Card>
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <StatCard
+        title="Total de Produtos"
+        value={totalProducts.toLocaleString()}
+        icon={Package}
+        iconColor="text-blue-600 dark:text-blue-400"
+        bgColor="bg-blue-100 dark:bg-blue-900"
+        badge={{
+          text: "produtos cadastrados",
+          className: "bg-blue-500 text-white border-0"
+        }}
+      />
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Estoque Baixo</CardTitle>
-          <AlertTriangle className="h-4 w-4 text-yellow-600" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{lowStockProducts}</div>
-          <p className="text-xs text-muted-foreground">≤5 unidades</p>
-        </CardContent>
-      </Card>
+      <StatCard
+        title="Estoque Baixo"
+        value={lowStockProducts}
+        icon={AlertTriangle}
+        iconColor="text-yellow-600 dark:text-yellow-400"
+        bgColor="bg-yellow-100 dark:bg-yellow-900"
+        badge={{
+          text: "≤5 unidades",
+          className: "bg-yellow-500 text-white border-0"
+        }}
+      />
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Sem Estoque</CardTitle>
-          <XCircle className="h-4 w-4 text-red-600" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{outOfStockProducts}</div>
-          <p className="text-xs text-muted-foreground">produtos em falta</p>
-        </CardContent>
-      </Card>
+      <StatCard
+        title="Sem Estoque"
+        value={outOfStockProducts}
+        icon={XCircle}
+        iconColor="text-red-600 dark:text-red-400"
+        bgColor="bg-red-100 dark:bg-red-900"
+        badge={{
+          text: "produtos em falta",
+          className: "bg-red-500 text-white border-0"
+        }}
+      />
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Valor do Estoque</CardTitle>
-          <DollarSign className="h-4 w-4 text-green-600" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{formatCurrency(totalInventoryValue)}</div>
-          <p className="text-xs text-muted-foreground">valor total em estoque</p>
-        </CardContent>
-      </Card>
+      <StatCard
+        title="Valor do Estoque"
+        value={formatCurrency(totalInventoryValue)}
+        icon={DollarSign}
+        iconColor="text-green-600 dark:text-green-400"
+        bgColor="bg-green-100 dark:bg-green-900"
+        badge={{
+          text: "valor total em estoque",
+          className: "bg-green-500 text-white border-0"
+        }}
+      />
     </div>
   );
 } 

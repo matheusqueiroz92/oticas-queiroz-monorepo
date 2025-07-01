@@ -112,7 +112,6 @@ export function CashRegisterDetails({
             <ArrowLeft className="h-4 w-4 mr-2" />
             Voltar
           </Button>
-          <h1 className="text-2xl font-bold">Detalhes do Caixa</h1>
         </div>
         <div className="flex space-x-2">
           <Button variant="outline" onClick={onPrint}>

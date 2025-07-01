@@ -29,13 +29,13 @@ export function QuickActionButton({
         className="h-full w-full text-left"
         style={{ all: "unset" }}
       >
-        <Card className="hover:shadow-md transition-shadow cursor-pointer border-dashed border-2 hover:border-primary/50 h-full w-full">
-          <CardContent className="flex items-center justify-center p-8 gap-4">
-            <div className="rounded-full bg-blue-100/50 dark:bg-blue-100/10 p-4 flex items-center justify-center">
-              <Icon className="h-8 w-8 text-primary" />
+        <Card className="hover:shadow-md transition-shadow cursor-pointer border-dashed border-2 hover:bg-muted/50 hover:border-primary/50 h-full w-full">
+          <CardContent className="flex items-center justify-center p-4 gap-3">
+            <div className="rounded-full bg-blue-100/50 dark:bg-blue-100/10 p-3 flex items-center justify-center">
+              <Icon className="h-6 w-6 text-primary" />
             </div>
             <div className="flex flex-col items-center justify-center">
-              <span className="text-lg font-bold">{title}</span>
+              <span className="text-base font-bold">{title}</span>
               <span className="text-xs text-muted-foreground">{description}</span>
             </div>
           </CardContent>

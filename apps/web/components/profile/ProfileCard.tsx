@@ -1,6 +1,6 @@
 "use client";
 
-import { Edit, Mail, Phone, MapPin, Calendar, Star } from "lucide-react";
+import { Edit, Mail, Phone, MapPin, Calendar } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -49,11 +49,6 @@ export function ProfileCard({ user, getUserImageUrl, onEditClick }: ProfileCardP
         return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200";
     }
   };
-
-  // const formatDate = (dateString?: string) => {
-  //   if (!dateString) return "Não informado";
-  //   return new Date(dateString).toLocaleDateString("pt-BR");
-  // };
 
   const getFullAddress = () => {
     if (!user.address) return "Não informado";
