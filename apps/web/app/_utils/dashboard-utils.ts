@@ -71,7 +71,7 @@ export const getWeeklyCustomersCount = (customers: Customer[] = []): number => {
  * @param limit Quantidade máxima de pedidos a retornar (padrão: 3)
  * @returns Array com os pedidos mais recentes ordenados da data mais recente para a mais antiga
  */
-export const getRecentOrders = (orders: Order[] = [], limit: number = 5): Order[] => {
+export const getRecentOrders = (orders: Order[] = [], limit: number = 4): Order[] => {
   return [...orders].sort((a, b) => 
     new Date(b.createdAt || b.orderDate).getTime() - new Date(a.createdAt || a.orderDate).getTime()
   ).slice(0, limit);

@@ -10,11 +10,22 @@ import { useUsers } from "@/hooks/useUsers";
 import debounce from 'lodash/debounce';
 import { User } from "@/app/_types/user";
 import { Customer } from "@/app/_types/customer";
+import { getAllUsersForExport } from "@/app/_services/userService";
 
 interface UseCustomersOptions {
   pageSize?: number;
   initialSearch?: string;
   enablePagination?: boolean;
+}
+
+interface CustomerFilters {
+  search?: string;
+  page?: number;
+  customerType?: string;
+  status?: string;
+  sort?: string;
+  cpf?: string;
+  limit?: number;
 }
 
 export function useCustomers(options: UseCustomersOptions = {}) {
@@ -26,18 +37,51 @@ export function useCustomers(options: UseCustomersOptions = {}) {
   
   const [search, setSearchValue] = useState(initialSearch);
   const [currentPage, setCurrentPage] = useState(1);
+  const [filters, setFilters] = useState<CustomerFilters>({ 
+    sort: "name",
+    limit: pageSize 
+  });
   const router = useRouter();
   const queryClient = useQueryClient();
   const { getUserImageUrl } = useUsers();
 
+  const filterKey = JSON.stringify(filters);
+
+  // Função para processar busca
+  const processSearch = useCallback((value: string) => {
+    setFilters(prevFilters => {
+      const newFilters: CustomerFilters = { 
+        ...prevFilters,
+        search: undefined,
+        cpf: undefined,
+        sort: "name"
+      };
+      
+      if (value.trim()) {
+        const cleanSearch = value.trim().replace(/\D/g, '');
+        
+        if (/^\d{11}$/.test(cleanSearch)) {
+          newFilters.cpf = cleanSearch;
+          newFilters.search = undefined;
+        } else {
+          newFilters.search = value.trim();
+          newFilters.cpf = undefined;
+        }
+      }
+      
+      return newFilters;
+    });
+  
+    setCurrentPage(1);
+  
+    queryClient.invalidateQueries({ 
+      queryKey: QUERY_KEYS.USERS.CUSTOMERS()
+    });
+  }, [queryClient]);
+
   const debouncedSearch = useMemo(
-    () => debounce((value: string) => {
-      setCurrentPage(1);
-      queryClient.invalidateQueries({ 
-        queryKey: QUERY_KEYS.USERS.CUSTOMERS() 
-      });
-    }, 300),
-    [queryClient]
+    () => debounce(processSearch, 300),
+    [processSearch]
   );
 
   const setSearch = useCallback((value: string) => {
@@ -57,6 +101,35 @@ export function useCustomers(options: UseCustomersOptions = {}) {
       }
     };
   }, [debouncedSearch]);
+
+  // Função para atualizar filtros
+  const updateFilters = useCallback((newFilters: CustomerFilters) => {
+    setFilters(prevFilters => ({
+      ...newFilters,
+      sort: "name",
+      search: newFilters.search !== undefined ? newFilters.search : prevFilters.search,
+      cpf: newFilters.cpf !== undefined ? newFilters.cpf : prevFilters.cpf,
+      limit: pageSize
+    }));
+    
+    setCurrentPage(1);
+    
+    queryClient.invalidateQueries({ 
+      queryKey: QUERY_KEYS.USERS.CUSTOMERS()
+    });
+  }, [queryClient, pageSize]);
+
+  // Função para limpar filtros
+  const clearFilters = useCallback(() => {
+    const baseFilters = { sort: "name", limit: pageSize };
+    setFilters(baseFilters);
+    setCurrentPage(1);
+    setSearchValue("");
+    
+    queryClient.invalidateQueries({ 
+      queryKey: QUERY_KEYS.USERS.CUSTOMERS()
+    });
+  }, [queryClient, pageSize]);
 
   // Nova função para buscar todos os clientes (sem paginação)
   const fetchAllCustomers = useCallback(async (searchQuery: string = "") => {
@@ -100,13 +173,14 @@ export function useCustomers(options: UseCustomersOptions = {}) {
     }
   }, []);
 
+  // Query principal para buscar clientes com filtros
   const {
     data: customersData = { users: [], pagination: {} },
     isLoading,
     error,
     refetch,
   } = useQuery({
-    queryKey: QUERY_KEYS.USERS.CUSTOMERS(search, currentPage, pageSize),
+    queryKey: QUERY_KEYS.USERS.CUSTOMERS(search, currentPage, pageSize, filterKey),
     queryFn: async () => {
       try {
         const timestamp = new Date().getTime();
@@ -119,6 +193,23 @@ export function useCustomers(options: UseCustomersOptions = {}) {
         if (enablePagination) {
           searchParams.page = currentPage;
           searchParams.limit = pageSize;
+        }
+
+        // Aplicar filtros
+        if (filters.search) {
+          searchParams.search = filters.search;
+        }
+
+        if (filters.cpf) {
+          searchParams.cpf = filters.cpf;
+        }
+
+        if (filters.customerType && filters.customerType !== 'all') {
+          // Lógica para diferentes tipos de cliente pode ser adicionada aqui
+        }
+
+        if (filters.status && filters.status !== 'all') {
+          // Lógica para status de cliente pode ser adicionada aqui
         }
         
         if (search) {
@@ -160,6 +251,30 @@ export function useCustomers(options: UseCustomersOptions = {}) {
     refetchOnWindowFocus: false,
   });
 
+  // Query separada para buscar total real de clientes (não filtrado)
+  const { data: totalCustomersData } = useQuery({
+    queryKey: QUERY_KEYS.USERS.TOTAL_CUSTOMERS,
+    queryFn: async () => {
+      try {
+        const response = await api.get(API_ROUTES.USERS.BASE, {
+          params: { 
+            role: "customer",
+            limit: 9999,
+            _t: Date.now()
+          }
+        });
+        
+        const users = response.data?.users || [];
+        return users.filter((user: User) => user.role === 'customer').length;
+      } catch (error) {
+        console.error("Erro ao buscar total de clientes:", error);
+        return 0;
+      }
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutos
+    refetchOnWindowFocus: false,
+  });
+
   const customers = useMemo(() => {
     if (Array.isArray(customersData.users)) {
       const onlyCustomers = customersData.users.filter((user: User) => user.role === 'customer');
@@ -188,6 +303,7 @@ export function useCustomers(options: UseCustomersOptions = {}) {
 
   const refreshCustomersList = useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey: QUERY_KEYS.USERS.CUSTOMERS() });
+    await queryClient.invalidateQueries({ queryKey: QUERY_KEYS.USERS.TOTAL_CUSTOMERS });
     await refetch();
   }, [queryClient, refetch]);
 
@@ -195,50 +311,50 @@ export function useCustomers(options: UseCustomersOptions = {}) {
     setCurrentPage(newPage);
   }, []);
 
+  // Função para contar filtros ativos
+  const getActiveFiltersCount = useMemo(() => {
+    let count = 0;
+    if (search) count++;
+    if (filters.customerType && filters.customerType !== 'all') count++;
+    if (filters.status && filters.status !== 'all') count++;
+    return count;
+  }, [search, filters.customerType, filters.status]);
+
   const fetchCustomerById = useCallback(async (id: string) => {
     if (!id) return null;
     
     try {
-      // Primeiro verificar no cache do React Query
-      const cachedCustomer = queryClient.getQueryData<Customer>(
-        QUERY_KEYS.USERS.DETAIL(id)
-      );
-      
-      if (cachedCustomer) {
-        return cachedCustomer;
-      }
-      
-      // Se não existir no cache, buscar da API
       const response = await api.get(API_ROUTES.USERS.BY_ID(id));
-      const customer = response.data;
-      
-      // Salvar no cache para uso futuro
-      queryClient.setQueryData(QUERY_KEYS.USERS.DETAIL(id), customer);
-      
-      return customer;
+      return response.data;
     } catch (error) {
       console.error(`Erro ao buscar cliente ${id}:`, error);
       return null;
     }
-  }, [queryClient]);
+  }, []);
 
   return {
     customers,
     isLoading,
-    error: error ? (error as Error).message : null,
+    error: error?.message || null,
     search,
     setSearch,
-    refetch,
-    refreshCustomersList,
+    currentPage,
+    totalPages: pagination.totalPages,
+    setCurrentPage: handlePageChange,
+    totalItems: pagination.totalItems,
+    totalCustomers: totalCustomersData || 0,
+    limit: pagination.limit,
+    refetch: refreshCustomersList,
     navigateToCustomerDetails,
     navigateToNewCustomer,
-    getUserImageUrl,
     fetchAllCustomers,
     fetchCustomerById,
-    limit: pagination.limit,
-    currentPage: pagination.currentPage,
-    totalPages: pagination.totalPages,
-    totalItems: pagination.totalItems,
-    setCurrentPage: handlePageChange,
+    getUserImageUrl,
+    
+    // Novos recursos de filtros
+    filters,
+    updateFilters,
+    clearFilters,
+    getActiveFiltersCount
   };
 }

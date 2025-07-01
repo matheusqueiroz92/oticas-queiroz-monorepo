@@ -25,7 +25,7 @@ export function RecentOrdersList({
   getClientName,
 }: RecentOrdersListProps) {
   return (
-    <Card className="h-[600px] flex flex-col">
+    <Card className="h-[420px] flex flex-col">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>Pedidos Recentes</CardTitle>
@@ -44,7 +44,7 @@ export function RecentOrdersList({
         ) : recentOrders.length > 0 ? (
           <div className="divide-y flex-1 overflow-y-auto">
             {recentOrders.map((order) => (
-              <div key={order._id} className="flex items-center justify-between p-4">
+              <div key={order._id} className="flex items-center justify-between p-3">
                 <div>
                   <p className="font-medium">#{order.serviceOrder}</p>
                   <p className="text-sm text-muted-foreground">
@@ -61,10 +61,10 @@ export function RecentOrdersList({
             ))}
           </div>
         ) : (
-          <div className="p-8 text-center text-muted-foreground flex-1 flex items-center justify-center">
+          <div className="p-6 text-center text-muted-foreground flex-1 flex items-center justify-center">
             <div>
-              <ShoppingBag className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>Nenhum pedido encontrado</p>
+              <ShoppingBag className="h-8 w-8 mx-auto mb-3 opacity-50" />
+              <p className="text-sm">Nenhum pedido encontrado</p>
             </div>
           </div>
         )}

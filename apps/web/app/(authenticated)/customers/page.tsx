@@ -1,12 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { UserTable } from "@/components/profile/UserTable";
 import { CustomerDialog } from "@/components/customers/CustomerDialog";
+import { CustomerFilters } from "@/components/customers/CustomerFilters";
+import { CustomerExportButton } from "@/components/customers/CustomerExportButton";
 import { StatCard } from "@/components/ui/StatCard";
-import { Loader2, UserX, Users, Crown, Calendar, DollarSign, Plus, Download } from "lucide-react";
+import { Loader2, UserX, Users, Crown, Calendar, DollarSign, Plus } from "lucide-react";
 import { useCustomers } from "@/hooks/useCustomers";
+import { useCustomerUtils } from "@/hooks/useCustomerUtils";
 import type { Column } from "@/app/_types/user";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { PageContainer } from "@/components/ui/page-container";
@@ -30,6 +33,10 @@ export default function CustomersPage() {
   const [editCustomerDialogOpen, setEditCustomerDialogOpen] = useState(false);
   const [customerToEdit, setCustomerToEdit] = useState<any>(undefined);
   const [showFilters, setShowFilters] = useState(false);
+
+  // Estados para os filtros básicos (selects)
+  const [selectedCustomerType, setSelectedCustomerType] = useState("all");
+  const [selectedStatus, setSelectedStatus] = useState("all");
   
   const {
     customers,
@@ -42,23 +49,21 @@ export default function CustomersPage() {
     totalPages,
     setCurrentPage,
     totalItems,
+    totalCustomers, // Total real de clientes (não filtrado)
     limit,
     refetch,
+    filters,
+    updateFilters,
+    getActiveFiltersCount
   } = useCustomers();
 
-  // Total de clientes
-  const totalCustomers = totalItems || 0;
+  const { calculateCustomerStats } = useCustomerUtils();
+
+  // Calcular estatísticas dos clientes atuais (filtrados)
+  const stats = calculateCustomerStats(customers);
   
-  // Clientes VIP com mais de 5 compras
-  const vipCustomers = customers.filter(customer => (customer.purchases?.length || 0) >= 5).length;
-  
-  // Alterar aqui para mostrar os clientes novos este mês, pois está sendo simulado
-  const newThisMonth = customers.filter(() => {
-    return Math.random() > 0.7; // 30% dos clientes são "novos"
-  }).length;
-  
-  // Clientes ativos com compras
-  const activeCustomers = customers.filter(customer => (customer.purchases?.length || 0) > 0).length;
+  // Usar o total real de clientes para o card principal
+  const realTotalCustomers = totalCustomers || 0;
 
   const customerColumns: Column[] = [
     { key: "name", header: "Nome" },
@@ -82,6 +87,34 @@ export default function CustomersPage() {
     setEditCustomerDialogOpen(true);
   };
 
+  // Atualizar filtros quando os selects básicos mudarem
+  useEffect(() => {
+    const newFilters: Record<string, any> = {};
+    
+    if (selectedCustomerType !== "all") {
+      newFilters.customerType = selectedCustomerType;
+    }
+    
+    if (selectedStatus !== "all") {
+      newFilters.status = selectedStatus;
+    }
+    
+    updateFilters(newFilters);
+  }, [selectedCustomerType, selectedStatus, updateFilters]);
+
+  // Função para limpar todos os filtros
+  const handleClearAllFilters = useCallback(() => {
+    setSelectedCustomerType("all");
+    setSelectedStatus("all");
+    setSearch("");
+    updateFilters({ sort: "name" });
+  }, [setSearch, updateFilters]);
+
+  // Função estável para atualizar filtros
+  const handleUpdateFilters = useCallback((newFilters: Record<string, any>) => {
+    updateFilters(newFilters);
+  }, [updateFilters]);
+
   const showEmptyState = !isLoading && !error && customers.length === 0;
 
   useEffect(() => {
@@ -98,19 +131,19 @@ export default function CustomersPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <StatCard
             title="Total de Clientes"
-            value={totalCustomers.toLocaleString()}
+            value={realTotalCustomers.toLocaleString()}
             icon={Users}
             iconColor="text-blue-600 dark:text-blue-400"
             bgColor="bg-blue-100 dark:bg-blue-900"
             badge={{
-              text: `+${Math.floor(totalCustomers * 0.1)} esta semana`,
+              text: `+${Math.floor(realTotalCustomers * 0.1)} esta semana`,
               className: "bg-blue-500 text-white border-0"
             }}
           />
 
           <StatCard
             title="Clientes VIP"
-            value={vipCustomers}
+            value={stats.vipCustomers}
             icon={Crown}
             iconColor="text-yellow-600 dark:text-yellow-400"
             bgColor="bg-yellow-100 dark:bg-yellow-900"
@@ -122,7 +155,7 @@ export default function CustomersPage() {
 
           <StatCard
             title="Novos este Mês"
-            value={newThisMonth}
+            value={stats.newThisMonth}
             icon={Calendar}
             iconColor="text-green-600 dark:text-green-400"
             bgColor="bg-green-100 dark:bg-green-900"
@@ -134,7 +167,7 @@ export default function CustomersPage() {
 
           <StatCard
             title="Clientes Ativos"
-            value={activeCustomers}
+            value={stats.activeCustomers}
             icon={DollarSign}
             iconColor="text-purple-600 dark:text-purple-400"
             bgColor="bg-purple-100 dark:bg-purple-900"
@@ -153,39 +186,48 @@ export default function CustomersPage() {
           onSearchChange={setSearch}
           showFilters={showFilters}
           onToggleFilters={() => setShowFilters((prev) => !prev)}
-          activeFiltersCount={0}
+          activeFiltersCount={getActiveFiltersCount}
         >
           <FilterSelects>
-            <Select defaultValue="todos">
+            <Select 
+              value={selectedCustomerType} 
+              onValueChange={setSelectedCustomerType}
+            >
               <SelectTrigger className="w-[140px]">
                 <SelectValue placeholder="Todos os tipos" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="todos">Todos os tipos</SelectItem>
+                <SelectItem value="all">Todos os tipos</SelectItem>
                 <SelectItem value="vip">VIP</SelectItem>
                 <SelectItem value="regular">Regular</SelectItem>
-                <SelectItem value="novo">Novo</SelectItem>
+                <SelectItem value="new">Novo</SelectItem>
               </SelectContent>
             </Select>
 
-            <Select defaultValue="todos-status">
+            <Select 
+              value={selectedStatus} 
+              onValueChange={setSelectedStatus}
+            >
               <SelectTrigger className="w-[140px]">
                 <SelectValue placeholder="Todos os status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="todos-status">Todos os status</SelectItem>
-                <SelectItem value="ativo">Ativo</SelectItem>
-                <SelectItem value="inativo">Inativo</SelectItem>
-                <SelectItem value="bloqueado">Bloqueado</SelectItem>
+                <SelectItem value="all">Todos os status</SelectItem>
+                <SelectItem value="active">Ativo</SelectItem>
+                <SelectItem value="inactive">Inativo</SelectItem>
+                <SelectItem value="blocked">Bloqueado</SelectItem>
               </SelectContent>
             </Select>
           </FilterSelects>
 
           <ActionButtons>
-            <Button variant="outline" size="sm">
-              <Download className="w-4 h-4 mr-2" />
-              Exportar
-            </Button>
+            <CustomerExportButton 
+              filters={filters}
+              buttonText="Exportar"
+              variant="outline"
+              disabled={isLoading || customers.length === 0}
+              size="sm"
+            />
             <Button onClick={() => setNewCustomerDialogOpen(true)} size="sm">
               <Plus className="w-4 h-4 mr-2" />
               Novo Cliente
@@ -193,7 +235,9 @@ export default function CustomersPage() {
           </ActionButtons>
 
           <AdvancedFilters>
-            <div></div>
+            <CustomerFilters 
+              onUpdateFilters={handleUpdateFilters}
+            />
           </AdvancedFilters>
         </ListPageHeader>
 
@@ -216,12 +260,20 @@ export default function CustomersPage() {
               <UserX className="h-16 w-16 text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold">Nenhum cliente encontrado</h3>
               <p className="text-muted-foreground mt-2 mb-4">
-                {search ? "Tente ajustar os filtros de busca." : "Clique em 'Novo Cliente' para adicionar um cliente ao sistema."}
+                {search || getActiveFiltersCount > 0 
+                  ? "Tente ajustar os filtros de busca." 
+                  : "Clique em 'Novo Cliente' para adicionar um cliente ao sistema."
+                }
               </p>
-              {!search && (
+              {(!search && getActiveFiltersCount === 0) && (
                 <Button onClick={() => setNewCustomerDialogOpen(true)}>
                   <Plus className="w-4 h-4 mr-2" />
                   Novo Cliente
+                </Button>
+              )}
+              {(search || getActiveFiltersCount > 0) && (
+                <Button onClick={handleClearAllFilters} variant="outline">
+                  Limpar Filtros
                 </Button>
               )}
             </div>

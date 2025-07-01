@@ -32,18 +32,18 @@ export function StatCard({
 }: StatCardProps) {
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-xl font-normal">{title}</CardTitle>
-        <div className={`rounded-full ${bgColor} p-2 flex items-center justify-center`}>
-          <Icon className={`h-6 w-6 ${iconColor}`} />
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
+        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <div className={`rounded-full ${bgColor} p-1.5 flex items-center justify-center`}>
+          <Icon className={`h-4 w-4 ${iconColor}`} />
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-1">
         {isLoading ? (
-          <Skeleton className={`h-8 ${skeletonWidth}`} />
+          <Skeleton className={`h-6 ${skeletonWidth}`} />
         ) : (
           <>
-            <div className="text-2xl font-bold">{value}</div>
+            <div className="text-xl font-bold">{value}</div>
             {badge && (
               <Badge 
                 variant="secondary" 

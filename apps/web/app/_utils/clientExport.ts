@@ -3,6 +3,7 @@ import { saveAs } from 'file-saver';
 import { jsPDF } from 'jspdf';
 import type { Order } from '@/app/_types/order';
 import { formatCurrency } from './formatters';
+import 'jspdf-autotable';
 
 /**
  * Formata a lista de produtos para exibição
@@ -232,4 +233,144 @@ export const exportOrdersToJSON = (orders: Order[]): void => {
   const jsonString = JSON.stringify(data, null, 2);
   const blob = new Blob([jsonString], { type: 'application/json' });
   saveAs(blob, `pedidos-${new Date().toISOString().split('T')[0]}.json`);
+};
+
+interface ExportCustomerOptions {
+  data: any[];
+  format: 'excel' | 'pdf' | 'csv' | 'json';
+  title: string;
+  filename: string;
+}
+
+/**
+ * Exporta dados de clientes em diferentes formatos
+ */
+export const exportCustomers = async (options: ExportCustomerOptions): Promise<Blob> => {
+  const { data, format, title, filename } = options;
+
+  switch (format) {
+    case 'excel':
+      return exportToExcel(data, title);
+    case 'csv':
+      return exportToCSV(data);
+    case 'pdf':
+      return await exportToPDF(data, title);
+    case 'json':
+      return exportToJSON(data);
+    default:
+      throw new Error(`Formato não suportado: ${format}`);
+  }
+};
+
+/**
+ * Exporta para Excel
+ */
+const exportToExcel = (data: any[], title: string): Blob => {
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Clientes');
+  
+  // Ajustar largura das colunas
+  const wscols = [
+    { wch: 25 }, // Nome
+    { wch: 30 }, // Email
+    { wch: 15 }, // Telefone
+    { wch: 15 }, // CPF
+    { wch: 15 }, // Data de Nascimento
+    { wch: 30 }, // Endereço
+    { wch: 15 }, // Cidade
+    { wch: 10 }, // Estado
+    { wch: 10 }, // CEP
+    { wch: 15 }, // Tipo de Cliente
+    { wch: 10 }, // Status
+    { wch: 15 }, // Total de Compras
+    { wch: 15 }, // Débitos
+    { wch: 15 }, // Data de Cadastro
+    { wch: 15 }, // Última Atualização
+  ];
+  ws['!cols'] = wscols;
+
+  const buffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+  return new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+};
+
+/**
+ * Exporta para CSV
+ */
+const exportToCSV = (data: any[]): Blob => {
+  const headers = Object.keys(data[0] || {});
+  const csvContent = [
+    headers.join(','),
+    ...data.map(row => headers.map(header => {
+      const value = row[header] || '';
+      // Escapar aspas duplas e envolver em aspas se contém vírgula
+      const escaped = String(value).replace(/"/g, '""');
+      return escaped.includes(',') ? `"${escaped}"` : escaped;
+    }).join(','))
+  ].join('\n');
+
+  return new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+};
+
+/**
+ * Exporta para PDF
+ */
+const exportToPDF = async (data: any[], title: string): Promise<Blob> => {
+  // Importar jsPDF com autoTable dinamicamente
+  const { default: autoTable } = await import('jspdf-autotable');
+  
+  const doc = new jsPDF({
+    orientation: 'landscape',
+    unit: 'mm',
+    format: 'a4'
+  });
+
+  // Título
+  doc.setFontSize(16);
+  doc.text(title, 14, 15);
+  
+  // Data de geração
+  doc.setFontSize(10);
+  doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, 14, 25);
+
+  // Preparar dados para a tabela
+  const headers = Object.keys(data[0] || {});
+  const rows = data.map(item => headers.map(header => String(item[header] || '')));
+
+  // Adicionar tabela usando autoTable importado
+  autoTable(doc, {
+    head: [headers],
+    body: rows,
+    startY: 35,
+    styles: {
+      fontSize: 8,
+      cellPadding: 2,
+    },
+    headStyles: {
+      fillColor: [41, 128, 185],
+      textColor: 255,
+      fontStyle: 'bold'
+    },
+    alternateRowStyles: {
+      fillColor: [245, 245, 245]
+    },
+    margin: { top: 35, left: 14, right: 14 },
+    tableWidth: 'auto',
+    columnStyles: {
+      0: { cellWidth: 25 }, // Nome
+      1: { cellWidth: 30 }, // Email
+      2: { cellWidth: 15 }, // Telefone
+      3: { cellWidth: 15 }, // CPF
+    }
+  });
+
+  return new Blob([doc.output('blob')], { type: 'application/pdf' });
+};
+
+/**
+ * Exporta para JSON
+ */
+const exportToJSON = (data: any[]): Blob => {
+  const jsonContent = JSON.stringify(data, null, 2);
+  return new Blob([jsonContent], { type: 'application/json' });
 };

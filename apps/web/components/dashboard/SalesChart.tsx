@@ -70,7 +70,7 @@ export function SalesChart({ payments = [], isLoading = false }: SalesChartProps
 
   if (isLoading) {
     return (
-      <Card className="h-[600px] flex flex-col">
+      <Card className="h-[420px] flex flex-col">
         <CardHeader>
           <CardTitle>Vendas por Período</CardTitle>
           <CardDescription>Análise de vendas ao longo do tempo</CardDescription>
@@ -88,7 +88,7 @@ export function SalesChart({ payments = [], isLoading = false }: SalesChartProps
   }
 
   return (
-    <Card className="h-[600px] flex flex-col">
+    <Card className="h-[420px] flex flex-col">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
@@ -117,7 +117,7 @@ export function SalesChart({ payments = [], isLoading = false }: SalesChartProps
       
       <CardContent className="flex-1 flex flex-col">
         {/* Estatísticas resumidas */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">Total de Vendas</p>
             <p className="text-lg font-semibold text-green-600">
@@ -158,7 +158,7 @@ export function SalesChart({ payments = [], isLoading = false }: SalesChartProps
 
         {/* Melhor dia */}
         {periodStats.bestDay.sales > 0 && (
-          <div className="mb-6">
+          <div className="mb-3">
             <Badge variant="secondary" className="flex items-center gap-2 w-fit">
               <DollarSign className="h-3 w-3" />
               Melhor dia: {periodStats.bestDay.label} - {formatSalesValue(periodStats.bestDay.sales)}
@@ -167,7 +167,7 @@ export function SalesChart({ payments = [], isLoading = false }: SalesChartProps
         )}
 
         {/* Gráfico */}
-        <div className="flex-1 min-h-[200px]">
+        <div className="flex-1 min-h-[160px]">
           {chartData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart

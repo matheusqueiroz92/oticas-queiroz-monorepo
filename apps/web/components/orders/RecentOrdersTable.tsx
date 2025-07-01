@@ -21,7 +21,7 @@ export const RecentOrdersTable = ({ orders, onViewDetails, getEmployeeName }: Re
 
   if (!orders || orders.length === 0) {
     return (
-      <div className="text-center py-8 text-muted-foreground">
+      <div className="text-center py-6 text-muted-foreground text-sm">
         Nenhum pedido recente encontrado
       </div>
     );
@@ -58,8 +58,9 @@ export const RecentOrdersTable = ({ orders, onViewDetails, getEmployeeName }: Re
                 variant="outline"
                 size="sm"
                 onClick={() => onViewDetails(order._id)}
+                className="h-8 w-8 p-0"
               >
-                <Eye />
+                <Eye className="h-4 w-4" />
               </Button>
             </TableCell>
           </TableRow>
