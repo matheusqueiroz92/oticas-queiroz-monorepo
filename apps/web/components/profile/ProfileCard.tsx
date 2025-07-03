@@ -56,7 +56,7 @@ export function ProfileCard({ user, getUserImageUrl, onEditClick }: ProfileCardP
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto mr-24 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 border-0 shadow-xl">
+    <Card className="w-full bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 border-0 shadow-xl">
       <CardContent className="p-0">
         {/* Header com gradiente */}
         <div className="relative h-24 bg-gradient-to-r from-blue-600 to-purple-600 rounded-t-lg">

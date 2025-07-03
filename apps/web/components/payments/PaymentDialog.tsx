@@ -7,6 +7,7 @@ import { Loader2, DollarSign, CreditCard, Banknote, Calendar as CalendarIcon, Us
 import React, { useState, useEffect, useMemo } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import PaymentSuccessScreen from "./PaymentSuccessScreen";
 
 import {
   Dialog,
@@ -102,7 +103,7 @@ export function PaymentDialog({
   payment,
   mode = 'create',
 }: PaymentDialogProps) {
-  const { usePaymentForm } = usePayments();
+  const { usePaymentForm, handleCreatePayment, refetch } = usePayments();
   const { toast } = useToast();
   
   const {
@@ -134,6 +135,12 @@ export function PaymentDialog({
   const [showInstallments, setShowInstallments] = useState(false);
   const [showCheckFields, setShowCheckFields] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Estados para tela de confirmação
+  const [showSuccessScreen, setShowSuccessScreen] = useState(false);
+  const [submittedPayment, setSubmittedPayment] = useState<IPayment | null>(null);
+  const [associatedOrder, setAssociatedOrder] = useState<Order | null>(null);
+  const [associatedCustomer, setAssociatedCustomer] = useState<UserType | null>(null);
 
   const isEditMode = mode === 'edit';
   const memoizedPayment = useMemo(() => payment, [payment?._id]);
@@ -185,6 +192,17 @@ export function PaymentDialog({
       fetchClientOrders(selectedCustomerId);
     }
   }, [selectedCustomerId, selectedEntityType, fetchClientOrders]);
+
+  // Resetar estados quando o dialog fechar
+  useEffect(() => {
+    if (!open) {
+      setShowSuccessScreen(false);
+      setSubmittedPayment(null);
+      setAssociatedOrder(null);
+      setAssociatedCustomer(null);
+      return;
+    }
+  }, [open]);
 
   // Preencher o formulário quando estiver no modo de edição
   useEffect(() => {
@@ -238,7 +256,8 @@ export function PaymentDialog({
     setIsSubmitting(true);
     
     try {
-      const paymentData = {
+      // Preparar dados para criação do pagamento
+      const paymentData: any = {
         amount: data.amount,
         type: data.type,
         paymentMethod: data.paymentMethod,
@@ -250,24 +269,78 @@ export function PaymentDialog({
         legacyClientId: data.legacyClientId || undefined,
         orderId: data.orderId || undefined,
         status: data.status,
-        installments: showInstallments ? data.installments : undefined,
-        check: showCheckFields ? data.check : undefined,
       };
 
-      // TODO: Implementar a lógica de criação/edição usando o hook usePayments
-      console.log('Payment data:', paymentData);
-      
-      toast({
-        title: "Sucesso",
-        description: `Pagamento ${isEditMode ? 'atualizado' : 'criado'} com sucesso`,
-      });
-      
-      onSuccess?.();
-      onOpenChange(false);
+      // Adicionar dados de parcelamento se usar cartão de crédito
+      if (showInstallments && data.installments && data.installments > 1) {
+        paymentData.installments = {
+          current: 1,
+          total: data.installments,
+          value: data.amount / data.installments,
+        };
+      }
+
+      // Adicionar dados do cheque se necessário
+      if (showCheckFields && data.check) {
+        paymentData.check = {
+          bank: data.check.bank,
+          checkNumber: data.check.checkNumber,
+          checkDate: data.check.checkDate,
+          accountHolder: data.check.accountHolder,
+          branch: data.check.branch,
+          accountNumber: data.check.accountNumber,
+          presentationDate: data.check.presentationDate || data.check.checkDate,
+          compensationStatus: "pending"
+        };
+      }
+
+      console.log('Creating payment with data:', paymentData);
+
+      if (isEditMode) {
+        // TODO: Implementar lógica de edição quando necessário
+        toast({
+          title: "Aviso",
+          description: "Funcionalidade de edição em desenvolvimento",
+          variant: "destructive",
+        });
+        return;
+      } else {
+        // Usar a função handleCreatePayment do usePayments
+        const response = await handleCreatePayment(paymentData);
+        
+        if (response) {
+          // Forçar atualização da lista de pagamentos
+          await refetch();
+          
+          // Capturar dados para a tela de confirmação
+          setSubmittedPayment(response);
+          
+          // Buscar dados do pedido associado se houver
+          if (data.orderId) {
+            const orderData = clientOrders?.find((order: Order) => order._id === data.orderId);
+            setAssociatedOrder(orderData || null);
+          }
+          
+          // Buscar dados do cliente associado se houver
+          if (data.customerId) {
+            const customerData = customers?.find((customer: UserType) => customer._id === data.customerId);
+            setAssociatedCustomer(customerData || null);
+          }
+          
+          // Mostrar tela de confirmação
+          setShowSuccessScreen(true);
+          
+          toast({
+            title: "Sucesso",
+            description: "Pagamento criado com sucesso",
+          });
+        }
+      }
     } catch (error) {
+      console.error('Erro ao criar pagamento:', error);
       toast({
         title: "Erro",
-        description: `Erro ao ${isEditMode ? 'atualizar' : 'criar'} pagamento`,
+        description: error instanceof Error ? error.message : `Erro ao ${isEditMode ? 'atualizar' : 'criar'} pagamento`,
         variant: "destructive",
       });
     } finally {
@@ -277,7 +350,44 @@ export function PaymentDialog({
 
   const handleCancel = () => {
     form.reset();
+    setShowSuccessScreen(false);
+    setSubmittedPayment(null);
+    setAssociatedOrder(null);
+    setAssociatedCustomer(null);
     onOpenChange(false);
+  };
+
+  // Funções para navegação na tela de confirmação
+  const handleViewPaymentsList = () => {
+    handleCancel();
+    onSuccess?.();
+  };
+
+  const handleCreateNewPayment = () => {
+    setShowSuccessScreen(false);
+    setSubmittedPayment(null);
+    setAssociatedOrder(null);
+    setAssociatedCustomer(null);
+    form.reset({
+      type: "sale",
+      paymentMethod: "cash",
+      amount: 0,
+      paymentDate: new Date(),
+      description: "",
+      customerId: "",
+      legacyClientId: "",
+      orderId: "",
+      installments: 1,
+      cashRegisterId: cashRegister || "",
+      check: undefined,
+      category: "",
+      status: "completed",
+    });
+  };
+
+  const handleCloseSuccessScreen = () => {
+    handleCancel();
+    onSuccess?.();
   };
 
   const getPaymentTypeOptions = () => [
@@ -300,18 +410,29 @@ export function PaymentDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5" />
-            {isEditMode ? 'Editar Pagamento' : 'Novo Pagamento'}
-          </DialogTitle>
-          <DialogDescription>
-            {isEditMode 
-              ? 'Edite as informações do pagamento abaixo.'
-              : 'Preencha as informações para registrar um novo pagamento.'
-            }
-          </DialogDescription>
-        </DialogHeader>
+        {showSuccessScreen && submittedPayment ? (
+          <PaymentSuccessScreen
+            submittedPayment={submittedPayment}
+            associatedOrder={associatedOrder}
+            associatedCustomer={associatedCustomer}
+            onViewPaymentsList={handleViewPaymentsList}
+            onCreateNewPayment={handleCreateNewPayment}
+            onClose={handleCloseSuccessScreen}
+          />
+        ) : (
+          <>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5" />
+                {isEditMode ? 'Editar Pagamento' : 'Novo Pagamento'}
+              </DialogTitle>
+              <DialogDescription>
+                {isEditMode 
+                  ? 'Edite as informações do pagamento abaixo.'
+                  : 'Preencha as informações para registrar um novo pagamento.'
+                }
+              </DialogDescription>
+            </DialogHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
@@ -833,6 +954,8 @@ export function PaymentDialog({
             </div>
           </form>
         </Form>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );

@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 import { useProfile } from "@/hooks/useProfile";
 import { useOrders } from "@/hooks/useOrders";
+import { useQuery } from "@tanstack/react-query";
+import { getAllOrders, getOrdersByClient } from "@/app/_services/orderService";
+import { QUERY_KEYS } from "@/app/_constants/query-keys";
 import {
-  getUserOrders,
   calculateUserSales,
   countCompletedOrders,
   countUniqueCustomers,
@@ -15,7 +17,6 @@ import {
   calculateUserRating,
   calculateOrdersGrowth,
   getPreviousMonthOrders,
-  formatCurrency,
   generateStarRating,
 } from "@/app/_utils/profile-utils";
 
@@ -32,13 +33,97 @@ export function useProfileData() {
     getUserImageUrl,
   } = useProfile();
 
-  const { orders, isLoading: isLoadingOrders } = useOrders();
+  // Obter dados do usuário logado via cookies (igual à página "Meus Pedidos")
+  const [loggedUserId, setLoggedUserId] = useState<string>("");
+  const [loggedUserRole, setLoggedUserRole] = useState<string>("");
+
+  // Carregar dados do usuário logado dos cookies
+  useEffect(() => {
+    const userId = Cookies.get("userId");
+    const userRole = Cookies.get("role");
+    
+    if (userId) setLoggedUserId(userId);
+    if (userRole) setLoggedUserRole(userRole);
+  }, []);
+
+  // Usar useOrders normalmente (como funcionava antes)
+  const {
+    orders,
+    isLoading: isLoadingOrders,
+    filters,
+    updateFilters,
+    getClientName,
+  } = useOrders();
+
+  // Aplicar filtro automático baseado no tipo de usuário (IGUAL à página "Meus Pedidos")
+  useEffect(() => {
+    if (loggedUserId && loggedUserRole) {
+      let shouldUpdate = false;
+      let newFilters = { ...filters };
+
+      const isCustomer = loggedUserRole === "customer";
+      const isEmployee = loggedUserRole === "employee" || loggedUserRole === "admin";
+
+      if (isCustomer) {
+        // Para clientes: filtrar por clientId
+        if (!filters.clientId || filters.clientId !== loggedUserId) {
+          newFilters.clientId = loggedUserId;
+          shouldUpdate = true;
+        }
+        if (filters.employeeId) {
+          delete newFilters.employeeId;
+          shouldUpdate = true;
+        }
+      } else if (isEmployee) {
+        // Para funcionários: filtrar por employeeId
+        if (!filters.employeeId || filters.employeeId !== loggedUserId) {
+          newFilters.employeeId = loggedUserId;
+          shouldUpdate = true;
+        }
+        if (filters.clientId) {
+          delete newFilters.clientId;
+          shouldUpdate = true;
+        }
+      }
+
+      if (shouldUpdate) {
+        updateFilters(newFilters);
+      }
+    }
+  }, [loggedUserId, loggedUserRole, filters, updateFilters]);
+
+  // Query adicional para buscar TODOS os pedidos para estatísticas precisas
+  const {
+    data: allUserOrdersForStats,
+  } = useQuery({
+    queryKey: QUERY_KEYS.ORDERS.PROFILE_ALL(loggedUserId, loggedUserRole),
+    queryFn: async () => {
+      if (!loggedUserId || !loggedUserRole) return [];
+
+      if (loggedUserRole === "customer") {
+        // Para clientes: usar a função específica que retorna todos os pedidos do cliente
+        const orders = await getOrdersByClient(loggedUserId);
+        return orders || [];
+      } else {
+        // Para funcionários/admins: buscar todos os pedidos com limite alto e filtro por employeeId
+        const result = await getAllOrders({
+          employeeId: loggedUserId,
+          limit: 10000, // Limite alto para pegar todos os pedidos
+          sort: "-createdAt"
+        });
+        return result.orders || [];
+      }
+    },
+    enabled: !!loggedUserId && !!loggedUserRole,
+    staleTime: 1000 * 60 * 5, // 5 minutos
+  });
 
   // Calcular dados do perfil baseados em dados reais
   const profileData = useMemo(() => {
-    if (!user || !orders) {
+    if (!user) {
       return {
         userOrders: [],
+        userOrdersForDisplay: [],
         totalSales: 0,
         totalSalesAllTime: 0,
         ordersCompleted: 0,
@@ -53,19 +138,31 @@ export function useProfileData() {
       };
     }
 
-    const userId = Cookies.get("userId") || "";
-    const userOrders = getUserOrders(orders, userId);
-
-    // Estatísticas do mês atual
-    const totalSales = calculateUserSales(userOrders, 'month');
-    const ordersCompleted = countCompletedOrders(userOrders, 'month');
-    const customersServed = countUniqueCustomers(userOrders, 'month');
-
+    // Para exibição: usar os dados paginados do useOrders (já filtrados e funcionando)
+    const userOrders = orders || [];
+    
+    // Ordenar por data (mais recente primeiro) e pegar os 3 primeiros para exibição
+    const sortedOrders = [...userOrders].sort((a, b) => {
+      const dateA = new Date(a.createdAt || a.orderDate);
+      const dateB = new Date(b.createdAt || b.orderDate);
+      return dateB.getTime() - dateA.getTime();
+    });
+    
+    const userOrdersForDisplay = sortedOrders.slice(0, 3);
+    
+    // Para estatísticas: usar os dados completos (se disponíveis, senão usar os paginados)
+    const allOrdersForCalculation = allUserOrdersForStats || userOrders;
+    
+    // Estatísticas do mês atual (baseadas em TODOS os pedidos do usuário)
+    const totalSales = calculateUserSales(allOrdersForCalculation, 'month');
+    const ordersCompleted = countCompletedOrders(allOrdersForCalculation, 'month');
+    const customersServed = countUniqueCustomers(allOrdersForCalculation, 'month');
+    
     // Estatísticas de todo o tempo
-    const totalSalesAllTime = calculateUserSales(userOrders, 'all');
-    const ordersCompletedAllTime = countCompletedOrders(userOrders, 'all');
-    const customersServedAllTime = countUniqueCustomers(userOrders, 'all');
-
+    const totalSalesAllTime = calculateUserSales(allOrdersForCalculation, 'all');
+    const ordersCompletedAllTime = countCompletedOrders(allOrdersForCalculation, 'all');
+    const customersServedAllTime = countUniqueCustomers(allOrdersForCalculation, 'all');
+    
     // Outras métricas
     const membershipDuration = calculateMembershipDuration(user);
     const customerStatus = getCustomerStatus(totalSalesAllTime);
@@ -73,12 +170,13 @@ export function useProfileData() {
     const starRating = generateStarRating(userRating);
 
     // Crescimento mensal
-    const previousMonthOrders = getPreviousMonthOrders(userOrders);
+    const previousMonthOrders = getPreviousMonthOrders(allOrdersForCalculation);
     const previousMonthCount = countCompletedOrders(previousMonthOrders, 'all');
     const ordersGrowth = calculateOrdersGrowth(ordersCompleted, previousMonthCount);
 
     return {
       userOrders,
+      userOrdersForDisplay,
       totalSales,
       totalSalesAllTime,
       ordersCompleted,
@@ -91,7 +189,7 @@ export function useProfileData() {
       ordersGrowth,
       starRating,
     };
-  }, [user, orders]);
+  }, [user, orders, allUserOrdersForStats]);
 
   // Funções para controlar o dialog de edição
   const handleEditClick = () => {
@@ -166,5 +264,6 @@ export function useProfileData() {
     handleViewOrderDetails,
     handleBackToDashboard,
     refetchProfile,
+    getClientName,
   };
 } 

@@ -33,7 +33,7 @@ interface ProfileStatsProps {
 }
 
 export function ProfileStats({ userRole, profileData, isLoading = false }: ProfileStatsProps) {
-
+  
   // Gerar estatísticas baseadas em dados reais
   const getStatsForRole = () => {
     const isPositiveGrowth = profileData.ordersGrowth >= 0;
@@ -47,7 +47,7 @@ export function ProfileStats({ userRole, profileData, isLoading = false }: Profi
         return [
           {
             title: "Vendas Este Mês",
-            value: formatCurrency(profileData.totalSales),
+            value: formatCurrency(profileData.totalSales || 0),
             icon: DollarSign,
             iconColor: "text-green-600",
             bgColor: "bg-green-100 dark:bg-green-100/10",
@@ -59,35 +59,35 @@ export function ProfileStats({ userRole, profileData, isLoading = false }: Profi
             )
           },
           {
-            title: "Pedidos Realizados",
-            value: profileData.ordersCompleted.toString(),
+            title: "Pedidos Cadastrados",
+            value: (profileData.ordersCompleted || 0).toString(),
             icon: ShoppingBag,
             iconColor: "text-blue-600",
             bgColor: "bg-blue-100 dark:bg-blue-100/10",
             badge: { 
-              text: `${profileData.ordersCompletedAllTime} total`, 
+              text: `${profileData.ordersCompletedAllTime || 0} total`, 
               className: "bg-blue-500 text-white border-0" 
             }
           },
           {
             title: "Clientes Atendidos",
-            value: profileData.customersServed.toString(),
+            value: (profileData.customersServed || 0).toString(),
             icon: Users,
             iconColor: "text-purple-600",
             bgColor: "bg-purple-100 dark:bg-purple-100/10",
             badge: { 
-              text: `${profileData.customersServedAllTime} total`, 
+              text: `${profileData.customersServedAllTime || 0} total`, 
               className: "bg-purple-500 text-white border-0" 
             }
           },
           {
             title: "Avaliação Média",
-            value: profileData.userRating.toFixed(1),
+            value: (profileData.userRating || 0).toFixed(1),
             icon: Star,
             iconColor: "text-yellow-600",
             bgColor: "bg-yellow-100 dark:bg-yellow-100/10",
             badge: { 
-              text: profileData.starRating, 
+              text: profileData.starRating || "☆☆☆☆☆", 
               className: "bg-yellow-500 text-white border-0" 
             }
           }
@@ -96,7 +96,7 @@ export function ProfileStats({ userRole, profileData, isLoading = false }: Profi
         return [
           {
             title: "Total Gasto",
-            value: formatCurrency(profileData.totalSalesAllTime),
+            value: formatCurrency(profileData.totalSalesAllTime || 0),
             icon: DollarSign,
             iconColor: "text-green-600",
             bgColor: "bg-green-100 dark:bg-green-100/10",
@@ -107,7 +107,7 @@ export function ProfileStats({ userRole, profileData, isLoading = false }: Profi
           },
           {
             title: "Pedidos Feitos",
-            value: profileData.ordersCompletedAllTime.toString(),
+            value: (profileData.ordersCompletedAllTime || 0).toString(),
             icon: ShoppingBag,
             iconColor: "text-blue-600",
             bgColor: "bg-blue-100 dark:bg-blue-100/10",
@@ -118,7 +118,7 @@ export function ProfileStats({ userRole, profileData, isLoading = false }: Profi
           },
           {
             title: "Membro há",
-            value: profileData.membershipDuration,
+            value: profileData.membershipDuration || "< 1 ano",
             icon: Calendar,
             iconColor: "text-purple-600",
             bgColor: "bg-purple-100 dark:bg-purple-100/10",
@@ -129,12 +129,12 @@ export function ProfileStats({ userRole, profileData, isLoading = false }: Profi
           },
           {
             title: "Status",
-            value: profileData.customerStatus,
+            value: profileData.customerStatus || "Bronze",
             icon: Star,
             iconColor: "text-yellow-600",
             bgColor: "bg-yellow-100 dark:bg-yellow-100/10",
             badge: { 
-              text: profileData.customerStatus === "Premium" ? "VIP" : "Cliente", 
+              text: (profileData.customerStatus === "Premium") ? "VIP" : "Cliente", 
               className: "bg-yellow-500 text-white border-0" 
             }
           }

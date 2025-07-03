@@ -780,4 +780,20 @@ router.get(
   asyncHandler(paymentController.getChecksByStatus.bind(paymentController))
 );
 
+// DEBUG: Rota temporária para verificar dados do pagamento/pedido
+router.get(
+  "/debug/payments/order/:orderId",
+  authenticate,
+  authorize(["admin", "employee"]),
+  asyncHandler(paymentController.debugPaymentOrder.bind(paymentController))
+);
+
+// DEBUG: Rota temporária para corrigir status de um pagamento
+router.post(
+  "/debug/payments/:paymentId/fix-status",
+  authenticate,
+  authorize(["admin", "employee"]),
+  asyncHandler(paymentController.fixPaymentStatus.bind(paymentController))
+);
+
 export default router;

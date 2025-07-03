@@ -86,8 +86,32 @@ export function usePayments() {
         description: "O pagamento foi registrado com sucesso.",
       });
 
-      // Invalidar queries
+      // Invalidar todas as queries relacionadas a pagamentos
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.PAYMENTS.ALL });
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey[0];
+          return typeof key === 'string' && key === 'payments';
+        }
+      });
+      
+      // Invalidar queries de pedidos para atualizar status de pagamento
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey[0];
+          return typeof key === 'string' && key === 'orders';
+        }
+      });
+      
+      // Invalidar queries de perfil para atualizar estatísticas
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey[0];
+          return typeof key === 'string' && (key === 'users' || key.includes('profile'));
+        }
+      });
+      
+      // Invalidar caixa
       queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.CASH_REGISTERS.CURRENT,
       });

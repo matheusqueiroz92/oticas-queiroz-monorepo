@@ -75,26 +75,45 @@ export class PaymentStatusService {
     method?: string,
     action: 'add' | 'remove' | 'recalculate' = 'recalculate'
   ): Promise<void> {
+    console.log(`[PaymentStatusService] Iniciando atualização para pedido ${orderId}`);
+    
     const order = await this.orderRepository.findById(orderId);
     if (!order) {
+      console.error(`[PaymentStatusService] Pedido ${orderId} não encontrado`);
       throw new Error("Pedido não encontrado");
     }
 
+    // Calcular o valor final considerando desconto
+    const finalPrice = order.finalPrice || (order.totalPrice - (order.discount || 0));
+    
+    console.log(`[PaymentStatusService] Pedido encontrado: ${order._id}`);
+    console.log(`[PaymentStatusService] Valores: totalPrice=${order.totalPrice}, discount=${order.discount || 0}, finalPrice=${finalPrice}`);
+
     // Buscar todos os pagamentos do pedido
-    const { items: payments } = await this.paymentRepository.findAll(1, 1000, { orderId });
+    // Garantir que o orderId seja comparado corretamente (como string ou ObjectId)
+    const { items: payments } = await this.paymentRepository.findAll(1, 1000, { orderId: orderId });
+    
+    console.log(`[PaymentStatusService] Encontrados ${payments.length} pagamentos para o pedido ${orderId}`);
+    payments.forEach((p, index) => {
+      console.log(`[PaymentStatusService] Pagamento ${index + 1}: ID=${p._id}, status=${p.status}, valor=${p.amount}`);
+    });
     
     // Calcular totais
     const totalPaid = payments
       .filter(p => p.status === "completed")
       .reduce((sum, p) => sum + p.amount, 0);
 
-    // Determinar status do pagamento
+    console.log(`[PaymentStatusService] Total pago (apenas completed): ${totalPaid} de ${finalPrice} (valor final)`);
+
+    // Determinar status do pagamento - CORRIGIDO: usar finalPrice ao invés de totalPrice
     let paymentStatus: IOrder["paymentStatus"] = "pending";
-    if (totalPaid >= order.totalPrice) {
+    if (totalPaid >= finalPrice) {
       paymentStatus = "paid";
     } else if (totalPaid > 0) {
       paymentStatus = "partially_paid";
     }
+
+    console.log(`[PaymentStatusService] Novo status calculado: ${paymentStatus}`);
 
     // Atualizar o pedido com o novo status de pagamento
     const updates: Partial<IOrder> = { paymentStatus };
@@ -109,9 +128,12 @@ export class PaymentStatusService {
         method,
       };
       updates.paymentHistory = [...currentHistory, newEntry];
+      console.log(`[PaymentStatusService] Adicionado ao histórico: pagamento ${paymentId}, valor ${amount}`);
     }
 
+    console.log(`[PaymentStatusService] Atualizando pedido com:`, updates);
     await this.orderRepository.update(orderId, updates);
+    console.log(`[PaymentStatusService] Pedido ${orderId} atualizado com sucesso`);
   }
 
   /**

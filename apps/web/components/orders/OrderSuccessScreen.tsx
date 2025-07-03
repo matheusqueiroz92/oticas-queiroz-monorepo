@@ -54,17 +54,33 @@ export default function OrderSuccessScreen({
     finalPrice: submittedOrder?.finalPrice || submittedOrder?.totalPrice || 0,
   };
 
-  // Obter informações do cliente
-  const clientInfo = selectedCustomer || submittedOrder?.clientId || null;
-  const clientName = clientInfo?.name || 
-                    (typeof submittedOrder?.clientId === 'object' ? submittedOrder?.clientId?.name : null) ||
-                    'Cliente não identificado';
-  
-  const clientPhone = clientInfo?.phone || 
-                     (typeof submittedOrder?.clientId === 'object' ? submittedOrder?.clientId?.phone : null);
-  
-  const clientEmail = clientInfo?.email || 
-                     (typeof submittedOrder?.clientId === 'object' ? submittedOrder?.clientId?.email : null);
+  // Obter informações do cliente - melhorar a lógica
+  let clientInfo = null;
+  let clientName = 'Cliente não identificado';
+  let clientPhone = null;
+  let clientEmail = null;
+
+  // Prioridade: selectedCustomer > submittedOrder.client > submittedOrder.clientId (se for objeto)
+  if (selectedCustomer) {
+    clientInfo = selectedCustomer;
+    clientName = selectedCustomer.name;
+    clientPhone = selectedCustomer.phone;
+    clientEmail = selectedCustomer.email;
+  } else if (submittedOrder?.client) {
+    // Se o pedido retornar dados populados do cliente
+    clientInfo = submittedOrder.client;
+    clientName = submittedOrder.client.name || clientName;
+    clientPhone = submittedOrder.client.phone;
+    clientEmail = submittedOrder.client.email;
+  } else if (typeof submittedOrder?.clientId === 'object' && submittedOrder.clientId?.name) {
+    // Se clientId vier populado como objeto
+    clientInfo = submittedOrder.clientId;
+    clientName = submittedOrder.clientId.name || clientName;
+    clientPhone = submittedOrder.clientId.phone;
+    clientEmail = submittedOrder.clientId.email;
+  }
+
+
   
   return (
     <div className="max-w-4xl mx-auto space-y-6">

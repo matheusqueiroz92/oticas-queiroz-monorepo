@@ -195,6 +195,12 @@ export const OrderDialog: React.FC<OrderDialogProps> = ({ open, onOpenChange, or
         
         console.log("=== QUERIES INVALIDADAS COM SUCESSO ===");
         
+        // Buscar dados do cliente para exibir na tela de sucesso
+        const clientData = customersData?.find((customer: any) => customer._id === data.clientId);
+        if (clientData && !selectedCustomer) {
+          setSelectedCustomer(clientData);
+        }
+        
         // Salvar dados do formulário para a tela de sucesso
         setFormData(data);
         setCreatedOrder(newOrder);

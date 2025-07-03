@@ -1,22 +1,45 @@
 import { Order } from "@/app/_types/order";
-import { IPayment } from "@/app/_types/payment";
 import { User } from "@/app/_types/user";
 
 /**
  * Filtra os pedidos que pertencem ao usuário específico.
  * @param orders Array com todos os pedidos do sistema
  * @param userId ID do usuário para filtrar os pedidos
+ * @param userRole Papel do usuário no sistema ('customer' | 'employee' | 'admin')
+ * @param limit Quantidade máxima de pedidos a retornar (padrão: todos)
  * @returns Array com pedidos do usuário especificado
  */
-export const getUserOrders = (orders: Order[] = [], userId: string): Order[] => {
-  if (!userId) return [];
+export const getUserOrders = (orders: Order[] = [], userId: string, userRole?: string, limit?: number): Order[] => {
+  if (!userId || !orders.length) return [];
   
-  return orders.filter(order => 
-    order.employeeId === userId || 
-    order.employeeId.toString() === userId ||
-    order.clientId === userId ||
-    order.clientId.toString() === userId
-  );
+  const filtered = orders.filter(order => {
+    // Converter IDs para string para comparação mais robusta
+    const clientIdStr = order.clientId?.toString().trim() || '';
+    const employeeIdStr = order.employeeId?.toString().trim() || '';
+    const userIdStr = userId.toString().trim();
+    
+    // Para clientes, buscar por clientId
+    if (userRole === 'customer') {
+      return clientIdStr === userIdStr;
+    }
+    
+    // Para funcionários e admins, buscar por employeeId primeiro, depois clientId
+    // Também verificar se o usuário tem alguma relação com o pedido
+    const isEmployee = employeeIdStr === userIdStr;
+    const isClient = clientIdStr === userIdStr;
+    
+    return isEmployee || isClient;
+  });
+
+  // Ordenar por data de criação (mais recente primeiro)
+  const sorted = filtered.sort((a, b) => {
+    const dateA = new Date(a.createdAt || a.orderDate);
+    const dateB = new Date(b.createdAt || b.orderDate);
+    return dateB.getTime() - dateA.getTime();
+  });
+
+  // Limitar quantidade se especificado
+  return limit ? sorted.slice(0, limit) : sorted;
 };
 
 /**
@@ -38,9 +61,17 @@ export const calculateUserSales = (orders: Order[] = [], period: 'month' | 'all'
     });
   }
   
-  return filteredOrders
-    .filter(order => order.status === 'delivered')
-    .reduce((total, order) => total + (order.finalPrice || order.totalPrice || 0), 0);
+  // Para vendas, considerar pedidos com pagamento realizado (paid ou partially_paid) 
+  // e que não foram cancelados
+  const salesOrders = filteredOrders.filter(order => {
+    const isPaid = order.paymentStatus === 'paid' || order.paymentStatus === 'partially_paid';
+    const isNotCancelled = order.status !== 'cancelled';
+    return isPaid && isNotCancelled;
+  });
+  
+  return salesOrders.reduce((total, order) => {
+    return total + (order.finalPrice || order.totalPrice || 0);
+  }, 0);
 };
 
 /**
@@ -62,7 +93,8 @@ export const countCompletedOrders = (orders: Order[] = [], period: 'month' | 'al
     });
   }
   
-  return filteredOrders.filter(order => order.status === 'delivered').length;
+  // Para pedidos cadastrados, considerar todos os pedidos que não foram cancelados
+  return filteredOrders.filter(order => order.status !== 'cancelled').length;
 };
 
 /**
@@ -84,8 +116,11 @@ export const countUniqueCustomers = (orders: Order[] = [], period: 'month' | 'al
     });
   }
   
+  // Para clientes atendidos, considerar todos os pedidos que não foram cancelados
+  const validOrders = filteredOrders.filter(order => order.status !== 'cancelled');
+  
   const uniqueClientIds = new Set(
-    filteredOrders.map(order => order.clientId.toString())
+    validOrders.map(order => order.clientId.toString())
   );
   
   return uniqueClientIds.size;

@@ -24,6 +24,7 @@ export default function ProfilePage() {
     handleSubmit,
     handleViewOrderDetails,
     handleBackToDashboard,
+    getClientName,
   } = useProfileData();
 
   if (loading) {
@@ -61,8 +62,8 @@ export default function ProfilePage() {
         />
 
         {/* Grid principal */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Coluna da esquerda - Card do perfil */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+          {/* Coluna da esquerda - Card do perfil (equivalente a 1 StatCard) */}
           <div className="lg:col-span-1">
             <ProfileCard
               user={user}
@@ -71,27 +72,14 @@ export default function ProfilePage() {
             />
           </div>
 
-          {/* Coluna da direita - Pedidos recentes */}
-          <div className="lg:col-span-2">
-            {(user.role === "employee" || user.role === "admin") && (
-              <RecentOrdersCard
-                orders={profileData.userOrders}
-                onViewDetails={handleViewOrderDetails}
-                isLoading={isLoadingOrders}
-              />
-            )}
-            
-            {user.role === "customer" && (
-              <div className="bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg p-8 text-center">
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                  Bem-vindo ao Sistema!
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Acesse as funcionalidades do sistema através do menu lateral.
-                  Você pode visualizar seus pedidos, débitos e muito mais.
-                </p>
-              </div>
-            )}
+          {/* Coluna da direita - Pedidos recentes (equivalente a 3 StatCards) */}
+          <div className="lg:col-span-3">
+            <RecentOrdersCard
+              orders={profileData.userOrdersForDisplay}
+              onViewDetails={handleViewOrderDetails}
+              isLoading={isLoadingOrders}
+              getClientName={getClientName}
+            />
           </div>
         </div>
 

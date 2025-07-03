@@ -75,20 +75,54 @@ export class PaymentService {
       // Normalizar método de pagamento
       const normalizedMethod = this.validationService.normalizePaymentMethod(paymentData.paymentMethod);
 
+      // Determinar status do pagamento:
+      // - Para vendas com métodos instantâneos (cash, pix, debit, credit) = "completed"
+      // - Para métodos que precisam validação (check, bank_slip, promissory_note) = "pending"
+      let paymentStatus = paymentData.status || "pending";
+      
+      if (paymentData.type === "sale" && 
+          ["cash", "pix", "debit", "credit", "mercado_pago"].includes(paymentData.paymentMethod)) {
+        paymentStatus = "completed";
+      }
+
       // Criar pagamento
       const payment = await this.paymentRepository.create({
         ...paymentData,
         paymentMethod: normalizedMethod as any,
         cashRegisterId,
-        date: paymentData.date || new Date()
+        date: paymentData.date || new Date(),
+        status: paymentStatus
       });
 
-      // Invalidar cache
-      this.invalidateCache([
-        `payments_${new Date().toDateString()}`,
-        `daily_payments_${new Date().toDateString()}`,
-        "payments_all"
-      ]);
+      // Se há um pedido associado, atualizar o status de pagamento do pedido
+      if (payment.orderId && payment._id) {
+        try {
+          console.log(`[PaymentService] Atualizando status do pedido ${payment.orderId} com pagamento ${payment._id}`);
+          console.log(`[PaymentService] Pagamento criado com status: ${payment.status}`);
+          console.log(`[PaymentService] Valor do pagamento: ${payment.amount}`);
+          
+          const { PaymentStatusService } = await import('./PaymentStatusService');
+          const paymentStatusService = new PaymentStatusService();
+          
+          await paymentStatusService.updateOrderPaymentStatus(
+            payment.orderId.toString(),
+            payment._id.toString(),
+            payment.amount,
+            payment.paymentMethod,
+            'add'
+          );
+          
+          console.log(`[PaymentService] Status do pedido ${payment.orderId} atualizado com sucesso`);
+        } catch (error) {
+          console.error('Erro ao atualizar status do pedido:', error);
+          // Não vamos falhar o pagamento por causa disso, apenas logar o erro
+        }
+      }
+
+      // Invalidar cache completamente
+      this.cache.flushAll(); // Limpar todo o cache para garantir dados frescos
+      
+      console.log(`[PaymentService] Cache invalidado após criação do pagamento ${payment._id}`);
 
       return payment;
     } catch (error) {

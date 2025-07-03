@@ -36,6 +36,7 @@ export const QUERY_KEYS = {
     PAGINATED: (page = 1, filters = {}) => ['orders', 'list', page, JSON.stringify(filters)],
     DETAIL: (id: string) => ['orders', 'detail', id],
     CLIENT: (clientId: string) => ["orders", "client", clientId],
+    PROFILE_ALL: (userId: string, userRole: string) => ["orders", "profile-all", userId, userRole],
     DAILY: ["orders", "daily"],
     NEXT_SERVICE_ORDER: ["orders", "next-service-order"],
   },

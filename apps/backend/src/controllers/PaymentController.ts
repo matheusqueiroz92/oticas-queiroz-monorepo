@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import { PaymentService, PaymentError } from "../services/PaymentService";
+import { OrderService } from "../services/OrderService";
 import type { JwtPayload } from "jsonwebtoken";
 import type { IPayment } from "../interfaces/IPayment";
 import { z } from "zod";
@@ -12,9 +13,11 @@ interface AuthRequest extends Request {
 
 export class PaymentController {
   private paymentService: PaymentService;
+  private orderService: OrderService;
 
   constructor() {
     this.paymentService = new PaymentService();
+    this.orderService = new OrderService();
   }
 
   async createPayment(req: AuthRequest, res: Response): Promise<void> {
@@ -588,5 +591,157 @@ export class PaymentController {
         details: error instanceof Error ? error.message : "Erro desconhecido"
       });
     }
-  }  
+  }
+
+  /**
+   * DEBUG: Verificar dados do pagamento e pedido no MongoDB
+   */
+  async debugPaymentOrder(req: Request, res: Response) {
+    try {
+      const { orderId } = req.params;
+      console.log(`[DEBUG] Verificando dados para pedido: ${orderId}`);
+
+      // Buscar o pedido
+      const orderResult = await this.orderService.getOrderById(orderId);
+      console.log(`[DEBUG] Pedido encontrado:`, {
+        id: orderResult._id,
+        paymentStatus: orderResult.paymentStatus,
+        totalPrice: orderResult.totalPrice,
+        finalPrice: orderResult.finalPrice,
+        paymentHistory: orderResult.paymentHistory
+      });
+
+      // Buscar pagamentos do pedido diretamente
+      const payments = await this.paymentService.getAllPayments(1, 100, { orderId });
+      console.log(`[DEBUG] Pagamentos encontrados: ${payments.payments.length}`);
+      
+      payments.payments.forEach((payment, index) => {
+        console.log(`[DEBUG] Pagamento ${index + 1}:`, {
+          _id: payment._id,
+          orderId: payment.orderId,
+          amount: payment.amount,
+          status: payment.status,
+          type: payment.type,
+          paymentMethod: payment.paymentMethod,
+          date: payment.date
+        });
+      });
+
+      // Calcular totais manualmente
+      const completedPayments = payments.payments.filter(p => p.status === "completed");
+      const totalPaid = completedPayments.reduce((sum, p) => sum + p.amount, 0);
+      
+      console.log(`[DEBUG] Análise de pagamentos:`, {
+        totalPayments: payments.payments.length,
+        completedPayments: completedPayments.length,
+        totalPaid,
+        totalPrice: orderResult.totalPrice,
+        shouldBePaid: totalPaid >= orderResult.totalPrice
+      });
+
+      res.json({
+        success: true,
+        data: {
+          order: {
+            _id: orderResult._id,
+            paymentStatus: orderResult.paymentStatus,
+            totalPrice: orderResult.totalPrice,
+            finalPrice: orderResult.finalPrice,
+            paymentHistory: orderResult.paymentHistory
+          },
+          payments: payments.payments.map(p => ({
+            _id: p._id,
+            orderId: p.orderId,
+            amount: p.amount,
+            status: p.status,
+            type: p.type,
+            paymentMethod: p.paymentMethod,
+            date: p.date
+          })),
+          analysis: {
+            totalPayments: payments.payments.length,
+            completedPayments: completedPayments.length,
+            totalPaid,
+            totalPrice: orderResult.totalPrice,
+            shouldBePaid: totalPaid >= orderResult.totalPrice
+          }
+        }
+      });
+    } catch (error) {
+      console.error('[DEBUG] Erro:', error);
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
+  }
+
+  /**
+   * DEBUG: Corrigir status de um pagamento específico
+   */
+  async fixPaymentStatus(req: Request, res: Response) {
+    try {
+      const { paymentId } = req.params;
+      console.log(`[DEBUG] Corrigindo status do pagamento: ${paymentId}`);
+
+      // Buscar o pagamento
+      const payment = await this.paymentService.getPaymentById(paymentId);
+      console.log(`[DEBUG] Pagamento encontrado:`, {
+        _id: payment._id,
+        status: payment.status,
+        type: payment.type,
+        paymentMethod: payment.paymentMethod,
+        amount: payment.amount
+      });
+
+      // Atualizar status para completed se for uma venda com método instantâneo
+      if (payment.type === "sale" && 
+          ["cash", "pix", "debit", "credit", "mercado_pago"].includes(payment.paymentMethod)) {
+        
+        // Usar o repositório diretamente para atualizar
+        const updatedPayment = await this.paymentService['paymentRepository'].update(paymentId, {
+          status: "completed"
+        });
+
+        console.log(`[DEBUG] Status atualizado para: completed`);
+
+        // Se há um pedido associado, recalcular o status
+        if (payment.orderId) {
+          const { PaymentStatusService } = await import('../services/PaymentStatusService');
+          const paymentStatusService = new PaymentStatusService();
+          
+          await paymentStatusService.updateOrderPaymentStatus(payment.orderId);
+          console.log(`[DEBUG] Status do pedido ${payment.orderId} recalculado`);
+        }
+
+        res.json({
+          success: true,
+          message: "Status do pagamento corrigido com sucesso",
+          data: {
+            paymentId,
+            oldStatus: payment.status,
+            newStatus: "completed",
+            orderId: payment.orderId
+          }
+        });
+      } else {
+        res.json({
+          success: false,
+          message: "Pagamento não precisa de correção",
+          data: {
+            paymentId,
+            status: payment.status,
+            type: payment.type,
+            paymentMethod: payment.paymentMethod
+          }
+        });
+      }
+    } catch (error) {
+      console.error('[DEBUG] Erro ao corrigir status:', error);
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
+  }
 }
