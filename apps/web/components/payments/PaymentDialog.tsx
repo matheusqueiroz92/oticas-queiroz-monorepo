@@ -15,6 +15,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogOverlay,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,9 +42,9 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Checkbox } from "@/components/ui/checkbox";
 import { usePayments } from "@/hooks/usePayments";
 import { useToast } from "@/hooks/useToast";
+import { handleError, showSuccess } from "@/app/_utils/error-handler";
 import { IPayment, PaymentType, PaymentMethod, PaymentStatus } from "@/app/_types/payment";
 import { formatCurrency, formatDate } from "@/app/_utils/formatters";
 import ClientSearch from "@/components/orders/ClientSearch";
@@ -51,6 +52,7 @@ import type { User as UserType } from "@/app/_types/user";
 import type { LegacyClient } from "@/app/_types/legacy-client";
 import type { Order } from "@/app/_types/order";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 // Schema de validação para pagamentos - CORRIGIDO
 const paymentSchema = z.object({
@@ -330,19 +332,19 @@ export function PaymentDialog({
           // Mostrar tela de confirmação
           setShowSuccessScreen(true);
           
-          toast({
-            title: "Sucesso",
-            description: "Pagamento criado com sucesso",
-          });
+          showSuccess(
+            "Pagamento criado com sucesso",
+            "Pagamento registrado e processado no sistema"
+          );
         }
       }
     } catch (error) {
       console.error('Erro ao criar pagamento:', error);
-      toast({
-        title: "Erro",
-        description: error instanceof Error ? error.message : `Erro ao ${isEditMode ? 'atualizar' : 'criar'} pagamento`,
-        variant: "destructive",
-      });
+      handleError(
+        error,
+        `Erro ao ${isEditMode ? 'atualizar' : 'criar'} pagamento`,
+        true // Mostrar detalhes do erro
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -407,9 +409,17 @@ export function PaymentDialog({
     { value: "mercado_pago", label: "Mercado Pago" },
   ];
 
+  const getPaymentTypeText = () => {
+    const type = form.watch("type");
+    const options = getPaymentTypeOptions();
+    const selectedOption = options.find(option => option.value === type);
+    return selectedOption ? selectedOption.label : type;
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+      <DialogOverlay className="bg-black/60" />
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         {showSuccessScreen && submittedPayment ? (
           <PaymentSuccessScreen
             submittedPayment={submittedPayment}
@@ -422,14 +432,14 @@ export function PaymentDialog({
         ) : (
           <>
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5" />
+              <DialogTitle className="text-2xl font-bold flex items-center gap-2">
+                <DollarSign className="w-6 h-6 text-[var(--primary-blue)]" />
                 {isEditMode ? 'Editar Pagamento' : 'Novo Pagamento'}
               </DialogTitle>
               <DialogDescription>
                 {isEditMode 
-                  ? 'Edite as informações do pagamento abaixo.'
-                  : 'Preencha as informações para registrar um novo pagamento.'
+                  ? 'Edite as informações do pagamento no sistema'
+                  : 'Cadastre um novo pagamento no sistema'
                 }
               </DialogDescription>
             </DialogHeader>
@@ -454,7 +464,7 @@ export function PaymentDialog({
                           step="0.01"
                           min="0"
                           placeholder="0,00"
-                          className="pl-10"
+                          className="pl-10 bg-background text-foreground border-border placeholder:text-muted-foreground"
                           {...field}
                           value={field.value === 0 ? "" : field.value}
                           onChange={(e) => {
@@ -603,7 +613,7 @@ export function PaymentDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Caixa Atual *</FormLabel>
-                    <div className="border rounded-md p-3 bg-gray-50">
+                    <div className="border rounded-md p-3 bg-background text-foreground border-border">
                       {isLoadingCashRegister ? (
                         <div className="flex items-center">
                           <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -629,7 +639,7 @@ export function PaymentDialog({
 
             {/* Seleção de Cliente - Apenas se não for despesa */}
             {watchedType !== "expense" && (
-              <div className="space-y-4 border p-4 rounded-md bg-gray-50">
+              <div className="space-y-4 border p-4 rounded-md bg-background text-foreground border-border">
                 {/* Header com título e pedidos no mesmo nível */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   {/* Coluna esquerda - Título, botões e campo de busca */}
@@ -922,7 +932,7 @@ export function PaymentDialog({
                   <FormControl>
                     <Textarea 
                       placeholder="Descrição ou observações sobre este pagamento..." 
-                      className="min-h-[80px]"
+                      className="min-h-[80px] bg-background text-foreground border-border placeholder:text-muted-foreground"
                       {...field} 
                     />
                   </FormControl>

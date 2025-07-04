@@ -23,22 +23,23 @@ export default function OrderStepProgress({
   return (
     <div className="w-full">
       {/* Barra de progresso principal */}
-      <div className="relative w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+      <div className="relative w-full h-4 bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200 rounded-full overflow-hidden shadow-sm">
         <div 
-          className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-500 ease-out"
+          className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-500 via-blue-400 to-blue-600 rounded-full transition-all duration-500 ease-out shadow-md"
           style={{ width: `${progressPercentage}%` }}
         />
-        
         {/* Indicadores de etapas */}
-        <div className="absolute top-0 left-0 w-full h-full flex justify-between items-center px-1">
+        <div className="absolute top-0 left-0 w-full h-full flex justify-between items-center px-2">
           {steps.map((step, index) => (
             <div
               key={step.id}
               className={`
-                w-4 h-4 rounded-full border-2 transition-all duration-300 cursor-pointer
-                ${index <= currentStep 
-                  ? 'bg-blue-600 border-blue-600 scale-110' 
-                  : 'bg-white border-gray-300'
+                w-7 h-7 flex items-center justify-center rounded-full border-2 transition-all duration-300 cursor-pointer shadow-md
+                ${index < currentStep 
+                  ? 'bg-green-500 border-green-500 scale-110' 
+                  : index === currentStep
+                    ? 'bg-blue-600 border-blue-600 scale-110'
+                    : 'bg-white border-gray-300'
                 }
               `}
               onClick={() => {
@@ -47,16 +48,17 @@ export default function OrderStepProgress({
                 }
               }}
             >
-              {index < currentStep && (
-                <CheckCircle2 className="w-3 h-3 text-white m-0.5" />
+              {index < currentStep ? (
+                <CheckCircle2 className="w-5 h-5 text-white" />
+              ) : (
+                <span className={`text-xs font-bold ${index === currentStep ? 'text-white' : 'text-gray-400'}`}>{index + 1}</span>
               )}
             </div>
           ))}
         </div>
       </div>
-      
       {/* Labels das etapas */}
-      <div className="flex justify-between mt-3">
+      <div className="flex justify-between mt-4">
         {steps.map((step, index) => (
           <div 
             key={step.id}
@@ -64,19 +66,16 @@ export default function OrderStepProgress({
             style={{ width: `${100/steps.length}%` }}
           >
             <span className={`
-              text-xs font-medium transition-colors duration-300
+              text-sm font-semibold transition-colors duration-300
               ${index === currentStep 
                 ? 'text-blue-600' 
                 : index < currentStep 
                   ? 'text-green-600' 
-                  : 'text-gray-500'
+                  : 'text-gray-400'
               }
             `}>
               {step.label}
             </span>
-            {index === currentStep && (
-              <div className="w-2 h-0.5 bg-blue-600 rounded-full mt-1" />
-            )}
           </div>
         ))}
       </div>

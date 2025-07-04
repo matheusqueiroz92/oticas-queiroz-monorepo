@@ -74,10 +74,10 @@ export default function ProfilePage() {
 
           {/* Coluna da direita - Pedidos recentes (equivalente a 3 StatCards) */}
           <div className="lg:col-span-3">
-            <RecentOrdersCard
+              <RecentOrdersCard
               orders={profileData.userOrdersForDisplay}
-              onViewDetails={handleViewOrderDetails}
-              isLoading={isLoadingOrders}
+                onViewDetails={handleViewOrderDetails}
+                isLoading={isLoadingOrders}
               getClientName={getClientName}
             />
           </div>

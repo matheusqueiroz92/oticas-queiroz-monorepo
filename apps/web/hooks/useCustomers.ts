@@ -72,11 +72,11 @@ export function useCustomers(options: UseCustomersOptions = {}) {
       return newFilters;
     });
   
-    setCurrentPage(1);
+      setCurrentPage(1);
   
-    queryClient.invalidateQueries({ 
-      queryKey: QUERY_KEYS.USERS.CUSTOMERS()
-    });
+      queryClient.invalidateQueries({ 
+        queryKey: QUERY_KEYS.USERS.CUSTOMERS() 
+      });
   }, [queryClient]);
 
   const debouncedSearch = useMemo(

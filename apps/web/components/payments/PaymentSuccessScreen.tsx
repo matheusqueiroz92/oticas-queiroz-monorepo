@@ -83,16 +83,16 @@ export default function PaymentSuccessScreen({
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header de Sucesso */}
-      <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
+      <Card className="bg-background border border-border shadow-sm">
         <CardContent className="pt-6">
           <div className="flex flex-col items-center text-center">
-            <div className="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-              <CheckCircle2 className="h-8 w-8 text-green-600" />
+            <div className="h-16 w-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mb-4">
+              <CheckCircle2 className="h-8 w-8 text-green-600 dark:text-green-400" />
             </div>
-            <h2 className="text-2xl font-bold text-green-800 mb-2">
+            <h2 className="text-2xl font-bold text-green-800 dark:text-green-300 mb-2">
               Pagamento Registrado com Sucesso!
             </h2>
-            <p className="text-green-600 mb-4">
+            <p className="text-green-600 dark:text-green-400 mb-4">
               O pagamento foi processado e registrado no sistema
             </p>
             

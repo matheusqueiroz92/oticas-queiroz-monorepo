@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogOverlay } from "@/components/ui/dialog";
 import { OrderForm } from "./OrderForm";
 import OrderSuccessScreen from "./OrderSuccessScreen";
 import type { OrderFormValues } from "@/app/_types/form-types";
@@ -11,9 +11,11 @@ import { useCustomers } from "@/hooks/useCustomers";
 import { useProducts } from "@/hooks/useProducts";
 import { useOrders } from "@/hooks/useOrders";
 import { useToast } from "@/hooks/useToast";
+import { handleError, showSuccess } from "@/app/_utils/error-handler";
 import { useQueryClient } from "@tanstack/react-query";
 import { QUERY_KEYS } from "@/app/_constants/query-keys";
 import Cookies from "js-cookie";
+import { FilePlus, PackagePlus } from "lucide-react";
 
 interface OrderDialogProps {
   open: boolean;
@@ -206,20 +208,20 @@ export const OrderDialog: React.FC<OrderDialogProps> = ({ open, onOpenChange, or
         setCreatedOrder(newOrder);
         setShowSuccessScreen(true);
         
-        toast({
-          title: "Sucesso",
-          description: "Pedido criado com sucesso!",
-        });
+        showSuccess(
+          "Pedido criado com sucesso!",
+          `Pedido criado e registrado no sistema`
+        );
       }
       
     } catch (error) {
       console.error("=== ERRO AO PROCESSAR PEDIDO ===");
       console.error("Erro:", error);
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: error instanceof Error ? error.message : "Não foi possível processar o pedido. Tente novamente.",
-      });
+      handleError(
+        error,
+        "Erro ao criar pedido",
+        true // Mostrar detalhes do erro
+      );
     }
   };
   
@@ -259,18 +261,22 @@ export const OrderDialog: React.FC<OrderDialogProps> = ({ open, onOpenChange, or
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
+      <DialogOverlay className="bg-black/60" />
       <DialogContent className="max-w-5xl w-full overflow-y-auto max-h-[90vh] p-0 border-0">
-        <DialogHeader className="sr-only">
-          <DialogTitle>
-            {mode === "edit" ? "Editar Pedido" : "Novo Pedido"}
-          </DialogTitle>
-          <DialogDescription>
-            {mode === "edit" 
-              ? "Edite as informações do pedido existente" 
-              : "Preencha as informações para criar um novo pedido"
-            }
-          </DialogDescription>
-        </DialogHeader>
+        <div className="p-6 pb-2">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold flex items-center gap-2">
+              <FilePlus className="w-6 h-6 text-[var(--primary-blue)]" />
+              {mode === "edit" ? "Editar Pedido" : "Novo Pedido"}
+            </DialogTitle>
+            <DialogDescription>
+              {mode === "edit" 
+                ? "Edite as informações do pedido no sistema" 
+                : "Cadastre um novo pedido no sistema"
+              }
+            </DialogDescription>
+          </DialogHeader>
+        </div>
         
         {showSuccessScreen && createdOrder ? (
           <div className="p-6">

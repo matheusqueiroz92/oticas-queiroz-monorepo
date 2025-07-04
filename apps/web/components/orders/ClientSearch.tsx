@@ -163,7 +163,7 @@ export default function ClientSearch({
                       <li key={customer._id} className="p-0">
                         <button
                           type="button"
-                          className="w-full text-left px-3 py-2 hover:bg-slate-100 cursor-pointer"
+                          className="w-full text-left px-3 py-2 hover:bg-accent hover:text-accent-foreground cursor-pointer transition-colors"
                           onClick={() => handleSelectCustomer(customer)}
                           aria-label={`Selecionar cliente ${customer.name}`}
                         >

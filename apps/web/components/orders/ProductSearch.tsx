@@ -23,10 +23,17 @@ interface ProductSearchProps {
 }
 
 const productTypeTranslations: Record<string, string> = {
-  lenses: "Lentes",
-  clean_lenses: "Limpa-lentes",
-  prescription_frame: "Armação de grau",
-  sunglasses_frame: "Armação solar"
+  'lenses': 'Lentes',
+  'prescription_frame': 'Armação de Grau',
+  'sunglasses': 'Armação Solar',
+  'sunglasses_frame': 'Armação Solar',
+  'frame': 'Armação',
+  'contact_lenses': 'Lentes de Contato',
+  'accessories': 'Acessórios',
+  'cleaning_products': 'Limpa-lentes',
+  'clean_lenses': 'Limpa-lentes',
+  'cases': 'Estojo',
+  'others': 'Outros'
 };
 
 export default function ProductSearch({

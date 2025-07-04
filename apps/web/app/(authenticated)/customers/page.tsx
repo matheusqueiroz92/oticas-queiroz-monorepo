@@ -58,7 +58,7 @@ export default function CustomersPage() {
   } = useCustomers();
 
   const { calculateCustomerStats } = useCustomerUtils();
-
+  
   // Calcular estatísticas dos clientes atuais (filtrados)
   const stats = calculateCustomerStats(customers);
   

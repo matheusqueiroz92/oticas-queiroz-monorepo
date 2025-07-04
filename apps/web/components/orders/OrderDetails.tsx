@@ -46,6 +46,7 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
   const [client, setClient] = useState<any>(null);
   const [employee, setEmployee] = useState<any>(null);
   const [laboratoryInfo, setLaboratoryInfo] = useState<any>(null);
+  const [isDark, setIsDark] = useState(false);
   
   const { toast } = useToast();
   const router = useRouter();
@@ -81,6 +82,23 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
     
     fetchDetails();
   }, [order, fetchOrderComplementaryDetails, toast]);
+
+  // Detectar mudanças de tema
+  useEffect(() => {
+    const checkTheme = () => {
+      const isDarkMode = document.documentElement.classList.contains('dark');
+      setIsDark(isDarkMode);
+    };
+
+    checkTheme();
+    const observer = new MutationObserver(checkTheme);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+
+    return () => observer.disconnect();
+  }, []);
 
   const hasPrescriptionData = order.prescriptionData && 
     order.prescriptionData.leftEye && 
@@ -146,7 +164,12 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
         
         <CardContent className="p-0 card-content">
           <Tabs defaultValue="details" className="w-full">
-            <TabsList className="w-full bg-gray-50 border-b p-0 rounded-none h-12 tabs-list">
+            <TabsList 
+              className="w-full border-b p-0 rounded-none h-12 tabs-list"
+              style={{ 
+                backgroundColor: isDark ? '#1f2937' : '#f9fafb'
+              }}
+            >
               <TabsTrigger value="details" className="text-sm flex items-center gap-1 rounded-none h-12 border-b-2 border-transparent data-[state=active]:border-primary">
                 <ShoppingBag className="h-4 w-4" />
                 Detalhes
@@ -184,13 +207,25 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
                           </p>
                           {client && (
                             <>
-                              <p className="text-gray-600 flex items-center gap-2">
-                                <Mail className="h-4 w-4 text-gray-400" /> 
+                              <p 
+                                className="flex items-center gap-2"
+                                style={{ color: isDark ? '#9ca3af' : '#4b5563' }}
+                              >
+                                <Mail 
+                                  className="h-4 w-4" 
+                                  style={{ color: isDark ? '#6b7280' : '#9ca3af' }}
+                                /> 
                                 {client.email}
                               </p>
                               {client.phone && (
-                                <p className="text-gray-600 flex items-center gap-2">
-                                  <Phone className="h-4 w-4 text-gray-400" /> 
+                                <p 
+                                  className="flex items-center gap-2"
+                                  style={{ color: isDark ? '#9ca3af' : '#4b5563' }}
+                                >
+                                  <Phone 
+                                    className="h-4 w-4" 
+                                    style={{ color: isDark ? '#6b7280' : '#9ca3af' }}
+                                  /> 
                                   {client.phone}
                                 </p>
                               )}
@@ -214,8 +249,14 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
                             {employee ? employee.name : "Vendedor não encontrado"}
                           </p>
                           {employee && (
-                            <p className="text-gray-600 flex items-center gap-2">
-                              <Mail className="h-4 w-4 text-gray-400" /> 
+                            <p 
+                              className="flex items-center gap-2"
+                              style={{ color: isDark ? '#9ca3af' : '#4b5563' }}
+                            >
+                              <Mail 
+                                className="h-4 w-4" 
+                                style={{ color: isDark ? '#6b7280' : '#9ca3af' }}
+                              /> 
                               {employee.email}
                             </p>
                           )}
@@ -235,43 +276,95 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
                     <CardContent className="p-0">
                       <div className="overflow-hidden border-t">
                         <table className="w-full">
-                          <thead className="bg-gray-50 text-sm">
+                          <thead 
+                            className="text-sm"
+                            style={{ backgroundColor: isDark ? '#374151' : '#f9fafb' }}
+                          >
                             <tr className="border-b">
-                              <th className="text-left font-medium p-3">Produto</th>
-                              <th className="text-left font-medium p-3">Tipo</th>
-                              <th className="text-right font-medium p-3">Preço</th>
+                              <th 
+                                className="text-left font-medium p-3"
+                                style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                              >
+                                Produto
+                              </th>
+                              <th 
+                                className="text-left font-medium p-3"
+                                style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                              >
+                                Tipo
+                              </th>
+                              <th 
+                                className="text-right font-medium p-3"
+                                style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                              >
+                                Preço
+                              </th>
                             </tr>
                           </thead>
                           <tbody className="text-sm">
                             {products.map((product: any, index: number) => (
                               <tr key={product._id || index} className="border-b">
-                                <td className="p-3 font-medium">{product.name}</td>
-                                <td className="p-3 text-gray-600">{getProductTypeLabel(product.productType)}</td>
-                                <td className="p-3 text-right">{formatCurrency(product.sellPrice || 0)}</td>
+                                <td 
+                                  className="p-3 font-medium"
+                                  style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                                >
+                                  {product.name}
+                                </td>
+                                <td 
+                                  className="p-3"
+                                  style={{ color: isDark ? '#9ca3af' : '#4b5563' }}
+                                >
+                                  {getProductTypeLabel(product.productType)}
+                                </td>
+                                <td 
+                                  className="p-3 text-right"
+                                  style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                                >
+                                  {formatCurrency(product.sellPrice || 0)}
+                                </td>
                               </tr>
                             ))}
                           </tbody>
                         </table>
 
-                        <div className="p-4 bg-gray-50">
+                        <div 
+                          className="p-4"
+                          style={{ backgroundColor: isDark ? '#374151' : '#f9fafb' }}
+                        >
                           <div className="flex justify-between items-center text-sm">
-                            <span className="text-gray-600">Subtotal:</span>
-                            <span>{formatCurrency(order.totalPrice)}</span>
+                            <span style={{ color: isDark ? '#9ca3af' : '#4b5563' }}>Subtotal:</span>
+                            <span style={{ color: isDark ? '#f9fafb' : '#111827' }}>{formatCurrency(order.totalPrice)}</span>
                           </div>
                           <div className="flex justify-between items-center text-sm mt-1">
-                            <span className="text-gray-600">Desconto:</span>
-                            <span className="text-red-600">-{formatCurrency(order.discount || 0)}</span>
+                            <span style={{ color: isDark ? '#9ca3af' : '#4b5563' }}>Desconto:</span>
+                            <span style={{ color: isDark ? '#f87171' : '#dc2626' }}>-{formatCurrency(order.discount || 0)}</span>
                           </div>
                           <div className="flex justify-between items-center font-medium text-base mt-3 pt-3 border-t">
-                            <span>Total:</span>
-                            <span className="text-green-700 text-lg">{formatCurrency(order.finalPrice || order.totalPrice)}</span>
+                            <span style={{ color: isDark ? '#f9fafb' : '#111827' }}>Total:</span>
+                            <span 
+                              className="text-lg"
+                              style={{ color: isDark ? '#22c55e' : '#16a34a' }}
+                            >
+                              {formatCurrency(order.finalPrice || order.totalPrice)}
+                            </span>
                           </div>
                         </div>
 
                         {order.observations && (
                           <div className="p-4 border-t">
-                            <p className="text-sm font-medium mb-2">Observações:</p>
-                            <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
+                            <p 
+                              className="text-sm font-medium mb-2"
+                              style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                            >
+                              Observações:
+                            </p>
+                            <p 
+                              className="text-sm p-3 rounded"
+                              style={{ 
+                                color: isDark ? '#9ca3af' : '#4b5563',
+                                backgroundColor: isDark ? '#374151' : '#f9fafb'
+                              }}
+                            >
                               {order.observations}
                             </p>
                           </div>
@@ -296,7 +389,7 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
                       <div className="text-sm space-y-3">
                         <div className="flex items-center gap-3">
                           <StatusBadge status={order.status} />
-                          <span className="text-gray-600">
+                          <span style={{ color: isDark ? '#9ca3af' : '#4b5563' }}>
                             {order.status === "pending" && "O pedido está aguardando processamento"}
                             {order.status === "in_production" && "O pedido está sendo produzido"}
                             {order.status === "ready" && "O pedido está pronto para retirada"}
@@ -306,8 +399,18 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
                         </div>
                         
                         {order.status === "pending" && !order.laboratoryId && (
-                          <div className="mt-3 p-3 bg-yellow-50 border border-yellow-100 rounded text-sm text-yellow-700 flex items-center gap-2">
-                            <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                          <div 
+                            className="mt-3 p-3 border rounded text-sm flex items-center gap-2"
+                            style={{
+                              backgroundColor: isDark ? '#451a03' : '#fefce8',
+                              borderColor: isDark ? '#92400e' : '#fde047',
+                              color: isDark ? '#fbbf24' : '#a16207'
+                            }}
+                          >
+                            <AlertTriangle 
+                              className="h-4 w-4" 
+                              style={{ color: isDark ? '#fbbf24' : '#eab308' }}
+                            />
                             <span>
                               Para mudar o status para "Em Produção", associe um laboratório a este pedido.
                             </span>
@@ -315,19 +418,41 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
                         )}
                         
                         <div className="flex items-center gap-3 mt-3">
-                          <div className="flex items-center gap-2 text-gray-600">
-                            <CalendarDays className="h-4 w-4 text-gray-400" />
+                          <div 
+                            className="flex items-center gap-2"
+                            style={{ color: isDark ? '#9ca3af' : '#4b5563' }}
+                          >
+                            <CalendarDays 
+                              className="h-4 w-4" 
+                              style={{ color: isDark ? '#6b7280' : '#9ca3af' }}
+                            />
                             <span>Data do pedido:</span>
                           </div>
-                          <span className="font-medium">{formatDate(order.orderDate)}</span>
+                          <span 
+                            className="font-medium"
+                            style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                          >
+                            {formatDate(order.orderDate)}
+                          </span>
                         </div>
                         
                         <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-2 text-gray-600">
-                            <CalendarDays className="h-4 w-4 text-gray-400" />
+                          <div 
+                            className="flex items-center gap-2"
+                            style={{ color: isDark ? '#9ca3af' : '#4b5563' }}
+                          >
+                            <CalendarDays 
+                              className="h-4 w-4" 
+                              style={{ color: isDark ? '#6b7280' : '#9ca3af' }}
+                            />
                             <span>Data de entrega:</span>
                           </div>
-                          <span className="font-medium">{formatDate(order.deliveryDate)}</span>
+                          <span 
+                            className="font-medium"
+                            style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                          >
+                            {formatDate(order.deliveryDate)}
+                          </span>
                         </div>
                       </div>
                     </CardContent>
@@ -346,7 +471,7 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
                     <CardContent className="p-4 pt-2">
                       <div className="space-y-3 text-sm">
                         <div className="flex justify-between items-center">
-                          <span className="text-gray-600">Status do Pagamento:</span>
+                          <span style={{ color: isDark ? '#9ca3af' : '#4b5563' }}>Status do Pagamento:</span>
                           <Badge
                             className={getPaymentStatusBadge(order.paymentStatus).className}
                             style={{ pointerEvents: 'none' }} 
@@ -355,40 +480,50 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
                           </Badge>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-gray-600">Método:</span>
-                          <span className="font-medium">{getPaymentMethodText(order.paymentMethod)}</span>
+                          <span style={{ color: isDark ? '#9ca3af' : '#4b5563' }}>Método:</span>
+                          <span 
+                            className="font-medium"
+                            style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                          >
+                            {getPaymentMethodText(order.paymentMethod)}
+                          </span>
                         </div>
                         
                         {(order.paymentEntry || 0) > 0 && (
                           <div className="flex justify-between items-center">
-                            <span className="text-gray-600">Entrada:</span>
-                            <span>{formatCurrency(order.paymentEntry || 0)}</span>
+                            <span style={{ color: isDark ? '#9ca3af' : '#4b5563' }}>Entrada:</span>
+                            <span style={{ color: isDark ? '#f9fafb' : '#111827' }}>{formatCurrency(order.paymentEntry || 0)}</span>
                           </div>
                         )}
                         
                         {(order.installments || 0) > 0 && (
                           <div className="flex justify-between items-center">
-                            <span className="text-gray-600">Parcelas:</span>
-                            <span>{order.installments}x</span>
+                            <span style={{ color: isDark ? '#9ca3af' : '#4b5563' }}>Parcelas:</span>
+                            <span style={{ color: isDark ? '#f9fafb' : '#111827' }}>{order.installments}x</span>
                           </div>
                         )}
                         
                         <div className="pt-3 mt-3 border-t">
                           <div className="flex justify-between items-center">
-                            <span className="text-gray-600">Subtotal:</span>
-                            <span>{formatCurrency(order.totalPrice || 0)}</span>
+                            <span style={{ color: isDark ? '#9ca3af' : '#4b5563' }}>Subtotal:</span>
+                            <span style={{ color: isDark ? '#f9fafb' : '#111827' }}>{formatCurrency(order.totalPrice || 0)}</span>
                           </div>
                           
                           {(order.discount || 0) > 0 && (
                             <div className="flex justify-between items-center">
-                              <span className="text-gray-600">Desconto:</span>
-                              <span className="text-red-600">-{formatCurrency(order.discount || 0)}</span>
+                              <span style={{ color: isDark ? '#9ca3af' : '#4b5563' }}>Desconto:</span>
+                              <span style={{ color: isDark ? '#f87171' : '#dc2626' }}>-{formatCurrency(order.discount || 0)}</span>
                             </div>
                           )}
                           
                           <div className="flex justify-between items-center font-medium text-base mt-3 pt-3 border-t">
-                            <span>Total:</span>
-                            <span className="text-green-700 text-lg">{formatCurrency(order.finalPrice || order.totalPrice || 0)}</span>
+                            <span style={{ color: isDark ? '#f9fafb' : '#111827' }}>Total:</span>
+                            <span 
+                              className="text-lg"
+                              style={{ color: isDark ? '#22c55e' : '#16a34a' }}
+                            >
+                              {formatCurrency(order.finalPrice || order.totalPrice || 0)}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -411,18 +546,30 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
                     Receita Médica
                   </h3>
                 </div>
-                <div className="bg-gray-50 p-5 rounded-md border shadow-sm">
+                <div 
+                  className="p-5 rounded-md border shadow-sm"
+                  style={{ backgroundColor: isDark ? '#374151' : '#f9fafb' }}
+                >
                   <div className="space-y-5">
                     <div className="grid grid-cols-3 gap-4">
-                      <p className="text-sm">
+                      <p 
+                        className="text-sm"
+                        style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                      >
                         <span className="font-semibold">Médico:</span>{" "}
                         {order.prescriptionData?.doctorName || "N/A"}
                       </p>
-                      <p className="text-sm">
+                      <p 
+                        className="text-sm"
+                        style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                      >
                         <span className="font-semibold">Clínica:</span>{" "}
                         {order.prescriptionData?.clinicName || "N/A"}
                       </p>
-                      <p className="text-sm">
+                      <p 
+                        className="text-sm"
+                        style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                      >
                         <span className="font-semibold">Data da Consulta:</span>{" "}
                         {formatDate(order.prescriptionData?.appointmentDate)}
                       </p>
@@ -430,102 +577,230 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
 
                     {/* Tabela de receita */}
                     <div className="mt-4 overflow-x-auto">
-                      <table className="min-w-full bg-white border border-gray-200 text-sm shadow-sm">
+                      <table 
+                        className="min-w-full border text-sm shadow-sm"
+                        style={{ 
+                          backgroundColor: isDark ? '#1f2937' : '#ffffff',
+                          borderColor: isDark ? '#374151' : '#d1d5db'
+                        }}
+                      >
                         <thead>
-                          <tr className="bg-gray-100">
-                            <th className="py-3 px-4 text-left">Olho</th>
-                            <th className="py-3 px-4 text-center">Esf.</th>
-                            <th className="py-3 px-4 text-center">Cil.</th>
-                            <th className="py-3 px-4 text-center">Eixo</th>
-                            <th className="py-3 px-4 text-center">DP</th>
+                          <tr style={{ backgroundColor: isDark ? '#374151' : '#f3f4f6' }}>
+                            <th 
+                              className="py-3 px-4 text-left"
+                              style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                            >
+                              Olho
+                            </th>
+                            <th 
+                              className="py-3 px-4 text-center"
+                              style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                            >
+                              Esf.
+                            </th>
+                            <th 
+                              className="py-3 px-4 text-center"
+                              style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                            >
+                              Cil.
+                            </th>
+                            <th 
+                              className="py-3 px-4 text-center"
+                              style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                            >
+                              Eixo
+                            </th>
+                            <th 
+                              className="py-3 px-4 text-center"
+                              style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                            >
+                              DP
+                            </th>
                           </tr>
                         </thead>
                         <tbody>
                           {order.prescriptionData?.leftEye && (
-                            <tr className="border-t border-gray-200">
-                              <td className="py-3 px-4 font-medium">
+                            <tr className="border-t">
+                              <td 
+                                className="py-3 px-4 font-medium"
+                                style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                              >
                                 Esquerdo
                               </td>
-                              <td className="py-3 px-4 text-center">
+                              <td 
+                                className="py-3 px-4 text-center"
+                                style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                              >
                                 {formatDioptriaDisplay(order.prescriptionData.leftEye.sph?.toString()) || "N/A"}
                               </td>
-                              <td className="py-3 px-4 text-center">
+                              <td 
+                                className="py-3 px-4 text-center"
+                                style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                              >
                                 {formatDioptriaDisplay(order.prescriptionData.leftEye.cyl?.toString()) || "N/A"}
                               </td>
-                              <td className="py-3 px-4 text-center">
+                              <td 
+                                className="py-3 px-4 text-center"
+                                style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                              >
                                 {order.prescriptionData.leftEye.axis || "N/A"}°
                               </td>
-                              <td className="py-3 px-4 text-center">
+                              <td 
+                                className="py-3 px-4 text-center"
+                                style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                              >
                                 {order.prescriptionData.leftEye.pd || "N/A"}
                               </td>
                             </tr>
                           )}
 
                           {order.prescriptionData?.rightEye && (
-                            <tr className="border-t border-gray-200">
-                              <td className="py-3 px-4 font-medium">
+                            <tr className="border-t">
+                              <td 
+                                className="py-3 px-4 font-medium"
+                                style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                              >
                                 Direito
                               </td>
-                              <td className="py-3 px-4 text-center">
+                              <td 
+                                className="py-3 px-4 text-center"
+                                style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                              >
                                 {formatDioptriaDisplay(order.prescriptionData.rightEye.sph?.toString()) || "N/A"}
                               </td>
-                              <td className="py-3 px-4 text-center">
+                              <td 
+                                className="py-3 px-4 text-center"
+                                style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                              >
                                 {formatDioptriaDisplay(order.prescriptionData.rightEye.cyl?.toString()) || "N/A"}
                               </td>
-                              <td className="py-3 px-4 text-center">
+                              <td 
+                                className="py-3 px-4 text-center"
+                                style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                              >
                                 {order.prescriptionData.rightEye.axis || "N/A"}°
                               </td>
-                              <td className="py-3 px-4 text-center">
+                              <td 
+                                className="py-3 px-4 text-center"
+                                style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                              >
                                 {order.prescriptionData.rightEye.pd || "N/A"}
                               </td>
                             </tr>
                           )}
                         </tbody>
                         <tfoot>
-                          <tr className="bg-gray-100">
-                            <th className="py-3 px-4 text-left" colSpan={5}>
+                          <tr style={{ backgroundColor: isDark ? '#374151' : '#f3f4f6' }}>
+                            <th 
+                              className="py-3 px-4 text-left"
+                              colSpan={5}
+                              style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                            >
                               Informações adicionais
                             </th>
                           </tr>
                           <tr>
-                            <td className="py-3 px-4 font-medium">D.N.P.</td>
-                            <td className="py-3 px-4 text-center" colSpan={4}>
+                            <td 
+                              className="py-3 px-4 font-medium"
+                              style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                            >
+                              D.N.P.
+                            </td>
+                            <td 
+                              className="py-3 px-4 text-center" 
+                              colSpan={4}
+                              style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                            >
                               {order.prescriptionData?.nd || "N/A"}
                             </td>
                           </tr>
                           <tr>
-                            <td className="py-3 px-4 font-medium">C.O.</td>
-                            <td className="py-3 px-4 text-center" colSpan={4}>
+                            <td 
+                              className="py-3 px-4 font-medium"
+                              style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                            >
+                              C.O.
+                            </td>
+                            <td 
+                              className="py-3 px-4 text-center" 
+                              colSpan={4}
+                              style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                            >
                               {order.prescriptionData?.oc || "N/A"}
                             </td>
                           </tr>
                           <tr>
-                            <td className="py-3 px-4 font-medium">Adição</td>
-                            <td className="py-3 px-4 text-center" colSpan={4}>
+                            <td 
+                              className="py-3 px-4 font-medium"
+                              style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                            >
+                              Adição
+                            </td>
+                            <td 
+                              className="py-3 px-4 text-center" 
+                              colSpan={4}
+                              style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                            >
                               {order.prescriptionData?.addition || "N/A"}
                             </td>
                           </tr>
                           <tr>
-                            <td className="py-3 px-4 font-medium">Ponte</td>
-                            <td className="py-3 px-4 text-center" colSpan={4}>
+                            <td 
+                              className="py-3 px-4 font-medium"
+                              style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                            >
+                              Ponte
+                            </td>
+                            <td 
+                              className="py-3 px-4 text-center" 
+                              colSpan={4}
+                              style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                            >
                               {order.prescriptionData?.bridge || "N/A"}
                             </td>
                           </tr>
                           <tr>
-                            <td className="py-3 px-4 font-medium">Aro</td>
-                            <td className="py-3 px-4 text-center" colSpan={4}>
+                            <td 
+                              className="py-3 px-4 font-medium"
+                              style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                            >
+                              Aro
+                            </td>
+                            <td 
+                              className="py-3 px-4 text-center" 
+                              colSpan={4}
+                              style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                            >
                               {order.prescriptionData?.rim || "N/A"}
                             </td>
                           </tr>
                           <tr>
-                            <td className="py-3 px-4 font-medium">AV</td>
-                            <td className="py-3 px-4 text-center" colSpan={4}>
+                            <td 
+                              className="py-3 px-4 font-medium"
+                              style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                            >
+                              AV
+                            </td>
+                            <td 
+                              className="py-3 px-4 text-center" 
+                              colSpan={4}
+                              style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                            >
                               {order.prescriptionData?.vh || "N/A"}
                             </td>
                           </tr>
                           <tr>
-                            <td className="py-3 px-4 font-medium">AM</td>
-                            <td className="py-3 px-4 text-center" colSpan={4}>
+                            <td 
+                              className="py-3 px-4 font-medium"
+                              style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                            >
+                              AM
+                            </td>
+                            <td 
+                              className="py-3 px-4 text-center" 
+                              colSpan={4}
+                              style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                            >
                               {order.prescriptionData?.sh || "N/A"}
                             </td>
                           </tr>
@@ -559,18 +834,30 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
                       <div className="grid grid-cols-2 gap-6 text-sm">
                         <div className="space-y-3">
                           <div>
-                            <p className="text-gray-600">Nome:</p>
-                            <p className="font-medium flex items-center gap-2 text-base">
-                              <Building className="h-4 w-4 text-gray-400" />
+                            <p style={{ color: isDark ? '#9ca3af' : '#4b5563' }}>Nome:</p>
+                            <p 
+                              className="font-medium flex items-center gap-2 text-base"
+                              style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                            >
+                              <Building 
+                                className="h-4 w-4" 
+                                style={{ color: isDark ? '#6b7280' : '#9ca3af' }}
+                              />
                               {laboratoryInfo.name}
                             </p>
                           </div>
                           
                           {laboratoryInfo.contactName && (
                             <div>
-                              <p className="text-gray-600">Contato:</p>
-                              <p className="font-medium flex items-center gap-2">
-                                <User className="h-4 w-4 text-gray-400" />
+                              <p style={{ color: isDark ? '#9ca3af' : '#4b5563' }}>Contato:</p>
+                              <p 
+                                className="font-medium flex items-center gap-2"
+                                style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                              >
+                                <User 
+                                  className="h-4 w-4" 
+                                  style={{ color: isDark ? '#6b7280' : '#9ca3af' }}
+                                />
                                 {laboratoryInfo.contactName}
                               </p>
                             </div>
@@ -578,9 +865,15 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
                           
                           {laboratoryInfo.phone && (
                             <div>
-                              <p className="text-gray-600">Telefone:</p>
-                              <p className="font-medium flex items-center gap-2">
-                                <Phone className="h-4 w-4 text-gray-400" />
+                              <p style={{ color: isDark ? '#9ca3af' : '#4b5563' }}>Telefone:</p>
+                              <p 
+                                className="font-medium flex items-center gap-2"
+                                style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                              >
+                                <Phone 
+                                  className="h-4 w-4" 
+                                  style={{ color: isDark ? '#6b7280' : '#9ca3af' }}
+                                />
                                 {laboratoryInfo.phone}
                               </p>
                             </div>
@@ -590,16 +883,22 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
                         <div className="space-y-3">
                           {laboratoryInfo.email && (
                             <div>
-                              <p className="text-gray-600">Email:</p>
-                              <p className="font-medium flex items-center gap-2">
-                                <Mail className="h-4 w-4 text-gray-400" />
+                              <p style={{ color: isDark ? '#9ca3af' : '#4b5563' }}>Email:</p>
+                              <p 
+                                className="font-medium flex items-center gap-2"
+                                style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                              >
+                                <Mail 
+                                  className="h-4 w-4" 
+                                  style={{ color: isDark ? '#6b7280' : '#9ca3af' }}
+                                />
                                 {laboratoryInfo.email}
                               </p>
                             </div>
                           )}
                           
                           <div>
-                            <p className="text-gray-600">Status:</p>
+                            <p style={{ color: isDark ? '#9ca3af' : '#4b5563' }}>Status:</p>
                             <div>
                               <Badge
                                 variant={laboratoryInfo.isActive ? "outline" : "destructive"}
@@ -612,9 +911,15 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
                           </div>
                           
                           <div>
-                            <p className="text-gray-600">Data de entrega prevista:</p>
-                            <p className="font-medium flex items-center gap-2">
-                              <CalendarDays className="h-4 w-4 text-gray-400" />
+                            <p style={{ color: isDark ? '#9ca3af' : '#4b5563' }}>Data de entrega prevista:</p>
+                            <p 
+                              className="font-medium flex items-center gap-2"
+                              style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                            >
+                              <CalendarDays 
+                                className="h-4 w-4" 
+                                style={{ color: isDark ? '#6b7280' : '#9ca3af' }}
+                              />
                               {formatDate(order.deliveryDate)}
                             </p>
                           </div>
@@ -624,12 +929,18 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
                   </Card>
                 </div>
               ) : (
-                <div className="bg-gray-50 p-5 rounded-md border shadow-sm text-sm">
+                <div 
+                  className="p-5 rounded-md border shadow-sm text-sm"
+                  style={{ backgroundColor: isDark ? '#374151' : '#f9fafb' }}
+                >
                   <div className="space-y-4">
-                    <p className="text-gray-600">
+                    <p style={{ color: isDark ? '#9ca3af' : '#4b5563' }}>
                       Nenhum laboratório associado a este pedido.
                     </p>
-                    <p className="mt-2">
+                    <p 
+                      className="mt-2"
+                      style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                    >
                       Use o botão "Associar Laboratório" para vincular um laboratório a este pedido.
                     </p>
                   </div>

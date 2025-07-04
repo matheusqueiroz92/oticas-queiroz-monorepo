@@ -470,4 +470,4 @@ Este software é **propriedade exclusiva da Óticas Queiroz** e seu uso é restr
 
 *Transformando a experiência de compra de óculos através da tecnologia.*
 
-&copy; 2025 Óticas Queiroz. Todos os direitos reservados. 
+&copy; 2025 Óticas Queiroz. Todos os direitos reservados.

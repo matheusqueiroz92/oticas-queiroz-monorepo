@@ -1,9 +1,9 @@
 "use client";
 
 import {
-  Plus,
+  FilePlus,
   UserPlus,
-  Package,
+  PackagePlus,
   HandCoins,
   FileText,
 } from "lucide-react";
@@ -32,9 +32,9 @@ export function DashboardQuickActions({
   closeDialog,
 }: DashboardQuickActionsProps) {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-5 xl:grid-cols-5 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-4 gap-4">
       <QuickActionButton
-        icon={Plus}
+        icon={FilePlus}
         title="Novo Pedido"
         description="Criar pedido"
         onClick={() => openDialog('orderDialogOpen')}
@@ -62,7 +62,7 @@ export function DashboardQuickActions({
       </QuickActionButton>
 
       <QuickActionButton
-        icon={Package}
+        icon={PackagePlus}
         title="Novo Produto"
         description="Cadastrar produto"
         onClick={() => openDialog('productDialogOpen')}
@@ -89,7 +89,7 @@ export function DashboardQuickActions({
         />
       </QuickActionButton>
 
-      <QuickActionButton
+      {/* <QuickActionButton
         icon={FileText}
         title="Novo Relatório"
         description="Gerar relatório"
@@ -101,7 +101,7 @@ export function DashboardQuickActions({
           onOpenChange={() => closeDialog('customerDialogOpen')}
           mode="create"
         />
-      </QuickActionButton>
+      </QuickActionButton> */}
     </div>
   );
 } 

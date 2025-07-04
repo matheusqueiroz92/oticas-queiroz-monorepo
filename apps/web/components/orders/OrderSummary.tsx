@@ -11,12 +11,13 @@ interface OrderSummaryProps {
 // Mapeamento de tipos de produtos para português
 const productTypeTranslations: { [key: string]: string } = {
   'lenses': 'Lentes',
-  'prescription_frame': 'Armação com Grau',
-  'sunglasses': 'Óculos de Sol',
+  'prescription_frame': 'Armação de Grau',
+  'sunglasses': 'Armação Solar',
   'frame': 'Armação',
   'contact_lenses': 'Lentes de Contato',
   'accessories': 'Acessórios',
-  'cleaning_products': 'Produtos de Limpeza',
+  'cleaning_products': 'Limpa-lentes',
+  'clean_lenses': 'Limpa-lentes',
   'cases': 'Estojo',
   'others': 'Outros'
 };
@@ -26,9 +27,11 @@ const translateProductType = (type: string): string => {
 };
 
 export default function OrderSummary({ form, selectedProducts }: OrderSummaryProps) {
-  const totalPrice = form.getValues("totalPrice") || 0;
+  // Calcular totalPrice diretamente dos produtos selecionados para evitar delay
+  const calculatedTotalPrice = selectedProducts.reduce((sum, product) => sum + (product.sellPrice || 0), 0);
+  const totalPrice = calculatedTotalPrice;
   const discount = form.getValues("discount") || 0;
-  const finalPrice = form.getValues("finalPrice") || 0;
+  const finalPrice = Math.max(0, totalPrice - discount);
   const serviceOrder = form.getValues("serviceOrder") as string | undefined;
 
   // Estado para detectar tema dark
@@ -53,6 +56,12 @@ export default function OrderSummary({ form, selectedProducts }: OrderSummaryPro
 
     return () => observer.disconnect();
   }, []);
+
+  // Sincronizar valores calculados com o formulário
+  useEffect(() => {
+    form.setValue("totalPrice", totalPrice);
+    form.setValue("finalPrice", finalPrice);
+  }, [totalPrice, finalPrice, form]);
 
   return (
         <div 

@@ -17,7 +17,7 @@ import { SalesChart } from "@/components/dashboard/SalesChart";
 import { useDashboard } from "@/hooks/useDashboard";
 
 export default function DashboardPage() {
-  const {
+  const { 
     userName,
     isCustomer,
     isLoadingOrders,
@@ -38,14 +38,14 @@ export default function DashboardPage() {
   return (
     <PageContainer>
       <div className="space-y-4">
-        {!isCustomer && (
-          <>
-            {/* Pesquisa rápida de pedidos */}
-            <div className="w-full max-w-md">
-              <QuickOrderSearch />
-            </div>
+      {!isCustomer && (
+        <>
+          {/* Pesquisa rápida de pedidos */}
+          <div className="w-full max-w-md">
+            <QuickOrderSearch />
+          </div>
 
-            {/* Botões de Ações Rápidas */}
+          {/* Botões de Ações Rápidas */}
             <DashboardQuickActions
               dialogStates={dialogStates}
               openDialog={openDialog}
@@ -77,8 +77,8 @@ export default function DashboardPage() {
                   recentOrders={dashboardData.recentOrders}
                   isLoadingOrders={isLoadingOrders}
                   getClientName={getClientName}
-                />
-              </div>
+            />
+          </div>
 
               {/* Gráfico de Vendas */}
               <div className="xl:col-span-3">
@@ -86,10 +86,10 @@ export default function DashboardPage() {
                   payments={allPayments || []}
                   isLoading={isLoadingPayments}
                 />
-              </div>
-            </div>
-          </>
-        )}
+                  </div>
+          </div>
+        </>
+      )}
 
       {isCustomer && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

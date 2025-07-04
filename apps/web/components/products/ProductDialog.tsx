@@ -3,7 +3,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, Package, Tag, Image as ImageIcon } from "lucide-react";
+import { Loader2, Package, PackagePlus, Tag, Image as ImageIcon } from "lucide-react";
 import React, { useState, useEffect, useMemo } from "react";
 
 import {
@@ -12,6 +12,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogOverlay,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,6 +35,7 @@ import {
 import { ImageUpload } from "@/components/ui/image-upload";
 import { useProducts } from "@/hooks/useProducts";
 import { useToast } from "@/hooks/useToast";
+import { handleError} from "@/app/_utils/error-handler";
 import { Product } from "@/app/_types/product";
 import { getProductTypeName } from "@/app/_services/productService";
 
@@ -287,11 +289,11 @@ export function ProductDialog({
       }
     } catch (error: any) {
       console.error(`Erro ao ${isEditMode ? 'atualizar' : 'cadastrar'} produto:`, error);
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: error.response?.data?.message || `Erro ao ${isEditMode ? 'atualizar' : 'cadastrar'} produto`,
-      });
+      handleError(
+        error,
+        `Erro ao ${isEditMode ? 'atualizar' : 'cadastrar'} produto`,
+        true // Mostrar detalhes do erro
+      );
     }
   };
 
@@ -329,6 +331,7 @@ export function ProductDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange} modal={true}>
+      <DialogOverlay className="bg-black/60" />
       <DialogContent 
         className="max-w-4xl max-h-[90vh] overflow-y-auto"
         onInteractOutside={(e) => {
@@ -341,7 +344,7 @@ export function ProductDialog({
       >
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold flex items-center gap-2">
-            <Package className="w-6 h-6 text-blue-600" />
+            <PackagePlus className="w-6 h-6 text-[var(--primary-blue)]" />
             {isEditMode ? 'Editar Produto' : 'Novo Produto'}
           </DialogTitle>
           <DialogDescription>
@@ -357,7 +360,7 @@ export function ProductDialog({
             {/* Campo de Imagem - Primeiro */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold flex items-center gap-2">
-                <ImageIcon className="w-5 h-5 text-blue-600" />
+                <ImageIcon className="w-5 h-5 text-[var(--primary-blue)]" />
                 Foto do Produto
               </h3>
               
@@ -372,7 +375,7 @@ export function ProductDialog({
             {/* Informações Básicas */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold flex items-center gap-2">
-                <Tag className="w-5 h-5 text-green-600" />
+                <Tag className="w-5 h-5 text-[var(--primary-blue)]" />
                 Informações Básicas
               </h3>
               
@@ -492,7 +495,7 @@ export function ProductDialog({
             {/* Campos específicos por tipo */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold flex items-center gap-2">
-                <Package className="w-5 h-5 text-purple-600" />
+                <Package className="w-5 h-5 text-[var(--primary-blue)]" />
                 Informações Específicas - {getProductTypeName(watchedProductType)}
               </h3>
 

@@ -384,16 +384,6 @@ export function OrderForm({
     return isEditing ? "Atualizar Pedido" : "Finalizar Pedido";
   };
 
-  // Função para obter o título do formulário
-  const getFormTitle = () => {
-    return isEditing ? "Editar Pedido" : "Novo Pedido";
-  };
-
-  // Função para obter a descrição do formulário
-  const getFormDescription = () => {
-    return isEditing ? "Atualize os dados do pedido" : "Cadastre um novo pedido";
-  };
-
   const renderStepContent = () => {
     switch (currentStep) {
       case 0:
@@ -450,22 +440,8 @@ export function OrderForm({
       {/* Adiciona o CSS para remover as setas dos inputs numéricos */}
       <style jsx global>{numericInputStyles}</style>
       
-      <div className="bg-background border border-input rounded-lg shadow-sm">
+      <div className="bg-background border border-input shadow-sm">
         <div className="border-b bg-muted p-4">
-          <div className="flex flex-row items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <File className="h-5 w-5 text-[var(--secondary-red)]" />
-              </div>
-              <div>
-                <h1 className="text-xl text-[var(--secondary-red)] font-bold">
-                  {getFormTitle()}
-                </h1>
-                <p className="text-muted-foreground">{getFormDescription()}</p>
-              </div>
-            </div>
-          </div>
-          
           <OrderStepProgress
             steps={steps}
             currentStep={currentStep}

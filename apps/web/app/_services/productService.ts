@@ -134,16 +134,30 @@ export async function getProductStockHistory(productId: string): Promise<any[]> 
 /**
  * Obtém o nome amigável para o tipo de produto
  */
-export function getProductTypeName(productType: Product['productType']): string {
+export function getProductTypeName(productType: string): string {
   switch (productType) {
     case 'lenses':
       return 'Lentes';
     case 'clean_lenses':
       return 'Limpa-lentes';
+    case 'cleaning_products':
+      return 'Limpa-lentes';
     case 'prescription_frame':
       return 'Armação de Grau';
+    case 'sunglasses':
+      return 'Armação Solar';
     case 'sunglasses_frame':
       return 'Armação Solar';
+    case 'frame':
+      return 'Armação';
+    case 'contact_lenses':
+      return 'Lentes de Contato';
+    case 'accessories':
+      return 'Acessórios';
+    case 'cases':
+      return 'Estojo';
+    case 'others':
+      return 'Outros';
     default:
       return 'Produto';
   }

@@ -160,10 +160,17 @@ export function normalizeProducts(products: any[] | any): Product[] {
 export function getProductTypeLabel(type?: string): string {
     // Mapeia os tipos de produto do backend para labels amigáveis em português
     const productTypes: Record<string, string> = {
-      lenses: "Lentes",
-      clean_lenses: "Limpa-lentes",
-      prescription_frame: "Armação de grau",
-      sunglasses_frame: "Armação solar"
+      'lenses': 'Lentes',
+      'prescription_frame': 'Armação de Grau',
+      'sunglasses': 'Armação Solar',
+      'sunglasses_frame': 'Armação Solar',
+      'frame': 'Armação',
+      'contact_lenses': 'Lentes de Contato',
+      'accessories': 'Acessórios',
+      'cleaning_products': 'Limpa-lentes',
+      'clean_lenses': 'Limpa-lentes',
+      'cases': 'Estojo',
+      'others': 'Outros'
     };
     
     // Se não houver tipo definido ou o tipo não estiver no mapa, retorna valor padrão
@@ -241,16 +248,30 @@ export function getProductTypeLabel(type?: string): string {
 
 
 // Função auxiliar para obter o nome amigável do tipo de produto
-export const getProductTypeName = (productType: Product['productType']): string => {
+export const getProductTypeName = (productType: string): string => {
   switch (productType) {
     case 'lenses':
       return 'Lentes';
     case 'clean_lenses':
       return 'Limpa-lentes';
+    case 'cleaning_products':
+      return 'Limpa-lentes';
     case 'prescription_frame':
       return 'Armação de Grau';
+    case 'sunglasses':
+      return 'Armação Solar';
     case 'sunglasses_frame':
       return 'Armação Solar';
+    case 'frame':
+      return 'Armação';
+    case 'contact_lenses':
+      return 'Lentes de Contato';
+    case 'accessories':
+      return 'Acessórios';
+    case 'cases':
+      return 'Estojo';
+    case 'others':
+      return 'Outros';
     default:
       return 'Produto';
   }

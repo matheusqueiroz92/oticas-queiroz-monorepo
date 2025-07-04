@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Camera, Loader2 } from "lucide-react";
+import { Loader2, UserPen } from "lucide-react";
 
 import {
   Dialog,
@@ -12,6 +12,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogOverlay,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +26,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ImageUpload } from "@/components/ui/image-upload";
 
 const profileSchema = z.object({
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
@@ -96,9 +98,13 @@ export function ProfileEditDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogOverlay className="bg-black/60" />
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold">Editar Perfil</DialogTitle>
+          <DialogTitle className="text-2xl font-bold flex items-center gap-2">
+            <UserPen className="w-6 h-6 text-[var(--primary-blue)]" />
+            Editar Perfil
+          </DialogTitle>
           <DialogDescription>
             Atualize suas informações pessoais
           </DialogDescription>
@@ -108,35 +114,25 @@ export function ProfileEditDialog({
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
             {/* Foto do Perfil */}
             <div className="flex flex-col items-center space-y-4">
-              <div className="relative">
-                <Avatar className="w-24 h-24">
-                  <AvatarImage
-                    src={previewImage || getUserImageUrl(user.image)}
-                    alt={user.name}
-                  />
-                  <AvatarFallback className="text-lg font-semibold bg-primary text-primary-foreground">
-                    {getInitials(user.name)}
-                  </AvatarFallback>
-                </Avatar>
-                <Button
-                  type="button"
-                  size="sm"
-                  className="absolute -bottom-2 -right-2 rounded-full w-8 h-8 p-0"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <Camera className="w-4 h-4" />
-                </Button>
-              </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
-                className="hidden"
+              <ImageUpload
+                value={fileInputRef.current?.files?.[0] || null}
+                onChange={(file) => {
+                  if (fileInputRef.current) {
+                    const dataTransfer = new DataTransfer();
+                    if (file) dataTransfer.items.add(file);
+                    fileInputRef.current.files = dataTransfer.files;
+                  }
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => setPreviewImage(e.target?.result as string);
+                    reader.readAsDataURL(file);
+                  } else {
+                    setPreviewImage(null);
+                  }
+                }}
+                disabled={isSubmitting}
+                existingImageUrl={previewImage || getUserImageUrl(user.image)}
               />
-              <p className="text-sm text-muted-foreground">
-                Clique no ícone da câmera para alterar a foto
-              </p>
             </div>
 
             {/* Informações Básicas */}

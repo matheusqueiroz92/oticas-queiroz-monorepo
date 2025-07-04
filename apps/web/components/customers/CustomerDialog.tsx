@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
-import { Loader2, User, Mail, Phone } from "lucide-react";
+import { Loader2, Mail, Phone, ImageIcon, UserPlus } from "lucide-react";
 import React, { useState, useEffect, useMemo } from "react";
 
 import {
@@ -27,7 +27,7 @@ import {
 import { ImageUpload } from "@/components/ui/image-upload";
 import { DatePicker } from "@/components/ui/date-picker";
 import { useUsers } from "@/hooks/useUsers";
-import { useToast } from "@/hooks/useToast";
+import { handleError, showSuccess } from "@/app/_utils/error-handler";
 import { User as UserType } from "@/app/_types/user";
 
 const customerSchema = z.object({
@@ -61,7 +61,6 @@ export function CustomerDialog({
   mode,
 }: CustomerDialogProps) {
   const { createUserMutation, updateUserMutation, getUserImageUrl } = useUsers();
-  const { toast } = useToast();
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imageUrl, setImageUrl] = useState<string | undefined>(undefined);
   
@@ -183,19 +182,19 @@ export function CustomerDialog({
           formData
         });
         
-        toast({
-          title: "Cliente atualizado",
-          description: "Os dados do cliente foram atualizados com sucesso.",
-        });
+        showSuccess(
+          "Cliente atualizado",
+          "Os dados do cliente foram atualizados com sucesso."
+        );
       } else {
         // Criar novo cliente
         await createUserMutation.mutateAsync(formData);
         
         const birthDatePassword = format(data.birthDate, "ddMMyyyy");
-        toast({
-          title: "Cliente cadastrado",
-          description: `O cliente foi cadastrado com sucesso. Senha gerada: ${birthDatePassword}`,
-        });
+        showSuccess(
+          "Cliente cadastrado",
+          `O cliente foi cadastrado com sucesso. Senha gerada: ${birthDatePassword}`
+        );
       }
       
       // Resetar formulário e fechar dialog
@@ -210,11 +209,11 @@ export function CustomerDialog({
       }
     } catch (error: any) {
       console.error(`Erro ao ${isEditMode ? 'atualizar' : 'cadastrar'} cliente:`, error);
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: error.response?.data?.message || `Erro ao ${isEditMode ? 'atualizar' : 'cadastrar'} cliente`,
-      });
+      handleError(
+        error,
+        `Erro ao ${isEditMode ? 'atualizar' : 'cadastrar'} cliente`,
+        true // Mostrar detalhes do erro
+      );
     }
   };
 
@@ -232,7 +231,7 @@ export function CustomerDialog({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold flex items-center gap-2">
-            <User className="w-6 h-6 text-blue-600" />
+            <UserPlus className="w-6 h-6 text-blue-600" />
             {isEditMode ? 'Editar Cliente' : 'Novo Cliente'}
           </DialogTitle>
           <DialogDescription>
@@ -248,6 +247,7 @@ export function CustomerDialog({
             {/* Campo de Imagem - Primeiro */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold flex items-center gap-2">
+              <ImageIcon className="w-5 h-5 text-[var(--primary-blue)]" />
                 Foto do Cliente
               </h3>
               

@@ -4,6 +4,7 @@ import OrderPdfExporter from "@/components/orders/exports/OrderPdfExporter";
 import type { Customer } from "@/app/_types/customer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency } from "@/app/_utils/formatters";
+import { useState, useEffect } from "react";
 
 interface OrderSuccessScreenProps {
   form?: any;
@@ -26,6 +27,29 @@ export default function OrderSuccessScreen({
   console.log("OrderSuccessScreen - submittedOrder:", submittedOrder);
   console.log("OrderSuccessScreen - selectedCustomer:", selectedCustomer);
   console.log("OrderSuccessScreen - form data:", form?.getValues?.());
+
+  // Estado para detectar tema dark
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    // Função para verificar o tema
+    const checkTheme = () => {
+      const isDarkMode = document.documentElement.classList.contains('dark');
+      setIsDark(isDarkMode);
+    };
+
+    // Verificar tema inicial
+    checkTheme();
+
+    // Observer para mudanças na classe dark
+    const observer = new MutationObserver(checkTheme);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+
+    return () => observer.disconnect();
+  }, []);
   
   const getPaymentMethodText = () => {
     // Usar dados do pedido criado se form não estiver disponível
@@ -85,28 +109,78 @@ export default function OrderSuccessScreen({
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header de Sucesso */}
-      <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
+      <Card 
+        className="border-green-200 dark:border-green-800"
+        style={{ 
+          background: isDark 
+            ? 'linear-gradient(to right, #0f2a1a, #1f3a2f)' 
+            : 'linear-gradient(to right, #f0fdf4, #ecfdf5)',
+          borderColor: isDark ? '#166534' : '#bbf7d0'
+        }}
+      >
         <CardContent className="pt-6">
           <div className="flex flex-col items-center text-center">
-            <div className="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-              <CheckCircle2 className="h-8 w-8 text-green-600" />
+            <div 
+              className="h-16 w-16 rounded-full flex items-center justify-center mb-4"
+              style={{ 
+                backgroundColor: isDark ? '#166534' : '#dcfce7'
+              }}
+            >
+              <CheckCircle2 
+                className="h-8 w-8"
+                style={{ color: isDark ? '#22c55e' : '#16a34a' }}
+              />
             </div>
-            <h2 className="text-2xl font-bold text-green-800 mb-2">
+            <h2 
+              className="text-2xl font-bold mb-2"
+              style={{ color: isDark ? '#22c55e' : '#15803d' }}
+            >
               Pedido Criado com Sucesso!
             </h2>
-            <p className="text-green-600 mb-4">
+            <p 
+              className="mb-4"
+              style={{ color: isDark ? '#86efac' : '#16a34a' }}
+            >
               Seu pedido foi processado e está sendo preparado
             </p>
             
             {/* Informações principais */}
             <div className="flex items-center gap-6 text-sm">
-              <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border">
-                <FileText className="h-4 w-4 text-blue-600" />
-                <span className="font-medium">O.S. Nº {submittedOrder?.serviceOrder || submittedOrder?.serviceNumber || 'N/A'}</span>
+              <div 
+                className="flex items-center gap-2 px-3 py-2 rounded-lg border"
+                style={{ 
+                  backgroundColor: isDark ? '#1f2937' : '#ffffff',
+                  borderColor: isDark ? '#374151' : '#d1d5db'
+                }}
+              >
+                <FileText 
+                  className="h-4 w-4"
+                  style={{ color: isDark ? '#60a5fa' : '#2563eb' }}
+                />
+                <span 
+                  className="font-medium"
+                  style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                >
+                  O.S. Nº {submittedOrder?.serviceOrder || submittedOrder?.serviceNumber || 'N/A'}
+                </span>
               </div>
-              <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border">
-                <Package className="h-4 w-4 text-purple-600" />
-                <span className="font-medium">ID: {submittedOrder?._id?.substring(0, 8) || 'N/A'}</span>
+              <div 
+                className="flex items-center gap-2 px-3 py-2 rounded-lg border"
+                style={{ 
+                  backgroundColor: isDark ? '#1f2937' : '#ffffff',
+                  borderColor: isDark ? '#374151' : '#d1d5db'
+                }}
+              >
+                <Package 
+                  className="h-4 w-4"
+                  style={{ color: isDark ? '#a855f7' : '#7c3aed' }}
+                />
+                <span 
+                  className="font-medium"
+                  style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                >
+                  ID: {submittedOrder?._id?.substring(0, 8) || 'N/A'}
+                </span>
               </div>
             </div>
           </div>
@@ -119,18 +193,36 @@ export default function OrderSuccessScreen({
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
-              <User className="h-5 w-5 text-blue-600" />
+              <User 
+                className="h-5 w-5" 
+                style={{ color: isDark ? '#60a5fa' : '#2563eb' }}
+              />
               Cliente
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div>
-              <p className="font-medium text-gray-900">{clientName}</p>
+              <p 
+                className="font-medium"
+                style={{ color: isDark ? '#f9fafb' : '#111827' }}
+              >
+                {clientName}
+              </p>
               {clientPhone && (
-                <p className="text-sm text-gray-600">Tel: {clientPhone}</p>
+                <p 
+                  className="text-sm"
+                  style={{ color: isDark ? '#9ca3af' : '#4b5563' }}
+                >
+                  Tel: {clientPhone}
+                </p>
               )}
               {clientEmail && (
-                <p className="text-sm text-gray-600">Email: {clientEmail}</p>
+                <p 
+                  className="text-sm"
+                  style={{ color: isDark ? '#9ca3af' : '#4b5563' }}
+                >
+                  Email: {clientEmail}
+                </p>
               )}
             </div>
           </CardContent>
@@ -140,18 +232,36 @@ export default function OrderSuccessScreen({
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
-              <CreditCard className="h-5 w-5 text-green-600" />
+              <CreditCard 
+                className="h-5 w-5" 
+                style={{ color: isDark ? '#22c55e' : '#16a34a' }}
+              />
               Pagamento
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div>
-              <p className="font-medium text-gray-900">{getPaymentMethodText()}</p>
+              <p 
+                className="font-medium"
+                style={{ color: isDark ? '#f9fafb' : '#111827' }}
+              >
+                {getPaymentMethodText()}
+              </p>
               {formData.paymentEntry > 0 && (
-                <p className="text-sm text-gray-600">Entrada: {formatCurrency(formData.paymentEntry)}</p>
+                <p 
+                  className="text-sm"
+                  style={{ color: isDark ? '#9ca3af' : '#4b5563' }}
+                >
+                  Entrada: {formatCurrency(formData.paymentEntry)}
+                </p>
               )}
               {formData.installments > 1 && (
-                <p className="text-sm text-gray-600">{formData.installments}x parcelas</p>
+                <p 
+                  className="text-sm"
+                  style={{ color: isDark ? '#9ca3af' : '#4b5563' }}
+                >
+                  {formData.installments}x parcelas
+                </p>
               )}
             </div>
           </CardContent>
@@ -161,17 +271,26 @@ export default function OrderSuccessScreen({
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-orange-600" />
+              <Calendar 
+                className="h-5 w-5" 
+                style={{ color: isDark ? '#f97316' : '#ea580c' }}
+              />
               Datas
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div>
-              <p className="text-sm">
+              <p 
+                className="text-sm"
+                style={{ color: isDark ? '#f9fafb' : '#111827' }}
+              >
                 <span className="font-medium">Pedido:</span> {formData.orderDate ? new Date(formData.orderDate).toLocaleDateString('pt-BR') : 'N/A'}
               </p>
               {formData.deliveryDate && (
-                <p className="text-sm">
+                <p 
+                  className="text-sm"
+                  style={{ color: isDark ? '#f9fafb' : '#111827' }}
+                >
                   <span className="font-medium">Entrega:</span> {new Date(formData.deliveryDate).toLocaleDateString('pt-BR')}
                 </p>
               )}
@@ -183,25 +302,28 @@ export default function OrderSuccessScreen({
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
-              <Package className="h-5 w-5 text-purple-600" />
+              <Package 
+                className="h-5 w-5" 
+                style={{ color: isDark ? '#a855f7' : '#7c3aed' }}
+              />
               Resumo
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span>Subtotal:</span>
-                <span>{formatCurrency(Number(formData.totalPrice) || 0)}</span>
+                <span style={{ color: isDark ? '#f9fafb' : '#111827' }}>Subtotal:</span>
+                <span style={{ color: isDark ? '#f9fafb' : '#111827' }}>{formatCurrency(Number(formData.totalPrice) || 0)}</span>
               </div>
               {Number(formData.discount) > 0 && (
-                <div className="flex justify-between text-sm text-red-600">
-                  <span>Desconto:</span>
-                  <span>-{formatCurrency(Number(formData.discount))}</span>
+                <div className="flex justify-between text-sm">
+                  <span style={{ color: isDark ? '#f87171' : '#dc2626' }}>Desconto:</span>
+                  <span style={{ color: isDark ? '#f87171' : '#dc2626' }}>-{formatCurrency(Number(formData.discount))}</span>
                 </div>
               )}
               <div className="flex justify-between font-bold text-lg border-t pt-2">
-                <span>Total:</span>
-                <span className="text-green-600">{formatCurrency(Number(formData.finalPrice) || Number(formData.totalPrice) || 0)}</span>
+                <span style={{ color: isDark ? '#f9fafb' : '#111827' }}>Total:</span>
+                <span style={{ color: isDark ? '#22c55e' : '#16a34a' }}>{formatCurrency(Number(formData.finalPrice) || Number(formData.totalPrice) || 0)}</span>
               </div>
             </div>
           </CardContent>
