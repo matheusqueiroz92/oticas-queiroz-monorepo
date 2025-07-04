@@ -53,38 +53,70 @@ export class MongoUserRepository extends BaseRepository<IUser> implements IUserR
    */
   protected buildFilterQuery(filters: Record<string, any>): Record<string, any> {
     console.log('🔍 MongoUserRepository.buildFilterQuery - Filtros recebidos:', filters);
-    
-    const query = super.buildFilterQuery(filters);
-    console.log('🔍 MongoUserRepository.buildFilterQuery - Query base:', query);
+    const baseQuery = super.buildFilterQuery(filters);
+    const andFilters: any[] = [];
 
     // Filtros específicos para usuários
     if (filters.role) {
-      query.role = filters.role;
+      baseQuery.role = filters.role;
       console.log('🔍 MongoUserRepository.buildFilterQuery - Adicionado role:', filters.role);
     }
 
     if (filters.searchTerm) {
-      console.log('🔍 MongoUserRepository.buildFilterQuery - Processando searchTerm:', filters.searchTerm);
-      
-      // Verificar se o termo é numérico (para CPF/CNPJ)
       const isNumeric = /^\d+$/.test(filters.searchTerm);
-      
       if (isNumeric) {
-        // Se for numérico, buscar apenas em CPF/CNPJ
-        query.$or = [
-          { cpf: { $regex: filters.searchTerm, $options: 'i' } },
-          { cnpj: { $regex: filters.searchTerm, $options: 'i' } }
-        ];
+        andFilters.push({
+          $or: [
+            { cpf: { $regex: filters.searchTerm, $options: 'i' } },
+            { cnpj: { $regex: filters.searchTerm, $options: 'i' } }
+          ]
+        });
       } else {
-        // Se for texto, buscar apenas no nome
-        query.name = { $regex: filters.searchTerm, $options: 'i' };
+        andFilters.push({ name: { $regex: filters.searchTerm, $options: 'i' } });
       }
-      
-      console.log('🔍 MongoUserRepository.buildFilterQuery - Query $or criada:', JSON.stringify(query.$or, null, 2));
     }
 
-    console.log('🔍 MongoUserRepository.buildFilterQuery - Query final:', JSON.stringify(query, null, 2));
-    return query;
+    // Filtro por faixa de compras
+    if (filters.purchaseRange && filters.purchaseRange !== 'all') {
+      if (filters.purchaseRange === '0') {
+        andFilters.push({ $expr: { $eq: [ { $size: "$purchases" }, 0 ] } });
+      } else if (filters.purchaseRange === '1-2') {
+        andFilters.push({ $expr: { $in: [ { $size: "$purchases" }, [1,2] ] } });
+      } else if (filters.purchaseRange === '3-4') {
+        andFilters.push({ $expr: { $in: [ { $size: "$purchases" }, [3,4] ] } });
+      } else if (filters.purchaseRange === '5+') {
+        andFilters.push({ $expr: { $gte: [ { $size: "$purchases" }, 5 ] } });
+      }
+    }
+
+    // Filtro por data de cadastro
+    if (filters.startDate || filters.endDate) {
+      const createdAt: any = {};
+      if (filters.startDate) {
+        // Sempre usar início do dia em UTC
+        const start = new Date(filters.startDate + 'T00:00:00.000Z');
+        createdAt.$gte = start;
+      }
+      if (filters.endDate) {
+        // Sempre usar fim do dia em UTC
+        const end = new Date(filters.endDate + 'T23:59:59.999Z');
+        createdAt.$lte = end;
+      }
+      andFilters.push({ createdAt });
+    }
+
+    // Filtro por clientes com débitos
+    if (filters.hasDebts === 'true') {
+      andFilters.push({ debts: { $gt: 0 } });
+    }
+
+    // Combinar todos os filtros
+    const finalQuery = { ...baseQuery };
+    if (andFilters.length > 0) {
+      finalQuery.$and = andFilters;
+    }
+    console.log('🔍 MongoUserRepository.buildFilterQuery - Query final:', JSON.stringify(finalQuery, null, 2));
+    return finalQuery;
   }
 
   /**

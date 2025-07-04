@@ -26,6 +26,9 @@ interface CustomerFilters {
   sort?: string;
   cpf?: string;
   limit?: number;
+  purchaseRange?: string;
+  startDate?: string;
+  endDate?: string;
 }
 
 export function useCustomers(options: UseCustomersOptions = {}) {
@@ -205,11 +208,22 @@ export function useCustomers(options: UseCustomersOptions = {}) {
         }
 
         if (filters.customerType && filters.customerType !== 'all') {
-          // Lógica para diferentes tipos de cliente pode ser adicionada aqui
+          searchParams.customerType = filters.customerType;
         }
 
         if (filters.status && filters.status !== 'all') {
-          // Lógica para status de cliente pode ser adicionada aqui
+          searchParams.status = filters.status;
+        }
+
+        // Filtros avançados
+        if (filters.purchaseRange && filters.purchaseRange !== 'all') {
+          searchParams.purchaseRange = filters.purchaseRange;
+        }
+        if (filters.startDate) {
+          searchParams.startDate = filters.startDate;
+        }
+        if (filters.endDate) {
+          searchParams.endDate = filters.endDate;
         }
         
         if (search) {

@@ -38,7 +38,19 @@ export class UserController {
   
       let result: { users: IUser[]; total: number } = { users: [], total: 0 };
   
-      if (serviceOrder) {
+      // Detecta se há filtros avançados
+      const hasAdvancedFilters =
+        req.query.purchaseRange ||
+        req.query.startDate ||
+        req.query.endDate ||
+        req.query.hasDebts;
+
+      if (hasAdvancedFilters) {
+        // Repassa todos os filtros para o service
+        const filters = { ...req.query };
+        result = await this.userService.getAllUsers(page, limit, filters);
+      }
+      else if (serviceOrder) {
         const cleanServiceOrder = (serviceOrder as string).replace(/\D/g, '');
         if (cleanServiceOrder.length >= 4 && cleanServiceOrder.length <= 7) {
           const clientIds = await this.orderService.getClientsByServiceOrder(cleanServiceOrder);

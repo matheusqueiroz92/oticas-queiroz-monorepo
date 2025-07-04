@@ -234,7 +234,7 @@ export abstract class BaseRepository<T, CreateDTO = Omit<T, '_id'>>
     const query: Record<string, any> = {};
 
     // Remover filtros internos que não devem fazer parte da query
-    const { includeDeleted, sort, searchTerm, ...remainingFilters } = filters;
+    const { includeDeleted, sort, searchTerm, page, limit, _t, startDate, endDate, ...remainingFilters } = filters;
 
     // Adicionar filtros restantes
     Object.keys(remainingFilters).forEach(key => {

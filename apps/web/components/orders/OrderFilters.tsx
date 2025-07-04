@@ -114,7 +114,7 @@ export const OrderFilters = ({
   ];
 
   return (
-    <div className="bg-gray-50 p-3 rounded-md mb-3 border">
+    <div className="bg-card p-3 rounded-md mb-3">
       <div className="flex justify-between items-center mb-2">
         <h3 className="text-sm font-medium">Filtros Avançados</h3>
         <Button 
@@ -141,9 +141,9 @@ export const OrderFilters = ({
                 setDateRange({...dateRange, startDate: e.target.value});
                 setDateError(null);
               }}
-              className="h-9 pl-7 text-sm border-gray-200"
+              className="h-9 pl-7 text-sm border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-black dark:text-white"
             />
-            <Calendar className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Calendar className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-zinc-400 dark:text-zinc-300" />
           </div>
         </div>
         
@@ -158,9 +158,9 @@ export const OrderFilters = ({
                 setDateRange({...dateRange, endDate: e.target.value});
                 setDateError(null);
               }}
-              className="h-9 pl-7 text-sm border-gray-200"
+              className="h-9 pl-7 text-sm border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-black dark:text-white"
             />
-            <Calendar className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Calendar className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-zinc-400 dark:text-zinc-300" />
           </div>
         </div>
         
@@ -171,7 +171,7 @@ export const OrderFilters = ({
             value={selectedStatus} 
             onValueChange={setSelectedStatus}
           >
-            <SelectTrigger id="status" className="h-9 text-sm border-gray-200">
+            <SelectTrigger id="status" className="h-9 text-sm border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-black dark:text-white">
               <SelectValue placeholder="Selecione um status" />
             </SelectTrigger>
             <SelectContent>
@@ -194,7 +194,7 @@ export const OrderFilters = ({
                 value={selectedEmployeeId} 
                 onValueChange={setSelectedEmployeeId}
               >
-                <SelectTrigger id="employee" className="h-9 text-sm pl-7 border-gray-200">
+                <SelectTrigger id="employee" className="h-9 text-sm pl-7 border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-black dark:text-white">
                   <SelectValue placeholder="Selecione um vendedor" />
                 </SelectTrigger>
                 <SelectContent>
@@ -210,7 +210,7 @@ export const OrderFilters = ({
                   )}
                 </SelectContent>
               </Select>
-              <Users className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Users className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-zinc-400 dark:text-zinc-300" />
             </div>
           </div>
         )}
@@ -225,7 +225,7 @@ export const OrderFilters = ({
               value={selectedPaymentMethod} 
               onValueChange={setSelectedPaymentMethod}
             >
-              <SelectTrigger id="paymentMethod" className="h-9 text-sm pl-7 border-gray-200">
+              <SelectTrigger id="paymentMethod" className="h-9 text-sm pl-7 border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-black dark:text-white">
                 <SelectValue placeholder="Selecione um método" />
               </SelectTrigger>
               <SelectContent>
@@ -237,7 +237,7 @@ export const OrderFilters = ({
                 ))}
               </SelectContent>
             </Select>
-            <CreditCard className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <CreditCard className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-zinc-400 dark:text-zinc-300" />
           </div>
         </div>
     
@@ -249,7 +249,7 @@ export const OrderFilters = ({
               value={selectedLaboratoryId} 
               onValueChange={setSelectedLaboratoryId}
             >
-              <SelectTrigger id="laboratory" className="h-9 text-sm pl-7 border-gray-200">
+              <SelectTrigger id="laboratory" className="h-9 text-sm pl-7 border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-black dark:text-white">
                 <SelectValue placeholder="Selecione um laboratório" />
               </SelectTrigger>
               <SelectContent>
@@ -265,7 +265,7 @@ export const OrderFilters = ({
                 )}
               </SelectContent>
             </Select>
-            <Beaker className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Beaker className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-zinc-400 dark:text-zinc-300" />
           </div>
         </div>
       </div>

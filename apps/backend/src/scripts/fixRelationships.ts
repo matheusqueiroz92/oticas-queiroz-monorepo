@@ -81,25 +81,12 @@ async function fixRelationships() {
     for (const [clientId, orderIds] of clientPurchasesMap.entries()) {
       const client = await User.findById(clientId);
       if (!client) continue;
-      
-      // Obter compras atuais
-      const currentPurchases = client.purchases || [];
-      const currentPurchasesSet = new Set(currentPurchases.map(id => id.toString()));
-      
-      // Adicionar novas compras
-      for (const orderId of orderIds) {
-        if (!currentPurchasesSet.has(orderId)) {
-          currentPurchasesSet.add(orderId);
-        }
-      }
-      
-      // Atualizar no banco de dados
-      const purchasesArray = Array.from(currentPurchasesSet);
+      // Sobrescrever o campo purchases com os pedidos ativos do cliente
+      const purchasesArray = Array.from(orderIds);
       await User.findByIdAndUpdate(clientId, { 
         $set: { purchases: purchasesArray } 
       });
-      
-      console.log(`Cliente ${clientId}: Atualizadas ${purchasesArray.length} compras.`);
+      console.log(`Cliente ${clientId}: Compras sobrescritas para ${purchasesArray.length} pedidos.`);
     }
 
     // 3. Corrigir dívidas de clientes com base em pedidos parcelados

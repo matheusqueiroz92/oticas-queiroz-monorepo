@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { X, Calendar, Users, DollarSign, AlertCircle } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface CustomerFiltersProps {
   onUpdateFilters: (filters: Record<string, any>) => void;
@@ -25,6 +26,7 @@ export const CustomerFilters = ({ onUpdateFilters }: CustomerFiltersProps) => {
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedPurchaseRange, setSelectedPurchaseRange] = useState("all");
   const [dateError, setDateError] = useState<string | null>(null);
+  const [hasDebts, setHasDebts] = useState(false);
 
   const getCurrentFilters = useCallback(() => {
     const filters: Record<string, string> = {
@@ -51,8 +53,12 @@ export const CustomerFilters = ({ onUpdateFilters }: CustomerFiltersProps) => {
       filters.endDate = dateRange.endDate;
     }
     
+    if (hasDebts) {
+      filters.hasDebts = 'true';
+    }
+    
     return filters;
-  }, [selectedCustomerType, selectedStatus, selectedPurchaseRange, dateRange.startDate, dateRange.endDate]);
+  }, [selectedCustomerType, selectedStatus, selectedPurchaseRange, dateRange.startDate, dateRange.endDate, hasDebts]);
 
   const validateDates = useCallback(() => {
     if (dateRange.startDate && dateRange.endDate) {
@@ -82,13 +88,14 @@ export const CustomerFilters = ({ onUpdateFilters }: CustomerFiltersProps) => {
     setSelectedStatus("all");
     setSelectedPurchaseRange("all");
     setDateError(null);
+    setHasDebts(false);
     
     onUpdateFilters({ sort: "name" });
-  }, [onUpdateFilters]);
+  }, [onUpdateFilters]);                                            
 
   return (
-    <div className="bg-gray-50 p-3 rounded-md mb-3 border">
-      <div className="flex justify-between items-center mb-2">
+    <div className="bg-card p-3 rounded-md mb-3">
+      <div className="flex justify-between items-center                                            mb-2">
         <h3 className="text-sm font-medium">Filtros Avançados</h3>
         <Button 
           variant="destructive" 
@@ -114,9 +121,9 @@ export const CustomerFilters = ({ onUpdateFilters }: CustomerFiltersProps) => {
                 setDateRange(prev => ({ ...prev, startDate: e.target.value }));
                 setDateError(null);
               }}
-              className="h-9 pl-7 text-sm border-gray-200"
+              className="h-9 pl-7 text-sm border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-black dark:text-white"
             />
-            <Calendar className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Calendar className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-zinc-400 dark:text-zinc-300" />
           </div>
         </div>
         
@@ -131,9 +138,9 @@ export const CustomerFilters = ({ onUpdateFilters }: CustomerFiltersProps) => {
                 setDateRange(prev => ({ ...prev, endDate: e.target.value }));
                 setDateError(null);
               }}
-              className="h-9 pl-7 text-sm border-gray-200"
+              className="h-9 pl-7 text-sm border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-black dark:text-white"
             />
-            <Calendar className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Calendar className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-zinc-400 dark:text-zinc-300" />
           </div>
         </div>
         
@@ -145,7 +152,7 @@ export const CustomerFilters = ({ onUpdateFilters }: CustomerFiltersProps) => {
               value={selectedCustomerType} 
               onValueChange={setSelectedCustomerType}
             >
-              <SelectTrigger id="customerType" className="h-9 text-sm pl-7 border-gray-200">
+              <SelectTrigger id="customerType" className="h-9 text-sm pl-7 border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-black dark:text-white">
                 <SelectValue placeholder="Selecione o tipo" />
               </SelectTrigger>
               <SelectContent>
@@ -155,7 +162,7 @@ export const CustomerFilters = ({ onUpdateFilters }: CustomerFiltersProps) => {
                 <SelectItem value="new">Novo (sem compras)</SelectItem>
               </SelectContent>
             </Select>
-            <Users className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Users className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-zinc-400 dark:text-zinc-300" />
           </div>
         </div>
         
@@ -167,7 +174,7 @@ export const CustomerFilters = ({ onUpdateFilters }: CustomerFiltersProps) => {
               value={selectedStatus} 
               onValueChange={setSelectedStatus}
             >
-              <SelectTrigger id="status" className="h-9 text-sm pl-7 border-gray-200">
+              <SelectTrigger id="status" className="h-9 text-sm pl-7 border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-black dark:text-white">
                 <SelectValue placeholder="Selecione o status" />
               </SelectTrigger>
               <SelectContent>
@@ -177,7 +184,7 @@ export const CustomerFilters = ({ onUpdateFilters }: CustomerFiltersProps) => {
                 <SelectItem value="blocked">Bloqueado</SelectItem>
               </SelectContent>
             </Select>
-            <AlertCircle className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <AlertCircle className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-zinc-400 dark:text-zinc-300" />
           </div>
         </div>
       </div>
@@ -191,20 +198,24 @@ export const CustomerFilters = ({ onUpdateFilters }: CustomerFiltersProps) => {
               value={selectedPurchaseRange} 
               onValueChange={setSelectedPurchaseRange}
             >
-              <SelectTrigger id="purchaseRange" className="h-9 text-sm pl-7 border-gray-200">
+              <SelectTrigger id="purchaseRange" className="h-9 text-sm pl-7 border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-black dark:text-white">
                 <SelectValue placeholder="Selecione a faixa" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas as faixas</SelectItem>
                 <SelectItem value="0">0 compras</SelectItem>
                 <SelectItem value="1-2">1-2 compras</SelectItem>
-                <SelectItem value="3-5">3-5 compras</SelectItem>
-                <SelectItem value="6-10">6-10 compras</SelectItem>
-                <SelectItem value="10+">10+ compras</SelectItem>
+                <SelectItem value="3-4">3-4 compras</SelectItem>
+                <SelectItem value="5+">5 ou mais compras</SelectItem>
               </SelectContent>
             </Select>
-            <DollarSign className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <DollarSign className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-zinc-400 dark:text-zinc-300" />
           </div>
+        </div>
+        {/* Filtro de clientes com débitos */}
+        <div className="flex items-end pb-1">
+          <Checkbox id="hasDebts" checked={hasDebts} onCheckedChange={checked => setHasDebts(checked === true)} />
+          <Label htmlFor="hasDebts" className="ml-2 text-sm">Apenas clientes com débitos</Label>
         </div>
       </div>
       

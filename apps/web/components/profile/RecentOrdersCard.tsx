@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Eye, Calendar, User, DollarSign } from "lucide-react";
+import { Eye, Calendar, User, DollarSign, Pencil } from "lucide-react";
 import { formatCurrency, translateOrderStatus } from "@/app/_utils/formatters";
 
 import type { Order } from "@/app/_types/order";
@@ -74,7 +74,7 @@ export function RecentOrdersCard({
       <CardHeader className="w-full">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-lg">
-            <Calendar className="w-5 h-5 text-blue-600" />
+            <Calendar className="w-5 h-5 text-[var(--primary-blue)]" />
             Meus Últimos Pedidos Realizados
           </CardTitle>
           <Link href="/my-orders">
@@ -94,7 +94,7 @@ export function RecentOrdersCard({
               <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Pedido
+                    Nº O.S.
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Cliente
@@ -106,7 +106,7 @@ export function RecentOrdersCard({
                     Valor
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
+                    Status do Pedido
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Ações
@@ -118,13 +118,8 @@ export function RecentOrdersCard({
                   <tr key={order._id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mr-3">
-                          <span className="text-xs font-bold text-blue-600 dark:text-blue-400">
-                            #{order.serviceOrder}
-                          </span>
-                        </div>
                         <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                          #PED-{order.serviceOrder}
+                        {order.serviceOrder}
                         </div>
                       </div>
                     </td>
@@ -156,15 +151,19 @@ export function RecentOrdersCard({
                       </Badge>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => onViewDetails(order._id)}
-                        className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
-                      >
-                        <Eye className="w-4 h-4 mr-1" />
-                        Ver detalhes
-                      </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => onViewDetails(order._id)}
+                    >
+                      <Eye className="h-4 w-4 mr-1" />
+                    </Button>
+                    
+                    <Button
+                      variant="outline"
+                      onClick={() => {}}
+                    >
+                      <Pencil className="h-4 w-4 mr-1" />
+                    </Button>
                     </td>
                   </tr>
                 ))}
