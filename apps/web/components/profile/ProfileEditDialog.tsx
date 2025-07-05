@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, UserPen } from "lucide-react";
+import { ImageIcon, Loader2, UserPen } from "lucide-react";
 
 import {
   Dialog,
@@ -113,7 +113,12 @@ export function ProfileEditDialog({
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
             {/* Foto do Perfil */}
-            <div className="flex flex-col items-center space-y-4">
+            <div className="flex flex-col space-y-4">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <ImageIcon className="w-5 h-5 text-[var(--primary-blue)]" />
+                Foto de Perfil
+              </h3>
+
               <ImageUpload
                 value={fileInputRef.current?.files?.[0] || null}
                 onChange={(file) => {

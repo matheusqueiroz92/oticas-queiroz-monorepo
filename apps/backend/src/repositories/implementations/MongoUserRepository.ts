@@ -15,12 +15,16 @@ export class MongoUserRepository extends BaseRepository<IUser> implements IUserR
   /**
    * Converte documento do MongoDB para IUser
    */
-  protected convertToInterface(doc: any): IUser {
+  protected convertToInterface(doc: any): IUser & { customerCategory?: string } {
     if (!doc) {
       throw new Error("Documento não pode ser nulo");
     }
 
     const user = doc.toObject ? doc.toObject() : doc;
+    const purchasesCount = Array.isArray(user.purchases) ? user.purchases.length : 0;
+    let customerCategory = 'novo';
+    if (purchasesCount >= 5) customerCategory = 'vip';
+    else if (purchasesCount >= 1 && purchasesCount <= 4) customerCategory = 'regular';
 
     return {
       _id: user._id?.toString(),
@@ -44,7 +48,8 @@ export class MongoUserRepository extends BaseRepository<IUser> implements IUserR
       image: user.image,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
-      comparePassword: doc.comparePassword ? doc.comparePassword.bind(doc) : undefined // Preservar método do documento original
+      comparePassword: doc.comparePassword ? doc.comparePassword.bind(doc) : undefined,
+      customerCategory
     };
   }
 
@@ -78,14 +83,24 @@ export class MongoUserRepository extends BaseRepository<IUser> implements IUserR
 
     // Filtro por faixa de compras
     if (filters.purchaseRange && filters.purchaseRange !== 'all') {
-      if (filters.purchaseRange === '0') {
-        andFilters.push({ $expr: { $eq: [ { $size: "$purchases" }, 0 ] } });
-      } else if (filters.purchaseRange === '1-2') {
-        andFilters.push({ $expr: { $in: [ { $size: "$purchases" }, [1,2] ] } });
-      } else if (filters.purchaseRange === '3-4') {
-        andFilters.push({ $expr: { $in: [ { $size: "$purchases" }, [3,4] ] } });
-      } else if (filters.purchaseRange === '5+') {
-        andFilters.push({ $expr: { $gte: [ { $size: "$purchases" }, 5 ] } });
+      const purchaseRanges = Array.isArray(filters.purchaseRange)
+        ? filters.purchaseRange
+        : [filters.purchaseRange];
+      
+      const orFilters = purchaseRanges.map((range) => {
+        if (range === '0') {
+          return { $expr: { $eq: [ { $size: "$purchases" }, 0 ] } };
+        } else if (range === '1-2') {
+          return { $expr: { $in: [ { $size: "$purchases" }, [1,2] ] } };
+        } else if (range === '3-4') {
+          return { $expr: { $in: [ { $size: "$purchases" }, [3,4] ] } };
+        } else if (range === '5+') {
+          return { $expr: { $gte: [ { $size: "$purchases" }, 5 ] } };
+        }
+        return null;
+      }).filter(Boolean);
+      if (orFilters.length > 0) {
+        andFilters.push({ $or: orFilters });
       }
     }
 
@@ -115,6 +130,12 @@ export class MongoUserRepository extends BaseRepository<IUser> implements IUserR
     if (andFilters.length > 0) {
       finalQuery.$and = andFilters;
     }
+    // Remover campos auxiliares que não existem no banco
+    delete finalQuery.purchaseRange;
+    delete finalQuery.page;
+    delete finalQuery.limit;
+    delete finalQuery._t;
+    delete finalQuery.hasDebts;
     console.log('🔍 MongoUserRepository.buildFilterQuery - Query final:', JSON.stringify(finalQuery, null, 2));
     return finalQuery;
   }
@@ -333,5 +354,40 @@ export class MongoUserRepository extends BaseRepository<IUser> implements IUserR
     limit: number = 10
   ): Promise<{ items: IUser[]; total: number; page: number; limit: number }> {
     return this.findAll(page, limit, { includeDeleted: true, isDeleted: true });
+  }
+
+  async findAll(
+    page = 1,
+    limit = 10,
+    filters: Record<string, any> = {},
+    includeDeleted = false,
+    sortOptions?: Record<string, 1 | -1>
+  ): Promise<{ items: IUser[]; total: number; page: number; limit: number }> {
+    const skip = (page - 1) * limit;
+    const query = this.buildFilterQuery(filters);
+
+    if (!includeDeleted) {
+      query.isDeleted = { $ne: true };
+    }
+
+    if (!sortOptions) {
+      sortOptions = { createdAt: -1 };
+    }
+
+    const docs = await this.model
+      .find(query)
+      .sort(sortOptions)
+      .skip(skip)
+      .limit(limit)
+      .exec();
+
+    const total = await this.model.countDocuments(query);
+
+    return {
+      items: docs.map((doc: any) => this.convertToInterface(doc)),
+      total,
+      page,
+      limit,
+    };
   }
 } 

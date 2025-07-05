@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageContainer } from "@/components/ui/page-container";
-import { QuickOrderSearch } from "@/components/orders/QuickOrderSearch";
+import { QuickOrderSearch } from "@/components/dashboard/QuickOrderSearch";
 import { DashboardStats } from "@/components/dashboard/DashboardStats";
 import { DashboardQuickActions } from "@/components/dashboard/DashboardQuickActions";
 import { RecentOrdersList } from "@/components/dashboard/RecentOrdersList";

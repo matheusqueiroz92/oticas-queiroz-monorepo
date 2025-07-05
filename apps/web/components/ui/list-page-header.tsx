@@ -49,7 +49,7 @@ export function ListPageHeader({
                 onChange={(e) => onSearchChange(e.target.value)}
                 className="pl-9"
               />
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--primary-blue)]" />
             </div>
             
             {/* Slot para selects de filtro específicos */}

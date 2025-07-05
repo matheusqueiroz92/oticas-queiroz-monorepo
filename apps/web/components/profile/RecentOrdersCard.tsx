@@ -19,7 +19,7 @@ interface RecentOrdersCardProps {
 export function RecentOrdersCard({ 
   orders, 
   onViewDetails, 
-  isLoading,
+  isLoading,                              
   getClientName
 }: RecentOrdersCardProps) {
   const formatDate = (dateString: string) => {

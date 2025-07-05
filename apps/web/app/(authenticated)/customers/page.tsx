@@ -7,7 +7,7 @@ import { CustomerDialog } from "@/components/customers/CustomerDialog";
 import { CustomerFilters } from "@/components/customers/CustomerFilters";
 import { CustomerExportButton } from "@/components/customers/CustomerExportButton";
 import { StatCard } from "@/components/ui/StatCard";
-import { Loader2, UserX, Users, Crown, Calendar, DollarSign, Plus } from "lucide-react";
+import { Loader2, UserX, Users, Crown, Calendar, DollarSign, Plus, UserCheck, UserPlus, X } from "lucide-react";
 import { useCustomers } from "@/hooks/useCustomers";
 import { useCustomerUtils } from "@/hooks/useCustomerUtils";
 import type { Column } from "@/app/_types/user";
@@ -27,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 
 export default function CustomersPage() {
   const [newCustomerDialogOpen, setNewCustomerDialogOpen] = useState(false);
@@ -36,7 +37,7 @@ export default function CustomersPage() {
 
   // Estados para os filtros básicos (selects)
   const [selectedCustomerType, setSelectedCustomerType] = useState("all");
-  const [selectedStatus, setSelectedStatus] = useState("all");
+  const [selectedCategory, setSelectedCategory] = useState("all");
   
   const {
     customers,
@@ -80,6 +81,19 @@ export default function CustomersPage() {
       header: "Débitos",
       render: (customer) => `R$ ${(customer.debts || 0).toFixed(2)}`,
     },
+    {
+      key: "customerCategory",
+      header: "Categoria",
+      render: (customer) => {
+        if (customer.customerCategory === "vip") {
+          return <Badge className="bg-yellow-500 text-white">VIP</Badge>;
+        }
+        if (customer.customerCategory === "regular") {
+          return <Badge className="bg-blue-500 text-white">Regular</Badge>;
+        }
+        return <Badge className="bg-zinc-500 text-white">Novo</Badge>;
+      },
+    },
   ];
 
   const handleEditCustomer = (customer: any) => {
@@ -90,22 +104,25 @@ export default function CustomersPage() {
   // Atualizar filtros quando os selects básicos mudarem
   useEffect(() => {
     const newFilters: Record<string, any> = {};
-    
     if (selectedCustomerType !== "all") {
       newFilters.customerType = selectedCustomerType;
     }
-    
-    if (selectedStatus !== "all") {
-      newFilters.status = selectedStatus;
+    if (selectedCategory !== "all") {
+      if (selectedCategory === 'vip') {
+        newFilters.purchaseRange = '5+';
+      } else if (selectedCategory === 'regular') {
+        newFilters.purchaseRange = '1-2'; // Pode ser adaptado para múltiplos se backend aceitar
+      } else if (selectedCategory === 'novo') {
+        newFilters.purchaseRange = '0';
+      }
     }
-    
     updateFilters(newFilters);
-  }, [selectedCustomerType, selectedStatus, updateFilters]);
+  }, [selectedCustomerType, selectedCategory, updateFilters]);
 
   // Função para limpar todos os filtros
   const handleClearAllFilters = useCallback(() => {
     setSelectedCustomerType("all");
-    setSelectedStatus("all");
+    setSelectedCategory("all");
     setSearch("");
     updateFilters({ sort: "name" });
   }, [setSearch, updateFilters]);
@@ -189,49 +206,68 @@ export default function CustomersPage() {
           activeFiltersCount={getActiveFiltersCount}
         >
           <FilterSelects>
-            <Select 
-              value={selectedCustomerType} 
-              onValueChange={setSelectedCustomerType}
-            >
-              <SelectTrigger className="w-[140px]">
-                <SelectValue placeholder="Todos os tipos" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os tipos</SelectItem>
-                <SelectItem value="vip">VIP</SelectItem>
-                <SelectItem value="regular">Regular</SelectItem>
-                <SelectItem value="new">Novo</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select 
-              value={selectedStatus} 
-              onValueChange={setSelectedStatus}
-            >
-              <SelectTrigger className="w-[140px]">
-                <SelectValue placeholder="Todos os status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os status</SelectItem>
-                <SelectItem value="active">Ativo</SelectItem>
-                <SelectItem value="inactive">Inativo</SelectItem>
-                <SelectItem value="blocked">Bloqueado</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex flex-row items-center gap-3 w-full">
+              <Select 
+                value={selectedCategory} 
+                onValueChange={setSelectedCategory}
+              >
+                <SelectTrigger id="customer-category-select" className="h-10 w-[210px] max-w-md">
+                  <SelectValue placeholder="Categoria de cliente" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">
+                    <span className="flex items-center gap-2">
+                      <Users className="w-4 h-4 text-blue-500" />
+                      Todas
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="vip">
+                    <span className="flex items-center gap-2">
+                      <Crown className="w-4 h-4 text-yellow-500" />
+                      VIP (5+ compras)
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="regular">
+                    <span className="flex items-center gap-2">
+                      <UserCheck className="w-4 h-4 text-green-500" />
+                      Regular (1-4 compras)
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="novo">
+                    <span className="flex items-center gap-2">
+                      <UserPlus className="w-4 h-4 text-gray-500" />
+                      Novo (0 compras)
+                    </span>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </FilterSelects>
 
           <ActionButtons>
-            <CustomerExportButton 
-              filters={filters}
-              buttonText="Exportar"
-              variant="outline"
-              disabled={isLoading || customers.length === 0}
-              size="sm"
-            />
-            <Button onClick={() => setNewCustomerDialogOpen(true)} size="sm">
-              <Plus className="w-4 h-4 mr-2" />
-              Novo Cliente
-            </Button>
+            <div className="flex flex-row items-center gap-2">
+              <CustomerExportButton 
+                filters={filters}
+                buttonText="Exportar"
+                variant="outline"
+                disabled={isLoading || customers.length === 0}
+                size="sm"
+              />
+              <Button 
+                onClick={() => setNewCustomerDialogOpen(true)} 
+                size="sm" 
+                className="min-w-[140px] bg-[var(--primary-blue)] text-white"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Novo Cliente
+              </Button>
+              {getActiveFiltersCount > 0 && (
+                <Button onClick={handleClearAllFilters} variant="outline" size="sm" className="min-w-[140px]">
+                  <X className="h-3.5 w-3.5 mr-1" />
+                  Limpar Filtros
+                </Button>
+              )}
+            </div>
           </ActionButtons>
 
           <AdvancedFilters>

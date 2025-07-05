@@ -29,6 +29,7 @@ interface CustomerFilters {
   purchaseRange?: string;
   startDate?: string;
   endDate?: string;
+  hasDebts?: string;
 }
 
 export function useCustomers(options: UseCustomersOptions = {}) {
@@ -224,6 +225,9 @@ export function useCustomers(options: UseCustomersOptions = {}) {
         }
         if (filters.endDate) {
           searchParams.endDate = filters.endDate;
+        }
+        if (filters.hasDebts === 'true') {
+          searchParams.hasDebts = 'true';
         }
         
         if (search) {

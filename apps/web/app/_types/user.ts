@@ -17,6 +17,7 @@ export interface User {
   birthDate?: Date;
   createdAt?: Date;
   updatedAt?: Date;
+  customerCategory?: 'vip' | 'regular' | 'novo';
 }
 
 export interface Column {
