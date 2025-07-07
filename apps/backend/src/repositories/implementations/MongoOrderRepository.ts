@@ -88,6 +88,7 @@ export class MongoOrderRepository extends BaseRepository<IOrder, CreateOrderDTO>
 
     if (filters.paymentStatus) {
       query.paymentStatus = filters.paymentStatus;
+      console.log('🔍 MongoOrderRepository.buildFilterQuery - paymentStatus adicionado:', filters.paymentStatus);
     }
 
     if (filters.laboratoryId) {
@@ -114,6 +115,7 @@ export class MongoOrderRepository extends BaseRepository<IOrder, CreateOrderDTO>
       query["products._id"] = new Types.ObjectId(filters.productId);
     }
 
+    console.log('🔍 MongoOrderRepository.buildFilterQuery - Query final:', JSON.stringify(query, null, 2));
     return query;
   }
 

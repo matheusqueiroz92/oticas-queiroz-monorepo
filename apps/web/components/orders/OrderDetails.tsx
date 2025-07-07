@@ -20,7 +20,6 @@ import {
   CreditCard,
   Truck,
   ShoppingBag,
-  ChevronLeft,
   Building,
   Phone,
   Mail,
@@ -951,11 +950,6 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
         </CardContent>
         
         <CardFooter className="border-t p-4 flex justify-between">
-          <Button variant="outline" onClick={onGoBack} className="text-sm gap-2">
-            <ChevronLeft className="h-4 w-4" />
-            Voltar para Pedidos
-          </Button>
-
           <div className="flex gap-3">
             <OrderPdfExporter
               order={order}

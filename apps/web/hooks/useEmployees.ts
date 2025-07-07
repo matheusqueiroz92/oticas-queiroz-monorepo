@@ -73,48 +73,23 @@ export function useEmployees() {
         
         return response.data;
       } else {
-        // Buscar funcionários e administradores separadamente e combinar
-        const [employeesResponse, adminsResponse] = await Promise.all([
-          api.get(API_ROUTES.USERS.BASE, {
-            params: {
-              role: 'employee',
-              page: currentPage,
-              limit: pageSize,
-              _t: timestamp
-            },
-            headers: {
-              'Cache-Control': 'no-cache, no-store, must-revalidate',
-              'Pragma': 'no-cache',
-              'Expires': '0',
-              'X-Timestamp': timestamp.toString()
-            }
-          }),
-          api.get(API_ROUTES.USERS.BASE, {
-            params: {
-              role: 'admin',
-              page: 1,
-              limit: 50, // Assumindo que não há muitos admins
-              _t: timestamp
-            },
-            headers: {
-              'Cache-Control': 'no-cache, no-store, must-revalidate',
-              'Pragma': 'no-cache',
-              'Expires': '0',
-              'X-Timestamp': timestamp.toString()
-            }
-          })
-        ]);
+        // Buscar apenas funcionários (employees), excluindo administradores
+        const response = await api.get(API_ROUTES.USERS.BASE, {
+          params: {
+            role: 'employee',
+            page: currentPage,
+            limit: pageSize,
+            _t: timestamp
+          },
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0',
+            'X-Timestamp': timestamp.toString()
+          }
+        });
         
-        // Combinar os resultados
-        const combinedUsers = [
-          ...employeesResponse.data.users,
-          ...adminsResponse.data.users
-        ];
-        
-        return {
-          users: combinedUsers,
-          pagination: employeesResponse.data.pagination // Usar a paginação dos funcionários como base
-        };
+        return response.data;
       }
     },
     staleTime: 0,
@@ -124,7 +99,8 @@ export function useEmployees() {
 
   const employees = useMemo(() => {
     if (Array.isArray(employeesData.users)) {
-      const onlyEmployees = employeesData.users.filter((user: User) => user.role === 'employee' || user.role === 'admin');
+      // Filtrar apenas funcionários (employees), excluindo administradores
+      const onlyEmployees = employeesData.users.filter((user: User) => user.role === 'employee');
       return [...onlyEmployees].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     }
     return [];

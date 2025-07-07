@@ -17,6 +17,7 @@ export interface OrderFilters {
   sort?: string;
   cpf?: string;
   serviceOrder?: string;
+  paymentStatus?: string;
 }
 
 interface PaginationInfo {
@@ -34,50 +35,61 @@ export async function getAllOrders(filters: OrderFilters = {}): Promise<{
   pagination?: PaginationInfo;
 }> {
   try {
+    // Limpar filtros com valor 'all'
+    const cleanedFilters = { ...filters };
+    if (cleanedFilters.paymentMethod === 'all') delete cleanedFilters.paymentMethod;
+    if (cleanedFilters.paymentStatus === 'all') delete cleanedFilters.paymentStatus;
+
     const params: Record<string, any> = {};
 
-    params.page = filters.page || 1;
-    params.limit = filters.limit || 10;
+    params.page = cleanedFilters.page || 1;
+    params.limit = cleanedFilters.limit || 10;
   
-    params.sort = filters.sort || "-createdAt";
+    params.sort = cleanedFilters.sort || "-createdAt";
     
-    if (filters.search) {
-      params.search = filters.search;
+    if (cleanedFilters.search) {
+      params.search = cleanedFilters.search;
     }
 
-    if (filters.cpf) {
-      params.cpf = filters.cpf;
+    if (cleanedFilters.cpf) {
+      params.cpf = cleanedFilters.cpf;
     }
     
-    if (filters.serviceOrder) {
-      params.serviceOrder = filters.serviceOrder;
+    if (cleanedFilters.serviceOrder) {
+      params.serviceOrder = cleanedFilters.serviceOrder;
     }
     
-    if (filters.status && filters.status !== 'all') {
-      params.status = filters.status;
+    if (cleanedFilters.status && cleanedFilters.status !== 'all') {
+      params.status = cleanedFilters.status;
     }
     
-    if (filters.employeeId && filters.employeeId !== 'all') {
-      params.employeeId = filters.employeeId;
+    if (cleanedFilters.employeeId && cleanedFilters.employeeId !== 'all') {
+      params.employeeId = cleanedFilters.employeeId;
     }
 
-    if (filters.paymentMethod && filters.paymentMethod !== 'all') {
-      params.paymentMethod = filters.paymentMethod;
+    if (cleanedFilters.paymentMethod) {
+      params.paymentMethod = cleanedFilters.paymentMethod;
+    }
+    if (cleanedFilters.paymentStatus) {
+      params.paymentStatus = cleanedFilters.paymentStatus;
     }
 
-    if (filters.laboratoryId && filters.laboratoryId !== 'all') {
-      params.laboratoryId = filters.laboratoryId;
+    if (cleanedFilters.laboratoryId && cleanedFilters.laboratoryId !== 'all') {
+      params.laboratoryId = cleanedFilters.laboratoryId;
     }
     
-    if (filters.startDate) {
-      params.startDate = filters.startDate;
+    if (cleanedFilters.startDate) {
+      params.startDate = cleanedFilters.startDate;
     }
     
-    if (filters.endDate) {
-      params.endDate = filters.endDate;
+    if (cleanedFilters.endDate) {
+      params.endDate = cleanedFilters.endDate;
     }
     
     params._t = Date.now() + Math.random().toString(36).substring(7);
+
+    console.log('🔍 getAllOrders - cleanedFilters:', cleanedFilters);
+    console.log('🔍 getAllOrders - params:', params);
 
     const config = {
       params,

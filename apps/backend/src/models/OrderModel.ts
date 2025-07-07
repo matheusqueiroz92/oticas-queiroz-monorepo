@@ -212,6 +212,10 @@ export class OrderModel {
       }
     }
 
+    if (filters.paymentStatus) {
+      query.paymentStatus = filters.paymentStatus;
+    }
+
     return query;
   }
 

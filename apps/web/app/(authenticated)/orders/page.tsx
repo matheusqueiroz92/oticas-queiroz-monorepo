@@ -3,12 +3,10 @@
 import Cookies from "js-cookie";
 
 import { useEffect, useState } from "react";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, FileX, Plus, Filter, Search } from "lucide-react";
+import { Loader2, FileX, Plus, Clock, Settings, Box, Truck, XCircle } from "lucide-react";
 import { useOrders } from "@/hooks/useOrders";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/useToast";
 import { StatCard } from "@/components/ui/StatCard";
 import { OrderExportButton } from "@/components/orders/exports/OrderExportButton";
 import { OrderFilters } from "@/components/orders/OrderFilters";
@@ -26,12 +24,6 @@ import { Order } from "@/app/_types/order";
 import { formatCurrency, formatDate } from "@/app/_utils/formatters";
 import { customBadgeStyles } from "@/app/_utils/custom-badge-styles";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
   ShoppingBag,
   Package,
   CheckCircle2,
@@ -41,9 +33,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { OrderDialog } from "@/components/orders/OrderDialog";
 
 export default function OrdersPage() {
-  const [userId, setUserId] = useState<string>("");
+  const [, setUserId] = useState<string>("");
   const [showFilters, setShowFilters] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [orderDialogOpen, setOrderDialogOpen] = useState(false);
   const [orderDialogMode, setOrderDialogMode] = useState<'create' | 'edit'>('create');
   const [orderToEdit, setOrderToEdit] = useState<any>(null);
@@ -52,8 +43,6 @@ export default function OrdersPage() {
     const id = Cookies.get("userId") || "";
     setUserId(id);
   }, []);
-  
-  const { toast } = useToast();
 
   const {
     orders,
@@ -65,46 +54,20 @@ export default function OrdersPage() {
     search,
     filters,
     setSearch,
-    clearFilters,
     setCurrentPage,
     updateFilters,
     navigateToOrderDetails,
-    refreshOrdersList,
     getClientName,
     getEmployeeName,
     getLaboratoryName,
     getStatusBadge,
     getPaymentStatusBadge,
   } = useOrders();
-  
-  const handleManualRefresh = async () => {
-    setIsRefreshing(true);
-    try {
-      await refreshOrdersList();
-      toast({
-        title: "Atualizado",
-        description: "Lista de pedidos atualizada com sucesso.",
-      });
-    } catch (error) {
-      console.error("Erro ao atualizar lista:", error);
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Falha ao atualizar lista de pedidos.",
-      });
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
 
   const getActiveFiltersCount = () => {
     let count = 0;
     if (search) count++;
     return count;
-  };
-
-  const handleClearSearch = () => {
-    setSearch('');
   };
 
   const showEmptyState = !isLoading && !error && orders.length === 0;
@@ -169,19 +132,23 @@ export default function OrdersPage() {
   ];
 
   // Estatísticas para os cards
-  const totalPedidos = orders.length;
-  const pedidosHoje = orders.filter(order => {
+  const totalOrdersLength = orders.length;
+  
+  const ordersToday = orders.filter(order => {
     const created = new Date(order.createdAt || order.orderDate);
-    const hoje = new Date();
+    const today = new Date();
     return (
-      created.getDate() === hoje.getDate() &&
-      created.getMonth() === hoje.getMonth() &&
-      created.getFullYear() === hoje.getFullYear()
+      created.getDate() === today.getDate() &&
+      created.getMonth() === today.getMonth() &&
+      created.getFullYear() === today.getFullYear()
     );
   }).length;
-  const emProducao = orders.filter(order => order.status === "in_production").length;
-  const prontos = orders.filter(order => order.status === "ready").length;
-  const totalMes = orders.filter(order => {
+  
+  const ordersInProduction = orders.filter(order => order.status === "in_production").length;
+  
+  const ordersReady = orders.filter(order => order.status === "ready").length;
+  
+  const totalOrdersMonth = orders.filter(order => {
     const created = new Date(order.createdAt || order.orderDate);
     const hoje = new Date();
     return (
@@ -213,31 +180,31 @@ export default function OrdersPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <StatCard
               title="Total de Pedidos"
-              value={totalPedidos.toLocaleString()}
+              value={totalOrdersLength.toLocaleString()}
               icon={ShoppingBag}
               iconColor="text-blue-600 dark:text-blue-400"
               bgColor="bg-blue-100 dark:bg-blue-900"
               badge={{
-                text: `+${pedidosHoje} hoje`,
+                text: `+${ordersToday} hoje`,
                 className: "bg-blue-500 text-white border-0"
               }}
             />
 
             <StatCard
               title="Em Produção"
-              value={emProducao}
+              value={ordersInProduction}
               icon={Package}
               iconColor="text-orange-600 dark:text-orange-400"
               bgColor="bg-orange-100 dark:bg-orange-900"
               badge={{
-                text: `${totalPedidos > 0 ? ((emProducao / totalPedidos) * 100).toFixed(1) : 0}% do total`,
+                text: `${totalOrdersLength > 0 ? ((ordersInProduction / totalOrdersLength) * 100).toFixed(1) : 0}% do total`,
                 className: "bg-orange-500 text-white border-0"
               }}
             />
 
             <StatCard
               title="Prontos"
-              value={prontos}
+              value={ordersReady}
               icon={CheckCircle2}
               iconColor="text-green-600 dark:text-green-400"
               bgColor="bg-green-100 dark:bg-green-900"
@@ -249,7 +216,7 @@ export default function OrdersPage() {
 
             <StatCard
               title="Valor Total"
-              value={formatCurrency(totalMes)}
+              value={formatCurrency(totalOrdersMonth)}
               icon={DollarSign}
               iconColor="text-purple-600 dark:text-purple-400"
               bgColor="bg-purple-100 dark:bg-purple-900"
@@ -271,29 +238,29 @@ export default function OrdersPage() {
             activeFiltersCount={getActiveFiltersCount()}
           >
             <FilterSelects>
-              <Select defaultValue="todos">
+              <Select value={filters.status || "todos"} onValueChange={value => updateFilters({ ...filters, status: value === "todos" ? undefined : value })}>
                 <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Todos os tipos" />
+                  <SelectValue placeholder="Status do pedido" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="todos">Status do pedido</SelectItem>
-                  <SelectItem value="vip">Pendente</SelectItem>
-                  <SelectItem value="vip">Em produção</SelectItem>
-                  <SelectItem value="regular">Pronto</SelectItem>
-                  <SelectItem value="regular">Entregue</SelectItem>
-                  <SelectItem value="novo">Cancelado</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select defaultValue="todos-status">
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Todos os status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos-status">Status do pagamento</SelectItem>
-                  <SelectItem value="ativo">Pendente</SelectItem>
-                  <SelectItem value="inativo">Parcialmente pago</SelectItem>
-                  <SelectItem value="bloqueado">Pago</SelectItem>
+                  <SelectItem value="todos">
+                    <span className="flex items-center gap-2"><Clock className="w-4 h-4 text-gray-500" />Status do pedido</span>
+                  </SelectItem>
+                  <SelectItem value="pending">
+                    <span className="flex items-center gap-2"><Clock className="w-4 h-4 text-yellow-500" />Pendente</span>
+                  </SelectItem>
+                  <SelectItem value="in_production">
+                    <span className="flex items-center gap-2"><Settings className="w-4 h-4 text-orange-500" />Em produção</span>
+                  </SelectItem>
+                  <SelectItem value="ready">
+                    <span className="flex items-center gap-2"><Box className="w-4 h-4 text-green-500" />Pronto</span>
+                  </SelectItem>
+                  <SelectItem value="delivered">
+                    <span className="flex items-center gap-2"><Truck className="w-4 h-4 text-blue-500" />Entregue</span>
+                  </SelectItem>
+                  <SelectItem value="cancelled">
+                    <span className="flex items-center gap-2"><XCircle className="w-4 h-4 text-red-500" />Cancelado</span>
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </FilterSelects>
@@ -306,7 +273,7 @@ export default function OrdersPage() {
                 disabled={isLoading || orders.length === 0}
                 size="sm"
               />
-              <Button size="sm" onClick={handleOpenNewOrder}>
+              <Button size="sm" className="bg-[var(--primary-blue)] text-white" onClick={handleOpenNewOrder}>
                 <Plus className="w-4 h-4 mr-2" /> Novo Pedido
               </Button>
             </ActionButtons>
@@ -314,7 +281,14 @@ export default function OrdersPage() {
             <AdvancedFilters>
               <OrderFilters 
                 onUpdateFilters={(newFilters: Record<string, any>) => {
-                  updateFilters(newFilters);
+                  const merged = { ...filters, ...newFilters };
+                  if (!('paymentMethod' in newFilters)) delete (merged as any).paymentMethod;
+                  if (!('paymentStatus' in newFilters)) delete (merged as any).paymentStatus;
+                  if (!('employeeId' in newFilters)) delete (merged as any).employeeId;
+                  if (!('laboratoryId' in newFilters)) delete (merged as any).laboratoryId;
+                  if (!('startDate' in newFilters)) delete (merged as any).startDate;
+                  if (!('endDate' in newFilters)) delete (merged as any).endDate;
+                  updateFilters(merged);
                 }}
               />
             </AdvancedFilters>

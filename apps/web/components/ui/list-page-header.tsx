@@ -62,7 +62,7 @@ export function ListPageHeader({
           <div className="flex gap-2 justify-end sm:ml-auto">
             <Button variant="outline" size="sm" onClick={onToggleFilters}>
               <Filter className="w-4 h-4 mr-2" />
-              Filtros
+              Filtros Avançados
               {activeFiltersCount > 0 && (
                 <Badge variant="secondary" className="ml-1 h-5 w-5 text-xs rounded-full p-0 flex items-center justify-center">
                   {activeFiltersCount}

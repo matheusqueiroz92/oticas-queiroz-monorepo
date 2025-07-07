@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { X, Calendar, Users, CreditCard, Beaker, AlertCircle } from "lucide-react";
+import { X, Calendar, Users, CreditCard, Beaker, AlertCircle, DollarSign, BadgeCheck, Ban, Clock } from "lucide-react";
 import { useLaboratories } from "@/hooks/useLaboratories";
 import { useEmployees } from "@/hooks/useEmployees";
 import { Employee } from "@/app/_types/employee";
@@ -23,14 +23,13 @@ interface OrderFiltersProps {
 export const OrderFilters = ({ 
   onUpdateFilters, 
   hideEmployeeFilter = false, 
-  hideClientFilter = false 
 }: OrderFiltersProps) => {
   const [dateRange, setDateRange] = useState({
     startDate: '',
     endDate: ''
   });
   
-  const [selectedStatus, setSelectedStatus] = useState("all");
+  const [selectedPaymentStatus, setSelectedPaymentStatus] = useState("all");
   const [selectedEmployeeId, setSelectedEmployeeId] = useState("all");
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("all");
   const [selectedLaboratoryId, setSelectedLaboratoryId] = useState("all");
@@ -44,8 +43,8 @@ export const OrderFilters = ({
       sort: "-createdAt"
     };
     
-    if (selectedStatus && selectedStatus !== "all") {
-      filters.status = selectedStatus;
+    if (selectedPaymentStatus && selectedPaymentStatus !== "all") {
+      filters.paymentStatus = selectedPaymentStatus;
     }
     
     if (selectedEmployeeId && selectedEmployeeId !== "all") {
@@ -88,15 +87,13 @@ export const OrderFilters = ({
 
   useEffect(() => {
     if (validateDates()) {
-      
-      const newFilters = getCurrentFilters();
-      onUpdateFilters(newFilters);
+      onUpdateFilters(getCurrentFilters());
     }
-  }, [selectedStatus, selectedEmployeeId, selectedPaymentMethod, selectedLaboratoryId, dateRange.startDate, dateRange.endDate]);
+  }, [selectedPaymentStatus, selectedEmployeeId, selectedPaymentMethod, selectedLaboratoryId, dateRange.startDate, dateRange.endDate]);
 
   const handleClearFilters = () => {
     setDateRange({ startDate: '', endDate: '' });
-    setSelectedStatus("all");
+    setSelectedPaymentStatus("all");
     setSelectedEmployeeId("all");
     setSelectedPaymentMethod("all");
     setSelectedLaboratoryId("all");
@@ -105,23 +102,15 @@ export const OrderFilters = ({
     onUpdateFilters({ sort: "-createdAt" });
   };
 
-  const paymentMethods = [
-    { value: "credit", label: "Cartão de Crédito" },
-    { value: "debit", label: "Cartão de Débito" },
-    { value: "cash", label: "Dinheiro" },
-    { value: "pix", label: "PIX" },
-    { value: "installment", label: "Parcelado" }
-  ];
-
   return (
-    <div className="bg-card p-3 rounded-md mb-3">
+    <div className="bg-card p-6 rounded-md mb-3">
       <div className="flex justify-between items-center mb-2">
-        <h3 className="text-sm font-medium">Filtros Avançados</h3>
+        <h3 className="text-lg font-medium">Filtros Avançados</h3>
         <Button 
-          variant="destructive" 
+          variant="outline" 
           size="sm" 
           onClick={handleClearFilters}
-          className="h-8 text-sm"
+          className="h-10 text-sm"
         >
           <X className="h-3.5 w-3.5 mr-1" />
           Limpar Filtros
@@ -163,28 +152,7 @@ export const OrderFilters = ({
             <Calendar className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-zinc-400 dark:text-zinc-300" />
           </div>
         </div>
-        
-        {/* Status */}
-        <div className="space-y-1">
-          <Label htmlFor="status" className="text-sm">Status</Label>
-          <Select 
-            value={selectedStatus} 
-            onValueChange={setSelectedStatus}
-          >
-            <SelectTrigger id="status" className="h-9 text-sm border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-black dark:text-white">
-              <SelectValue placeholder="Selecione um status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os status</SelectItem>
-              <SelectItem value="pending">Pendente</SelectItem>
-              <SelectItem value="in_production">Em Produção</SelectItem>
-              <SelectItem value="ready">Pronto</SelectItem>
-              <SelectItem value="delivered">Entregue</SelectItem>
-              <SelectItem value="cancelled">Cancelado</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        
+
         {/* Vendedor */}
         {!hideEmployeeFilter && (
           <div className="space-y-1">
@@ -215,32 +183,28 @@ export const OrderFilters = ({
           </div>
         )}
       </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mt-4">
         {/* Método de Pagamento */}
         <div className="space-y-1">
           <Label htmlFor="paymentMethod" className="text-sm">Método de Pagamento</Label>
           <div className="relative">
-            <Select 
-              value={selectedPaymentMethod} 
-              onValueChange={setSelectedPaymentMethod}
-            >
-              <SelectTrigger id="paymentMethod" className="h-9 text-sm pl-7 border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-black dark:text-white">
+            <Select value={selectedPaymentMethod} onValueChange={setSelectedPaymentMethod}>
+              <SelectTrigger id="paymentMethod" className="h-9 text-sm border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-black dark:text-white">
                 <SelectValue placeholder="Selecione um método" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos os métodos</SelectItem>
-                {paymentMethods.map((method) => (
-                  <SelectItem key={method.value} value={method.value}>
-                    {method.label}
-                  </SelectItem>
-                ))}
+                <SelectItem value="all"><span className="flex items-center gap-2"><CreditCard className="w-4 h-4 text-gray-500" />Todos os métodos de pagamento</span></SelectItem>
+                <SelectItem value="credit"><span className="flex items-center gap-2"><CreditCard className="w-4 h-4 text-blue-500" />Cartão de Crédito</span></SelectItem>
+                <SelectItem value="debit"><span className="flex items-center gap-2"><CreditCard className="w-4 h-4 text-green-500" />Cartão de Débito</span></SelectItem>
+                <SelectItem value="cash"><span className="flex items-center gap-2"><DollarSign className="w-4 h-4 text-yellow-600" />Dinheiro</span></SelectItem>
+                <SelectItem value="pix"><span className="flex items-center gap-2"><BadgeCheck className="w-4 h-4 text-purple-500" />PIX</span></SelectItem>
+                <SelectItem value="installment"><span className="flex items-center gap-2"><CreditCard className="w-4 h-4 text-pink-500" />Parcelado</span></SelectItem>
               </SelectContent>
             </Select>
-            <CreditCard className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-zinc-400 dark:text-zinc-300" />
           </div>
         </div>
-    
+
         {/* Laboratório */}
         <div className="space-y-1">
           <Label htmlFor="laboratory" className="text-sm">Laboratório</Label>
@@ -267,6 +231,26 @@ export const OrderFilters = ({
             </Select>
             <Beaker className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-zinc-400 dark:text-zinc-300" />
           </div>
+        </div>
+
+        {/* Status de Pagamento */}
+        <div className="space-y-1">
+          <Label htmlFor="paymentStatus" className="text-sm">Status de Pagamento</Label>
+          <Select
+            value={selectedPaymentStatus}
+            onValueChange={setSelectedPaymentStatus}
+          >
+            <SelectTrigger id="paymentStatus" className="h-9 text-sm border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-black dark:text-white">
+              <SelectValue placeholder="Selecione um status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all"><span className="flex items-center gap-2"><Clock className="w-4 h-4 text-gray-500" />Todos os Status de Pagamento</span></SelectItem>
+              <SelectItem value="pending"><span className="flex items-center gap-2"><Clock className="w-4 h-4 text-yellow-500" />Pendente</span></SelectItem>
+              <SelectItem value="partially_paid"><span className="flex items-center gap-2"><BadgeCheck className="w-4 h-4 text-blue-500" />Parcialmente pago</span></SelectItem>
+              <SelectItem value="paid"><span className="flex items-center gap-2"><DollarSign className="w-4 h-4 text-green-500" />Pago</span></SelectItem>
+              <SelectItem value="cancelled"><span className="flex items-center gap-2"><Ban className="w-4 h-4 text-red-500" />Cancelado</span></SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
       

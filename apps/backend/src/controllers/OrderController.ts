@@ -143,7 +143,8 @@ export class OrderController {
         maxPrice,
         search,
         cpf,
-        sort
+        sort,
+        paymentStatus
       } = queryParams;
 
       const filters: Record<string, any> = {};
@@ -222,6 +223,13 @@ export class OrderController {
       } else {
         filters.sort = "-createdAt";
       }
+
+      if (paymentStatus) {
+        filters.paymentStatus = paymentStatus;
+      }
+
+      console.log('🔍 OrderController.getAllOrders - Filtros finais:', JSON.stringify(filters, null, 2));
+      console.log('🔍 OrderController.getAllOrders - paymentStatus recebido:', paymentStatus);
   
       const result = await this.orderService.getAllOrders(page, limit, filters);
   

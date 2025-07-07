@@ -125,13 +125,13 @@ export default function MyOrdersPage() {
   }, [loggedUserId, loggedUserRole, filters, updateFilters, isCustomer, isEmployee]);
   
 
-
   const getActiveFiltersCount = () => {
     let count = 0;
     if (search) count++;
     // Não contar os filtros automáticos (clientId/employeeId)
     if (filters.status && filters.status !== 'all') count++;
     if (filters.paymentMethod && filters.paymentMethod !== 'all') count++;
+    if (filters.paymentStatus && filters.paymentStatus !== 'all') count++;
     if (filters.laboratoryId && filters.laboratoryId !== 'all') count++;
     if (filters.startDate) count++;
     if (filters.endDate) count++;
@@ -381,29 +381,28 @@ export default function MyOrdersPage() {
             activeFiltersCount={getActiveFiltersCount()}
           >
             <FilterSelects>
-              <Select defaultValue="todos">
+              <Select 
+                value={filters.status || "all"} 
+                onValueChange={(value) => {
+                  const newFilters = { ...filters };
+                  if (value === "all") {
+                    delete newFilters.status;
+                  } else {
+                    newFilters.status = value;
+                  }
+                  handleUpdateFilters(newFilters);
+                }}
+              >
                 <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Todos os tipos" />
+                  <SelectValue placeholder="Status do pedido" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="todos">Status do pedido</SelectItem>
+                  <SelectItem value="all">Todos os status</SelectItem>
                   <SelectItem value="pending">Pendente</SelectItem>
                   <SelectItem value="in_production">Em produção</SelectItem>
                   <SelectItem value="ready">Pronto</SelectItem>
                   <SelectItem value="delivered">Entregue</SelectItem>
                   <SelectItem value="cancelled">Cancelado</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select defaultValue="todos-status">
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Todos os status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos-status">Status do pagamento</SelectItem>
-                  <SelectItem value="pending">Pendente</SelectItem>
-                  <SelectItem value="partially_paid">Parcialmente pago</SelectItem>
-                  <SelectItem value="paid">Pago</SelectItem>
                 </SelectContent>
               </Select>
             </FilterSelects>

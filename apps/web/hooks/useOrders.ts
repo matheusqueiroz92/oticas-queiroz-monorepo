@@ -182,6 +182,7 @@ export function useOrders(options: UseOrdersOptions = {}) {
   } = useQuery({
     queryKey: QUERY_KEYS.ORDERS.PAGINATED(currentPage, filterKey),
     queryFn: async () => {
+      console.log('🔍 useOrders - filters enviados para getAllOrders:', { ...filters, page: currentPage });
       return await getAllOrders({
         ...filters,
         page: currentPage,
