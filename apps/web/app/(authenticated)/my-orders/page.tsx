@@ -23,12 +23,6 @@ import { formatCurrency, formatDate } from "@/app/_utils/formatters";
 import { PageContainer } from "@/components/ui/page-container";
 import { customBadgeStyles } from "@/app/_utils/custom-badge-styles";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
   ShoppingBag,
   Package,
   CheckCircle2,
@@ -131,7 +125,6 @@ export default function MyOrdersPage() {
     // Não contar os filtros automáticos (clientId/employeeId)
     if (filters.status && filters.status !== 'all') count++;
     if (filters.paymentMethod && filters.paymentMethod !== 'all') count++;
-    if (filters.paymentStatus && filters.paymentStatus !== 'all') count++;
     if (filters.laboratoryId && filters.laboratoryId !== 'all') count++;
     if (filters.startDate) count++;
     if (filters.endDate) count++;
