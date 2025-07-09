@@ -15,7 +15,7 @@ import { handleError, showSuccess } from "@/app/_utils/error-handler";
 import { useQueryClient } from "@tanstack/react-query";
 import { QUERY_KEYS } from "@/app/_constants/query-keys";
 import Cookies from "js-cookie";
-import { FilePlus, PackagePlus } from "lucide-react";
+import { FilePlus } from "lucide-react";
 
 interface OrderDialogProps {
   open: boolean;
@@ -108,8 +108,8 @@ export const OrderDialog: React.FC<OrderDialogProps> = ({ open, onOpenChange, or
     enablePagination: false
   });
   
-  const { products: productsData } = useProducts();
-  const { handleCreateOrder, isCreating } = useOrders();
+  const { products: productsData } = useProducts(1, "", "all");
+  const { handleCreateOrder } = useOrders();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -250,7 +250,7 @@ export const OrderDialog: React.FC<OrderDialogProps> = ({ open, onOpenChange, or
   };
   
   // Função para ver detalhes do pedido
-  const handleViewOrderDetails = (orderId: string) => {
+  const handleViewOrderDetails = () => {
     handleClose();
     // Navegar para detalhes do pedido seria implementado aqui
   };

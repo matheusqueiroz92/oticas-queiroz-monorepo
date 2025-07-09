@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useParams } from "next/navigation";
-import { useProducts } from "@/hooks/useProducts";
+import { useProductById } from "@/hooks/useProductById";
 import { useProductDetailsState } from "@/hooks/useProductDetailsState";
 import { useProductDetailsData } from "@/hooks/useProductDetailsData";
 import { ProductDetailsContent } from "@/components/products/ProductDetailsContent";
@@ -13,29 +13,24 @@ export default function ProductDetailsPage() {
   const { id } = useParams<{ id: string }>();
   const { showEditDialog, handleOpenEditDialog, handleCloseEditDialog } = useProductDetailsState();
   
-  const {
-    currentProduct,
-    loading,
-    error,
-    fetchProductById,
-  } = useProducts(1, "", "all");
+  const { product, loading, error, fetchProduct } = useProductById(id);
 
   const { handleGoBack, handleEditSuccess } = useProductDetailsData({
     productId: id,
-    fetchProductById,
+    fetchProductById: fetchProduct,
   });
 
   useEffect(() => {
     if (id) {
-      fetchProductById(id as string);
+      fetchProduct(id as string);
     }
-  }, [id, fetchProductById]);
+  }, [id, fetchProduct]);
 
   if (loading) {
     return <ProductDetailsLoading />;
   }
 
-  if (error || !currentProduct) {
+  if (error || !product) {
     return (
       <ProductDetailsError 
         error={error} 
@@ -46,7 +41,7 @@ export default function ProductDetailsPage() {
 
   return (
     <ProductDetailsContent
-      product={currentProduct}
+      product={product}
       showEditDialog={showEditDialog}
       onGoBack={handleGoBack}
       onEditClick={handleOpenEditDialog}
