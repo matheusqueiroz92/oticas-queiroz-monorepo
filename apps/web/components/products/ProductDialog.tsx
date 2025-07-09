@@ -73,7 +73,7 @@ export function ProductDialog({
   product,
   mode,
 }: ProductDialogProps) {
-  const { createProductMutation, updateProductMutation } = useProducts();
+  const { createProductMutation, updateProductMutation } = useProducts(1, "", "all");
   const { toast } = useToast();
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imageUrl, setImageUrl] = useState<string | undefined>(undefined);

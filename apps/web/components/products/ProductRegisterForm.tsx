@@ -57,7 +57,7 @@ export default function ProductRegisterForm({ title, description }: ProductRegis
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const { handleCreateProduct } = useProducts();
+  const { handleCreateProduct } = useProducts(1, "", "all");
   const [selectedProductType, setSelectedProductType] = useState<Product['productType']>("lenses");
   const [currentStep, setCurrentStep] = useState(0);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);

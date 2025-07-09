@@ -32,48 +32,49 @@ interface ProductsListWithDialogProps {
 
 export function ProductsListWithDialog({
   products,
-  isLoading,
-  error,
-  searchTerm,
-  productType,
-  stockFilter,
+  // isLoading,
+  // error,
+  // searchTerm,
+  // productType,
+  // stockFilter,
   viewMode,
   currentPage,
   totalPages,
   totalProducts,
   setCurrentPage,
-  setSearchTerm,
-  setProductType,
-  setStockFilter,
+  // setSearchTerm,
+  // setProductType,
+  // setStockFilter,
   setViewMode,
-  onSearch,
-  onProductTypeChange,
+  // onSearch,
+  // onProductTypeChange,
   clearFilters,
   navigateToProductDetails,
   formatCurrency,
   onRefresh,
 }: ProductsListWithDialogProps) {
   // Filtrar produtos com base no estoque
-  const filteredProducts = products.filter(product => {
-    // Se não for um produto com estoque e o filtro não for "all", não mostrar
-    if (product.productType !== 'prescription_frame' && product.productType !== 'sunglasses_frame') {
-      return stockFilter === "all";
-    }
+  
+  // const filteredProducts = products.filter(product => {
+  //   // Se não for um produto com estoque e o filtro não for "all", não mostrar
+  //   if (product.productType !== 'prescription_frame' && product.productType !== 'sunglasses_frame') {
+  //     return stockFilter === "all";
+  //   }
     
-    // Obter o valor do estoque
-    const stock = (product as any).stock || 0;
+  //   // Obter o valor do estoque
+  //   const stock = (product as any).stock || 0;
     
-    // Aplicar o filtro específico
-    switch (stockFilter) {
-      case "low":
-        return stock > 0 && stock <= 5;
-      case "out":
-        return stock === 0;
-      case "all":
-      default:
-        return true;
-    }
-  });
+  //   // Aplicar o filtro específico
+  //   switch (stockFilter) {
+  //     case "low":
+  //       return stock > 0 && stock <= 5;
+  //     case "out":
+  //       return stock === 0;
+  //     case "all":
+  //     default:
+  //       return true;
+  //   }
+  // });
 
   // Não faça slice/paginação no frontend!
   // Use apenas os produtos recebidos do backend (já paginados)

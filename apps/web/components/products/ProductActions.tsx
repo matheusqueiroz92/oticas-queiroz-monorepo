@@ -18,7 +18,6 @@ import {
 import { ProductDialog } from "./ProductDialog";
 import { Product } from "@/app/_types/product";
 import { useProducts } from "@/hooks/useProducts";
-import { useToast } from "@/hooks/useToast";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,8 +39,7 @@ export function ProductActions({ product, onViewDetails, onRefresh }: ProductAct
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const { handleDeleteProduct, isDeleting } = useProducts();
-  const { toast } = useToast();
+  const { handleDeleteProduct, isDeleting } = useProducts(1, "", "all");
 
   const handleCreateSuccess = () => {
     if (onRefresh) {

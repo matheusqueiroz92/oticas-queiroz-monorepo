@@ -29,7 +29,7 @@ interface ProductStockManagementProps {
 }
 
 export function ProductStockManagement({
-  productId,
+  // productId,
   productName,
   currentStock,
   isUpdatingStock,

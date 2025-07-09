@@ -1,5 +1,5 @@
 import { StatCard } from "@/components/ui/StatCard";
-import { Package, Eye, Droplets, Glasses, Sun, AlertTriangle, DollarSign } from "lucide-react";
+import { Package, Eye, Glasses, DollarSign } from "lucide-react";
 import { formatCurrency } from "@/app/_utils/product-utils";
 
 interface ProductsStatsCardsProps {
@@ -16,7 +16,7 @@ interface ProductsStatsCardsProps {
 export function ProductsStatsCards({
   totalProducts,
   lowStockProducts,
-  outOfStockProducts,
+  // outOfStockProducts,
   lensesCount,
   cleanLensesCount,
   prescriptionFramesCount,
