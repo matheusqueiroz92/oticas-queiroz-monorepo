@@ -18,7 +18,7 @@ export default function ProductDetailsPage() {
     loading,
     error,
     fetchProductById,
-  } = useProducts();
+  } = useProducts(1, "", "all");
 
   const { handleGoBack, handleEditSuccess } = useProductDetailsData({
     productId: id,
