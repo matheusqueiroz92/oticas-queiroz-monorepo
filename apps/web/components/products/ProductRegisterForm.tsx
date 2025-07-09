@@ -355,7 +355,7 @@ export default function ProductRegisterForm({ title, description }: ProductRegis
             <FormField
               control={form.control}
               name="image"
-              render={({ field: { onChange } }) => (
+              render={() => (
                 <FormItem>
                   <FormLabel className="flex items-center gap-1">
                     <ImageIcon className="h-4 w-4 text-primary" />
