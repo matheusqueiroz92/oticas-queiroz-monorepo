@@ -12,6 +12,7 @@ import {
   createOrder,
   getOrdersByClient,
   updateOrder,
+  getMyOrders,
 } from "@/app/_services/orderService";
 import { QUERY_KEYS } from "../app/_constants/query-keys";
 import { API_ROUTES } from "@/app/_constants/api-routes";
@@ -55,7 +56,19 @@ export function useOrders(options: UseOrdersOptions = {}) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { getUserName } = useUsers();
-  const { getLaboratoryName } = useLaboratories();
+  
+  // Função para obter nome do laboratório com dados populados
+  const getLaboratoryName = (id: string | any): string => {
+    if (!id) return "N/A";
+    
+    // Se id já é um objeto populado (tem propriedade name)
+    if (typeof id === 'object' && id?.name) {
+      return id.name;
+    }
+    
+    // Se chegou aqui, não conseguimos determinar o nome
+    return "Laboratório não encontrado";
+  };
 
   const filterKey = JSON.stringify(filters);
 
@@ -205,8 +218,20 @@ export function useOrders(options: UseOrdersOptions = {}) {
   useEffect(() => {
     if (enableQueries && orders.length > 0) {
       const userIdsToFetch = [
-        ...orders.map(order => typeof order.clientId === 'string' ? order.clientId : '').filter(Boolean),
-        ...orders.map(order => typeof order.employeeId === 'string' ? order.employeeId : '').filter(Boolean)
+        ...orders.map(order => {
+          // Se clientId é string, precisa buscar. Se é objeto, já está populado.
+          if (typeof order.clientId === 'string') {
+            return order.clientId;
+          }
+          return '';
+        }).filter(Boolean),
+        ...orders.map(order => {
+          // Se employeeId é string, precisa buscar. Se é objeto, já está populado.
+          if (typeof order.employeeId === 'string') {
+            return order.employeeId;
+          }
+          return '';
+        }).filter(Boolean)
       ];
       
       const uniqueUserIds = [...new Set(userIdsToFetch)];
@@ -553,41 +578,103 @@ export function useOrders(options: UseOrdersOptions = {}) {
     return types[type] || type;
   }, []);
    
-  const getClientName = useCallback((clientId: string) => {
+  const getClientName = useCallback((clientId: string | any) => {
     if (!clientId) return "N/A";
-    let cleanId = clientId;
-    if (typeof clientId === 'string' && clientId.includes('ObjectId')) {
-      try {
-        const matches = clientId.match(/ObjectId\('([^']+)'\)/);
-        if (matches && matches[1]) {
-          cleanId = matches[1];
-        }
-      } catch (err) {
-        console.error("Erro ao extrair ID do cliente:", err);
-      }
-    }
-    const name = getUserName(cleanId);
     
-    return name || "Cliente não encontrado";
+    // Se clientId já é um objeto populado (tem propriedade name)
+    if (typeof clientId === 'object' && clientId?.name) {
+      return clientId.name;
+    }
+    
+    // Se é uma string, tentar buscar via getUserName apenas como fallback
+    if (typeof clientId === 'string') {
+      let cleanId = clientId;
+      if (clientId.includes('ObjectId')) {
+        try {
+          const matches = clientId.match(/ObjectId\('([^']+)'\)/);
+          if (matches && matches[1]) {
+            cleanId = matches[1];
+          }
+        } catch (err) {
+          console.error("Erro ao extrair ID do cliente:", err);
+          return "Cliente não encontrado";
+        }
+      }
+      
+      // Como agora estamos usando populate, este cenário só deve acontecer em casos excepcionais
+      const name = getUserName(cleanId);
+      
+      // Se retornou "Carregando...", mostrar um fallback mais adequado
+      if (name === "Carregando...") {
+        return "Cliente"; // Fallback mais amigável
+      }
+      
+      return name || "Cliente não encontrado";
+    }
+    
+    return "Cliente não encontrado";
   }, [getUserName]);
    
-  const getEmployeeName = useCallback((employeeId: string) => {
-    if (!employeeId) return "N/A";
-    let cleanId = employeeId;
-
-    if (typeof employeeId === 'string' && employeeId.includes('ObjectId')) {
-      try {
-        const matches = employeeId.match(/ObjectId\('([^']+)'\)/);
-        if (matches && matches[1]) {
-          cleanId = matches[1];
-        }
-      } catch (err) {
-        console.error("Erro ao extrair ID do funcionário:", err);
+  const getEmployeeName = useCallback((employeeIdOrOrder: string | any) => {
+    // Se recebeu um objeto (pedido completo), verificar se tem employeeId populado
+    if (typeof employeeIdOrOrder === 'object' && employeeIdOrOrder?.employeeId) {
+      // Se employeeId é um objeto populado com name
+      if (typeof employeeIdOrOrder.employeeId === 'object' && employeeIdOrOrder.employeeId?.name) {
+        return employeeIdOrOrder.employeeId.name;
+      }
+      
+      // Se employeeId é uma string, tentar buscar via getUserName
+      if (typeof employeeIdOrOrder.employeeId === 'string') {
+        const name = getUserName(employeeIdOrOrder.employeeId);
+        return name || "Carregando...";
       }
     }
-    const name = getUserName(cleanId);
     
-    return name || "Funcionário não encontrado";
+    // Se recebeu um objeto (pedido completo), usar dados normalizados
+    if (typeof employeeIdOrOrder === 'object' && employeeIdOrOrder?._normalized?.employeeName) {
+      return employeeIdOrOrder._normalized.employeeName;
+    }
+    
+    // Se recebeu um objeto employeeId populado diretamente
+    if (typeof employeeIdOrOrder === 'object' && employeeIdOrOrder?.name) {
+      return employeeIdOrOrder.name;
+    }
+    
+    // Se é uma string (ID), tentar buscar via getUserName
+    if (typeof employeeIdOrOrder === 'string') {
+      if (!employeeIdOrOrder) return "N/A";
+      
+      let cleanId = employeeIdOrOrder;
+
+      if (employeeIdOrOrder.includes('ObjectId')) {
+        try {
+          const matches = employeeIdOrOrder.match(/ObjectId\('([^']+)'\)/);
+          if (matches && matches[1]) {
+            cleanId = matches[1];
+          }
+        } catch (err) {
+          console.error("Erro ao extrair ID do funcionário:", err);
+        }
+      }
+      
+      // Tentar buscar nome via getUserName, mas se falhar, não mostrar erro
+      try {
+        const name = getUserName(cleanId);
+        
+        // Se retornou "Carregando...", mostrar um fallback mais adequado
+        if (name === "Carregando...") {
+          return "Vendedor"; // Fallback mais amigável
+        }
+        
+        return name || "Vendedor";
+      } catch (error) {
+        console.log(error);
+        // Para clientes, getUserName pode falhar devido a permissões
+        return "Vendedor";
+      }
+    }
+    
+    return "Vendedor";
   }, [getUserName]);
 
   const fetchOrderComplementaryDetails = useCallback(async (order: Order) => {
@@ -648,6 +735,20 @@ export function useOrders(options: UseOrdersOptions = {}) {
     }
   }, []);
    
+  // Hook para buscar pedidos do cliente logado
+  const useMyOrders = useCallback(() => {
+    return useQuery({
+      queryKey: QUERY_KEYS.ORDERS.MY_ORDERS,
+      queryFn: () => getMyOrders(),
+      enabled: enableQueries,
+      staleTime: 0,
+      gcTime: 0,
+      refetchOnMount: true,
+      refetchOnWindowFocus: false,
+      retry: 1,
+    });
+  }, [enableQueries]);
+
   return {
     orders,
     isLoading,
@@ -667,6 +768,7 @@ export function useOrders(options: UseOrdersOptions = {}) {
     updateFilters,
     fetchOrderById,
     useClientOrders,
+    useMyOrders,
     handleUpdateOrder,
     handleUpdateOrderStatus,
     handleUpdateOrderLaboratory,

@@ -110,6 +110,16 @@ export class ProductController {
         ];
       }
 
+      // Filtro de estoque
+      if (req.query.stockFilter) {
+        if (req.query.stockFilter === "low") {
+          filters.stock = { $gt: 0, $lte: 5 };
+        } else if (req.query.stockFilter === "out") {
+          filters.stock = 0;
+        }
+        // "all" não precisa de filtro
+      }
+
       const { products, total } = await this.productService.getAllProducts(
         page,
         limit,

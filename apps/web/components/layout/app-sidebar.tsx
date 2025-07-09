@@ -19,6 +19,8 @@ import {
   ChevronDown,
   ChevronRight,
   type LucideIcon,
+  ListCheck,
+  ContactRound,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -91,13 +93,13 @@ const menuItems: MenuItem[] = [
     subItems: [
       {
         title: "Todos os Pedidos",
-        icon: FileText,
+        icon: ListCheck,
         href: "/orders",
         roles: ["admin", "employee"],
       },
       {
         title: "Meus Pedidos",
-        icon: User,
+        icon: ContactRound,
         href: "/my-orders",
         roles: ["customer", "employee", "admin"],
       },

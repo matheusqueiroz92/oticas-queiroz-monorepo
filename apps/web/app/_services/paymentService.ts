@@ -1,4 +1,5 @@
 import { api } from "./authService";
+import { API_ROUTES } from "../_constants/api-routes";
 import type {
   IPayment,
   CreatePaymentDTO,
@@ -199,4 +200,73 @@ export async function getDailyFinancialReport(
   });
 
   return response.data;
+}
+
+/**
+ * Busca débitos e histórico de pagamentos de um cliente específico
+ */
+export async function getClientDebts(clientId: string): Promise<{
+  totalDebt: number;
+  paymentHistory: IPayment[];
+  orders: any[];
+}> {
+  try {
+    const response = await api.get(API_ROUTES.PAYMENTS.CLIENT_DEBTS(clientId));
+    return response.data;
+  } catch (error) {
+    console.error(`Erro ao buscar débitos do cliente ${clientId}:`, error);
+    return {
+      totalDebt: 0,
+      paymentHistory: [],
+      orders: [],
+    };
+  }
+}
+
+/**
+ * Busca débitos do cliente logado
+ */
+export async function getMyDebts(): Promise<{
+  totalDebt: number;
+  paymentHistory: IPayment[];
+  orders: any[];
+}> {
+  try {
+    const response = await api.get(API_ROUTES.PAYMENTS.MY_DEBTS);
+    return response.data;
+  } catch (error) {
+    console.error('Erro ao buscar meus débitos:', error);
+    return {
+      totalDebt: 0,
+      paymentHistory: [],
+      orders: [],
+    };
+  }
+}
+
+/**
+ * Busca pagamentos do cliente logado
+ */
+export async function getMyPayments(filters: PaymentFilters = {}): Promise<{
+  payments: IPayment[];
+  pagination?: PaginationInfo;
+}> {
+  try {
+    const response = await api.get(API_ROUTES.PAYMENTS.MY_PAYMENTS, { params: filters });
+    
+    let payments: IPayment[] = [];
+    let pagination: PaginationInfo | undefined = undefined;
+
+    if (Array.isArray(response.data)) {
+      payments = response.data;
+    } else if (response.data?.payments) {
+      payments = response.data.payments;
+      pagination = response.data.pagination;
+    }
+
+    return { payments, pagination };
+  } catch (error) {
+    console.error('Erro ao buscar meus pagamentos:', error);
+    return { payments: [] };
+  }
 }

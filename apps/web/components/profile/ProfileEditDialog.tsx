@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -25,7 +25,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ImageUpload } from "@/components/ui/image-upload";
 
 const profileSchema = z.object({
@@ -56,8 +55,8 @@ export function ProfileEditDialog({
   isSubmitting,
   getUserImageUrl,
 }: ProfileEditDialogProps) {
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
@@ -69,35 +68,35 @@ export function ProfileEditDialog({
     },
   });
 
-  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+  const handleImageChange = (file: File | null) => {
+    setSelectedImage(file);
     if (file) {
       const reader = new FileReader();
-      reader.onload = (e) => {
-        setPreviewImage(e.target?.result as string);
-      };
+      reader.onload = (e) => setPreviewImage(e.target?.result as string);
       reader.readAsDataURL(file);
+    } else {
+      setPreviewImage(null);
     }
   };
 
   const handleSubmit = async (data: ProfileFormData) => {
-    const file = fileInputRef.current?.files?.[0];
-    await onSubmit({ ...data, image: file });
+    await onSubmit({ ...data, image: selectedImage || undefined });
+    
+    // Limpar estados após o submit
+    setSelectedImage(null);
     setPreviewImage(null);
     onOpenChange(false);
   };
 
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
+  const handleDialogClose = () => {
+    // Limpar estados ao fechar o dialog
+    setSelectedImage(null);
+    setPreviewImage(null);
+    onOpenChange(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleDialogClose}>
       <DialogOverlay className="bg-black/60" />
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -120,21 +119,8 @@ export function ProfileEditDialog({
               </h3>
 
               <ImageUpload
-                value={fileInputRef.current?.files?.[0] || null}
-                onChange={(file) => {
-                  if (fileInputRef.current) {
-                    const dataTransfer = new DataTransfer();
-                    if (file) dataTransfer.items.add(file);
-                    fileInputRef.current.files = dataTransfer.files;
-                  }
-                  if (file) {
-                    const reader = new FileReader();
-                    reader.onload = (e) => setPreviewImage(e.target?.result as string);
-                    reader.readAsDataURL(file);
-                  } else {
-                    setPreviewImage(null);
-                  }
-                }}
+                value={selectedImage}
+                onChange={handleImageChange}
                 disabled={isSubmitting}
                 existingImageUrl={previewImage || getUserImageUrl(user.image)}
               />
@@ -185,7 +171,7 @@ export function ProfileEditDialog({
               />
 
               <div className="flex items-center space-x-2">
-                <Label className="text-sm font-medium">Cargo:</Label>
+                <Label className="text-sm font-medium">Usuário:</Label>
                 <span className="text-sm text-muted-foreground capitalize">
                   {user.role === "admin" ? "Administrador" : 
                    user.role === "employee" ? "Funcionário" : "Cliente"}
@@ -213,7 +199,7 @@ export function ProfileEditDialog({
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => onOpenChange(false)}
+                onClick={handleDialogClose}
                 disabled={isSubmitting}
               >
                 Cancelar

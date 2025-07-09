@@ -166,6 +166,24 @@ export async function getOrdersByClient(clientId: string): Promise<Order[] | nul
 }
 
 /**
+ * Busca os pedidos do cliente logado
+ */
+export async function getMyOrders(): Promise<Order[]> {
+  try {
+    const params = {
+      sort: "-createdAt",
+      _t: new Date().getTime()
+    };
+    const response = await api.get(API_ROUTES.ORDERS.MY_ORDERS, { params });
+
+    return Array.isArray(response.data) ? normalizeOrders(response.data) : [];
+  } catch (error) {
+    console.error("Erro ao buscar meus pedidos:", error);
+    return [];
+  }
+}
+
+/**
  * Atualiza os dados de um pedido existente
  * @param id ID do pedido
  * @param orderData Dados do pedido a serem atualizados

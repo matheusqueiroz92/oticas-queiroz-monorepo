@@ -95,9 +95,6 @@ export abstract class BaseRepository<T, CreateDTO = Omit<T, '_id'>>
       sortOptions = { createdAt: -1 };
     }
 
-    console.log('🔍 BaseRepository.findAll - Executando query:', JSON.stringify(query, null, 2));
-    console.log('🔍 BaseRepository.findAll - Sort options:', JSON.stringify(sortOptions, null, 2));
-
     const docs = await this.model
       .find(query)
       .sort(sortOptions)
@@ -105,10 +102,7 @@ export abstract class BaseRepository<T, CreateDTO = Omit<T, '_id'>>
       .limit(limit)
       .lean();
 
-    console.log('🔍 BaseRepository.findAll - Documentos encontrados:', docs.length);
-
     const total = await this.model.countDocuments(query);
-    console.log('🔍 BaseRepository.findAll - Total de documentos:', total);
 
       return {
       items: docs as T[],

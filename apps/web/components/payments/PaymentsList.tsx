@@ -8,7 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Loader2, FileText, Ban, CreditCard, ExternalLink, Banknote, BookText, TicketsPlane, NotepadText, Repeat } from "lucide-react";
+import { Loader2, FileText, Ban, CreditCard, ExternalLink, Banknote, BookText, TicketsPlane, NotepadText, Repeat, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { PaginationItems } from "@/components/PaginationItems";
 import { formatCurrency, formatDate } from "@/app/_utils/formatters";
@@ -176,7 +176,7 @@ export function PaymentsList({
                         variant="outline"
                         onClick={() => navigateToPaymentDetails(payment._id)}
                       >
-                        <ExternalLink className="h-4 w-4" />
+                        <Eye className="h-4 w-4" />
                       </Button>
                       {payment.status !== "cancelled" && (
                         <Button

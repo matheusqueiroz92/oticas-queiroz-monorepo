@@ -327,6 +327,38 @@ router.post(
 
 /**
  * @swagger
+ * /api/orders/my-orders:
+ *   get:
+ *     summary: Busca pedidos do cliente logado
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Orders]
+ *     description: Retorna todos os pedidos do cliente atualmente logado
+ *     responses:
+ *       200:
+ *         description: Lista de pedidos do cliente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Order'
+ *       401:
+ *         description: Não autorizado
+ *       403:
+ *         description: Acesso negado. Apenas clientes podem acessar seus próprios pedidos.
+ *       500:
+ *         description: Erro interno do servidor
+ */
+router.get(
+  "/orders/my-orders",
+  authenticate,
+  authorize(["admin", "employee", "customer"]),
+  asyncHandler(orderController.getMyOrders.bind(orderController))
+);
+
+/**
+ * @swagger
  * /api/orders:
  *   get:
  *     summary: Lista todos os pedidos
@@ -487,6 +519,47 @@ router.get(
   authorize(["admin"]),
   asyncHandler(orderController.getDeletedOrders.bind(orderController))
 );
+
+/**
+ * @swagger
+ * /api/orders/client/{clientId}:
+ *   get:
+ *     summary: Busca pedidos de um cliente específico
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Orders]
+ *     description: Retorna todos os pedidos de um cliente específico
+ *     parameters:
+ *       - in: path
+ *         name: clientId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID do cliente
+ *     responses:
+ *       200:
+ *         description: Lista de pedidos do cliente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Order'
+ *       401:
+ *         description: Não autorizado
+ *       403:
+ *         description: Acesso negado
+ *       500:
+ *         description: Erro interno do servidor
+ */
+router.get(
+  "/orders/client/:clientId",
+  authenticate,
+  authorize(["admin", "employee", "customer"]),
+  asyncHandler(orderController.getOrdersByClient.bind(orderController))
+);
+
+
 
 /**
  * @swagger
@@ -740,7 +813,7 @@ router.get(
 router.get(
   "/orders/:id",
   authenticate,
-  authorize(["admin", "employee"]),
+  authorize(["admin", "employee", "customer"]),
   asyncHandler(orderController.getOrderById.bind(orderController))
 );
 

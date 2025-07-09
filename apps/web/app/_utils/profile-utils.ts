@@ -46,9 +46,10 @@ export const getUserOrders = (orders: Order[] = [], userId: string, userRole?: s
  * Calcula o total de vendas realizadas pelo usuário em um período.
  * @param orders Array com pedidos do usuário
  * @param period Período para cálculo ('month' | 'all')
+ * @param userRole Role do usuário ('customer' | 'employee' | 'admin')
  * @returns Valor total das vendas
  */
-export const calculateUserSales = (orders: Order[] = [], period: 'month' | 'all' = 'month'): number => {
+export const calculateUserSales = (orders: Order[] = [], period: 'month' | 'all' = 'month', userRole?: string): number => {
   let filteredOrders = orders;
   
   if (period === 'month') {
@@ -61,12 +62,19 @@ export const calculateUserSales = (orders: Order[] = [], period: 'month' | 'all'
     });
   }
   
-  // Para vendas, considerar pedidos com pagamento realizado (paid ou partially_paid) 
-  // e que não foram cancelados
+  // Para clientes: considerar todos os pedidos não cancelados (representa gastos totais)
+  // Para funcionários/admins: considerar apenas pedidos com pagamento realizado
   const salesOrders = filteredOrders.filter(order => {
-    const isPaid = order.paymentStatus === 'paid' || order.paymentStatus === 'partially_paid';
     const isNotCancelled = order.status !== 'cancelled';
-    return isPaid && isNotCancelled;
+    
+    if (userRole === 'customer') {
+      // Para clientes: todos os pedidos não cancelados representam gastos
+      return isNotCancelled;
+    } else {
+      // Para funcionários/admins: apenas pedidos com pagamento realizado
+      const isPaid = order.paymentStatus === 'paid' || order.paymentStatus === 'partially_paid';
+      return isPaid && isNotCancelled;
+    }
   });
   
   return salesOrders.reduce((total, order) => {

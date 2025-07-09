@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/useToast";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   getAllProducts,
   getProductById,
@@ -34,12 +34,20 @@ interface ProductFilters {
   shape?: string;
   reference?: string;
   modelSunglasses?: string;
+  stockFilter?: string;
 }
 
-export function useProducts() {
+export function useProducts(currentPage: number, searchTerm?: string, stockFilter?: string) {
   const [filters, setFilters] = useState<ProductFilters>({});
-  const [currentPage, setCurrentPage] = useState(1);
   const [productId, setProductId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setFilters((prev) => ({
+      ...prev,
+      search: searchTerm,
+      stockFilter: stockFilter && stockFilter !== "all" ? stockFilter : undefined,
+    }));
+  }, [searchTerm, stockFilter]);
 
   const router = useRouter();
   const { toast } = useToast();
@@ -70,7 +78,7 @@ export function useProducts() {
       const response = await createProduct(formData);
       return response;
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       // Invalidar queries relevantes
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.PRODUCTS.ALL });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.PRODUCTS.PAGINATED() });
@@ -172,7 +180,6 @@ export function useProducts() {
 
   const updateFilters = (newFilters: ProductFilters) => {
     setFilters((prevFilters) => ({ ...prevFilters, ...newFilters }));
-    setCurrentPage(1);
   };
 
   const navigateToProducts = () => {
@@ -231,7 +238,6 @@ export function useProducts() {
     createProductMutation,
     updateProductMutation,
     deleteProductMutation,
-    setCurrentPage,
     updateFilters,
     fetchProductById,
     handleCreateProduct,

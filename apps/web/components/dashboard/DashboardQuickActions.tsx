@@ -5,7 +5,6 @@ import {
   UserPlus,
   PackagePlus,
   HandCoins,
-  FileText,
 } from "lucide-react";
 import { QuickActionButton } from "@/components/dashboard/QuickActionButton";
 import { OrderDialog } from "@/components/orders/OrderDialog";

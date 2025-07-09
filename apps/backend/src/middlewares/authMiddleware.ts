@@ -65,7 +65,7 @@ export const authorize = (roles: string[]) => {
           ErrorCode.INSUFFICIENT_PERMISSIONS
         );
       }
-
+      
       next();
     } catch (error: unknown) {
       next(error);

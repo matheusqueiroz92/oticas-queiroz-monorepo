@@ -18,6 +18,7 @@ export const API_ROUTES = {
     EXPORT_DETAILS: (id: string) => `/api/orders/${id}/export`,
     EXPORT_DAILY: "api/orders/export/daily",
     CLIENT: (id: string) => `/api/orders/client/${id}`,
+    MY_ORDERS: "/api/orders/my-orders",
     PARAMS: (params: string) => `/api/orders?${params}`,
     NEXT_SERVICE_ORDER: "/api/orders/next-service-order",
   },
@@ -41,6 +42,9 @@ export const API_ROUTES = {
     DAILY: "/api/payments/daily",
     EXPORT: "/api/payments/export",
     DAILY_REPORT: "/api/payments/report/daily",
+    MY_DEBTS: "/api/payments/my-debts",
+    MY_PAYMENTS: "/api/payments/my-payments",
+    CLIENT_DEBTS: (id: string) => `/api/payments/client/${id}/debts`,
   },
   LABORATORIES: {
     BASE: "/api/laboratories",

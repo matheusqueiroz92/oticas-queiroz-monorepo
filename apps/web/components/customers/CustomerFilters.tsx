@@ -84,7 +84,7 @@ export const CustomerFilters = ({ onUpdateFilters, hasDebts: hasDebtsProp }: Cus
   }, [onUpdateFilters]);                                            
 
   return (
-    <div className="bg-card p-6 rounded-md mb-3">
+    <div className="bg-card p-6">
       <div className="flex justify-between items-center                                            mb-2">
         <h3 className="text-lg font-medium">Filtros Avançados</h3>
         <Button 

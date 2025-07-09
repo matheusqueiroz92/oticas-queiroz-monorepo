@@ -132,7 +132,7 @@ export function useLaboratories() {
         description: "O laboratório foi excluído com sucesso.",
       });
 
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.LABORATORIES.ALL });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.LABORATORIES.PAGINATED() });
 
       return true;
     },
@@ -722,20 +722,36 @@ export function useLaboratories() {
     return `${address.street}, ${address.number}${address.complement ? `, ${address.complement}` : ""} - ${address.neighborhood}, ${address.city}/${address.state}`;
   };
 
-  const getLaboratoryName = useCallback((id: string): string => {
-    if (typeof id === 'string' && id.includes('ObjectId')) {
-      try {
-        const matches = id.match(/ObjectId\('([^']+)'\)/);
-        if (matches && matches[1]) {
-          id = matches[1];
-        }
-      } catch (err) {
-        console.error("Erro ao extrair ID do laboratório:", err);
-      }
+  const getLaboratoryName = useCallback((id: string | any): string => {
+    if (!id) return "N/A";
+    
+    // Se id já é um objeto populado (tem propriedade name)
+    if (typeof id === 'object' && id?.name) {
+      return id.name;
     }
     
-    const lab = laboratories.find(lab => lab._id === id);
-    return lab ? lab.name : "Laboratório não encontrado";
+    // Se é uma string, processar normalmente
+    if (typeof id === 'string') {
+      let cleanId = id;
+      if (id.includes('ObjectId')) {
+        try {
+          const matches = id.match(/ObjectId\('([^']+)'\)/);
+          if (matches && matches[1]) {
+            cleanId = matches[1];
+          }
+        } catch (err) {
+          console.error("Erro ao extrair ID do laboratório:", err);
+          return "Laboratório não encontrado";
+        }
+      }
+      
+      // Como agora os dados vêm populados do backend, este cenário só deve acontecer em casos excepcionais
+      const lab = laboratories.find((lab: Laboratory) => lab._id === cleanId);
+      
+      return lab ? lab.name : "Laboratório não encontrado";
+    }
+    
+    return "Laboratório não encontrado";
   }, [laboratories]);
 
 

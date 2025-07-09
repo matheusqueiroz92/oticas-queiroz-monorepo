@@ -8,7 +8,6 @@ import { Product } from "@/app/_types/product";
 import { getProductTypeName } from "@/app/_services/productService";
 import { ProductDialog } from "./ProductDialog";
 import { useProducts } from "@/hooks/useProducts";
-import { useToast } from "@/hooks/useToast";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,8 +37,7 @@ export function ProductTableWithActions({
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   
-  const { handleDeleteProduct, isDeleting } = useProducts();
-  const { toast } = useToast();
+  const { handleDeleteProduct, isDeleting } = useProducts(1);
 
   const handleEditClick = (product: Product) => {
     setEditingProduct(product);

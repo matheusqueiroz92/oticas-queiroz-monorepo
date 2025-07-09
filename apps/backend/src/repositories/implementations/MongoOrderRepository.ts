@@ -24,8 +24,8 @@ export class MongoOrderRepository extends BaseRepository<IOrder, CreateOrderDTO>
 
     return {
       _id: order._id?.toString(),
-      clientId: order.clientId?.toString() || "",
-      employeeId: order.employeeId?.toString() || "",
+      clientId: order.clientId || "",
+      employeeId: order.employeeId || "",
       institutionId: order.institutionId?.toString() || null,
       isInstitutionalOrder: order.isInstitutionalOrder || false,
       responsibleClientId: order.responsibleClientId?.toString(),
@@ -47,7 +47,7 @@ export class MongoOrderRepository extends BaseRepository<IOrder, CreateOrderDTO>
       orderDate: order.orderDate || new Date(),
       deliveryDate: order.deliveryDate,
       status: order.status || "pending",
-      laboratoryId: order.laboratoryId?.toString() || null,
+      laboratoryId: order.laboratoryId || null,
       prescriptionData: order.prescriptionData,
       observations: order.observations,
       totalPrice: order.totalPrice || 0,
@@ -88,7 +88,6 @@ export class MongoOrderRepository extends BaseRepository<IOrder, CreateOrderDTO>
 
     if (filters.paymentStatus) {
       query.paymentStatus = filters.paymentStatus;
-      console.log('🔍 MongoOrderRepository.buildFilterQuery - paymentStatus adicionado:', filters.paymentStatus);
     }
 
     if (filters.laboratoryId) {
@@ -115,7 +114,6 @@ export class MongoOrderRepository extends BaseRepository<IOrder, CreateOrderDTO>
       query["products._id"] = new Types.ObjectId(filters.productId);
     }
 
-    console.log('🔍 MongoOrderRepository.buildFilterQuery - Query final:', JSON.stringify(query, null, 2));
     return query;
   }
 
@@ -145,7 +143,7 @@ export class MongoOrderRepository extends BaseRepository<IOrder, CreateOrderDTO>
   }
 
   /**
-   * Sobrescreve findAll para incluir busca por nome de cliente
+   * Sobrescreve findAll para incluir busca por nome de cliente e populate dos campos
    */
   async findAll(
     page = 1,
@@ -173,8 +171,50 @@ export class MongoOrderRepository extends BaseRepository<IOrder, CreateOrderDTO>
       delete filters.search;
     }
 
-    // Chamar o método pai com os filtros modificados
-    return super.findAll(page, limit, filters, includeDeleted, sortOptions);
+    // Implementar findAll customizado com populate para manter os dados populados
+    const skip = (page - 1) * limit;
+    
+    // Construir query baseada nos filtros
+    const query = this.buildFilterQuery(filters);
+    
+    // Adicionar filtro de exclusão de deletados (se não especificado para incluir)
+    if (!includeDeleted) {
+      query.isDeleted = { $ne: true };
+    }
+
+    // Adicionar opções de ordenação se fornecidas
+    if (sortOptions) {
+      // sortOptions já está no formato correto para o Mongoose
+    } else if (filters.sort) {
+      // Manter compatibilidade com sistema de ordenação existente
+      const sortField = filters.sort.startsWith('-') 
+        ? filters.sort.substring(1) 
+        : filters.sort;
+      const sortOrder = filters.sort.startsWith('-') ? -1 : 1;
+      sortOptions = { [sortField]: sortOrder };
+    } else {
+      // Ordenação padrão
+      sortOptions = { createdAt: -1 };
+    }
+
+    const docs = await this.model
+      .find(query)
+      .populate('clientId', 'name email cpf')
+      .populate('employeeId', 'name email')
+      .populate('laboratoryId', 'name')
+      .sort(sortOptions)
+      .skip(skip)
+      .limit(limit)
+      .exec();
+
+    const total = await this.model.countDocuments(query);
+
+    return {
+      items: docs.map(doc => this.convertToInterface(doc)),
+      total,
+      page,
+      limit,
+    };
   }
 
   /**
@@ -187,20 +227,22 @@ export class MongoOrderRepository extends BaseRepository<IOrder, CreateOrderDTO>
       }
 
       const query: any = { clientId: new Types.ObjectId(clientId) };
+      
       if (!includeDeleted) {
         query.isDeleted = { $ne: true };
       }
 
       const docs = await this.model.find(query)
-        .populate('clientId', 'name email')
+        .populate('clientId', 'name')
         .populate('employeeId', 'name')
         .populate('laboratoryId', 'name')
         .sort({ orderDate: -1 })
         .exec();
 
-      return docs.map(doc => this.convertToInterface(doc));
+      const result = docs.map(doc => this.convertToInterface(doc));
+      return result;
     } catch (error) {
-      console.error(`Erro ao buscar pedidos do cliente ${clientId}:`, error);
+      console.error(`❌ Erro ao buscar pedidos do cliente ${clientId}:`, error);
       throw error;
     }
   }
@@ -211,9 +253,25 @@ export class MongoOrderRepository extends BaseRepository<IOrder, CreateOrderDTO>
   async findByEmployeeId(
     employeeId: string,
     page: number = 1,
-    limit: number = 10
+    limit: number = 10,
+    includeDeleted: boolean = false
   ): Promise<{ items: IOrder[]; total: number; page: number; limit: number }> {
-    return this.findAll(page, limit, { employeeId });
+    try {
+      if (!this.isValidId(employeeId)) {
+          return {
+          items: [],
+          total: 0,
+          page,
+          limit
+        };
+      }
+
+      return this.findAll(page, limit, { employeeId });
+      
+    } catch (error) {
+      console.error(`❌ Erro ao buscar pedidos do funcionário ${employeeId}:`, error);
+      throw error;
+    }
   }
 
   /**

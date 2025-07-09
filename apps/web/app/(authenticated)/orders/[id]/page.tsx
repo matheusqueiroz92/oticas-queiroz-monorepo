@@ -1,23 +1,20 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useOrders } from "@/hooks/useOrders";
 import { useToast } from "@/hooks/useToast";
-import OrderDetails from "@/components/orders/OrderDetails";
-import { customBadgeStyles } from "@/app/_utils/custom-badge-styles";
+import { OrderDetailsContent } from "@/components/orders/OrderDetailsContent";
+import { OrderDetailsLoading } from "@/components/orders/OrderDetailsLoading";
+import { OrderDetailsError } from "@/components/orders/OrderDetailsError";
+import { useOrderDetailsState } from "@/hooks/useOrderDetailsState";
 
 export default function OrderDetailsPage() {
   const { id } = useParams() as { id: string };
-  const router = useRouter();
   const { toast } = useToast();
+  const { handleGoBack } = useOrderDetailsState();
   
   const { fetchOrderById } = useOrders();
-
   const { data: order, isLoading, error, refetch } = fetchOrderById(id);
-
-  const handleGoBack = () => {
-    router.push('/orders');
-  };
 
   const handleRefreshData = () => {
     refetch();
@@ -28,31 +25,18 @@ export default function OrderDetailsPage() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary" />
-      </div>
-    );
+    return <OrderDetailsLoading />;
   }
 
   if (error || !order) {
-    return (
-      <div className="max-w-4xl mx-auto p-3">
-        <div className="p-4 bg-red-50 text-red-600 rounded-md text-sm border border-red-200">
-          {error instanceof Error ? error.message : error || "Pedido não encontrado ou ocorreu um erro ao carregar os dados."}
-        </div>
-      </div>
-    );
+    return <OrderDetailsError error={error} />;
   }
 
   return (
-    <>
-      <style jsx global>{customBadgeStyles}</style>
-      <OrderDetails
-        order={order}
-        onGoBack={handleGoBack}
-        onRefresh={handleRefreshData}
-      />
-    </>
+    <OrderDetailsContent
+      order={order}
+      onGoBack={handleGoBack}
+      onRefresh={handleRefreshData}
+    />
   );
 }

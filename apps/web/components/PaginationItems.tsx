@@ -37,6 +37,7 @@ export function PaginationItems({
             <PaginationLink
               onClick={() => setCurrentPage(i)}
               isActive={currentPage === i}
+              className="cursor-pointer"
             >
               {i}
             </PaginationLink>
@@ -51,6 +52,7 @@ export function PaginationItems({
         <PaginationLink
           onClick={() => setCurrentPage(1)}
           isActive={currentPage === 1}
+          className="cursor-pointer"
         >
           1
         </PaginationLink>
@@ -75,6 +77,7 @@ export function PaginationItems({
           <PaginationLink
             onClick={() => setCurrentPage(i)}
             isActive={currentPage === i}
+            className="cursor-pointer"
           >
             {i}
           </PaginationLink>
@@ -96,6 +99,7 @@ export function PaginationItems({
           <PaginationLink
             onClick={() => setCurrentPage(totalPages)}
             isActive={currentPage === totalPages}
+            className="cursor-pointer"
           >
             {totalPages}
           </PaginationLink>
@@ -118,7 +122,7 @@ export function PaginationItems({
             <PaginationPrevious
               onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
               aria-disabled={currentPage === 1}
-              className={currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""}
+              className={(currentPage === 1 ? "opacity-50 cursor-not-allowed " : "") + "cursor-pointer"}
             />
           </PaginationItem>
 
@@ -128,7 +132,7 @@ export function PaginationItems({
             <PaginationNext
               onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
               aria-disabled={currentPage === totalPages}
-              className={currentPage === totalPages ? "opacity-50 cursor-not-allowed" : ""}
+              className={(currentPage === totalPages ? "opacity-50 cursor-not-allowed " : "") + "cursor-pointer"}
             />
           </PaginationItem>
         </PaginationContent>

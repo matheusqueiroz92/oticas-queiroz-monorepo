@@ -14,13 +14,15 @@ interface RecentOrdersCardProps {
   onViewDetails: (orderId: string) => void;
   isLoading?: boolean;
   getClientName: (clientId: string) => string;
+  userRole?: string;
 }
 
 export function RecentOrdersCard({ 
   orders, 
   onViewDetails, 
   isLoading,                              
-  getClientName
+  getClientName,
+  userRole
 }: RecentOrdersCardProps) {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("pt-BR", {
@@ -46,6 +48,8 @@ export function RecentOrdersCard({
         return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
+
+  const isClient = userRole === "customer";
 
   if (isLoading) {
     return (
@@ -96,9 +100,11 @@ export function RecentOrdersCard({
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Nº O.S.
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Cliente
-                  </th>
+                  {!isClient && (
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Cliente
+                    </th>
+                  )}
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Data
                   </th>
@@ -123,14 +129,16 @@ export function RecentOrdersCard({
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <User className="w-4 h-4 text-gray-400 mr-2" />
-                        <div className="text-sm text-gray-900 dark:text-gray-100">
-                          {getClientName(order.clientId)}
+                    {!isClient && (
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <User className="w-4 h-4 text-gray-400 mr-2" />
+                          <div className="text-sm text-gray-900 dark:text-gray-100">
+                            {getClientName(order.clientId)}
+                          </div>
                         </div>
-                      </div>
-                    </td>
+                      </td>
+                    )}
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       {formatDate(order.orderDate.toString())}
                     </td>
@@ -151,19 +159,22 @@ export function RecentOrdersCard({
                       </Badge>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <Button
-                      variant="outline"
-                      onClick={() => onViewDetails(order._id)}
-                    >
-                      <Eye className="h-4 w-4 mr-1" />
-                    </Button>
-                    
-                    <Button
-                      variant="outline"
-                      onClick={() => {}}
-                    >
-                      <Pencil className="h-4 w-4 mr-1" />
-                    </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => onViewDetails(order._id)}
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                      </Button>
+                      
+                      {!isClient && (
+                        <Button
+                          variant="outline"
+                          onClick={() => {}}
+                          className="ml-2"
+                        >
+                          <Pencil className="h-4 w-4 mr-1" />
+                        </Button>
+                      )}
                     </td>
                   </tr>
                 ))}

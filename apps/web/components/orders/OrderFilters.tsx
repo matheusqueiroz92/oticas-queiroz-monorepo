@@ -199,7 +199,9 @@ export const OrderFilters = ({
                 <SelectItem value="debit"><span className="flex items-center gap-2"><CreditCard className="w-4 h-4 text-green-500" />Cartão de Débito</span></SelectItem>
                 <SelectItem value="cash"><span className="flex items-center gap-2"><DollarSign className="w-4 h-4 text-yellow-600" />Dinheiro</span></SelectItem>
                 <SelectItem value="pix"><span className="flex items-center gap-2"><BadgeCheck className="w-4 h-4 text-purple-500" />PIX</span></SelectItem>
-                <SelectItem value="installment"><span className="flex items-center gap-2"><CreditCard className="w-4 h-4 text-pink-500" />Parcelado</span></SelectItem>
+                <SelectItem value="bank_slip"><span className="flex items-center gap-2"><CreditCard className="w-4 h-4 text-orange-500" />Boleto</span></SelectItem>
+                <SelectItem value="promissory_note"><span className="flex items-center gap-2"><CreditCard className="w-4 h-4 text-indigo-500" />Nota Promissória</span></SelectItem>
+                <SelectItem value="check"><span className="flex items-center gap-2"><CreditCard className="w-4 h-4 text-teal-500" />Cheque</span></SelectItem>
               </SelectContent>
             </Select>
           </div>

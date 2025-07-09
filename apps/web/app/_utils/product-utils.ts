@@ -2,6 +2,8 @@
  * Utilitários relacionados a produtos
  */
 import { Product, Lens, CleanLens, PrescriptionFrame, SunglassesFrame } from "@/app/_types/product";
+import { Package, SprayCan, Glasses, Sun, AlertTriangle, CircleX, View, Blocks, Package2 } from "lucide-react";
+import React from "react";
 
 // Mapa de preços conhecidos para produtos específicos
 export const KNOWN_PRICES: { [key: string]: number } = {
@@ -247,35 +249,105 @@ export function getProductTypeLabel(type?: string): string {
   };
 
 
-// Função auxiliar para obter o nome amigável do tipo de produto
-export const getProductTypeName = (productType: string): string => {
-  switch (productType) {
-    case 'lenses':
-      return 'Lentes';
-    case 'clean_lenses':
-      return 'Limpa-lentes';
-    case 'cleaning_products':
-      return 'Limpa-lentes';
-    case 'prescription_frame':
-      return 'Armação de Grau';
-    case 'sunglasses':
-      return 'Armação Solar';
-    case 'sunglasses_frame':
-      return 'Armação Solar';
-    case 'frame':
-      return 'Armação';
-    case 'contact_lenses':
-      return 'Lentes de Contato';
-    case 'accessories':
-      return 'Acessórios';
-    case 'cases':
-      return 'Estojo';
-    case 'others':
-      return 'Outros';
-    default:
-      return 'Produto';
+export const getProductTypeName = (type: string): string => {
+  const typeNames = {
+    lenses: "Lentes",
+    clean_lenses: "Lentes de Limpeza",
+    prescription_frame: "Armação de Grau",
+    sunglasses_frame: "Armação de Sol"
+  };
+  return typeNames[type as keyof typeof typeNames] || type;
+};
+
+export const getProductTypeIcon = (type: string): React.ReactNode => {
+  const typeIcons = {
+    lenses: React.createElement(Glasses),
+    clean_lenses: React.createElement(SprayCan),
+    prescription_frame: React.createElement(Glasses),
+    sunglasses_frame: React.createElement(Sun)
+  };
+  return typeIcons[type as keyof typeof typeIcons] || React.createElement(Package);
+};
+
+export const getProductTypeBadge = (type: string) => {
+  const configs = {
+    lenses: { 
+      label: "Lentes", 
+      className: "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/50 dark:text-blue-300 dark:border-blue-700" 
+    },
+    clean_lenses: { 
+      label: "Lentes de Limpeza", 
+      className: "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/50 dark:text-green-300 dark:border-green-700" 
+    },
+    prescription_frame: { 
+      label: "Armação de Grau", 
+      className: "bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/50 dark:text-purple-300 dark:border-purple-700" 
+    },
+    sunglasses_frame: { 
+      label: "Armação de Sol", 
+      className: "bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/50 dark:text-orange-300 dark:border-orange-700" 
+    }
+  };
+  return configs[type as keyof typeof configs] || { 
+    label: type, 
+    className: "bg-gray-100 text-gray-800 border-gray-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600" 
+  };
+};
+
+export const getStockStatusInfo = (product: any) => {
+  if (product.productType !== 'prescription_frame' && product.productType !== 'sunglasses_frame') {
+    return null;
   }
-}
+  
+  const stock = product.stock || 0;
+  
+  if (stock === 0) {
+    return { 
+      label: "Sem estoque", 
+      className: "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700",
+      color: "red"
+    };
+  } else if (stock <= 5) {
+    return { 
+      label: `${stock} unidades - Estoque baixo`, 
+      className: "bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-700",
+      color: "yellow"
+    };
+  }
+  
+  return { 
+    label: `${stock} unidades em estoque`, 
+    className: "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700",
+    color: "green"
+  };
+};
+
+export const formatCurrency = (value: number): string => {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL'
+  }).format(value);
+};
+
+export const getProductImageUrl = (imagePath: string | null): string | null => {
+  if (!imagePath) return null;
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+  return `${baseUrl}${imagePath}`;
+};
+
+export const getStockFilterOptions = () => [
+  { value: "all", label: "Estoque", icon: React.createElement(Package2, { size: 16 }) },
+  { value: "low", label: "Estoque baixo", icon: React.createElement(AlertTriangle, { size: 16 }) },
+  { value: "out", label: "Sem estoque", icon: React.createElement(CircleX, { size: 16 }) }
+];
+
+export const getProductTypeFilterOptions = () => [
+  { value: "all", label: "Todos os tipos", icon: React.createElement(Blocks, { size: 16 }) },
+  { value: "lenses", label: "Lentes", icon: React.createElement(View, { size: 16 }) },
+  { value: "clean_lenses", label: "Limpa-lentes", icon: React.createElement(SprayCan, { size: 16 }) },
+  { value: "prescription_frame", label: "Armação de Grau", icon: React.createElement(Glasses, { size: 16 }) },
+  { value: "sunglasses_frame", label: "Armação de Sol", icon: React.createElement(Sun, { size: 16 }) }
+];
 
   /**
  * Busca um produto com detalhes consistentes

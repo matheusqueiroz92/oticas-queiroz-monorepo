@@ -27,6 +27,7 @@ interface OrderTableProps {
   totalItems?: number;
   sortField?: string;
   sortDirection?: "asc" | "desc";
+  hideEditButton?: boolean;
 }
 
 export const OrdersList: React.FC<OrderTableProps> = ({
@@ -40,6 +41,7 @@ export const OrdersList: React.FC<OrderTableProps> = ({
   totalItems,
   sortField = "createdAt",
   sortDirection = "desc",
+  hideEditButton = false,
 }) => {
   const sortedData = useMemo(() => {
     const dataToSort = [...data];
@@ -108,12 +110,15 @@ export const OrdersList: React.FC<OrderTableProps> = ({
                   <Eye className="h-4 w-4 mr-1" />
                 </Button>
                 
-                <Button
-                  variant="outline"
-                  onClick={() => onEditClick(item)}
-                >
-                  <Pencil className="h-4 w-4 mr-1" />
-                </Button>
+                {!hideEditButton && (
+                  <Button
+                    variant="outline"
+                    onClick={() => onEditClick(item)}
+                    className="ml-2"
+                  >
+                    <Pencil className="h-4 w-4 mr-1" />
+                  </Button>
+                )}
               </TableCell>
             </TableRow>
           ))}

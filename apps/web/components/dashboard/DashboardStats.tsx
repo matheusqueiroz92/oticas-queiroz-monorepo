@@ -28,7 +28,6 @@ interface DashboardStatsProps {
 export function DashboardStats({
   salesTotal,
   totalOrders,
-  pendingOrdersCount,
   totalCustomers,
   weeklyCustomersCount,
   currentBalance,

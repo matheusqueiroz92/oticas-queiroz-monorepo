@@ -744,4 +744,191 @@ export class PaymentController {
       });
     }
   }
+
+  /**
+   * Busca débitos e histórico de pagamentos do cliente logado
+   */
+  async getMyDebts(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      if (!req.user?.id || req.user?.role !== "customer") {
+        res.status(403).json({
+          message: "Acesso não autorizado. Apenas clientes podem acessar seus próprios débitos."
+        });
+        return;
+      }
+
+      const clientId = req.user.id;
+      console.log('🔍 [DEBUG] Buscando débitos para cliente:', clientId);
+      
+      const debtsData = await this.getClientDebtsData(clientId);
+      
+      console.log('🔍 [DEBUG] Dados de débitos calculados:', {
+        totalDebt: debtsData.totalDebt,
+        ordersCount: debtsData.orders.length,
+        paymentHistoryCount: debtsData.paymentHistory.length
+      });
+      
+      res.status(200).json(debtsData);
+    } catch (error) {
+      console.error("❌ [ERROR] Erro ao buscar débitos do cliente:", error);
+      res.status(500).json({
+        message: "Erro interno ao buscar débitos",
+        details: error instanceof Error ? error.message : "Erro desconhecido"
+      });
+    }
+  }
+
+  /**
+   * Busca pagamentos do cliente logado com paginação
+   */
+  async getMyPayments(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      if (!req.user?.id || req.user?.role !== "customer") {
+        res.status(403).json({
+          message: "Acesso não autorizado. Apenas clientes podem acessar seus próprios pagamentos."
+        });
+        return;
+      }
+
+      const clientId = req.user.id;
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+      
+      // Filtros específicos para o cliente
+      const filters: any = {
+        customerId: clientId
+      };
+
+      // Adicionar filtros opcionais
+      if (req.query.type) filters.type = req.query.type;
+      if (req.query.status) filters.status = req.query.status;
+      if (req.query.startDate) filters.startDate = req.query.startDate;
+      if (req.query.endDate) filters.endDate = req.query.endDate;
+
+      const result = await this.paymentService.getAllPayments(page, limit, filters);
+      
+      res.status(200).json(result);
+    } catch (error) {
+      console.error("Erro ao buscar pagamentos do cliente:", error);
+      res.status(500).json({
+        message: "Erro interno ao buscar pagamentos",
+        details: error instanceof Error ? error.message : "Erro desconhecido"
+      });
+    }
+  }
+
+  /**
+   * Busca débitos de um cliente específico (apenas para admin/funcionário)
+   */
+  async getClientDebts(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      if (!req.user?.id || !["admin", "employee"].includes(req.user.role)) {
+        res.status(403).json({
+          message: "Acesso não autorizado. Requer permissão de administrador ou funcionário."
+        });
+        return;
+      }
+
+      const { clientId } = req.params;
+      
+      if (!clientId) {
+        res.status(400).json({
+          message: "ID do cliente é obrigatório"
+        });
+        return;
+      }
+
+      const debtsData = await this.getClientDebtsData(clientId);
+      
+      res.status(200).json(debtsData);
+    } catch (error) {
+      console.error("Erro ao buscar débitos do cliente:", error);
+      res.status(500).json({
+        message: "Erro interno ao buscar débitos",
+        details: error instanceof Error ? error.message : "Erro desconhecido"
+      });
+    }
+  }
+
+  /**
+   * Método privado para buscar dados de débitos de um cliente
+   */
+  private async getClientDebtsData(clientId: string) {
+    console.log('🔍 [DEBUG] Iniciando busca de débitos para clientId:', clientId);
+    
+    // Buscar dados do cliente através de um serviço específico
+    const { UserService } = await import('../services/UserService');
+    const userService = new UserService();
+    const client = await userService.getUserById(clientId);
+    
+    if (!client) {
+      throw new Error("Cliente não encontrado");
+    }
+
+    console.log('🔍 [DEBUG] Cliente encontrado:', { id: client._id, name: client.name });
+
+    // Buscar pedidos do cliente com valor pendente
+    const allOrders = await this.orderService.getOrdersByClientId(clientId);
+    console.log('🔍 [DEBUG] Total de pedidos encontrados:', allOrders.length);
+    
+    const ordersWithDebt = allOrders.filter((order: any) => {
+      if (order.status === 'cancelled') return false;
+      
+      const totalPrice = order.finalPrice || order.totalPrice;
+      const paid = (order.paymentEntry || 0) + ((order.paymentHistory || []).reduce((sum: number, entry: any) => sum + entry.amount, 0));
+      
+      console.log('🔍 [DEBUG] Pedido análise:', {
+        id: order._id,
+        serviceOrder: order.serviceOrder,
+        totalPrice,
+        paid,
+        debt: totalPrice - paid,
+        hasDebt: paid < totalPrice,
+        status: order.status
+      });
+      
+      // Verificar se há débito real
+      const hasDebt = paid < totalPrice;
+      
+      if (hasDebt) {
+        console.log('💰 [DEBUG] Pedido COM débito encontrado:', {
+          id: order._id,
+          serviceOrder: order.serviceOrder,
+          debt: totalPrice - paid
+        });
+      }
+      
+      return hasDebt;
+    });
+
+    console.log('🔍 [DEBUG] Pedidos com débito:', ordersWithDebt.length);
+
+    // Calcular débito total baseado nos pedidos em tempo real
+    const calculatedTotalDebt = ordersWithDebt.reduce((total: number, order: any) => {
+      const totalPrice = order.finalPrice || order.totalPrice;
+      const paid = (order.paymentEntry || 0) + ((order.paymentHistory || []).reduce((sum: number, entry: any) => sum + entry.amount, 0));
+      const remainingDebt = Math.max(0, totalPrice - paid);
+      return total + remainingDebt;
+    }, 0);
+
+    console.log('🔍 [DEBUG] Débito total calculado:', calculatedTotalDebt);
+
+    // Buscar histórico de pagamentos do cliente
+    const paymentHistory = await this.paymentService.getAllPayments(1, 100, {
+      customerId: clientId
+    });
+
+    return {
+      totalDebt: calculatedTotalDebt, // Usar débito calculado em tempo real
+      paymentHistory: paymentHistory.payments || [],
+      orders: ordersWithDebt.map((order: any) => ({
+        _id: order._id,
+        serviceOrder: order.serviceOrder,
+        createdAt: order.createdAt,
+        status: order.status,
+        finalPrice: order.finalPrice || order.totalPrice,
+        paymentEntry: (order.paymentEntry || 0) + ((order.paymentHistory || []).reduce((sum: number, entry: any) => sum + entry.amount, 0))
+      }))
+    };
+  }
 }

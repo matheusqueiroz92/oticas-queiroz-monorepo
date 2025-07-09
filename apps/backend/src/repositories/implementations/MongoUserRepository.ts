@@ -3,13 +3,17 @@ import { BaseRepository } from "./BaseRepository";
 import { IUserRepository } from "../interfaces/IUserRepository";
 import type { IUser } from "../../interfaces/IUser";
 import { Types } from "mongoose";
+import { UserModel } from "../../models/UserModel";
 
 /**
  * Implementação do UserRepository para MongoDB
  */
 export class MongoUserRepository extends BaseRepository<IUser> implements IUserRepository {
+  private userModel: UserModel;
+
   constructor() {
     super(User);
+    this.userModel = new UserModel();
   }
 
   /**
@@ -57,14 +61,12 @@ export class MongoUserRepository extends BaseRepository<IUser> implements IUserR
    * Constrói query de filtros específica para usuários
    */
   protected buildFilterQuery(filters: Record<string, any>): Record<string, any> {
-    console.log('🔍 MongoUserRepository.buildFilterQuery - Filtros recebidos:', filters);
     const baseQuery = super.buildFilterQuery(filters);
     const andFilters: any[] = [];
 
     // Filtros específicos para usuários
     if (filters.role) {
       baseQuery.role = filters.role;
-      console.log('🔍 MongoUserRepository.buildFilterQuery - Adicionado role:', filters.role);
     }
 
     if (filters.searchTerm) {
@@ -136,8 +138,58 @@ export class MongoUserRepository extends BaseRepository<IUser> implements IUserR
     delete finalQuery.limit;
     delete finalQuery._t;
     delete finalQuery.hasDebts;
-    console.log('🔍 MongoUserRepository.buildFilterQuery - Query final:', JSON.stringify(finalQuery, null, 2));
+
     return finalQuery;
+  }
+
+  /**
+   * Cria um novo usuário no banco de dados
+   */
+  async create(data: Omit<IUser, "_id">): Promise<IUser> {
+    try {
+      return await this.userModel.create(data);
+    } catch (error) {
+      console.error('Erro ao criar usuário:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Busca todos os usuários
+   */
+  async findAll(
+    page = 1,
+    limit = 10,
+    filters: Record<string, any> = {},
+    includeDeleted = false,
+    sortOptions?: Record<string, 1 | -1>
+  ): Promise<{ items: IUser[]; total: number; page: number; limit: number }> {
+    const skip = (page - 1) * limit;
+    const query = this.buildFilterQuery(filters);
+
+    if (!includeDeleted) {
+      query.isDeleted = { $ne: true };
+    }
+
+    if (!sortOptions) {
+      sortOptions = { createdAt: -1 };
+    }
+
+    const docs = await this.model
+      .find(query)
+      .sort(sortOptions)
+      .skip(skip)
+      .limit(limit)
+      .exec();
+
+    const total = await this.model.countDocuments(query);
+
+    return {
+      items: docs.map((doc: any) => this.convertToInterface(doc)),
+      total,
+      page,
+      limit,
+    };
   }
 
   /**
@@ -204,6 +256,17 @@ export class MongoUserRepository extends BaseRepository<IUser> implements IUserR
       console.error(`Erro ao buscar usuário por CNPJ ${cnpj}:`, error);
       return null;
     }
+  }
+
+  /**
+   * Busca usuários por role
+   */
+  async findByRole(
+    role: IUser["role"],
+    page: number = 1,
+    limit: number = 10
+  ): Promise<{ items: IUser[]; total: number; page: number; limit: number }> {
+    return this.findAll(page, limit, { role });
   }
 
   /**
@@ -299,17 +362,6 @@ export class MongoUserRepository extends BaseRepository<IUser> implements IUserR
   }
 
   /**
-   * Busca usuários por role
-   */
-  async findByRole(
-    role: IUser["role"],
-    page: number = 1,
-    limit: number = 10
-  ): Promise<{ items: IUser[]; total: number; page: number; limit: number }> {
-    return this.findAll(page, limit, { role });
-  }
-
-  /**
    * Busca usuários por termo de pesquisa
    */
   async search(
@@ -354,40 +406,5 @@ export class MongoUserRepository extends BaseRepository<IUser> implements IUserR
     limit: number = 10
   ): Promise<{ items: IUser[]; total: number; page: number; limit: number }> {
     return this.findAll(page, limit, { includeDeleted: true, isDeleted: true });
-  }
-
-  async findAll(
-    page = 1,
-    limit = 10,
-    filters: Record<string, any> = {},
-    includeDeleted = false,
-    sortOptions?: Record<string, 1 | -1>
-  ): Promise<{ items: IUser[]; total: number; page: number; limit: number }> {
-    const skip = (page - 1) * limit;
-    const query = this.buildFilterQuery(filters);
-
-    if (!includeDeleted) {
-      query.isDeleted = { $ne: true };
-    }
-
-    if (!sortOptions) {
-      sortOptions = { createdAt: -1 };
-    }
-
-    const docs = await this.model
-      .find(query)
-      .sort(sortOptions)
-      .skip(skip)
-      .limit(limit)
-      .exec();
-
-    const total = await this.model.countDocuments(query);
-
-    return {
-      items: docs.map((doc: any) => this.convertToInterface(doc)),
-      total,
-      page,
-      limit,
-    };
   }
 } 

@@ -6,7 +6,7 @@ import Cookies from "js-cookie";
 import { useProfile } from "@/hooks/useProfile";
 import { useOrders } from "@/hooks/useOrders";
 import { useQuery } from "@tanstack/react-query";
-import { getAllOrders, getOrdersByClient } from "@/app/_services/orderService";
+import { getAllOrders, getOrdersByClient, getMyOrders } from "@/app/_services/orderService";
 import { QUERY_KEYS } from "@/app/_constants/query-keys";
 import {
   calculateUserSales,
@@ -54,6 +54,22 @@ export function useProfileData() {
     updateFilters,
     getClientName,
   } = useOrders();
+
+  // Hook específico para buscar pedidos do cliente logado
+  const {
+    data: myOrders,
+    isLoading: isLoadingMyOrders,
+    error: myOrdersError,
+  } = useQuery({
+    queryKey: QUERY_KEYS.ORDERS.MY_ORDERS,
+    queryFn: () => getMyOrders(),
+    enabled: !!loggedUserId && loggedUserRole === "customer",
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
 
   // Aplicar filtro automático baseado no tipo de usuário (IGUAL à página "Meus Pedidos")
   useEffect(() => {
@@ -138,8 +154,16 @@ export function useProfileData() {
       };
     }
 
-    // Para exibição: usar os dados paginados do useOrders (já filtrados e funcionando)
-    const userOrders = orders || [];
+    // Para exibição: escolher a fonte correta dependendo do tipo de usuário
+    let userOrders = [];
+    
+    if (loggedUserRole === "customer") {
+      // Para clientes: usar os dados do hook específico myOrders
+      userOrders = myOrders || [];
+    } else {
+      // Para funcionários/admins: usar os dados paginados do useOrders
+      userOrders = orders || [];
+    }
     
     // Ordenar por data (mais recente primeiro) e pegar os 3 primeiros para exibição
     const sortedOrders = [...userOrders].sort((a, b) => {
@@ -154,12 +178,12 @@ export function useProfileData() {
     const allOrdersForCalculation = allUserOrdersForStats || userOrders;
     
     // Estatísticas do mês atual (baseadas em TODOS os pedidos do usuário)
-    const totalSales = calculateUserSales(allOrdersForCalculation, 'month');
+    const totalSales = calculateUserSales(allOrdersForCalculation, 'month', loggedUserRole);
     const ordersCompleted = countCompletedOrders(allOrdersForCalculation, 'month');
     const customersServed = countUniqueCustomers(allOrdersForCalculation, 'month');
     
     // Estatísticas de todo o tempo
-    const totalSalesAllTime = calculateUserSales(allOrdersForCalculation, 'all');
+    const totalSalesAllTime = calculateUserSales(allOrdersForCalculation, 'all', loggedUserRole);
     const ordersCompletedAllTime = countCompletedOrders(allOrdersForCalculation, 'all');
     const customersServedAllTime = countUniqueCustomers(allOrdersForCalculation, 'all');
     
@@ -189,7 +213,7 @@ export function useProfileData() {
       ordersGrowth,
       starRating,
     };
-  }, [user, orders, allUserOrdersForStats]);
+  }, [user, orders, allUserOrdersForStats, myOrders, loggedUserRole]);
 
   // Funções para controlar o dialog de edição
   const handleEditClick = () => {
@@ -248,7 +272,7 @@ export function useProfileData() {
     user,
     loading,
     isUpdatingProfile,
-    isLoadingOrders,
+    isLoadingOrders: loggedUserRole === "customer" ? isLoadingMyOrders : isLoadingOrders,
     getUserImageUrl,
 
     // Dados calculados

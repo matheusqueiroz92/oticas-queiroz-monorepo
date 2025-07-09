@@ -154,6 +154,15 @@ export class OrderService {
   }
 
   /**
+   * Busca pedidos por funcionário
+   * @param employeeId ID do funcionário
+   * @returns Lista de pedidos do funcionário
+   */
+  async getOrdersByEmployeeId(employeeId: string): Promise<IOrder[]> {
+    return await this.orderRepository.findByEmployeeId(employeeId);
+  }
+
+  /**
    * Atualiza status do pedido
    * @param id ID do pedido
    * @param status Novo status

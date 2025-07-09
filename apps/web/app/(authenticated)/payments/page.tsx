@@ -187,7 +187,7 @@ export default function PaymentsPage() {
                 <div className="flex gap-2 justify-end sm:ml-auto">
                   <Button variant="outline" size="sm" onClick={() => setShowFilters((prev) => !prev)}>
                     <Filter className="w-4 h-4 mr-2" />
-                    Filtros
+                    Filtros Avançados
                   </Button>
                   <Button variant="outline" size="sm">
                     <Download className="w-4 h-4 mr-2" />

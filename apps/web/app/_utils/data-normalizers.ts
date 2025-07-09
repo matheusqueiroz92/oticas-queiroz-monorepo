@@ -163,13 +163,13 @@ export function normalizeOrder(order: any): Order {
     // Extrair nomes diretamente, utilizando a função especializada para strings
     const clientName = typeof order.clientId === 'string' 
       ? extractNameFromString(order.clientId)
-      : (order.clientId && order.clientId.name) 
+      : (order.clientId && typeof order.clientId === 'object' && order.clientId.name) 
         ? order.clientId.name 
         : "Nome não disponível";
         
     const employeeName = typeof order.employeeId === 'string'
       ? extractNameFromString(order.employeeId)
-      : (order.employeeId && order.employeeId.name)
+      : (order.employeeId && typeof order.employeeId === 'object' && order.employeeId.name)
         ? order.employeeId.name
         : "Nome não disponível";
     

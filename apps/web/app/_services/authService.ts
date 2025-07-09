@@ -34,14 +34,7 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
 
-    // Verificar e corrigir URLs
-    if (config.url) {
-      // Garantir que a URL comece com /api se não começar já
-      if (!config.url.startsWith("/api/") && !config.url.startsWith("/auth/")) {
-        // Não adicionar prefixo se já for uma rota /auth/
-        config.url = `/api${config.url.startsWith("/") ? "" : "/"}${config.url}`;
-      }
-    }
+    // As URLs já vêm com /api/ do API_ROUTES, não precisamos adicionar novamente
 
     return config;
   },

@@ -14,7 +14,7 @@ import { Eye } from "lucide-react";
 interface RecentOrdersTableProps {
   orders: Order[];
   onViewDetails: (id: string) => void;
-  getEmployeeName: (id: string) => string;
+  getEmployeeName: (order: Order) => string;
 }
 
 export const RecentOrdersTable = ({ orders, onViewDetails, getEmployeeName }: RecentOrdersTableProps) => {
@@ -46,7 +46,7 @@ export const RecentOrdersTable = ({ orders, onViewDetails, getEmployeeName }: Re
           <TableRow key={order._id}>
             <TableCell>#{order._id.substring(0, 8)}</TableCell>
             <TableCell>{(order.serviceOrder ?? "").substring(0, 8)}</TableCell>
-            <TableCell>{getEmployeeName(order.clientId)}</TableCell>
+            <TableCell>{getEmployeeName(order)}</TableCell>
             <TableCell>
               {formatDate(order.createdAt)}
             </TableCell>

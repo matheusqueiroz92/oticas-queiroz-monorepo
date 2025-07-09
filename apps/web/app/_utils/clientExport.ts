@@ -32,7 +32,7 @@ export const exportOrdersToExcel = (
   orders: Order[], 
   title: string,
   getClientName: (id: string) => string,
-  getEmployeeName: (id: string) => string,
+  getEmployeeName: (order: Order) => string,
   getOrderStatus: (status: string) => { label: string; className: string }
 ): void => {
   // Preparar dados para Excel
@@ -40,7 +40,7 @@ export const exportOrdersToExcel = (
     'ID': order._id || '',
     'O.S.': order.serviceOrder ? order.serviceOrder : '',
     'Cliente': getClientName(order.clientId),
-    'Funcionário': getEmployeeName(order.employeeId),
+    'Funcionário': getEmployeeName(order),
     'Produtos': formatProducts(order.products || []),
     'Status': getOrderStatus(order.status).label,
     'Método de Pagamento': order.paymentMethod,
@@ -88,7 +88,7 @@ export const exportOrdersToPDF = (
   orders: Order[], 
   title: string,
   getClientName: (id: string) => string,
-  getEmployeeName: (id: string) => string,
+  getEmployeeName: (order: Order) => string,
   getOrderStatus: (status: string) => { label: string; className: string }
 ): void => {
   // Carregar jsPDF com autoTable
@@ -168,7 +168,7 @@ export const exportOrdersToPDF = (
 export const exportOrdersToCSV = (
   orders: Order[], 
   getClientName: (id: string) => string,
-  getEmployeeName: (id: string) => string,
+  getEmployeeName: (order: Order) => string,
   getOrderStatus: (status: string) => { label: string; className: string }
 ): void => {
   // Preparar dados
@@ -176,7 +176,7 @@ export const exportOrdersToCSV = (
     'ID': order._id || '',
     'O.S.': order.serviceOrder ? order.serviceOrder : '',
     'Cliente': getClientName(order.clientId),
-    'Funcionário': getEmployeeName(order.employeeId),
+    'Funcionário': getEmployeeName(order),
     'Produtos': formatProducts(order.products || []),
     'Status': getOrderStatus(order.status).label,
     'Método de Pagamento': order.paymentMethod,

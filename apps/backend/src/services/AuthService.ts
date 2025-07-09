@@ -94,13 +94,14 @@ export class AuthService {
       );
     }
   
-    const token = generateToken(user._id!.toString(), user.role);
+        const token = generateToken(user._id!.toString(), user.role);
+    
     const {
       password: _,
       comparePassword: __,
       ...userWithoutSensitiveData
     } = user;
-  
+
     return {
       token,
       user: userWithoutSensitiveData,

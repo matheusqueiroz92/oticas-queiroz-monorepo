@@ -1,5 +1,4 @@
 import { IPayment } from "@/app/_types/payment";
-import { Order } from "@/app/_types/order";
 
 export type SalesPeriod = 7 | 30 | 180;
 

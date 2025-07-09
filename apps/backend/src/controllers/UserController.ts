@@ -27,9 +27,7 @@ export class UserController {
     this.orderService = new OrderService();
   }
 
-  async getAllUsers(req: Request, res: Response): Promise<void> {
-    console.log('🔍 UserController.getAllUsers - Query params:', req.query);
-    
+  async getAllUsers(req: Request, res: Response): Promise<void> {    
     try {
       const { role, search, cpf, serviceOrder } = req.query;
       

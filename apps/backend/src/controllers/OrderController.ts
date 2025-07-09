@@ -227,9 +227,6 @@ export class OrderController {
       if (paymentStatus) {
         filters.paymentStatus = paymentStatus;
       }
-
-      console.log('🔍 OrderController.getAllOrders - Filtros finais:', JSON.stringify(filters, null, 2));
-      console.log('🔍 OrderController.getAllOrders - paymentStatus recebido:', paymentStatus);
   
       const result = await this.orderService.getAllOrders(page, limit, filters);
   
@@ -259,9 +256,23 @@ export class OrderController {
     }
   }
 
-  async getOrderById(req: Request, res: Response): Promise<void> {
+  async getOrderById(req: AuthRequest, res: Response): Promise<void> {
     try {
+      if (!req.user?.id || !req.user?.role) {
+        res.status(401).json({ message: "Usuário não autenticado" });
+        return;
+      }
+
       const order = await this.orderService.getOrderById(req.params.id);
+      
+      // Verificar se é um cliente tentando acessar pedido de outro cliente
+      if (req.user.role === "customer" && order.clientId.toString() !== req.user.id) {
+        res.status(403).json({
+          message: "Acesso negado. Clientes só podem acessar seus próprios pedidos.",
+        });
+        return;
+      }
+
       res.status(200).json(order);
     } catch (error) {
       if (error instanceof OrderError) {
@@ -445,11 +456,19 @@ export class OrderController {
     }
   }
 
-  async getOrdersByClient(req: Request, res: Response): Promise<void> {
+  async getOrdersByClient(req: AuthRequest, res: Response): Promise<void> {
     try {
-      const orders = await this.orderService.getOrdersByClientId(
-        req.params.clientId
-      );
+      const { clientId } = req.params;
+      
+      // Verificar se é um cliente tentando acessar pedidos de outro cliente
+      if (req.user?.role === "customer" && req.user.id !== clientId) {
+        res.status(403).json({
+          message: "Acesso negado. Clientes só podem acessar seus próprios pedidos.",
+        });
+        return;
+      }
+
+      const orders = await this.orderService.getOrdersByClientId(clientId);
       res.status(200).json(orders);
     } catch (error) {
       if (error instanceof OrderError) {
@@ -457,6 +476,57 @@ export class OrderController {
         return;
       }
       console.error("Error getting client orders:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  }
+
+  async getOrdersByEmployee(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { employeeId } = req.params;
+      
+      // Verificar se é um cliente tentando acessar pedidos de outro cliente
+      if (req.user?.role === "employee" && req.user.id !== employeeId) {
+        res.status(403).json({
+          message: "Acesso negado. Funcionários só podem acessar seus próprios pedidos.",
+        });
+        return;
+      }
+
+      const orders = await this.orderService.getOrdersByEmployeeId(employeeId);
+      res.status(200).json(orders);
+    } catch (error) {
+      if (error instanceof OrderError) {
+        res.status(404).json({ message: error.message });
+        return;
+      }
+      console.error("Error getting client orders:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  }
+
+  async getMyOrders(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      if (!req.user?.id) {
+        res.status(403).json({
+          message: "Acesso negado. Apenas clientes ou funcionários podem acessar seus próprios pedidos.",
+        });
+        return;
+      }
+      if (req.user?.role === "customer") {
+        const orders = await this.orderService.getOrdersByClientId(req.user.id);
+        res.status(200).json(orders);
+      }
+      
+      if (req.user?.role === "employee" || req.user?.role === "admin") {
+        const orders = await this.orderService.getOrdersByEmployeeId(req.user.id);
+        res.status(200).json(orders);
+      }
+    } catch (error) {
+      if (error instanceof OrderError) {
+        res.status(404).json({ message: error.message });
+        return;
+      }
+      console.error("Error getting my orders:", error);
       res.status(500).json({ message: "Erro interno do servidor" });
     }
   }

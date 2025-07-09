@@ -1,14 +1,13 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { ProfileCard } from "@/components/profile/ProfileCard";
 import { ProfileStats } from "@/components/profile/ProfileStats";
 import { ProfileEditDialog } from "@/components/profile/ProfileEditDialog";
 import { RecentOrdersCard } from "@/components/profile/RecentOrdersCard";
 import { PageContainer } from "@/components/ui/page-container";
 import { useProfileData } from "@/hooks/useProfileData";
+import { ProfileErrorAlert } from "@/components/profile/ProfileErrorAlert";
 
 export default function ProfilePage() {
   const {
@@ -38,15 +37,7 @@ export default function ProfilePage() {
   if (!user) {
     return (
       <PageContainer>
-        <Alert variant="destructive">
-          <AlertTitle>Erro</AlertTitle>
-          <AlertDescription>
-            Não foi possível carregar seu perfil. Por favor, tente novamente mais tarde.
-          </AlertDescription>
-          <Button className="mt-4" onClick={handleBackToDashboard}>
-            Voltar para o Dashboard
-          </Button>
-        </Alert>
+        <ProfileErrorAlert handleBackToDashboard={handleBackToDashboard} />
       </PageContainer>
     );
   }
@@ -74,11 +65,12 @@ export default function ProfilePage() {
 
           {/* Coluna da direita - Pedidos recentes (equivalente a 3 StatCards) */}
           <div className="lg:col-span-3">
-              <RecentOrdersCard
+            <RecentOrdersCard
               orders={profileData.userOrdersForDisplay}
-                onViewDetails={handleViewOrderDetails}
-                isLoading={isLoadingOrders}
+              onViewDetails={handleViewOrderDetails}
+              isLoading={isLoadingOrders}
               getClientName={getClientName}
+              userRole={user.role}
             />
           </div>
         </div>

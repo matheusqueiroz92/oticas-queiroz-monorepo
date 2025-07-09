@@ -780,6 +780,185 @@ router.get(
   asyncHandler(paymentController.getChecksByStatus.bind(paymentController))
 );
 
+/**
+ * @swagger
+ * /api/payments/my-debts:
+ *   get:
+ *     summary: Busca débitos do cliente logado
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Payments]
+ *     description: Retorna o débito total do cliente logado com histórico de pagamentos e pedidos em aberto
+ *     responses:
+ *       200:
+ *         description: Dados dos débitos do cliente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 totalDebt:
+ *                   type: number
+ *                   description: Valor total do débito
+ *                 paymentHistory:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Payment'
+ *                   description: Histórico de pagamentos do cliente
+ *                 orders:
+ *                   type: array
+ *                   description: Pedidos em aberto com valor pendente
+ *       401:
+ *         description: Não autorizado
+ *       403:
+ *         description: Acesso negado. Apenas clientes podem acessar seus próprios débitos.
+ *       500:
+ *         description: Erro interno do servidor
+ */
+router.get(
+  "/api/payments/my-debts",
+  authenticate,
+  authorize(["customer"]),
+  asyncHandler(paymentController.getMyDebts.bind(paymentController))
+);
+
+/**
+ * @swagger
+ * /api/payments/my-payments:
+ *   get:
+ *     summary: Busca pagamentos do cliente logado
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Payments]
+ *     description: Retorna uma lista paginada dos pagamentos do cliente logado
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Número da página
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
+ *         description: Limite de itens por página
+ *       - in: query
+ *         name: type
+ *         schema:
+ *           type: string
+ *           enum: [sale, debt_payment, expense]
+ *         description: Filtrar por tipo de pagamento
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [pending, completed, cancelled]
+ *         description: Filtrar por status do pagamento
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Data inicial para filtro
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Data final para filtro
+ *     responses:
+ *       200:
+ *         description: Lista de pagamentos do cliente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 payments:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Payment'
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     page:
+ *                       type: integer
+ *                     limit:
+ *                       type: integer
+ *                     total:
+ *                       type: integer
+ *                     totalPages:
+ *                       type: integer
+ *       401:
+ *         description: Não autorizado
+ *       403:
+ *         description: Acesso negado. Apenas clientes podem acessar seus próprios pagamentos.
+ *       500:
+ *         description: Erro interno do servidor
+ */
+router.get(
+  "/api/payments/my-payments",
+  authenticate,
+  authorize(["customer"]),
+  asyncHandler(paymentController.getMyPayments.bind(paymentController))
+);
+
+/**
+ * @swagger
+ * /api/payments/client/{clientId}/debts:
+ *   get:
+ *     summary: Busca débitos de um cliente específico
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Payments]
+ *     description: Retorna o débito total de um cliente específico (apenas para admin/funcionário)
+ *     parameters:
+ *       - in: path
+ *         name: clientId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID do cliente
+ *     responses:
+ *       200:
+ *         description: Dados dos débitos do cliente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 totalDebt:
+ *                   type: number
+ *                   description: Valor total do débito
+ *                 paymentHistory:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Payment'
+ *                   description: Histórico de pagamentos do cliente
+ *                 orders:
+ *                   type: array
+ *                   description: Pedidos em aberto com valor pendente
+ *       401:
+ *         description: Não autorizado
+ *       403:
+ *         description: Acesso negado. Requer permissão de administrador ou funcionário.
+ *       404:
+ *         description: Cliente não encontrado
+ *       500:
+ *         description: Erro interno do servidor
+ */
+router.get(
+  "/api/payments/client/:clientId/debts",
+  authenticate,
+  authorize(["admin", "employee"]),
+  asyncHandler(paymentController.getClientDebts.bind(paymentController))
+);
+
 // DEBUG: Rota temporária para verificar dados do pagamento/pedido
 router.get(
   "/debug/payments/order/:orderId",

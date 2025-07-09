@@ -75,14 +75,19 @@ export function ProductsListWithDialog({
     }
   });
 
+  // Não faça slice/paginação no frontend!
+  // Use apenas os produtos recebidos do backend (já paginados)
+
   return (
-    <div className="space-y-4">
-      {/* Seletor de visualização - movido para o canto direito */}
-      <div className="flex items-center justify-end m-4">
+    <div className={`${viewMode === "grid" ? "space-y-4 px-6 pb-6" : "space-y-4 pb-6"}`}>
+      {/* Header: texto de quantidade à esquerda, botões à direita */}
+      <div className={`${viewMode === "grid" ? "flex items-center justify-between px-0 pb-2" : "flex items-center justify-between px-6 pb-2"}`}>
+        {/* Quantidade de produtos */}
+        <span className="text-sm text-muted-foreground">
+          {totalProducts} produto{totalProducts !== 1 ? 's' : ''} encontrado{totalProducts !== 1 ? 's' : ''}
+        </span>
+        {/* Botões de alternância de visualização */}
         <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground mr-2">
-            {filteredProducts.length} produtos encontrados
-          </span>
           <Button
             variant={viewMode === "grid" ? "default" : "ghost"}
             size="sm"
@@ -99,30 +104,28 @@ export function ProductsListWithDialog({
           </Button>
         </div>
       </div>
-
       {/* Lista de produtos */}
-      {filteredProducts.length === 0 ? (
+      {products.length === 0 ? (
         <ProductEmptyState clearFilters={clearFilters} />
       ) : (
         viewMode === "grid" ? (
           <ProductGridWithActions 
-            products={filteredProducts}
+            products={products}
             formatCurrency={formatCurrency}
             navigateToProductDetails={navigateToProductDetails}
             onRefresh={onRefresh}
           />
         ) : (
           <ProductTableWithActions 
-            products={filteredProducts}
+            products={products}
             formatCurrency={formatCurrency}
             navigateToProductDetails={navigateToProductDetails}
             onRefresh={onRefresh}
           />
         )
       )}
-
       {/* Paginação */}
-      {filteredProducts.length > 0 && (
+      {totalPages > 1 && (
         <PaginationItems
           currentPage={currentPage}
           totalPages={totalPages}
