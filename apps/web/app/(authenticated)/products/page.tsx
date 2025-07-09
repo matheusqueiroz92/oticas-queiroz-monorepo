@@ -47,6 +47,7 @@ export default function ProductsPage() {
     <PageContainer>
       <div className="space-y-8">
         {/* Cards de Estatísticas */}
+        Aqui!!!!!!
         <ProductsStatsCards 
           totalProducts={stats.totalProducts}
           lowStockProducts={stats.lowStockProducts}
