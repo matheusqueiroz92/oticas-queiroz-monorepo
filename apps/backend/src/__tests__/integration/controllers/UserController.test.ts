@@ -220,9 +220,6 @@ describe("UserController", () => {
     });
 
     it("should validate CPF format", async () => {
-      // Sobrescrever o mock para retornar false para CPF inválido
-      (isValidCPF as jest.Mock).mockImplementationOnce(() => false);
-
       const res = await request(app)
         .put("/api/users/profile")
         .set("Authorization", `Bearer ${customerToken}`)

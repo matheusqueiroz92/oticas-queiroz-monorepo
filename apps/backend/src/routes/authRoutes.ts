@@ -337,6 +337,33 @@ router.post(
  *       500:
  *         description: Erro interno do servidor
  */
+/**
+ * @swagger
+ * /api/auth/validate-token:
+ *   post:
+ *     summary: Valida um token JWT
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     description: Verifica se o token JWT é válido e retorna os dados do usuário
+ *     responses:
+ *       200:
+ *         description: Token válido
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Token inválido ou não fornecido
+ *       500:
+ *         description: Erro interno do servidor
+ */
+router.post(
+  "/validate-token",
+  authenticate,
+  asyncHandler(authController.validateToken.bind(authController))
+);
+
 router.get(
   "/validate-reset-token/:token",
   asyncHandler(

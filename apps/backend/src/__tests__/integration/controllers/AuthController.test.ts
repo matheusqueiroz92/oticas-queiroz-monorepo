@@ -360,4 +360,367 @@ describe("AuthController", () => {
       expect(res.body).not.toHaveProperty("image");
     });
   });
+
+  // NOVOS TESTES PARA COBERTURA COMPLETA
+
+  describe("POST /api/auth/login - Validação de dados", () => {
+    it("should fail with invalid login data (empty login)", async () => {
+      const res = await request(app).post("/api/auth/login").send({
+        login: "",
+        password: "123456",
+      });
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe("Dados de login inválidos");
+    });
+
+    it("should fail with invalid login data (short password)", async () => {
+      const res = await request(app).post("/api/auth/login").send({
+        login: "test@example.com",
+        password: "123",
+      });
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe("Dados de login inválidos");
+    });
+
+    it("should fail with invalid login data (missing password)", async () => {
+      const res = await request(app).post("/api/auth/login").send({
+        login: "test@example.com",
+      });
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe("Dados de login inválidos");
+    });
+  });
+
+  describe("POST /api/auth/register - Validação de dados", () => {
+    it("should fail with invalid registration data (short name)", async () => {
+      const admin = await User.create({
+        name: "Admin",
+        email: "admin-validation@test.com",
+        password: await bcrypt.hash("123456", 10),
+        role: "admin",
+        cpf: generateValidCPF(),
+        rg: "987654321",
+        birthDate: new Date("1990-01-01"),
+      });
+
+      const adminToken = generateToken(admin._id.toString(), "admin");
+
+      const res = await request(app)
+        .post("/api/auth/register")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .field("name", "Ab") // Nome muito curto
+        .field("email", "test@example.com")
+        .field("password", "123456")
+        .field("role", "customer")
+        .field("cpf", generateValidCPF())
+        .field("birthDate", "1995-05-15");
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe("Dados de registro inválidos");
+    });
+
+    it("should fail with invalid registration data (short password)", async () => {
+      const admin = await User.create({
+        name: "Admin",
+        email: "admin-password@test.com",
+        password: await bcrypt.hash("123456", 10),
+        role: "admin",
+        cpf: generateValidCPF(),
+        rg: "987654321",
+        birthDate: new Date("1990-01-01"),
+      });
+
+      const adminToken = generateToken(admin._id.toString(), "admin");
+
+      const res = await request(app)
+        .post("/api/auth/register")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .field("name", "Test User")
+        .field("email", "test@example.com")
+        .field("password", "123") // Senha muito curta
+        .field("role", "customer")
+        .field("cpf", generateValidCPF())
+        .field("birthDate", "1995-05-15");
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe("Dados de registro inválidos");
+    });
+
+    it("should fail with invalid registration data (invalid role)", async () => {
+      const admin = await User.create({
+        name: "Admin",
+        email: "admin-role@test.com",
+        password: await bcrypt.hash("123456", 10),
+        role: "admin",
+        cpf: generateValidCPF(),
+        rg: "987654321",
+        birthDate: new Date("1990-01-01"),
+      });
+
+      const adminToken = generateToken(admin._id.toString(), "admin");
+
+      const res = await request(app)
+        .post("/api/auth/register")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .field("name", "Test User")
+        .field("email", "test@example.com")
+        .field("password", "123456")
+        .field("role", "invalid_role") // Role inválido
+        .field("cpf", generateValidCPF())
+        .field("birthDate", "1995-05-15");
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe("Dados de registro inválidos");
+    });
+
+    it("should fail with invalid registration data (future birth date)", async () => {
+      const admin = await User.create({
+        name: "Admin",
+        email: "admin-future-date@test.com",
+        password: await bcrypt.hash("123456", 10),
+        role: "admin",
+        cpf: generateValidCPF(),
+        rg: "987654321",
+        birthDate: new Date("1990-01-01"),
+      });
+
+      const adminToken = generateToken(admin._id.toString(), "admin");
+
+      const futureDate = new Date();
+      futureDate.setFullYear(futureDate.getFullYear() + 1);
+
+      const res = await request(app)
+        .post("/api/auth/register")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .field("name", "Test User")
+        .field("email", "test@example.com")
+        .field("password", "123456")
+        .field("role", "customer")
+        .field("cpf", generateValidCPF())
+        .field("birthDate", futureDate.toISOString().split("T")[0]);
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe("Dados de registro inválidos");
+    });
+
+    it("should fail with invalid registration data (invalid birth date)", async () => {
+      const admin = await User.create({
+        name: "Admin",
+        email: "admin-invalid-date@test.com",
+        password: await bcrypt.hash("123456", 10),
+        role: "admin",
+        cpf: generateValidCPF(),
+        rg: "987654321",
+        birthDate: new Date("1990-01-01"),
+      });
+
+      const adminToken = generateToken(admin._id.toString(), "admin");
+
+      const res = await request(app)
+        .post("/api/auth/register")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .field("name", "Test User")
+        .field("email", "test@example.com")
+        .field("password", "123456")
+        .field("role", "customer")
+        .field("cpf", generateValidCPF())
+        .field("birthDate", "invalid-date");
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe("Dados de registro inválidos");
+    });
+  });
+
+  describe("POST /api/auth/register - Instituições e CNPJ", () => {
+    it("should register institution with valid CNPJ", async () => {
+      const admin = await User.create({
+        name: "Admin",
+        email: "admin-institution@test.com",
+        password: await bcrypt.hash("123456", 10),
+        role: "admin",
+        cpf: generateValidCPF(),
+        rg: "987654321",
+        birthDate: new Date("1990-01-01"),
+      });
+
+      const adminToken = generateToken(admin._id.toString(), "admin");
+
+      const res = await request(app)
+        .post("/api/auth/register")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .field("name", "Test Institution")
+        .field("email", `institution-${Date.now()}@test.com`)
+        .field("password", "123456")
+        .field("role", "institution")
+        .field("cnpj", "12345678000195") // CNPJ válido
+        .field("birthDate", "1990-01-01");
+
+      expect(res.status).toBe(201);
+      expect(res.body).toHaveProperty("role", "institution");
+      expect(res.body).toHaveProperty("cnpj", "12345678000195");
+      expect(res.body).not.toHaveProperty("cpf"); // CPF deve ser removido para instituições
+    });
+
+    it("should fail with invalid CNPJ", async () => {
+      const admin = await User.create({
+        name: "Admin",
+        email: "admin-invalid-cnpj@test.com",
+        password: await bcrypt.hash("123456", 10),
+        role: "admin",
+        cpf: generateValidCPF(),
+        rg: "987654321",
+        birthDate: new Date("1990-01-01"),
+      });
+
+      const adminToken = generateToken(admin._id.toString(), "admin");
+
+      const res = await request(app)
+        .post("/api/auth/register")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .field("name", "Test Institution")
+        .field("email", "institution@test.com")
+        .field("password", "123456")
+        .field("role", "institution")
+        .field("cnpj", "12345678901234") // CNPJ inválido
+        .field("birthDate", "1990-01-01");
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe("Dados de registro inválidos");
+    });
+
+    it("should fail with short CNPJ", async () => {
+      const admin = await User.create({
+        name: "Admin",
+        email: "admin-short-cnpj@test.com",
+        password: await bcrypt.hash("123456", 10),
+        role: "admin",
+        cpf: generateValidCPF(),
+        rg: "987654321",
+        birthDate: new Date("1990-01-01"),
+      });
+
+      const adminToken = generateToken(admin._id.toString(), "admin");
+
+      const res = await request(app)
+        .post("/api/auth/register")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .field("name", "Test Institution")
+        .field("email", "institution@test.com")
+        .field("password", "123456")
+        .field("role", "institution")
+        .field("cnpj", "123456789") // CNPJ muito curto
+        .field("birthDate", "1990-01-01");
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe("Dados de registro inválidos");
+    });
+  });
+
+  describe("POST /api/auth/register - Permissões de funcionário", () => {
+    it("should not allow employee to register employee", async () => {
+      const employee = await User.create({
+        name: "Employee",
+        email: "employee-permission@test.com",
+        password: await bcrypt.hash("123456", 10),
+        role: "employee",
+        cpf: generateValidCPF(),
+        rg: "123456789",
+        birthDate: new Date("1990-01-01"),
+      });
+
+      const employeeToken = generateToken(employee._id.toString(), "employee");
+
+      const res = await request(app)
+        .post("/api/auth/register")
+        .set("Authorization", `Bearer ${employeeToken}`)
+        .field("name", "New Employee")
+        .field("email", "newemployee@test.com")
+        .field("password", "123456")
+        .field("role", "employee")
+        .field("cpf", generateValidCPF())
+        .field("rg", "123456789")
+        .field("birthDate", "1995-05-15");
+
+      expect(res.status).toBe(403);
+      expect(res.body.message).toBe("Funcionários só podem cadastrar clientes e instituições");
+    });
+
+    it("should allow employee to register institution", async () => {
+      const employee = await User.create({
+        name: "Employee",
+        email: "employee-institution@test.com",
+        password: await bcrypt.hash("123456", 10),
+        role: "employee",
+        cpf: generateValidCPF(),
+        rg: "123456789",
+        birthDate: new Date("1990-01-01"),
+      });
+
+      const employeeToken = generateToken(employee._id.toString(), "employee");
+
+      const res = await request(app)
+        .post("/api/auth/register")
+        .set("Authorization", `Bearer ${employeeToken}`)
+        .field("name", "New Institution")
+        .field("email", `institution-${Date.now()}@test.com`)
+        .field("password", "123456")
+        .field("role", "institution")
+        .field("cnpj", "12345678000195")
+        .field("birthDate", "1990-01-01");
+
+      expect(res.status).toBe(201);
+      expect(res.body).toHaveProperty("role", "institution");
+    });
+  });
+
+  describe("POST /api/auth/register - Usuário não autenticado", () => {
+    it("should fail when user is not authenticated", async () => {
+      const res = await request(app)
+        .post("/api/auth/register")
+        .field("name", "Test User")
+        .field("email", "test@example.com")
+        .field("password", "123456")
+        .field("role", "customer")
+        .field("cpf", generateValidCPF())
+        .field("birthDate", "1995-05-15");
+
+      expect(res.status).toBe(401);
+      expect(res.body.message).toBe("Token não fornecido");
+    });
+  });
+
+  describe("POST /api/auth/validate-token", () => {
+    it("should validate token successfully", async () => {
+      const user = await User.create({
+        name: "Test User",
+        email: "validate-token@test.com",
+        password: await bcrypt.hash("123456", 10),
+        role: "customer",
+        cpf: generateValidCPF(),
+        rg: "123456789",
+        birthDate: new Date("1990-01-01"),
+      });
+
+      const token = generateToken(user._id.toString(), "customer");
+
+      const res = await request(app)
+        .post("/api/auth/validate-token")
+        .set("Authorization", `Bearer ${token}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty("_id");
+      expect(res.body).toHaveProperty("name", "Test User");
+    });
+
+    it("should fail when token is not provided", async () => {
+      const res = await request(app)
+        .post("/api/auth/validate-token");
+
+      expect(res.status).toBe(401);
+      expect(res.body.message).toBe("Token não fornecido");
+    });
+  });
 });
