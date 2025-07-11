@@ -1,25 +1,4 @@
-// Mock para a função de validação de CPF - DEVE ser o primeiro import
-jest.mock("../../../utils/validators", () => ({
-  isValidCPF: jest.fn().mockImplementation((cpf: unknown) => {
-    // Retornar false apenas para CPFs claramente inválidos usados nos testes
-    if (cpf === "11111111" || cpf === "12345678901") {
-      return false;
-    }
-    // Garantir que todos os CPFs válidos dos testes sejam aceitos
-    const validTestCPFs = [
-      "52998224725", // admin
-      "87748248800", // employee
-      "71428793860", // customer
-      "11144477735", // newUser
-      "12345678909", // anotherUser
-    ];
-    if (validTestCPFs.includes(cpf as string)) {
-      return true;
-    }
-    return true;
-  }),
-  isValidCNPJ: jest.fn().mockImplementation(() => true),
-}));
+
 
 import request from "supertest";
 import app from "../../../app";
