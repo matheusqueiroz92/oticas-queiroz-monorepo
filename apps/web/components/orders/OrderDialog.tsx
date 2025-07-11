@@ -103,7 +103,7 @@ export const OrderDialog: React.FC<OrderDialogProps> = ({ open, onOpenChange, or
   const initialFormData = mode === "edit" ? transformOrderToFormData(order) : undefined;
   
   // Hooks
-  const { customers: customersData, isLoading: isLoadingCustomers } = useCustomers({
+  const { customers: customers, isLoading: isLoadingCustomers } = useCustomers({
     pageSize: 100,
     enablePagination: false
   });
@@ -198,7 +198,7 @@ export const OrderDialog: React.FC<OrderDialogProps> = ({ open, onOpenChange, or
         console.log("=== QUERIES INVALIDADAS COM SUCESSO ===");
         
         // Buscar dados do cliente para exibir na tela de sucesso
-        const clientData = customersData?.find((customer: any) => customer._id === data.clientId);
+        const clientData = customers?.find((customer: any) => customer._id === data.clientId);
         if (clientData && !selectedCustomer) {
           setSelectedCustomer(clientData);
         }
@@ -297,6 +297,7 @@ export const OrderDialog: React.FC<OrderDialogProps> = ({ open, onOpenChange, or
               } : undefined}
               submittedOrder={createdOrder}
               selectedCustomer={selectedCustomer}
+              customersData={customers}
               onViewOrdersList={handleViewOrdersList}
               onViewOrderDetails={handleViewOrderDetails}
               onCreateNewOrder={handleCreateNewOrder}
@@ -319,7 +320,7 @@ export const OrderDialog: React.FC<OrderDialogProps> = ({ open, onOpenChange, or
               setHasLenses={setHasLenses}
               showInstallments={showInstallments}
               setShowInstallments={setShowInstallments}
-              customersData={customersData}
+              customersData={customers}
               productsData={productsData}
               loggedEmployee={loggedEmployee}
               onSubmit={handleSubmit}

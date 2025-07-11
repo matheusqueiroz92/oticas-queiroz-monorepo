@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/card";
 import { Loader2, ArrowLeft, Mail } from "lucide-react";
 import { requestPasswordReset } from "../../_services/authService";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 const forgotPasswordSchema = z.object({
   email: z.string().email("Digite um email válido"),
@@ -70,6 +71,9 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-background">
+      <div className="absolute top-4 right-4 z-20">
+        <ThemeToggle />
+      </div>
       <div className="hidden lg:flex lg:w-1/2 bg-[var(--primary-blue)] relative">
         {/* <div className="absolute inset-0 bg-black/50" /> */}
         <div className="relative z-10 flex items-center justify-center w-full">

@@ -16,7 +16,7 @@ export default function OrderStepProgress({
   steps, 
   currentStep, 
   setCurrentStep,
-  compact = false
+  // compact = false
 }: OrderStepProgressProps) {
   const progressPercentage = ((currentStep + 1) / steps.length) * 100;
   
@@ -25,7 +25,7 @@ export default function OrderStepProgress({
       {/* Barra de progresso principal */}
       <div className="relative w-full h-4 bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200 rounded-full overflow-hidden shadow-sm">
         <div 
-          className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-500 via-blue-400 to-blue-600 rounded-full transition-all duration-500 ease-out shadow-md"
+          className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-800 via-blue-700 to-blue-900 rounded-full transition-all duration-500 ease-out shadow-md"
           style={{ width: `${progressPercentage}%` }}
         />
         {/* Indicadores de etapas */}
@@ -36,9 +36,9 @@ export default function OrderStepProgress({
               className={`
                 w-7 h-7 flex items-center justify-center rounded-full border-2 transition-all duration-300 cursor-pointer shadow-md
                 ${index < currentStep 
-                  ? 'bg-green-500 border-green-500 scale-110' 
+                  ? 'bg-blue-800 border-blue-800 scale-110' 
                   : index === currentStep
-                    ? 'bg-blue-600 border-blue-600 scale-110'
+                    ? 'bg-blue-900 border-blue-900 scale-110'
                     : 'bg-white border-gray-300'
                 }
               `}
@@ -68,9 +68,9 @@ export default function OrderStepProgress({
             <span className={`
               text-sm font-semibold transition-colors duration-300
               ${index === currentStep 
-                ? 'text-blue-600' 
+                ? 'text-blue-900' 
                 : index < currentStep 
-                  ? 'text-green-600' 
+                  ? 'text-blue-800' 
                   : 'text-gray-400'
               }
             `}>

@@ -134,7 +134,10 @@ export class UserController {
 
   async getUserById(req: AuthRequest, res: Response): Promise<void> {
     const user = await this.userService.getUserById(req.params.id);
-    res.status(200).json(user);
+    
+    // Remover senha da resposta
+    const { password, ...userWithoutPassword } = user;
+    res.status(200).json(userWithoutPassword);
   }
 
   async getUserByCpf(req: Request, res: Response): Promise<void> {
@@ -151,7 +154,27 @@ export class UserController {
   async updateUser(req: AuthRequest, res: Response): Promise<void> {
     let userData: UserType;
     try {
-      userData = userSchema.parse(req.body);
+      // Processar os dados do formulário multipart
+      const processedBody = { ...req.body };
+      
+      // Transformar campos JSON stringificados de volta para objetos
+      if (processedBody.purchases && typeof processedBody.purchases === 'string') {
+        try {
+          processedBody.purchases = JSON.parse(processedBody.purchases);
+        } catch {
+          // Se não conseguir fazer parse, manter como string para validação do Zod
+        }
+      }
+      
+      if (processedBody.sales && typeof processedBody.sales === 'string') {
+        try {
+          processedBody.sales = JSON.parse(processedBody.sales);
+        } catch {
+          // Se não conseguir fazer parse, manter como string para validação do Zod
+        }
+      }
+      
+      userData = userSchema.parse(processedBody);
     } catch (error) {
       if (error instanceof z.ZodError) {
         throw new ValidationError(
@@ -185,6 +208,8 @@ export class UserController {
       );
     }
 
+    // O UserService já faz suas próprias validações e lança erros específicos
+    // como "CPF já cadastrado", então não precisamos capturar aqui
     const user = await this.userService.updateUser(req.params.id, userData);
     res.status(200).json(user);
   }

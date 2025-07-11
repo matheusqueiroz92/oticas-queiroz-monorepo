@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Search, Building, Plus } from "lucide-react";
 import { useInstitutions } from "@/hooks/useInstitutions";
 import { ErrorAlert } from "@/components/ErrorAlert";
-import { PageTitle } from "@/components/ui/page-title";
 import { InstitutionTable } from "@/components/institutions/InstitutionTable";
 
 export default function InstitutionsPage() {
@@ -28,10 +27,6 @@ export default function InstitutionsPage() {
 
   return (
     <div className="space-y-2 max-w-auto mx-auto p-1 md:p-2">
-      <PageTitle
-        title="Instituições"
-        description="Lista de instituições parceiras"
-      />
       <div className="flex justify-between">
         <div className="relative w-full max-w-md">
           <Input

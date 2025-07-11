@@ -136,7 +136,6 @@ export function CustomerDialog({
   const handleSubmit = async (data: CustomerFormData) => {
     try {
       const formData = new FormData();
-      
       // Adicionar dados obrigatórios
       formData.append("name", data.name);
       
@@ -261,7 +260,6 @@ export function CustomerDialog({
 
             {/* Informações Básicas */}
             <div className="space-y-4">
-              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -277,7 +275,6 @@ export function CustomerDialog({
                   )}
                 />
 
-                {/* Campo de Data de Nascimento */}
                 <FormField
                   control={form.control}
                   name="birthDate"
@@ -344,7 +341,6 @@ export function CustomerDialog({
 
             {/* Documentos */}
             <div className="space-y-4">
-              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -378,7 +374,6 @@ export function CustomerDialog({
 
             {/* Endereço */}
             <div className="space-y-4">
-              
               <FormField
                 control={form.control}
                 name="address"

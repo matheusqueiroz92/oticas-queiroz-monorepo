@@ -2,7 +2,6 @@
 
 import { useLaboratories } from "@/hooks/useLaboratories";
 import { LaboratoryTable } from "@/components/laboratories/LaboratoryTable";
-import { PageTitle } from "@/components/ui/page-title";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2, Beaker } from "lucide-react";
@@ -23,10 +22,6 @@ export default function LaboratoriesPage() {
 
   return (
     <div className="space-y-2 max-w-auto mx-auto p-1 md:p-2">
-      <PageTitle
-        title="Laboratórios"
-        description="Lista de laboratórios parceiros da loja"
-      />
       <div className="flex justify-between">
         <div className="flex gap-2">
           <Input

@@ -34,9 +34,18 @@ export const userSchema = z.object({
     )
     .transform((date) => new Date(date))
     .optional(),
-  purchases: z.array(z.string()).optional(),
-  debts: z.number().optional(),
-  sales: z.array(z.string()).optional(),
+  purchases: z.union([
+    z.array(z.string()),
+    z.string().transform((str) => JSON.parse(str))
+  ]).optional(),
+  debts: z.union([
+    z.number(),
+    z.string().transform((str) => Number(str))
+  ]).optional(),
+  sales: z.union([
+    z.array(z.string()),
+    z.string().transform((str) => JSON.parse(str))
+  ]).optional(),
 });
 
 export type UserType = z.infer<typeof userSchema>;

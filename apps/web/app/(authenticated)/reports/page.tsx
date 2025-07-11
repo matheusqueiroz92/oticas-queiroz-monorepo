@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -15,7 +14,6 @@ import { useReports } from "@/hooks/useReports";
 import { ReportList } from "@/components/reports/ReportList";
 import { CreateReportModal } from "@/components/reports/CreateReportModal";
 import { ReportFilters } from "@/components/reports/ReportFilters";
-import { PageTitle } from "@/components/ui/page-title";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function ReportsPage() {
@@ -47,16 +45,6 @@ export default function ReportsPage() {
   
   return (
     <div className="space-y-2 max-w-auto mx-auto p-1 md:p-2">
-      <div className="flex justify-between items-center">
-        <PageTitle
-          title="Relatórios"
-          description="Gerencie, visualize e faça download de relatórios"
-        />
-        <div className="flex gap-2">
-
-        </div>
-      </div>
-
       <Card>
         <CardHeader className="p-4 flex-row items-center justify-between space-y-0">
           <CardTitle className="text-lg">Meus Relatórios</CardTitle>

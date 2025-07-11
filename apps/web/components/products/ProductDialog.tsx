@@ -34,10 +34,10 @@ import {
 } from "@/components/ui/form";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { useProducts } from "@/hooks/useProducts";
-import { useToast } from "@/hooks/useToast";
-import { handleError} from "@/app/_utils/error-handler";
+import { showSuccess } from "@/app/_utils/error-handler";
 import { Product } from "@/app/_types/product";
 import { getProductTypeName } from "@/app/_services/productService";
+import { handleError } from "@/app/_utils/error-handler";
 
 const productSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
@@ -74,7 +74,6 @@ export function ProductDialog({
   mode,
 }: ProductDialogProps) {
   const { createProductMutation, updateProductMutation } = useProducts(1, "", "all");
-  const { toast } = useToast();
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imageUrl, setImageUrl] = useState<string | undefined>(undefined);
   
@@ -201,7 +200,6 @@ export function ProductDialog({
   const handleSubmit = async (data: ProductFormData) => {
     try {
       const formData = new FormData();
-      
       // Adicionar dados obrigatórios
       formData.append("name", data.name);
       formData.append("productType", data.productType);
@@ -209,7 +207,7 @@ export function ProductDialog({
       
       // Adicionar imagem se selecionada
       if (selectedImage) {
-        formData.append("image", selectedImage);
+        formData.append("productImage", selectedImage);
       }
       
       // Adicionar dados opcionais apenas se preenchidos
@@ -241,51 +239,49 @@ export function ProductDialog({
       }
 
       if (isEditMode && memoizedProduct) {
-        // Atualizar produto existente
         await updateProductMutation.mutateAsync({
           id: memoizedProduct._id,
-          formData
+          formData,
         });
-        
-        toast({
-          title: "Produto atualizado",
-          description: "O produto foi atualizado com sucesso.",
-        });
+
+        showSuccess(
+          "Produto atualizado",
+          "O produto foi atualizado com sucesso."
+        );
       } else {
-        // Criar novo produto
         await createProductMutation.mutateAsync(formData);
         
-        toast({
-          title: "Produto cadastrado",
-          description: "O produto foi cadastrado com sucesso.",
+        showSuccess(
+          "Produto cadastrado",
+          "O produto foi cadastrado com sucesso."
+        );
+        
+        // Fechar dropdowns antes de resetar
+        document.querySelectorAll('[data-radix-popper-content-wrapper]').forEach((element) => {
+          const htmlElement = element as HTMLElement;
+          if (htmlElement.style.display !== 'none') {
+            const escEvent = new KeyboardEvent('keydown', {
+              key: 'Escape',
+              code: 'Escape',
+              keyCode: 27,
+              which: 27,
+              bubbles: true,
+              cancelable: true
+            });
+            document.dispatchEvent(escEvent);
+          }
         });
-      }
-      
-      // Fechar dropdowns antes de resetar
-      document.querySelectorAll('[data-radix-popper-content-wrapper]').forEach((element) => {
-        const htmlElement = element as HTMLElement;
-        if (htmlElement.style.display !== 'none') {
-          const escEvent = new KeyboardEvent('keydown', {
-            key: 'Escape',
-            code: 'Escape',
-            keyCode: 27,
-            which: 27,
-            bubbles: true,
-            cancelable: true
-          });
-          document.dispatchEvent(escEvent);
+        
+        // Resetar formulário e fechar dialog
+        form.reset();
+        setSelectedImage(null);
+        setImageUrl(undefined);
+        onOpenChange(false);
+        
+        // Callback de sucesso
+        if (onSuccess) {
+          onSuccess();
         }
-      });
-      
-      // Resetar formulário e fechar dialog
-      form.reset();
-      setSelectedImage(null);
-      setImageUrl(undefined);
-      onOpenChange(false);
-      
-      // Callback de sucesso
-      if (onSuccess) {
-        onSuccess();
       }
     } catch (error: any) {
       console.error(`Erro ao ${isEditMode ? 'atualizar' : 'cadastrar'} produto:`, error);

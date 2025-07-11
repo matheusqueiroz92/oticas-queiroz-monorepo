@@ -10,6 +10,7 @@ interface OrderSuccessScreenProps {
   form?: any;
   submittedOrder: any;
   selectedCustomer: Customer | null;
+  customersData?: Customer[];
   onViewOrdersList: () => void;
   onViewOrderDetails: (id: string) => void;
   onCreateNewOrder: () => void;
@@ -19,8 +20,9 @@ export default function OrderSuccessScreen({
   form,
   submittedOrder,
   selectedCustomer,
+  customersData = [],
   onViewOrdersList,
-  onViewOrderDetails,
+  // onViewOrderDetails,
   onCreateNewOrder,
 }: OrderSuccessScreenProps) {
   
@@ -84,24 +86,31 @@ export default function OrderSuccessScreen({
   let clientPhone = null;
   let clientEmail = null;
 
-  // Prioridade: selectedCustomer > submittedOrder.client > submittedOrder.clientId (se for objeto)
+  // Prioridade: selectedCustomer > submittedOrder.client > submittedOrder.clientId (se for objeto) > buscar na lista
   if (selectedCustomer) {
     clientInfo = selectedCustomer;
     clientName = selectedCustomer.name;
     clientPhone = selectedCustomer.phone;
     clientEmail = selectedCustomer.email;
   } else if (submittedOrder?.client) {
-    // Se o pedido retornar dados populados do cliente
     clientInfo = submittedOrder.client;
     clientName = submittedOrder.client.name || clientName;
     clientPhone = submittedOrder.client.phone;
     clientEmail = submittedOrder.client.email;
   } else if (typeof submittedOrder?.clientId === 'object' && submittedOrder.clientId?.name) {
-    // Se clientId vier populado como objeto
     clientInfo = submittedOrder.clientId;
     clientName = submittedOrder.clientId.name || clientName;
     clientPhone = submittedOrder.clientId.phone;
     clientEmail = submittedOrder.clientId.email;
+  } else if (submittedOrder?.clientId && customersData.length > 0) {
+    // Buscar na lista de clientes pelo clientId
+    const found = customersData.find(c => c._id === submittedOrder.clientId);
+    if (found) {
+      clientInfo = found;
+      clientName = found.name;
+      clientPhone = found.phone;
+      clientEmail = found.email;
+    }
   }
 
 

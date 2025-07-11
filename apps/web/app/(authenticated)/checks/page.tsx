@@ -30,7 +30,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Loader2, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
 import { formatCurrency, formatDate } from "@/app/_utils/formatters";
-import { PageTitle } from "@/components/ui/page-title";
 
 export default function ChecksPage() {
   const [status, setStatus] = useState<"pending" | "compensated" | "rejected" | "all">("pending");
@@ -106,11 +105,6 @@ export default function ChecksPage() {
 
   return (
     <div className="space-y-4 max-w-auto mx-auto p-1 md:p-2">
-      <PageTitle
-        title="Gestão de Cheques"
-        description="Acompanhe e atualize o status dos cheques recebidos"
-      />
-
       <Card>
         <CardHeader>
           <CardTitle>Filtros</CardTitle>

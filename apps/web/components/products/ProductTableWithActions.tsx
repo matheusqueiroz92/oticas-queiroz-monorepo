@@ -18,6 +18,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { showSuccess } from "@/app/_utils/error-handler";
 
 interface ProductTableWithActionsProps {
   products: Product[];
@@ -50,6 +51,8 @@ export function ProductTableWithActions({
   };
 
   const handleEditSuccess = () => {
+    console.log("[ProductTableWithActions] handleEditSuccess chamado");
+    showSuccess("Produto cadastrado", "O produto foi cadastrado com sucesso.");
     onRefresh();
   };
 

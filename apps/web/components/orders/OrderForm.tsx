@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import {
   Form,
 } from "@/components/ui/form";
-import { Loader2, ChevronRight, User, File } from "lucide-react";
+import { Loader2, ChevronRight } from "lucide-react";
 import type { Customer } from "@/app/_types/customer";
 import type { Product } from "@/app/_types/product";
 import { OrderFormValues, orderFormSchema } from "@/app/_types/form-types";
@@ -11,14 +11,10 @@ import OrderStepProgress from "@/components/orders/OrderStepProgress";
 import OrderClientProducts from "@/components/orders/OrderClientProducts";
 import OrderPrescription from "@/components/orders/OrderPrescription";
 import OrderConfirmation from "@/components/orders/OrderConfirmation";
-import OrderSuccessScreen from "@/components/orders/OrderSuccessScreen";
 import { useCustomers } from "@/hooks/useCustomers";
-import { useProducts } from "@/hooks/useProducts";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { isLens } from "@/app/_utils/product-utils";
-import { Card, CardHeader, CardContent } from "@/components/ui/card";
-import Cookies from "js-cookie";
 
 const numericInputStyles = `
   /* Remove as setas dos inputs numéricos */
@@ -75,16 +71,16 @@ export function OrderForm({
   loggedEmployee,
   onSubmit,
   onCancel,
-  onViewOrdersList,
-  onViewOrderDetails,
-  onCreateNewOrder,
-  handleAddProduct,
-  handleRemoveProduct,
-  handleUpdateProductPrice,
-  handleClientSelect,
-  handleResponsibleSelect,
-  updateFinalPrice,
-  calculateInstallmentValue,
+  // onViewOrdersList,
+  // onViewOrderDetails,
+  // onCreateNewOrder,
+  // handleAddProduct,
+  // handleRemoveProduct,
+  // handleUpdateProductPrice,
+  // handleClientSelect,
+  // handleResponsibleSelect,
+  // updateFinalPrice,
+  // calculateInstallmentValue,
 }: OrderFormProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
@@ -267,8 +263,6 @@ export function OrderForm({
   // };
 
   const { 
-    customers: initialCustomers,
-    isLoading: isLoadingCustomers,
     fetchAllCustomers
   } = useCustomers({
     pageSize: 100,
@@ -309,12 +303,12 @@ export function OrderForm({
     );
   };
 
-  const updateFinalPriceInternal = (total: number, discount: number) => {
-    const finalPrice = total - discount;
-    form.setValue("totalPrice", total);
-    form.setValue("discount", discount);
-    form.setValue("finalPrice", finalPrice);
-  };
+  // const updateFinalPriceInternal = (total: number, discount: number) => {
+  //   const finalPrice = total - discount;
+  //   form.setValue("totalPrice", total);
+  //   form.setValue("discount", discount);
+  //   form.setValue("finalPrice", finalPrice);
+  // };
 
   const calculateInstallmentValueInternal = () => {
     const finalPrice = form.getValues("finalPrice") || 0;

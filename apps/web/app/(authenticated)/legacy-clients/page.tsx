@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { PageTitle } from "@/components/ui/page-title";
 import { Input } from "@/components/ui/input";
 import { PaginationItems } from "@/components/PaginationItems";
 import { useRouter } from "next/navigation";
@@ -34,11 +33,6 @@ export default function LegacyClientsPage() {
 
   return (
     <div className="space-y-2 max-w-auto mx-auto p-1 md:p-2">
-        <PageTitle
-          title="Clientes Legados"
-          description="Gerencie os clientes que possuem registros financeiros anteriores"
-        />
-
       <Card>
         <CardHeader className="p-4 flex-row items-center justify-between space-y-0">
           <CardTitle className="text-lg">Lista de Clientes</CardTitle>

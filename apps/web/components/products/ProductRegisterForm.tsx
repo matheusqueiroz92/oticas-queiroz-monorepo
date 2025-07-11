@@ -129,12 +129,17 @@ export default function ProductRegisterForm({ title, description }: ProductRegis
         }
       }
       
-      if (selectedFile) {
+      if (selectedFile instanceof File) {
         formData.append("productImage", selectedFile);
       }
-      
+
+      // Log detalhado do FormData para depuração
       for (let [key, value] of formData.entries()) {
-        console.log(`${key}: ${value instanceof File ? value.name : value}`);
+        if (value instanceof File) {
+          console.log(`FormData: ${key} = [File] ${value.name}`);
+        } else {
+          console.log(`FormData: ${key} = ${value}`);
+        }
       }
       
       const newProduct = await handleCreateProduct(formData);
@@ -352,50 +357,41 @@ export default function ProductRegisterForm({ title, description }: ProductRegis
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="image"
-              render={() => (
-                <FormItem>
-                  <FormLabel className="flex items-center gap-1">
-                    <ImageIcon className="h-4 w-4 text-primary" />
-                    Imagem do Produto
-                  </FormLabel>
-                  <FormControl>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Input
-                          type="file"
-                          accept="image/jpeg,image/png,image/webp"
-                          onChange={(e) => {
-                            handleFileChange(e);
-                          }}
-                          className="h-10"
-                        />
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Arquivos suportados: JPEG, PNG, WebP
-                        </p>
-                      </div>
-                      <div className="flex items-center justify-center bg-gray-50 rounded-md border h-[150px] overflow-hidden">
-                        {previewUrl ? (
-                          <img
-                            src={previewUrl}
-                            alt="Preview"
-                            className="h-full w-full object-contain"
-                          />
-                        ) : (
-                          <div className="text-gray-400 text-sm flex flex-col items-center">
-                            <ImageIcon className="h-8 w-8 mb-2 opacity-20" />
-                            <span>Nenhuma imagem selecionada</span>
-                          </div>
-                        )}
-                      </div>
+            {/* Campo de upload de imagem fora do FormField para evitar erro de tipagem */}
+            <div className="mb-4">
+              <label className="flex items-center gap-1 font-medium text-sm mb-1">
+                <ImageIcon className="h-4 w-4 text-primary" />
+                Imagem do Produto
+              </label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleFileChange}
+                    className="h-10"
+                    name="productImage"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Arquivos suportados: JPEG, PNG, WebP
+                  </p>
+                </div>
+                <div className="flex items-center justify-center bg-gray-50 rounded-md border h-[150px] overflow-hidden">
+                  {previewUrl ? (
+                    <img
+                      src={previewUrl}
+                      alt="Preview"
+                      className="h-full w-full object-contain"
+                    />
+                  ) : (
+                    <div className="text-gray-400 text-sm flex flex-col items-center">
+                      <ImageIcon className="h-8 w-8 mb-2 opacity-20" />
+                      <span>Nenhuma imagem selecionada</span>
                     </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         );
       

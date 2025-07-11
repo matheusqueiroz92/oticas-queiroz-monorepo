@@ -8,7 +8,6 @@ const baseProductSchema = z.object({
     required_error: "Selecione um tipo de produto",
   }),
   description: z.string().optional(),
-  image: z.instanceof(File).optional(),
   brand: z.string().optional(),
   sellPrice: z.number().min(0, "Preço de venda inválido"),
   costPrice: z.number().min(0, "Preço de custo inválido").optional(),
@@ -61,7 +60,6 @@ export const createProductForm = () => {
             brand: "",
             sellPrice: 0,
             costPrice: 0,
-            image: undefined,
         } as any,
     });
 }

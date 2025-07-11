@@ -408,48 +408,41 @@ export function ProductEditForm({
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="image"
-              render={({ field: { onChange } }) => (
-                <FormItem>
-                  <FormLabel className="flex items-center gap-1">
-                    Imagem do Produto
-                  </FormLabel>
-                  <FormControl>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Input
-                          type="file"
-                          accept="image/jpeg,image/png,image/webp"
-                          ref={fileInputRef}
-                          onChange={handleFileChange}
-                          className="h-10"
-                        />
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Selecione uma nova imagem para substituir a atual (opcional)
-                        </p>
-                      </div>
-                      <div className="flex items-center justify-center bg-gray-50 rounded-md border h-[150px] overflow-hidden">
-                        {previewUrl ? (
-                          <img
-                            src={previewUrl}
-                            alt="Preview"
-                            className="h-full w-full object-contain"
-                          />
-                        ) : (
-                          <div className="text-gray-400 text-sm flex flex-col items-center">
-                            <Package className="h-8 w-8 mb-2 opacity-20" />
-                            <span>Nenhuma imagem selecionada</span>
-                          </div>
-                        )}
-                      </div>
+            {/* Campo de upload de imagem fora do FormField para evitar erro de tipagem e garantir o nome correto */}
+            <div className="mb-4">
+              <label className="flex items-center gap-1 font-medium text-sm mb-1">
+                Imagem do Produto
+              </label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    className="h-10"
+                    name="productImage"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Selecione uma nova imagem para substituir a atual (opcional)
+                  </p>
+                </div>
+                <div className="flex items-center justify-center bg-gray-50 rounded-md border h-[150px] overflow-hidden">
+                  {previewUrl ? (
+                    <img
+                      src={previewUrl}
+                      alt="Preview"
+                      className="h-full w-full object-contain"
+                    />
+                  ) : (
+                    <div className="text-gray-400 text-sm flex flex-col items-center">
+                      <Package className="h-8 w-8 mb-2 opacity-20" />
+                      <span>Nenhuma imagem selecionada</span>
                     </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         );
       
