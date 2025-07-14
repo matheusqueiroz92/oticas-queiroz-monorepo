@@ -252,7 +252,7 @@ describe("AuthController", () => {
         .post("/api/auth/register")
         .set("Authorization", `Bearer ${adminToken}`)
         .field("name", "Another User")
-        .field("email", admin.email as string) // <--- Corrigido
+        .field("email", admin.email || "")
         .field("password", "newpassword")
         .field("role", "customer")
         .field("cpf", generateValidCPF())
@@ -269,7 +269,7 @@ describe("AuthController", () => {
         name: "Admin User",
         email: "admin-cpf-test@test.com",
         password: await bcrypt.hash("123456", 10),
-        role: "admin" as const,
+        role: "admin",
         cpf: generateValidCPF(),
         rg: "987654321",
         birthDate: new Date("1990-01-01"),

@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apostila Completa de Git</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 3em;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            color: #7f8c8d;
+        }
+
+        .section {
+            background: rgba(255, 255, 255, 0.95);
+            margin: 30px 0;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .section h2 {
+            color: #2c3e50;
+            font-size: 2.2em;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        .section h3 {
+            color: #34495e;
+            font-size: 1.5em;
+            margin: 25px 0 15px 0;
+            padding-left: 15px;
+            border-left: 4px solid #3498db;
+        }
+
+        .command-box {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 1.1em;
+            position: relative;
+            overflow-x: auto;
+        }
+
+        .command-box::before {
+            content: "Terminal";
+            position: absolute;
+            top: -10px;
+            left: 20px;
+            background: #3498db;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .explanation {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+            border-left: 4px solid #27ae60;
+        }
+
+        .workflow-diagram {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            padding: 30px;
+            border-radius: 15px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .workflow-step {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px;
+            display: inline-block;
+            min-width: 150px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .workflow-arrow {
+            font-size: 2em;
+            color: #fff;
+            margin: 0 10px;
+        }
+
+        .git-states {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .state-box {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            flex: 1;
+            margin: 5px;
+            min-width: 200px;
+        }
+
+        .branch-diagram {
+            background: #34495e;
+            padding: 30px;
+            border-radius: 15px;
+            margin: 20px 0;
+            color: white;
+            text-align: center;
+        }
+
+        .branch-line {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 15px 0;
+        }
+
+        .commit-dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #3498db;
+            margin: 0 10px;
+            display: inline-block;
+        }
+
+        .branch-label {
+            background: #e74c3c;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            margin: 0 10px;
+        }
+
+        .tips-box {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #f39c12;
+        }
+
+        .tips-box h4 {
+            color: #d35400;
+            margin-bottom: 10px;
+        }
+
+        .command-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .command-table th {
+            background: #3498db;
+            color: white;
+            padding: 15px;
+            text-align: left;
+        }
+
+        .command-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        .command-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .index {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+        }
+
+        .index h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .index-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .index-item {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-decoration: none;
+            transition: transform 0.3s ease;
+        }
+
+        .index-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+
+        .visual-example {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+            border: 2px dashed #3498db;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .git-states {
+                flex-direction: column;
+            }
+            
+            .workflow-step {
+                display: block;
+                margin: 10px 0;
+            }
+            
+            .index-list {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Apostila Completa de Git</h1>
+            <p>Guia definitivo com comandos, conceitos e exemplos práticos</p>
+        </div>
+
+        <div class="index">
+            <h2>📚 Índice</h2>
+            <div class="index-list">
+                <a href="#introducao" class="index-item">1. Introdução ao Git</a>
+                <a href="#configuracao" class="index-item">2. Configuração Inicial</a>
+                <a href="#basicos" class="index-item">3. Comandos Básicos</a>
+                <a href="#estados" class="index-item">4. Estados do Git</a>
+                <a href="#branches" class="index-item">5. Trabalhando com Branches</a>
+                <a href="#remotos" class="index-item">6. Repositórios Remotos</a>
+                <a href="#avancados" class="index-item">7. Comandos Avançados</a>
+                <a href="#workflow" class="index-item">8. Fluxo de Trabalho</a>
+                <a href="#dicas" class="index-item">9. Dicas e Boas Práticas</a>
+            </div>
+        </div>
+
+        <section id="introducao" class="section">
+            <h2>🎯 1. Introdução ao Git</h2>
+            
+            <div class="explanation">
+                <h3>O que é Git?</h3>
+                <p>Git é um sistema de controle de versão distribuído que permite rastrear mudanças no código-fonte durante o desenvolvimento de software. Ele permite que múltiplos desenvolvedores trabalhem no mesmo projeto simultaneamente.</p>
+            </div>
+
+            <div class="git-states">
+                <div class="state-box">
+                    <h4>📁 Working Directory</h4>
+                    <p>Arquivos em desenvolvimento</p>
+                </div>
+                <div class="state-box">
+                    <h4>📋 Staging Area</h4>
+                    <p>Arquivos preparados para commit</p>
+                </div>
+                <div class="state-box">
+                    <h4>🗃️ Repository</h4>
+                    <p>Histórico de commits</p>
+                </div>
+            </div>
+
+            <div class="visual-example">
+                <h4>🎨 Analogia Visual</h4>
+                <p><strong>Working Directory:</strong> Sua mesa de trabalho onde você edita os arquivos</p>
+                <p><strong>Staging Area:</strong> Uma caixa onde você coloca os arquivos que quer "fotografar"</p>
+                <p><strong>Repository:</strong> O álbum de fotos com todo o histórico do projeto</p>
+            </div>
+        </section>
+
+        <section id="configuracao" class="section">
+            <h2>⚙️ 2. Configuração Inicial</h2>
+            
+            <h3>Configuração Global</h3>
+            <div class="command-box">
+git config --global user.name "Seu Nome"
+git config --global user.email "seu.email@exemplo.com"
+git config --global init.defaultBranch main
+            </div>
+
+            <div class="explanation">
+                <p>Esses comandos configuram sua identidade globalmente. Todas as suas contribuições serão marcadas com essas informações.</p>
+            </div>
+
+            <h3>Verificar Configurações</h3>
+            <div class="command-box">
+git config --list
+git config user.name
+git config user.email
+            </div>
+
+            <table class="command-table">
+                <thead>
+                    <tr>
+                        <th>Comando</th>
+                        <th>Descrição</th>
+                        <th>Exemplo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>git config --global</code></td>
+                        <td>Configuração para todos os repositórios</td>
+                        <td><code>git config --global user.name "João"</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>git config --local</code></td>
+                        <td>Configuração apenas para o repositório atual</td>
+                        <td><code>git config --local user.email "joao@work.com"</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>git config --list</code></td>
+                        <td>Lista todas as configurações</td>
+                        <td><code>git config --list</code></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section id="basicos" class="section">
+            <h2>🔧 3. Comandos Básicos</h2>
+            
+            <h3>Inicializando um Repositório</h3>
+            <div class="command-box">
+git init
+git init nome-do-projeto
+            </div>
+
+            <div class="explanation">
+                <p><strong>git init:</strong> Cria um novo repositório Git no diretório atual</p>
+                <p><strong>git init nome-do-projeto:</strong> Cria um novo diretório e inicializa um repositório Git nele</p>
+            </div>
+
+            <h3>Clonando um Repositório</h3>
+            <div class="command-box">
+git clone https://github.com/usuario/repositorio.git
+git clone https://github.com/usuario/repositorio.git novo-nome
+            </div>
+
+            <h3>Verificando Status</h3>
+            <div class="command-box">
+git status
+git status -s  # Formato resumido
+            </div>
+
+            <div class="visual-example">
+                <h4>🎨 Interpretando o git status</h4>
+                <p><span style="color: red;">●</span> <strong>Vermelho:</strong> Arquivos modificados não adicionados</p>
+                <p><span style="color: green;">●</span> <strong>Verde:</strong> Arquivos no staging area</p>
+                <p><span style="color: gray;">●</span> <strong>Cinza:</strong> Arquivos não rastreados</p>
+            </div>
+
+            <h3>Adicionando Arquivos</h3>
+            <div class="command-box">
+git add arquivo.txt           # Adiciona arquivo específico
+git add .                     # Adiciona todos os arquivos do diretório atual
+git add -A                    # Adiciona todos os arquivos (incluindo deletados)
+git add *.js                  # Adiciona todos os arquivos .js
+git add pasta/               # Adiciona todos os arquivos da pasta
+            </div>
+
+            <div class="workflow-diagram">
+                <h4>🔄 Fluxo do git add</h4>
+                <div class="workflow-step">Working Directory</div>
+                <span class="workflow-arrow">→</span>
+                <div class="workflow-step">git add</div>
+                <span class="workflow-arrow">→</span>
+                <div class="workflow-step">Staging Area</div>
+            </div>
+
+            <h3>Fazendo Commits</h3>
+            <div class="command-box">
+git commit -m "Mensagem do commit"
+git commit -am "Adiciona e commita arquivos modificados"
+git commit --amend -m "Nova mensagem"  # Modifica último commit
+            </div>
+
+            <div class="tips-box">
+                <h4>💡 Dicas para Mensagens de Commit</h4>
+                <ul>
+                    <li>Use presente do indicativo: "Adiciona feature X"</li>
+                    <li>Seja específico e conciso</li>
+                    <li>Primeira linha com máximo 50 caracteres</li>
+                    <li>Use corpo do commit para detalhes (se necessário)</li>
+                </ul>
+            </div>
+
+            <h3>Visualizando Histórico</h3>
+            <div class="command-box">
+git log
+git log --oneline             # Uma linha por commit
+git log --graph              # Visualização gráfica
+git log --graph --oneline    # Combinação dos dois
+git log -p                   # Mostra as diferenças
+git log --since="2 weeks ago" # Commits das últimas 2 semanas
+            </div>
+        </section>
+
+        <section id="estados" class="section">
+            <h2>🔄 4. Estados do Git</h2>
+            
+            <div class="workflow-diagram">
+                <h3>Estados dos Arquivos</h3>
+                <div class="workflow-step">Untracked<br>📄</div>
+                <span class="workflow-arrow">→</span>
+                <div class="workflow-step">Tracked<br>👁️</div>
+                <span class="workflow-arrow">→</span>
+                <div class="workflow-step">Staged<br>📋</div>
+                <span class="workflow-arrow">→</span>
+                <div class="workflow-step">Committed<br>✅</div>
+            </div>
+
+            <h3>Verificando Diferenças</h3>
+            <div class="command-box">
+git diff                      # Diferenças não adicionadas
+git diff --staged            # Diferenças no staging area
+git diff HEAD                # Diferenças desde o último commit
+git diff arquivo.txt         # Diferenças de arquivo específico
+            </div>
+
+            <h3>Removendo Arquivos</h3>
+            <div class="command-box">
+git rm arquivo.txt           # Remove arquivo do working directory e staging
+git rm --cached arquivo.txt  # Remove apenas do staging (mantém no disco)
+git rm -r pasta/             # Remove pasta recursivamente
+            </div>
+
+            <h3>Movendo/Renomeando Arquivos</h3>
+            <div class="command-box">
+git mv arquivo-antigo.txt arquivo-novo.txt
+git mv arquivo.txt pasta/
+            </div>
+
+            <h3>Desfazendo Mudanças</h3>
+            <div class="command-box">
+git checkout -- arquivo.txt          # Desfaz mudanças no working directory
+git reset HEAD arquivo.txt           # Remove arquivo do staging
+git reset --soft HEAD~1              # Desfaz último commit (mantém mudanças)
+git reset --hard HEAD~1              # Desfaz último commit (perde mudanças)
+git revert HEAD                      # Cria commit que desfaz o anterior
+            </div>
+
+            <div class="visual-example">
+                <h4>🎨 Diferenças entre Reset e Revert</h4>
+                <p><strong>Reset:</strong> Volta no tempo, reescrevendo o histórico</p>
+                <p><strong>Revert:</strong> Cria um novo commit que desfaz mudanças anteriores</p>
+            </div>
+        </section>
+
+        <section id="branches" class="section">
+            <h2>🌳 5. Trabalhando com Branches</h2>
+            
+            <div class="branch-diagram">
+                <h3>Visualização de Branches</h3>
+                <div class="branch-line">
+                    <span class="branch-label">main</span>
+                    <span class="commit-dot"></span>
+                    <span class="commit-dot"></span>
+                    <span class="commit-dot"></span>
+                    <span class="commit-dot"></span>
+                </div>
+                <div class="branch-line">
+                    <span class="branch-label">feature</span>
+                    <span style="margin-left: 80px;"></span>
+                    <span class="commit-dot"></span>
+                    <span class="commit-dot"></span>
+                </div>
+                <div class="branch-line">
+                    <span class="branch-label">hotfix</span>
+                    <span style="margin-left: 160px;"></span>
+                    <span class="commit-dot"></span>
+                </div>
+            </div>
+
+            <h3>Comandos de Branch</h3>
+            <div class="command-box">
+git branch                           # Lista branches locais
+git branch -r                        # Lista branches remotos
+git branch -a                        # Lista todos os branches
+git branch nova-feature              # Cria novo branch
+git branch -d nome-branch            # Deleta branch (seguro)
+git branch -D nome-branch            # Força deleção do branch
+            </div>
+
+            <h3>Navegando entre Branches</h3>
+            <div class="command-box">
+git checkout nome-branch             # Muda para branch existente
+git checkout -b nova-feature         # Cria e muda para novo branch
+git switch nome-branch               # Comando mais recente para mudar branch
+git switch -c nova-feature           # Cria e muda (versão moderna)
+            </div>
+
+            <h3>Fazendo Merge</h3>
+            <div class="command-box">
+git checkout main                    # Muda para branch principal
+git merge nome-branch                # Faz merge do branch
+git merge --no-ff nome-branch        # Merge sem fast-forward
+git merge --squash nome-branch       # Combina commits em um só
+            </div>
+
+            <div class="workflow-diagram">
+                <h4>🔄 Processo de Merge</h4>
+                <div class="workflow-step">Develop<br>Feature</div>
+                <span class="workflow-arrow">→</span>
+                <div class="workflow-step">Switch to<br>Main</div>
+                <span class="workflow-arrow">→</span>
+                <div class="workflow-step">Merge<br>Feature</div>
+                <span class="workflow-arrow">→</span>
+                <div class="workflow-step">Delete<br>Branch</div>
+            </div>
+
+            <h3>Resolvendo Conflitos</h3>
+            <div class="command-box">
+git status                           # Vê arquivos com conflito
+# Editar arquivos manualmente
+git add arquivo-resolvido.txt        # Adiciona arquivo resolvido
+git commit                           # Finaliza o merge
+            </div>
+
+            <div class="visual-example">
+                <h4>🎨 Exemplo de Conflito</h4>
+                <pre style="background: #f8f9fa; padding: 15px; border-radius: 5px;">
+&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD
+Código da branch atual
+=======
+Código da branch que está sendo merged
+&gt;&gt;&gt;&gt;&gt;&gt;&gt; nome-da-branch</pre>
+            </div>
+
+            <h3>Rebase</h3>
+            <div class="command-box">
+git rebase main                      # Rebase do branch atual sobre main
+git rebase -i HEAD~3                 # Rebase interativo dos últimos 3 commits
+git rebase --continue                # Continua rebase após resolver conflitos
+git rebase --abort                   # Cancela o rebase
+            </div>
+        </section>
+
+        <section id="remotos" class="section">
+            <h2>🌐 6. Repositórios Remotos</h2>
+            
+            <h3>Configurando Remotos</h3>
+            <div class="command-box">
+git remote add origin https://github.com/usuario/repo.git
+git remote -v                        # Lista remotos configurados
+git remote rename origin upstream     # Renomeia remoto
+git remote remove origin             # Remove remoto
+            </div>
+
+            <h3>Enviando Mudanças</h3>
+            <div class="command-box">
+git push origin main                 # Envia branch main para origin
+git push -u origin main              # Envia e configura upstream
+git push origin --delete nome-branch # Deleta branch remoto
+git push --tags                      # Envia todas as tags
+            </div>
+
+            <h3>Baixando Mudanças</h3>
+            <div class="command-box">
+git fetch origin                     # Baixa mudanças sem mergear
+git pull origin main                 # Baixa e mergeia mudanças
+git pull --rebase origin main        # Baixa e faz rebase
+            </div>
+
+            <div class="workflow-diagram">
+                <h4>🔄 Fluxo Git Distribuído</h4>
+                <div class="workflow-step">Local<br>Repository</div>
+                <span class="workflow-arrow">push →</span>
+                <div class="workflow-step">Remote<br>Repository</div>
+                <span class="workflow-arrow">← pull</span>
+                <div class="workflow-step">Other<br>Developers</div>
+            </div>
+
+            <h3>Trabalhando com Forks</h3>
+            <div class="command-box">
+git remote add upstream https://github.com/original/repo.git
+git fetch upstream                   # Busca mudanças do repositório original
+git checkout main
+git merge upstream/main              # Atualiza seu fork
+            </div>
+
+            <h3>Tags</h3>
+            <div class="command-box">
+git tag                              # Lista tags
+git tag v1.0                         # Cria tag leve
+git tag -a v1.0 -m "Versão 1.0"      # Cria tag anotada
+git tag -d v1.0                      # Deleta tag local
+git push origin v1.0                 # Envia tag específica
+            </div>
+        </section>
+
+        <section id="avancados" class="section">
+            <h2>🚀 7. Comandos Avançados</h2>
+            
+            <h3>Stash (Esconder Mudanças)</h3>
+            <div class="command-box">
+git stash                            # Esconde mudanças atuais
+git stash save "Mensagem"            # Esconde com mensagem
+git stash list                       # Lista stashes
+git stash pop                        # Aplica último stash e remove
+git stash apply                      # Aplica stash sem remover
+git stash drop                       # Remove último stash
+git stash clear                      # Remove todos os stashes
+            </div>
+
+            <div class="explanation">
+                <p><strong>Stash é útil quando:</strong> Você precisa mudar de branch rapidamente mas não quer fazer commit das mudanças atuais.</p>
+            </div>
+
+            <h3>Cherry-pick</h3>
+            <div class="command-box">
+git cherry-pick abc123               # Aplica commit específico
+git cherry-pick abc123..def456       # Aplica range de commits
+git cherry-pick --no-commit abc123   # Aplica sem fazer commit
+            </div>
+
+            <h3>Reflog (Histórico de Referências)</h3>
+            <div class="command-box">
+git reflog                           # Mostra histórico de mudanças
+git reflog show HEAD                 # Reflog do HEAD
+git reset --hard HEAD@{2}           # Volta para estado anterior
+            </div>
+
+            <h3>Bisect (Busca Binária)</h3>
+            <div class="command-box">
+git bisect start                     # Inicia busca binária
+git bisect bad                       # Marca commit atual como ruim
+git bisect good abc123               # Marca commit como bom
+git bisect reset                     # Finaliza busca
+            </div>
+
+            <h3>Blame (Quem Alterou)</h3>
+            <div class="command-box">
+git blame arquivo.txt                # Mostra quem alterou cada linha
+git blame -L 10,20 arquivo.txt       # Blame de linhas específicas
+            </div>
+
+            <h3>Submodules</h3>
+            <div class="command-box">
+git submodule add https://github.com/repo.git path/to/submodule
+git submodule init                   # Inicializa submodules
+git submodule update                 # Atualiza submodules
+git submodule update --remote        # Atualiza para versão mais recente
+            </div>
+
+            <h3>Hooks</h3>
+            <div class="explanation">
+                <p><strong>Hooks</strong> são scripts que executam automaticamente em eventos específicos do Git:</p>
+                <ul>
+                    <li><strong>pre-commit:</strong> Antes de fazer commit</li>
+                    <li><strong>post-commit:</strong> Após fazer commit</li>
+                    <li><strong>pre-push:</strong> Antes de fazer push</li>
+                    <li><strong>pre-receive:</strong> Antes de receber push (servidor)</li>
+                </ul>
+            </div>
+        </section>
+
+        <section id="workflow" class="section">
+            <h2>⚡ 8. Fluxo de Trabalho</h2>
+            
+            <div class="workflow-diagram">
+                <h3>🔄 Git Flow Tradicional</h3>
+                <div class="workflow-step">Feature<br>Branch</div>
+                <span class="workflow-arrow">→</span>
+                <div class="workflow-step">Develop<br>Branch</div>
+                <span class="workflow-arrow">→</span>
+                <div class="workflow-step">Release<br>Branch</div>
+                <span class="workflow-arrow">→</span>
+                <div class="workflow-step">Main<br>Branch</div>
+            </div>
+
+            <h3>Fluxo de Trabalho Comum</h3>
+            <div class="command-box">
+# 1. Criar e mudar para nova branch
+git checkout -b feature/nova-funcionalidade
+
+# 2. Fazer mudanças e commits
+git add .
+git commit -m "Adiciona nova funcionalidade"
+
+# 3. Enviar para remoto
+git push -u origin feature/nova-funcionalidade
+
+# 4. Após aprovação, merger na main
+git checkout main
+git pull origin main
+git merge feature/nova-funcionalidade
+
+# 5. Limpar branch
+git branch -d feature/nova-funcionalidade
+git push origin --delete feature/nova-funcionalidade
+            </div>
+
+            <h3>Conventional Commits</h3>
+            <div class="visual-example">
+                <h4>📝 Formato de Mensagem</h4>
