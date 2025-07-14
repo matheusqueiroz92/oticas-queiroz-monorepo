@@ -723,4 +723,60 @@ describe("AuthController", () => {
       expect(res.body.message).toBe("Token não fornecido");
     });
   });
+
+  describe("POST /api/auth/register - Employee permissions", () => {
+    it("should fail when employee tries to register admin", async () => {
+      const employee = await User.create({
+        name: "Employee for Admin Test",
+        email: `employee-admin-test-${Date.now()}@test.com`,
+        password: await bcrypt.hash("123456", 10),
+        role: "employee",
+        cpf: generateValidCPF(),
+        rg: "987654321",
+        birthDate: new Date("1990-01-01"),
+      });
+
+      const employeeToken = generateToken(employee._id.toString(), "employee");
+
+      const res = await request(app)
+        .post("/api/auth/register")
+        .set("Authorization", `Bearer ${employeeToken}`)
+        .field("name", "Test Admin")
+        .field("email", "test-admin@example.com")
+        .field("password", "123456")
+        .field("role", "admin")
+        .field("cpf", generateValidCPF())
+        .field("birthDate", "1995-05-15");
+
+      expect(res.status).toBe(403);
+      expect(res.body.message).toBe("Funcionários só podem cadastrar clientes e instituições");
+    });
+
+    it("should fail when employee tries to register employee", async () => {
+      const employee = await User.create({
+        name: "Employee for Employee Test",
+        email: `employee-employee-test-${Date.now()}@test.com`,
+        password: await bcrypt.hash("123456", 10),
+        role: "employee",
+        cpf: generateValidCPF(),
+        rg: "987654321",
+        birthDate: new Date("1990-01-01"),
+      });
+
+      const employeeToken = generateToken(employee._id.toString(), "employee");
+
+      const res = await request(app)
+        .post("/api/auth/register")
+        .set("Authorization", `Bearer ${employeeToken}`)
+        .field("name", "Test Employee")
+        .field("email", "test-employee@example.com")
+        .field("password", "123456")
+        .field("role", "employee")
+        .field("cpf", generateValidCPF())
+        .field("birthDate", "1995-05-15");
+
+      expect(res.status).toBe(403);
+      expect(res.body.message).toBe("Funcionários só podem cadastrar clientes e instituições");
+    });
+  });
 });
