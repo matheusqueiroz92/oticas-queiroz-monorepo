@@ -3,16 +3,16 @@
 
 Sistema completo de gestão para Óticas Queiroz, desenvolvido para otimizar processos de vendas, controle de estoque, gestão financeira e atendimento ao cliente com foco em análise de dados e experiência do usuário.
 
-## 🌟 Destaques da Versão Atual
+## 🌟 Funcionalidades em Destaque
 
 ### 📊 **Dashboard Inteligente**
 - **Gráficos de Vendas Interativos**: Visualização por períodos (7 dias, 30 dias, 6 meses) usando Recharts
 - **Estatísticas em Tempo Real**: Total de vendas, pedidos, crescimento e métricas de performance
-- **Layout Responsivo**: 75% para gráfico de vendas, 25% para lista de pedidos recentes
-- **Ações Rápidas**: Acesso direto às principais funcionalidades do sistema
+- **Layout Responsivo**: Design adaptável para diversos tamanhos de tela
+- **Botões de Ações Rápidas**: Atalhos para acesso direto às principais funcionalidades do sistema
 
 ### 👤 **Perfil de Usuário Avançado**
-- **Dados Dinâmicos**: Estatísticas reais baseadas na performance individual do usuário
+- **Dados Dinâmicos**: Estatísticas reais baseadas em informações individuais do usuário
 - **Métricas Personalizadas**: Diferentes métricas para Admin, Funcionário e Cliente
 - **Sistema de Classificação**: Bronze → Prata → Ouro → Premium baseado em performance
 - **Indicadores Visuais**: Ícones de crescimento e tendências com cores dinâmicas
@@ -277,7 +277,7 @@ USERNAME=seu_usuario_mongodb
 PASSWORD=sua_senha_mongodb
 
 # Autenticação
-JWT_SECRET=sua_chave_jwt_super_secreta
+JWT_SECRET=sua_chave_jwt
 JWT_EXPIRES_IN=24h
 
 # CORS
@@ -401,23 +401,16 @@ npm run format            # Prettier
 
 ## 🔄 Roadmap Futuro
 
-### 📱 v3.0 - Aplicativo Mobile (Q2 2025)
-- [ ] React Native para iOS e Android
-- [ ] Sincronização offline
-- [ ] App específico para vendedores
-- [ ] Portal cliente mobile
-
-### 🖥️ v3.1 - Aplicativo Desktop (Q3 2025)
-- [ ] Electron para Windows/Mac/Linux
-- [ ] Funcionamento offline
-- [ ] Integração com impressoras
-- [ ] Backup local automático
-
-### 🤖 v3.2 - IA e Automação (Q4 2025)
-- [ ] Predição de vendas com ML
-- [ ] Recomendação inteligente de produtos
 - [ ] Chatbot para atendimento
+- [ ] Backup local automático
+- [ ] Integração com impressoras
+- [ ] Funcionamento e Sincronização offline
+- [ ] App Mobile (React Native) para iOS e Android
+- [ ] App Desktop (Electron) para Windows/Mac/Linux
+- [ ] Previsão de vendas com ML
+- [ ] Recomendação inteligente de produtos
 - [ ] Análise preditiva de clientes
+
 
 ## 📝 Changelog
 
@@ -466,8 +459,8 @@ Este software é **propriedade exclusiva da Óticas Queiroz** e seu uso é restr
 
 ---
 
-**🕶️ Sistema desenvolvido com ❤️ para revolucionar a gestão ótica digital.**
+**🕶️ Sistema desenvolvido para revolucionar a gestão ótica digital.**
 
-*Transformando a experiência de compra de óculos através da tecnologia.*
+*Transformando a experiência do comércio de óculos através da tecnologia.*
 
 &copy; 2025 Óticas Queiroz. Todos os direitos reservados.

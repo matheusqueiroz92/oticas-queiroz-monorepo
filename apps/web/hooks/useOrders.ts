@@ -18,7 +18,6 @@ import { QUERY_KEYS } from "../app/_constants/query-keys";
 import { API_ROUTES } from "@/app/_constants/api-routes";
 import type { Order } from "@/app/_types/order";
 import { useUsers } from "@/hooks/useUsers";
-import { useLaboratories } from "@/hooks/useLaboratories";
 import { formatCurrency, formatDate } from "@/app/_utils/formatters";
 import debounce from 'lodash/debounce';
 import { api } from "@/app/_services/authService";

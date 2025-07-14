@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { DollarSign, Loader2, AlertCircle } from "lucide-react";
+import { DollarSign, Loader2, AlertCircle, Eye } from "lucide-react";
 import { checkOpenCashRegister } from "@/app/_services/cashRegisterService";
 import { formatCurrency } from "@/app/_utils/formatters";
 import { QUERY_KEYS } from "@/app/_constants/query-keys";
@@ -26,7 +26,7 @@ export function CashRegisterStatus({
 }: CashRegisterStatusProps) {
   const router = useRouter();
 
-  const { data, isLoading, error, refetch } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: QUERY_KEYS.CASH_REGISTERS.CURRENT,
     queryFn: checkOpenCashRegister,
     refetchOnWindowFocus: true, 
@@ -105,7 +105,7 @@ export function CashRegisterStatus({
   const cashRegister = data.data;
 
   return (
-    <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
+    <div className="w-full md:w-1/4 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
       <div className="flex justify-between items-center">
         <div className="flex items-center">
           <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mr-3">
@@ -119,6 +119,15 @@ export function CashRegisterStatus({
           </div>
         </div>
         <div className="flex gap-2">
+          {/* Botão de visualizar caixa */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push(`/cash-register/${cashRegister._id}`)}
+            className="border-green-300 text-green-700 hover:bg-green-100 dark:hover:bg-green-900"
+          >
+            <Eye className="h-4 w-4" />
+          </Button>
           {showDetailsButton && (
             <Button
               variant="outline"

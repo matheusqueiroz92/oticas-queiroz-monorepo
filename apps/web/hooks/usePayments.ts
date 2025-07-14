@@ -25,7 +25,6 @@ import type {
   PaymentType,
   PaymentStatus,
   PaymentMethod,
-  IPayment
 } from "@/app/_types/payment";
 import { Order } from "@/app/_types/order";
 import { formatCurrency } from "@/app/_utils/formatters";
@@ -53,6 +52,7 @@ export function usePayments() {
     queryKey: QUERY_KEYS.PAYMENTS.PAGINATED(currentPage, filters),
     queryFn: () => getAllPayments({ ...filters, page: currentPage }),
     placeholderData: (prevData) => prevData,
+    refetchOnWindowFocus: true, // Garante atualização ao focar a aba
   });
 
   // Dados normalizados
@@ -88,12 +88,7 @@ export function usePayments() {
 
       // Invalidar todas as queries relacionadas a pagamentos
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.PAYMENTS.ALL });
-      queryClient.invalidateQueries({ 
-        predicate: (query) => {
-          const key = query.queryKey[0];
-          return typeof key === 'string' && key === 'payments';
-        }
-      });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.PAYMENTS.PAGINATED() });
       
       // Invalidar queries de pedidos para atualizar status de pagamento
       queryClient.invalidateQueries({ 
@@ -150,9 +145,8 @@ export function usePayments() {
       queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.PAYMENTS.DETAIL(id),
       });
-      queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.PAYMENTS.PAGINATED(),
-      });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.PAYMENTS.PAGINATED() });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.PAYMENTS.ALL });
       queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.CASH_REGISTERS.CURRENT,
       });

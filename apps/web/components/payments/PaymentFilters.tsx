@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CalendarIcon, X } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
@@ -28,26 +27,22 @@ export function PaymentFilters({ onUpdateFilters }: PaymentFiltersProps) {
   const handleFilterChange = (key: string, value: any) => {
     const newFilters = { ...filters, [key]: value };
     setFilters(newFilters);
-  };
-
-  const applyFilters = () => {
+    // Aplicar filtros instantaneamente
     const activeFilters: Record<string, any> = {};
-    
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value !== "" && value !== undefined && value !== null && value !== "all") {
-        if (key === "startDate" || key === "endDate") {
-          activeFilters[key] = value;
-        } else if (key === "minAmount" || key === "maxAmount") {
-          const numValue = parseFloat(value as string);
+    Object.entries(newFilters).forEach(([k, v]) => {
+      if (v !== "" && v !== undefined && v !== null && v !== "all") {
+        if (k === "startDate" || k === "endDate") {
+          activeFilters[k] = v;
+        } else if (k === "minAmount" || k === "maxAmount") {
+          const numValue = parseFloat(v as string);
           if (!isNaN(numValue)) {
-            activeFilters[key] = numValue;
+            activeFilters[k] = numValue;
           }
         } else {
-          activeFilters[key] = value;
+          activeFilters[k] = v;
         }
       }
     });
-    
     onUpdateFilters(activeFilters);
   };
 
@@ -73,9 +68,6 @@ export function PaymentFilters({ onUpdateFilters }: PaymentFiltersProps) {
             <Button variant="ghost" size="sm" onClick={clearFilters}>
               <X className="h-4 w-4 mr-1" />
               Limpar
-            </Button>
-            <Button variant="default" size="sm" onClick={applyFilters}>
-              Aplicar Filtros
             </Button>
           </div>
         </CardTitle>

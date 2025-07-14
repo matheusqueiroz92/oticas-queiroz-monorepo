@@ -8,7 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Loader2, FileText, Ban, CreditCard, ExternalLink, Banknote, BookText, TicketsPlane, NotepadText, Repeat, Eye } from "lucide-react";
+import { Loader2, FileText, Ban, CreditCard, Banknote, BookText, TicketsPlane, NotepadText, Repeat, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { PaginationItems } from "@/components/PaginationItems";
 import { formatCurrency, formatDate } from "@/app/_utils/formatters";
@@ -40,6 +40,8 @@ interface PaymentsListProps {
   translatePaymentStatus: (status: string) => string;
   getPaymentTypeClass: (type: string) => string;
   getPaymentStatusClass: (status: string) => string;
+  getClientName: (customerId: string) => string;
+  getOrderNumber: (orderId: string) => string;
 }
 
 export function PaymentsList({
@@ -60,6 +62,8 @@ export function PaymentsList({
   translatePaymentStatus,
   getPaymentTypeClass,
   getPaymentStatusClass,
+  getClientName,
+  getOrderNumber,
 }: PaymentsListProps) {
   
   const confirmCancelPayment = async (id: string) => {
@@ -70,6 +74,8 @@ export function PaymentsList({
       await cancelPayment(id);
     }
   };
+
+
 
   const getIconMethod = (method: string) => {
     switch (method) {
@@ -129,9 +135,11 @@ export function PaymentsList({
           <Table>
             <TableHeader className="bg-gray-100 dark:bg-slate-800/50">
               <TableRow>
+                <TableHead>Nº OS</TableHead>
+                <TableHead>Cliente</TableHead>
                 <TableHead>Descrição</TableHead>
                 <TableHead>Tipo</TableHead>
-                <TableHead>Método</TableHead>
+                <TableHead>Método de Pagamento</TableHead>
                 <TableHead>Data</TableHead>
                 <TableHead>Valor</TableHead>
                 <TableHead>Status</TableHead>
@@ -142,8 +150,14 @@ export function PaymentsList({
               {payments.map((payment: IPayment) => (
                 <TableRow key={payment._id}>
                   <TableCell>
-                    {payment.description || "Sem descrição"}
+                    {payment.orderId ? getOrderNumber(payment.orderId) : "Sem número de OS"}
                   </TableCell>
+                  <TableCell>
+                    {payment.customerId ? getClientName(payment.customerId) : "Sem cliente"}
+                  </TableCell>
+                    <TableCell>
+                      {payment.description || "Sem descrição"}
+                    </TableCell>
                   <TableCell>
                     <Badge className={`status-badge ${getPaymentTypeClass(payment.type)}`}>
                       {translatePaymentType(payment.type)}

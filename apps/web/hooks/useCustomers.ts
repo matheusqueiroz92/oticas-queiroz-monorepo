@@ -9,8 +9,6 @@ import { QUERY_KEYS } from "@/app/_constants/query-keys";
 import { useUsers } from "@/hooks/useUsers";
 import debounce from 'lodash/debounce';
 import { User } from "@/app/_types/user";
-import { Customer } from "@/app/_types/customer";
-import { getAllUsersForExport } from "@/app/_services/userService";
 
 interface UseCustomersOptions {
   pageSize?: number;
