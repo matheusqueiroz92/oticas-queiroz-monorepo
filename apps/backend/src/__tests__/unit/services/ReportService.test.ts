@@ -124,6 +124,8 @@ describe("ReportService", () => {
     // Injetar os mocks necessários após a criação
     (reportService as any).reportModel = mockReportModel;
     (reportService as any).userRepository = mockUserRepository;
+    (reportService as any).orderRepository = mockOrderRepository;
+    (reportService as any).paymentRepository = mockPaymentRepository;
     (reportService as any).productRepository = mockProductRepository;
   });
 
@@ -313,9 +315,10 @@ describe("ReportService", () => {
     });
 
     it("deve retornar valores zero quando não há dados", async () => {
-      Order.aggregate
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([]);
+      // Mock para retornar arrays vazios para ambos os aggregates
+      Order.aggregate = jest.fn()
+        .mockResolvedValueOnce([]) // Primeiro aggregate (byPeriod)
+        .mockResolvedValueOnce([]); // Segundo aggregate (byPaymentMethod)
 
       const result = await reportService.getSalesStats();
 
@@ -414,16 +417,28 @@ describe("ReportService", () => {
     });
 
     it("deve retornar estatísticas de clientes sem filtros", async () => {
+      // Mock para recurringCustomersData (Order.aggregate)
+      Order.aggregate
+        .mockResolvedValueOnce([
+          { _id: "user1", orderCount: 2, totalSpent: 300 },
+          { _id: "user2", orderCount: 3, totalSpent: 450 },
+        ])
+        // Mock para averagePurchaseData (Order.aggregate)
+        .mockResolvedValueOnce([
+          { _id: null, averagePurchase: 150 },
+        ]);
+
       const result = await reportService.getCustomerStats();
 
       expect(result).toEqual({
         totalCustomers: 2,
-        activeCustomers: 2,
         newCustomers: 8,
-        byPeriod: [
-          { period: "2023-01", count: 5 },
-          { period: "2023-02", count: 3 },
-        ],
+        recurring: 2, // Agora será 2 porque o mock retorna 2 clientes recorrentes
+        averagePurchase: 150,
+        byLocation: {
+          user1: 2,
+          user2: 1,
+        },
       });
     });
 
@@ -431,33 +446,53 @@ describe("ReportService", () => {
       const startDate = new Date("2023-01-01");
       const endDate = new Date("2023-12-31");
 
+      // Reset mocks
+      jest.clearAllMocks();
+      
+      // Mock para recurringCustomersData
+      Order.aggregate
+        .mockResolvedValueOnce([
+          { _id: "user1", orderCount: 2, totalSpent: 300 },
+        ])
+        // Mock para averagePurchaseData
+        .mockResolvedValueOnce([
+          { _id: null, averagePurchase: 150 },
+        ]);
+
       const result = await reportService.getCustomerStats(startDate, endDate);
 
       expect(result).toEqual({
         totalCustomers: 2,
-        activeCustomers: 2,
         newCustomers: 8,
-        byPeriod: [
-          { period: "2023-01", count: 5 },
-          { period: "2023-02", count: 3 },
-        ],
+        recurring: 1,
+        averagePurchase: 150,
+        byLocation: {
+          user1: 2,
+        },
       });
     });
 
     it("deve retornar zero clientes ativos quando não há dados", async () => {
+      // Reset mocks
+      jest.clearAllMocks();
+      
       mockUserRepository.findByRole.mockResolvedValue({ items: [] });
       User.aggregate
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([]);
+      Order.aggregate
+        .mockResolvedValueOnce([]) // recurringCustomersData
+        .mockResolvedValueOnce([]); // averagePurchaseData
 
       const result = await reportService.getCustomerStats();
 
       expect(result).toEqual({
         totalCustomers: 0,
-        activeCustomers: 0,
         newCustomers: 0,
-        byPeriod: [],
+        recurring: 0,
+        averagePurchase: 0,
+        byLocation: {},
       });
     });
   });
@@ -468,7 +503,13 @@ describe("ReportService", () => {
     });
 
     it("deve retornar estatísticas de pedidos sem filtros", async () => {
+      // Primeiro aggregate (statusData)
       Order.aggregate
+        .mockResolvedValueOnce([
+          { _id: "completed", count: 20, value: 2000 },
+          { _id: "pending", count: 5, value: 500 },
+        ])
+        // Segundo aggregate (periodData)
         .mockResolvedValueOnce([
           {
             _id: { month: 1, year: 2023 },
@@ -480,10 +521,6 @@ describe("ReportService", () => {
             count: 15,
             value: 1500,
           },
-        ])
-        .mockResolvedValueOnce([
-          { _id: "completed", count: 20 },
-          { _id: "pending", count: 5 },
         ]);
 
       const result = await reportService.getOrderStats();
@@ -504,7 +541,17 @@ describe("ReportService", () => {
     });
 
     it("deve retornar estatísticas de pedidos com filtros", async () => {
+      const startDate = new Date("2023-01-01");
+      const endDate = new Date("2023-12-31");
+      const status = "completed";
+
+      // Primeiro aggregate (statusData)
       Order.aggregate
+        .mockResolvedValueOnce([
+          { _id: "completed", count: 20, value: 2000 },
+          { _id: "pending", count: 5, value: 500 },
+        ])
+        // Segundo aggregate (periodData)
         .mockResolvedValueOnce([
           {
             _id: { month: 1, year: 2023 },
@@ -516,15 +563,7 @@ describe("ReportService", () => {
             count: 15,
             value: 1500,
           },
-        ])
-        .mockResolvedValueOnce([
-          { _id: "completed", count: 20 },
-          { _id: "pending", count: 5 },
         ]);
-
-      const startDate = new Date("2023-01-01");
-      const endDate = new Date("2023-12-31");
-      const status = "completed";
 
       const result = await reportService.getOrderStats(startDate, endDate, status);
 
@@ -632,11 +671,11 @@ describe("ReportService", () => {
     });
 
     it("deve retornar valores zero quando não há dados", async () => {
-      jest.clearAllMocks();
-      Payment.aggregate
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([]);
+      // Mock para retornar arrays vazios para os 3 aggregates
+      Payment.aggregate = jest.fn()
+        .mockResolvedValueOnce([]) // Primeiro aggregate (revenueData)
+        .mockResolvedValueOnce([]) // Segundo aggregate (expenseData)
+        .mockResolvedValueOnce([]); // Terceiro aggregate (categoryData)
 
       const result = await reportService.getFinancialStats();
 
@@ -644,8 +683,8 @@ describe("ReportService", () => {
         revenue: 0,
         expenses: 0,
         profit: 0,
-        byCategory: {},
         byPeriod: [],
+        byCategory: {},
       });
     });
   });

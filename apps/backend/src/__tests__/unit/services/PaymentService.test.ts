@@ -126,6 +126,7 @@ describe("PaymentService", () => {
       get: jest.fn(),
       set: jest.fn(),
       del: jest.fn(),
+      flushAll: jest.fn(),
     };
 
     paymentService = new PaymentService();
@@ -158,9 +159,10 @@ describe("PaymentService", () => {
         ...mockPaymentData,
         paymentMethod: "credit",
         cashRegisterId: mockCashRegisterId,
-        date: mockPaymentData.date
+        date: mockPaymentData.date,
+        status: "completed" // O service define status como completed por padrão
       });
-      expect(mockCache.del).toHaveBeenCalled();
+      expect(mockCache.flushAll).toHaveBeenCalled();
     });
 
     it("should handle PaymentValidationError", async () => {
@@ -206,7 +208,8 @@ describe("PaymentService", () => {
           ...paymentWithoutDate,
           paymentMethod: "credit",
           cashRegisterId: mockCashRegisterId,
-          date: expect.any(Date)
+          date: expect.any(Date),
+          status: "completed" // O service define status como completed por padrão
         })
       );
     });

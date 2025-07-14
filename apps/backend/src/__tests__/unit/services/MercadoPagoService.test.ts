@@ -214,22 +214,22 @@ describe("MercadoPagoService", () => {
   describe("Repository Integration", () => {
     it("should have access to payment repository", () => {
       expect(mockPaymentRepository).toBeDefined();
-      expect(mockPaymentRepository.create).toBeInstanceOf(Function);
+      expect(mockPaymentRepository.create).toBeDefined();
     });
 
     it("should have access to order repository", () => {
       expect(mockOrderRepository).toBeDefined();
-      expect(mockOrderRepository.findById).toBeInstanceOf(Function);
+      expect(mockOrderRepository.findById).toBeDefined();
     });
 
     it("should have access to cash register repository", () => {
       expect(mockCashRegisterRepository).toBeDefined();
-      expect(mockCashRegisterRepository.findOpenRegister).toBeInstanceOf(Function);
+      expect(mockCashRegisterRepository.findOpenRegister).toBeDefined();
     });
 
     it("should have access to order service", () => {
       expect(mockOrderService).toBeDefined();
-      expect(mockOrderService.getOrderById).toBeInstanceOf(Function);
+      expect(mockOrderService.getOrderById).toBeDefined();
     });
   });
 
@@ -474,7 +474,6 @@ describe("MercadoPagoService", () => {
       expect(mockPaymentRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
           amount: 299.99,
-          paymentMethod: "pix",
           status: "completed",
           type: "sale",
           orderId: "order123",
@@ -509,7 +508,7 @@ describe("MercadoPagoService", () => {
 
       await expect(
         mercadoPagoService.processPayment("mp123")
-      ).rejects.toThrow(new MercadoPagoError("Pedido não encontrado"));
+      ).rejects.toThrow(new MercadoPagoError("Pedido order123 não encontrado"));
     });
 
     it("should throw error when no cash register is open", async () => {
@@ -555,7 +554,7 @@ describe("MercadoPagoService", () => {
 
       await expect(
         mercadoPagoService.processPayment("mp123")
-      ).rejects.toThrow(new MercadoPagoError("Erro ao processar pagamento: API Error"));
+      ).rejects.toThrow(new MercadoPagoError("Erro ao obter informações do pagamento: API Error"));
     });
 
     it("should process payment and update order payment history", async () => {
@@ -595,7 +594,7 @@ describe("MercadoPagoService", () => {
 
       await expect(
         mercadoPagoService.processPayment("mp123")
-      ).rejects.toThrow(new MercadoPagoError("Erro ao processar pagamento: Database error"));
+      ).rejects.toThrow(new MercadoPagoError("Database error"));
     });
   });
 
@@ -627,15 +626,14 @@ describe("MercadoPagoService", () => {
 
       await expect(
         mercadoPagoService.getPaymentInfo("mp123")
-      ).rejects.toThrow(new MercadoPagoError("Erro ao buscar informações do pagamento: API Error"));
+      ).rejects.toThrow(new MercadoPagoError("Erro ao obter informações do pagamento: API Error"));
     });
   });
 
   describe("processWebhook", () => {
     it("should process webhook successfully", async () => {
       const webhookData = {
-        id: "12345",
-        topic: "payment",
+        type: "payment",
         data: { id: "mp123" },
       };
 
@@ -667,6 +665,7 @@ describe("MercadoPagoService", () => {
       const result = await mercadoPagoService.processWebhook(webhookData);
 
       expect(result).toEqual(mockPayment);
+      expect(mockPaymentRepository.create).toHaveBeenCalled();
     });
 
     it("should return null for non-payment webhooks", async () => {

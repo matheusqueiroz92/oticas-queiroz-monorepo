@@ -72,6 +72,8 @@ describe("PaymentExportService", () => {
   beforeEach(() => {
     paymentExportService = new PaymentExportService();
     jest.clearAllMocks();
+    // Injetar o mock do exportUtils
+    (paymentExportService as any).exportUtils = mockExportUtils;
   });
 
   describe("Constructor", () => {

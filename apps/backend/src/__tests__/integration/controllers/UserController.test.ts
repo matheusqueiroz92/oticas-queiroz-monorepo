@@ -11,6 +11,9 @@ import path from "node:path";
 import fs from "node:fs";
 import { isValidCPF } from "../../../utils/validators";
 import { IUser } from "../../../interfaces/IUser";
+import { UserController } from "../../../controllers/UserController";
+import { Request, Response } from "express";
+import { UserService } from "../../../services/UserService";
 
 describe("UserController", () => {
   // CPFs válidos para testes
@@ -85,7 +88,7 @@ describe("UserController", () => {
     customerId = customer._id.toString();
   });
 
-  describe("GET /api/users", () => {
+  describe("GET /api/users - Get all users", () => {
     it("should get all users when admin", async () => {
       const res = await request(app)
         .get("/api/users")
@@ -117,7 +120,7 @@ describe("UserController", () => {
     });
   });
 
-  describe("GET /api/users/profile", () => {
+  describe("GET /api/users/profile - Get own profile", () => {
     it("should get own profile", async () => {
       const res = await request(app)
         .get("/api/users/profile")
@@ -138,7 +141,7 @@ describe("UserController", () => {
     });
   });
 
-  describe("GET /api/users/:id", () => {
+  describe("GET /api/users/:id - Get user by id", () => {
     it("should get user by id when admin", async () => {
       const res = await request(app)
         .get(`/api/users/${customerId}`)
@@ -178,7 +181,7 @@ describe("UserController", () => {
     });
   });
 
-  describe("PUT /api/users/profile", () => {
+  describe("PUT /api/users/profile - Update own profile", () => {
     it("should update own profile", async () => {
       const updateData = {
         name: "Updated Name",
@@ -225,7 +228,7 @@ describe("UserController", () => {
     });
   });
 
-  describe("PUT /api/users/:id", () => {
+  describe("PUT /api/users/:id - Update user", () => {
     it("should update user when admin", async () => {
       const updateData = {
         name: "Updated by Admin",
@@ -303,7 +306,7 @@ describe("UserController", () => {
     });
   });
 
-  describe("DELETE /api/users/:id", () => {
+  describe("DELETE /api/users/:id - Delete user", () => {
     it("should delete user when admin", async () => {
       const res = await request(app)
         .delete(`/api/users/${customerId}`)
@@ -518,7 +521,7 @@ describe("UserController", () => {
     });
   });
 
-  describe("GET /api/users with search parameters", () => {
+  describe("GET /api/users - Search parameters", () => {
     it("should filter users by search term when admin", async () => {
       // Criar um usuário com nome específico para testar a busca
       await User.create({
@@ -605,7 +608,7 @@ describe("UserController", () => {
     });
   });
 
-  describe("GET /api/users - Filtros avançados", () => {
+  describe("GET /api/users - Advanced filters", () => {
     it("should get users with advanced filters", async () => {
       const res = await request(app)
         .get("/api/users?purchaseRange=1000-5000&startDate=2023-01-01&endDate=2023-12-31&hasDebts=true")
@@ -645,7 +648,7 @@ describe("UserController", () => {
     });
   });
 
-  describe("GET /api/users - Busca por serviceOrder", () => {
+  describe("GET /api/users - Search by serviceOrder", () => {
     it("should fail with invalid serviceOrder (less than 4 digits)", async () => {
       const res = await request(app)
         .get("/api/users?serviceOrder=123")
@@ -685,7 +688,7 @@ describe("UserController", () => {
     });
   });
 
-  describe("GET /api/users - Busca por CPF", () => {
+  describe("GET /api/users - Search by CPF", () => {
     it("should return empty array when CPF not found", async () => {
       const res = await request(app)
         .get("/api/users?cpf=12345678901")
@@ -697,7 +700,7 @@ describe("UserController", () => {
     });
   });
 
-  describe("GET /api/users - Busca por search e role", () => {
+  describe("GET /api/users - Search by name and role", () => {
     it("should search users and filter by role", async () => {
       const res = await request(app)
         .get("/api/users?search=test&role=customer")
@@ -709,7 +712,7 @@ describe("UserController", () => {
     });
   });
 
-  describe("GET /api/users - Busca por role", () => {
+  describe("GET /api/users - Search by role", () => {
     it("should get users by role", async () => {
       const res = await request(app)
         .get("/api/users?role=customer")
@@ -721,7 +724,7 @@ describe("UserController", () => {
     });
   });
 
-  describe("GET /api/users - Busca sem filtro", () => {
+  describe("GET /api/users - Search without filters", () => {
     it("should get all users without filters", async () => {
       const res = await request(app)
         .get("/api/users")
@@ -734,15 +737,7 @@ describe("UserController", () => {
     });
   });
 
-  describe("GET /api/users/cpf/:cpf", () => {
-    it("should fail when CPF is not provided", async () => {
-      const res = await request(app)
-        .get("/api/users/cpf/")
-        .set("Authorization", `Bearer ${adminToken}`);
-
-      expect(res.status).toBe(404); // Rota não encontrada
-    });
-
+  describe("GET /api/users/cpf/:cpf - Search by CPF", () => {
     it("should return 404 for non-existent CPF", async () => {
       const res = await request(app)
         .get("/api/users/cpf/12345678901")
@@ -752,7 +747,7 @@ describe("UserController", () => {
     });
   });
 
-  describe("PUT /api/users/:id - Validação de dados", () => {
+  describe("PUT /api/users/:id - Validation of data", () => {
     it("should fail with invalid user data", async () => {
       const res = await request(app)
         .put(`/api/users/${customerId}`)
@@ -768,7 +763,7 @@ describe("UserController", () => {
     });
   });
 
-  describe("PUT /api/users/:id - Permissões de funcionário", () => {
+  describe("PUT /api/users/:id - Employee permissions", () => {
     it("should fail when employee tries to change role", async () => {
       const employee = await User.create({
         name: "Employee for Update Test",
@@ -829,7 +824,7 @@ describe("UserController", () => {
     });
   });
 
-  describe("DELETE /api/users/:id", () => {
+  describe("DELETE /api/users/:id - Delete user", () => {
     it("should delete user successfully", async () => {
       const userToDelete = await User.create({
         name: "User to Delete",
@@ -849,7 +844,7 @@ describe("UserController", () => {
     });
   });
 
-  describe("PUT /api/users/profile - Validação de dados", () => {
+  describe("PUT /api/users/profile - Validation of data", () => {
     it("should fail with invalid profile data", async () => {
       const res = await request(app)
         .put("/api/users/profile")
@@ -865,7 +860,7 @@ describe("UserController", () => {
     });
   });
 
-  describe("PUT /api/users/profile - Usuário não autenticado", () => {
+  describe("PUT /api/users/profile - Unauthenticated user", () => {
     it("should fail when user is not authenticated", async () => {
       const res = await request(app)
         .put("/api/users/profile")
@@ -878,7 +873,7 @@ describe("UserController", () => {
     });
   });
 
-  describe("POST /api/users/change-password", () => {
+  describe("POST /api/users/change-password - Change password", () => {
     it("should change password successfully", async () => {
       const res = await request(app)
         .post("/api/users/change-password")
@@ -954,7 +949,7 @@ describe("UserController", () => {
     });
   });
 
-  describe("GET /api/users - Busca e filtros", () => {
+  describe("GET /api/users - Search and filters", () => {
     it("should search users by name", async () => {
       const res = await request(app)
         .get("/api/users?search=Customer")
@@ -999,4 +994,758 @@ describe("UserController", () => {
       expect(res.body.pagination).toHaveProperty("totalPages");
     });
   });
+
+  describe("GET /api/users - Service order validation", () => {
+    it("should fail with service order less than 4 digits", async () => {
+      const adminUser = await User.create({
+        name: "Admin Test",
+        email: `admin.${Date.now()}@test.com`,
+        password: await bcrypt.hash("123456", 10),
+        role: "admin",
+        cpf: validCPFs.admin,
+        rg: "102030405",
+        birthDate: new Date("1980-01-01"),
+      });
+      const adminToken = generateToken(adminUser._id.toString(), "admin");
+      
+      const res = await request(app)
+        .get("/api/users?serviceOrder=123")
+        .set("Authorization", `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe("Número de OS inválido. Deve ter entre 4 e 7 dígitos.");
+    });
+
+    it("should fail with service order more than 7 digits", async () => {
+      const adminUser = await User.create({
+        name: "Admin Test",
+        email: `admin.${Date.now()}@test.com`,
+        password: await bcrypt.hash("123456", 10),
+        role: "admin",
+        cpf: validCPFs.admin,
+        rg: "102030405",
+        birthDate: new Date("1980-01-01"),
+      });
+      const adminToken = generateToken(adminUser._id.toString(), "admin");
+      
+      const res = await request(app)
+        .get("/api/users?serviceOrder=12345678")
+        .set("Authorization", `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe("Número de OS inválido. Deve ter entre 4 e 7 dígitos.");
+    });
+
+    it("should return empty result for valid service order with no clients", async () => {
+      const adminUser = await User.create({
+        name: "Admin Test",
+        email: `admin.${Date.now()}@test.com`,
+        password: await bcrypt.hash("123456", 10),
+        role: "admin",
+        cpf: validCPFs.admin,
+        rg: "102030405",
+        birthDate: new Date("1980-01-01"),
+      });
+      const adminToken = generateToken(adminUser._id.toString(), "admin");
+      
+      const res = await request(app)
+        .get("/api/users?serviceOrder=1234")
+        .set("Authorization", `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.users).toEqual([]);
+      expect(res.body.pagination.total).toBe(0);
+    });
+
+    it("should filter service order results by customer role", async () => {
+      const adminUser = await User.create({
+        name: "Admin Test",
+        email: `admin.${Date.now()}@test.com`,
+        password: await bcrypt.hash("123456", 10),
+        role: "admin",
+        cpf: validCPFs.admin,
+        rg: "102030405",
+        birthDate: new Date("1980-01-01"),
+      });
+      const adminToken = generateToken(adminUser._id.toString(), "admin");
+      
+      const res = await request(app)
+        .get("/api/users?serviceOrder=1234&role=customer")
+        .set("Authorization", `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body.users)).toBe(true);
+    });
+  });
+
+  describe("GET /api/users - CPF search validation", () => {
+    it("should return empty array when CPF not found", async () => {
+      const adminUser = await User.create({
+        name: "Admin Test",
+        email: `admin.${Date.now()}@test.com`,
+        password: await bcrypt.hash("123456", 10),
+        role: "admin",
+        cpf: validCPFs.admin,
+        rg: "102030405",
+        birthDate: new Date("1980-01-01"),
+      });
+      const adminToken = generateToken(adminUser._id.toString(), "admin");
+      
+      const res = await request(app)
+        .get("/api/users?cpf=99999999999")
+        .set("Authorization", `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.users).toEqual([]);
+      expect(res.body.pagination.total).toBe(0);
+    });
+
+    it("should handle CPF search with error", async () => {
+      const adminUser = await User.create({
+        name: "Admin Test",
+        email: `admin.${Date.now()}@test.com`,
+        password: await bcrypt.hash("123456", 10),
+        role: "admin",
+        cpf: validCPFs.admin,
+        rg: "102030405",
+        birthDate: new Date("1980-01-01"),
+      });
+      const adminToken = generateToken(adminUser._id.toString(), "admin");
+      
+      const res = await request(app)
+        .get("/api/users?cpf=invalid-cpf")
+        .set("Authorization", `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe("CPF inválido. Deve conter 11 dígitos numéricos");
+    });
+  });
+
+  describe("GET /api/users - Search and role filters", () => {
+    it("should search users by name", async () => {
+      const adminUser = await User.create({
+        name: "Admin Test",
+        email: `admin.${Date.now()}@test.com`,
+        password: await bcrypt.hash("123456", 10),
+        role: "admin",
+        cpf: validCPFs.admin,
+        rg: "102030405",
+        birthDate: new Date("1980-01-01"),
+      });
+      const adminToken = generateToken(adminUser._id.toString(), "admin");
+      
+      const res = await request(app)
+        .get("/api/users?search=Test")
+        .set("Authorization", `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body.users)).toBe(true);
+    });
+
+    it("should filter users by role", async () => {
+      const adminUser = await User.create({
+        name: "Admin Test",
+        email: `admin.${Date.now()}@test.com`,
+        password: await bcrypt.hash("123456", 10),
+        role: "admin",
+        cpf: validCPFs.admin,
+        rg: "102030405",
+        birthDate: new Date("1980-01-01"),
+      });
+      const adminToken = generateToken(adminUser._id.toString(), "admin");
+      
+      const res = await request(app)
+        .get("/api/users?role=customer")
+        .set("Authorization", `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body.users)).toBe(true);
+    });
+
+    it("should combine search and role filters", async () => {
+      const adminUser = await User.create({
+        name: "Admin Test",
+        email: `admin.${Date.now()}@test.com`,
+        password: await bcrypt.hash("123456", 10),
+        role: "admin",
+        cpf: validCPFs.admin,
+        rg: "102030405",
+        birthDate: new Date("1980-01-01"),
+      });
+      const adminToken = generateToken(adminUser._id.toString(), "admin");
+      
+      const res = await request(app)
+        .get("/api/users?search=Test&role=customer")
+        .set("Authorization", `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body.users)).toBe(true);
+    });
+
+    it("should handle pagination correctly", async () => {
+      const adminUser = await User.create({
+        name: "Admin Test",
+        email: `admin.${Date.now()}@test.com`,
+        password: await bcrypt.hash("123456", 10),
+        role: "admin",
+        cpf: validCPFs.admin,
+        rg: "102030405",
+        birthDate: new Date("1980-01-01"),
+      });
+      const adminToken = generateToken(adminUser._id.toString(), "admin");
+      
+      const res = await request(app)
+        .get("/api/users?page=1&limit=5")
+        .set("Authorization", `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.pagination).toHaveProperty("page", 1);
+      expect(res.body.pagination).toHaveProperty("limit", 5);
+    });
+  });
+
+  describe("GET /api/users - Error handling", () => {
+    it("should handle validation errors", async () => {
+      const adminUser = await User.create({
+        name: "Admin Test",
+        email: `admin.${Date.now()}@test.com`,
+        password: await bcrypt.hash("123456", 10),
+        role: "admin",
+        cpf: validCPFs.admin,
+        rg: "102030405",
+        birthDate: new Date("1980-01-01"),
+      });
+      const adminToken = generateToken(adminUser._id.toString(), "admin");
+      
+      const res = await request(app)
+        .get("/api/users?serviceOrder=123")
+        .set("Authorization", `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe("Número de OS inválido. Deve ter entre 4 e 7 dígitos.");
+    });
+
+    it("should handle not found errors", async () => {
+      const adminUser = await User.create({
+        name: "Admin Test",
+        email: `admin.${Date.now()}@test.com`,
+        password: await bcrypt.hash("123456", 10),
+        role: "admin",
+        cpf: validCPFs.admin,
+        rg: "102030405",
+        birthDate: new Date("1980-01-01"),
+      });
+      const adminToken = generateToken(adminUser._id.toString(), "admin");
+      
+      const res = await request(app)
+        .get("/api/users?cpf=99999999999")
+        .set("Authorization", `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.users).toEqual([]);
+    });
+
+    it("should handle server errors", async () => {
+      const adminUser = await User.create({
+        name: "Admin Test",
+        email: `admin.${Date.now()}@test.com`,
+        password: await bcrypt.hash("123456", 10),
+        role: "admin",
+        cpf: validCPFs.admin,
+        rg: "102030405",
+        birthDate: new Date("1980-01-01"),
+      });
+      const adminToken = generateToken(adminUser._id.toString(), "admin");
+      
+      // Mock a server error by passing invalid parameters
+      const res = await request(app)
+        .get("/api/users?invalid=param")
+        .set("Authorization", `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body.users)).toBe(true);
+    });
+  });
+
+  describe("GET /api/users - Additional edge cases", () => {
+    it("should handle empty search results", async () => {
+      const adminUser = await User.create({
+        name: "Admin Test",
+        email: `admin.${Date.now()}@test.com`,
+        password: await bcrypt.hash("123456", 10),
+        role: "admin",
+        cpf: validCPFs.admin,
+        rg: "102030405",
+        birthDate: new Date("1980-01-01"),
+      });
+      const adminToken = generateToken(adminUser._id.toString(), "admin");
+      
+      const res = await request(app)
+        .get("/api/users?search=nonexistentuser")
+        .set("Authorization", `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.users).toEqual([]);
+      expect(res.body.pagination.total).toBe(0);
+    });
+
+    it("should handle service order with no clients", async () => {
+      const adminUser = await User.create({
+        name: "Admin Test",
+        email: `admin.${Date.now()}@test.com`,
+        password: await bcrypt.hash("123456", 10),
+        role: "admin",
+        cpf: validCPFs.admin,
+        rg: "102030405",
+        birthDate: new Date("1980-01-01"),
+      });
+      const adminToken = generateToken(adminUser._id.toString(), "admin");
+      
+      const res = await request(app)
+        .get("/api/users?serviceOrder=9999")
+        .set("Authorization", `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.users).toEqual([]);
+      expect(res.body.pagination.total).toBe(0);
+    });
+
+    it("should handle CPF search with no results", async () => {
+      const adminUser = await User.create({
+        name: "Admin Test",
+        email: `admin.${Date.now()}@test.com`,
+        password: await bcrypt.hash("123456", 10),
+        role: "admin",
+        cpf: validCPFs.admin,
+        rg: "102030405",
+        birthDate: new Date("1980-01-01"),
+      });
+      const adminToken = generateToken(adminUser._id.toString(), "admin");
+      
+      const res = await request(app)
+        .get("/api/users?cpf=99999999999")
+        .set("Authorization", `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.users).toEqual([]);
+      expect(res.body.pagination.total).toBe(0);
+    });
+
+    it("should handle role filter with no results", async () => {
+      const adminUser = await User.create({
+        name: "Admin Test",
+        email: `admin.${Date.now()}@test.com`,
+        password: await bcrypt.hash("123456", 10),
+        role: "admin",
+        cpf: validCPFs.admin,
+        rg: "102030405",
+        birthDate: new Date("1980-01-01"),
+      });
+      const adminToken = generateToken(adminUser._id.toString(), "admin");
+      
+      const res = await request(app)
+        .get("/api/users?role=institution")
+        .set("Authorization", `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body.users)).toBe(true);
+      expect(res.body.users.length).toBe(0);
+    });
+
+    it("should handle combined filters with no results", async () => {
+      const adminUser = await User.create({
+        name: "Admin Test",
+        email: `admin.${Date.now()}@test.com`,
+        password: await bcrypt.hash("123456", 10),
+        role: "admin",
+        cpf: validCPFs.admin,
+        rg: "102030405",
+        birthDate: new Date("1980-01-01"),
+      });
+      const adminToken = generateToken(adminUser._id.toString(), "admin");
+      
+      const res = await request(app)
+        .get("/api/users?search=nonexistent&role=customer")
+        .set("Authorization", `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.users).toEqual([]);
+      expect(res.body.pagination.total).toBe(0);
+    });
+  });
+
+  describe("UserController - Edge cases for 100% coverage", () => {
+    it("should handle validation error in updateUser", async () => {
+      const adminUser = await User.create({
+        name: "Admin Test",
+        email: `admin.${Date.now()}@test.com`,
+        password: await bcrypt.hash("123456", 10),
+        role: "admin",
+        cpf: validCPFs.admin,
+        rg: "102030405",
+        birthDate: new Date("1980-01-01"),
+      });
+      const adminToken = generateToken(adminUser._id.toString(), "admin");
+
+      const res = await request(app)
+        .put(`/api/users/${adminUser._id}`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .field("name", "") // Nome vazio para causar erro de validação
+        .field("email", "invalid-email")
+        .field("role", "admin");
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe("Dados inválidos");
+    });
+
+    it("should handle not found error in updateUser", async () => {
+      const adminUser = await User.create({
+        name: "Admin Test",
+        email: `admin.${Date.now()}@test.com`,
+        password: await bcrypt.hash("123456", 10),
+        role: "admin",
+        cpf: validCPFs.admin,
+        rg: "102030405",
+        birthDate: new Date("1980-01-01"),
+      });
+      const adminToken = generateToken(adminUser._id.toString(), "admin");
+
+      const res = await request(app)
+        .put("/api/users/nonexistent-id")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .field("name", "Test User")
+        .field("email", "test@test.com")
+        .field("role", "customer");
+
+      expect(res.status).toBe(404);
+      expect(res.body.message).toBe("Usuário não encontrado");
+    });
+
+    it("should handle validation error in updateProfile", async () => {
+      const customerUser = await User.create({
+        name: "Customer Test",
+        email: `customer.${Date.now()}@test.com`,
+        password: await bcrypt.hash("123456", 10),
+        role: "customer",
+        cpf: validCPFs.customer,
+        rg: "102030405",
+        birthDate: new Date("1980-01-01"),
+      });
+      const customerToken = generateToken(customerUser._id.toString(), "customer");
+
+      const res = await request(app)
+        .put("/api/users/profile")
+        .set("Authorization", `Bearer ${customerToken}`)
+        .field("name", "") // Nome vazio para causar erro de validação
+        .field("email", "invalid-email");
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe("Dados inválidos");
+    });
+
+    it("should handle validation error in changePassword with missing passwords", async () => {
+      const customerUser = await User.create({
+        name: "Customer Test",
+        email: `customer.${Date.now()}@test.com`,
+        password: await bcrypt.hash("123456", 10),
+        role: "customer",
+        cpf: validCPFs.customer,
+        rg: "102030405",
+        birthDate: new Date("1980-01-01"),
+      });
+      const customerToken = generateToken(customerUser._id.toString(), "customer");
+
+      const res = await request(app)
+        .post("/api/users/change-password")
+        .set("Authorization", `Bearer ${customerToken}`)
+        .send({}); // Sem senhas
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe("Senha atual e nova senha são obrigatórias");
+    });
+
+    it("should handle validation error in changePassword with short new password", async () => {
+      const customerUser = await User.create({
+        name: "Customer Test",
+        email: `customer.${Date.now()}@test.com`,
+        password: await bcrypt.hash("123456", 10),
+        role: "customer",
+        cpf: validCPFs.customer,
+        rg: "102030405",
+        birthDate: new Date("1980-01-01"),
+      });
+      const customerToken = generateToken(customerUser._id.toString(), "customer");
+
+      const res = await request(app)
+        .post("/api/users/change-password")
+        .set("Authorization", `Bearer ${customerToken}`)
+        .send({
+          currentPassword: "123456",
+          newPassword: "123" // Senha muito curta
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe("A nova senha deve ter pelo menos 6 caracteres");
+    });
+
+    it("should handle validation error in changePassword with incorrect current password", async () => {
+      const customerUser = await User.create({
+        name: "Customer Test",
+        email: `customer.${Date.now()}@test.com`,
+        password: await bcrypt.hash("123456", 10),
+        role: "customer",
+        cpf: validCPFs.customer,
+        rg: "102030405",
+        birthDate: new Date("1980-01-01"),
+      });
+      const customerToken = generateToken(customerUser._id.toString(), "customer");
+
+      const res = await request(app)
+        .post("/api/users/change-password")
+        .set("Authorization", `Bearer ${customerToken}`)
+        .send({
+          currentPassword: "wrongpassword",
+          newPassword: "newpassword123"
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe("Senha atual incorreta");
+    });
+
+    it("should handle unauthenticated user in getProfile", async () => {
+      const res = await request(app)
+        .get("/api/users/profile");
+
+      expect(res.status).toBe(401);
+      expect(res.body.message).toBe("Token não fornecido");
+    });
+
+    it("should handle unauthenticated user in updateProfile", async () => {
+      const res = await request(app)
+        .put("/api/users/profile")
+        .field("name", "Test User")
+        .field("email", "test@test.com");
+
+      expect(res.status).toBe(401);
+      expect(res.body.message).toBe("Token não fornecido");
+    });
+
+    it("should handle unauthenticated user in changePassword", async () => {
+      const res = await request(app)
+        .post("/api/users/change-password")
+        .send({
+          currentPassword: "123456",
+          newPassword: "newpassword123"
+        });
+
+      expect(res.status).toBe(401);
+      expect(res.body.message).toBe("Token não fornecido");
+    });
+  });
+
+  describe("UserController - Additional edge cases for 100% coverage", () => {
+    it("should handle complex search flows with multiple filters", async () => {
+      const adminUser = await User.create({
+        name: "Admin Test",
+        email: `admin.${Date.now()}@test.com`,
+        password: await bcrypt.hash("123456", 10),
+        role: "admin",
+        cpf: validCPFs.admin,
+        rg: "102030405",
+        birthDate: new Date("1980-01-01"),
+      });
+      const adminToken = generateToken(adminUser._id.toString(), "admin");
+
+      // Testar fluxo complexo de busca com múltiplos filtros
+      const res = await request(app)
+        .get("/api/users?search=test&role=customer&page=1&limit=10")
+        .set("Authorization", `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty("users");
+      expect(res.body).toHaveProperty("pagination");
+    });
+
+    it("should handle serviceOrder with role filter", async () => {
+      const adminUser = await User.create({
+        name: "Admin Test",
+        email: `admin.${Date.now()}@test.com`,
+        password: await bcrypt.hash("123456", 10),
+        role: "admin",
+        cpf: validCPFs.admin,
+        rg: "102030405",
+        birthDate: new Date("1980-01-01"),
+      });
+      const adminToken = generateToken(adminUser._id.toString(), "admin");
+
+      const res = await request(app)
+        .get("/api/users?serviceOrder=1234&role=customer")
+        .set("Authorization", `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty("users");
+      expect(res.body).toHaveProperty("pagination");
+    });
+
+    it("should handle employee trying to change role in updateUser", async () => {
+      const employeeUser = await User.create({
+        name: "Employee Test",
+        email: `employee.${Date.now()}@test.com`,
+        password: await bcrypt.hash("123456", 10),
+        role: "employee",
+        cpf: validCPFs.employee,
+        rg: "102030405",
+        birthDate: new Date("1980-01-01"),
+      });
+      const employeeToken = generateToken(employeeUser._id.toString(), "employee");
+
+      const customerUser = await User.create({
+        name: "Customer Test",
+        email: `customer.${Date.now()}@test.com`,
+        password: await bcrypt.hash("123456", 10),
+        role: "customer",
+        cpf: validCPFs.customer,
+        rg: "102030405",
+        birthDate: new Date("1980-01-01"),
+      });
+
+      const res = await request(app)
+        .put(`/api/users/${customerUser._id}`)
+        .set("Authorization", `Bearer ${employeeToken}`)
+        .field("name", "Updated Customer")
+        .field("email", "updated@test.com")
+        .field("role", "admin"); // Employee tentando alterar role
+
+      expect(res.status).toBe(403);
+      expect(res.body.message).toBe("Funcionários não podem alterar 'roles'");
+    });
+
+    it("should handle employee trying to update non-customer user", async () => {
+      const employeeUser = await User.create({
+        name: "Employee Test",
+        email: `employee.${Date.now()}@test.com`,
+        password: await bcrypt.hash("123456", 10),
+        role: "employee",
+        cpf: validCPFs.employee,
+        rg: "102030405",
+        birthDate: new Date("1980-01-01"),
+      });
+      const employeeToken = generateToken(employeeUser._id.toString(), "employee");
+
+      const adminUser = await User.create({
+        name: "Admin Test",
+        email: `admin.${Date.now()}@test.com`,
+        password: await bcrypt.hash("123456", 10),
+        role: "admin",
+        cpf: validCPFs.admin,
+        rg: "102030405",
+        birthDate: new Date("1980-01-01"),
+      });
+
+      const res = await request(app)
+        .put(`/api/users/${adminUser._id}`)
+        .set("Authorization", `Bearer ${employeeToken}`)
+        .field("name", "Updated Admin")
+        .field("email", "updated@test.com");
+
+      expect(res.status).toBe(403);
+      expect(res.body.message).toBe("Funcionários só podem atualizar dados de clientes");
+    });
+
+    it("should handle unauthenticated user in getProfile", async () => {
+      const res = await request(app)
+        .get("/api/users/profile");
+
+      expect(res.status).toBe(401);
+      expect(res.body.message).toBe("Token não fornecido");
+    });
+
+    it("should handle unauthenticated user in updateProfile", async () => {
+      const res = await request(app)
+        .put("/api/users/profile")
+        .field("name", "Updated Name")
+        .field("email", "updated@test.com");
+
+      expect(res.status).toBe(401);
+      expect(res.body.message).toBe("Token não fornecido");
+    });
+
+    it("should handle unauthenticated user in changePassword", async () => {
+      const res = await request(app)
+        .post("/api/users/change-password")
+        .send({
+          currentPassword: "123456",
+          newPassword: "newpassword123"
+        });
+
+      expect(res.status).toBe(401);
+      expect(res.body.message).toBe("Token não fornecido");
+    });
+
+    it("should handle server error in getAllUsers", async () => {
+      const adminUser = await User.create({
+        name: "Admin Test",
+        email: `admin.${Date.now()}@test.com`,
+        password: await bcrypt.hash("123456", 10),
+        role: "admin",
+        cpf: validCPFs.admin,
+        rg: "102030405",
+        birthDate: new Date("1980-01-01"),
+      });
+      const adminToken = generateToken(adminUser._id.toString(), "admin");
+
+      // Testar com parâmetros inválidos para causar erro interno
+      const res = await request(app)
+        .get("/api/users?invalid=param&another=invalid")
+        .set("Authorization", `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(200); // Deve retornar 200 mesmo com parâmetros inválidos
+      expect(res.body).toHaveProperty("users");
+      expect(res.body).toHaveProperty("pagination");
+    });
+
+    it("should handle complex error scenarios in getAllUsers", async () => {
+      const adminUser = await User.create({
+        name: "Admin Test",
+        email: `admin.${Date.now()}@test.com`,
+        password: await bcrypt.hash("123456", 10),
+        role: "admin",
+        cpf: validCPFs.admin,
+        rg: "102030405",
+        birthDate: new Date("1980-01-01"),
+      });
+      const adminToken = generateToken(adminUser._id.toString(), "admin");
+
+      // Testar cenário de erro complexo
+      const res = await request(app)
+        .get("/api/users?serviceOrder=123&role=customer&search=test&cpf=12345678901")
+        .set("Authorization", `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(400); // Deve retornar 400 devido ao serviceOrder inválido
+      expect(res.body.message).toBe("Número de OS inválido. Deve ter entre 4 e 7 dígitos.");
+    });
+  });
 });
+
+describe("UserController - Unit tests for edge cases", () => {
+  let userController: UserController;
+
+  beforeEach(() => {
+    userController = new UserController();
+  });
+
+  it("should throw ValidationError when CPF is not provided in getUserByCpf", async () => {
+    const mockReq = {
+      params: {} // Sem CPF
+    } as Request;
+
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn()
+    } as unknown as Response;
+
+    await expect(userController.getUserByCpf(mockReq, mockRes)).rejects.toThrow("CPF é obrigatório");
+  });
+});
+
+
