@@ -645,72 +645,236 @@ describe("UserController", () => {
     });
   });
 
-  describe("GET /api/users/cpf/:cpf", () => {
-    it("should get user by CPF", async () => {
+  describe("GET /api/users - Busca por serviceOrder", () => {
+    it("should fail with invalid serviceOrder (less than 4 digits)", async () => {
       const res = await request(app)
-        .get(`/api/users?cpf=${validCPFs.customer}`)
+        .get("/api/users?serviceOrder=123")
         .set("Authorization", `Bearer ${adminToken}`);
 
-      expect(res.status).toBe(200);
-      expect(res.body.users[0].cpf).toBe(validCPFs.customer);
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe("Número de OS inválido. Deve ter entre 4 e 7 dígitos.");
     });
 
-    it("should return all users when CPF is empty", async () => {
+    it("should fail with invalid serviceOrder (more than 7 digits)", async () => {
       const res = await request(app)
-        .get("/api/users?cpf=")
+        .get("/api/users?serviceOrder=12345678")
+        .set("Authorization", `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe("Número de OS inválido. Deve ter entre 4 e 7 dígitos.");
+    });
+
+    it("should return empty array when serviceOrder has no clients", async () => {
+      const res = await request(app)
+        .get("/api/users?serviceOrder=9999999")
         .set("Authorization", `Bearer ${adminToken}`);
 
       expect(res.status).toBe(200);
-      expect(res.body.users.length).toBeGreaterThan(0);
+      expect(res.body.users).toEqual([]);
+      expect(res.body.pagination.total).toBe(0);
+    });
+
+    it("should filter serviceOrder results by customer role", async () => {
+      const res = await request(app)
+        .get("/api/users?serviceOrder=1234567&role=customer")
+        .set("Authorization", `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty("users");
       expect(res.body).toHaveProperty("pagination");
     });
+  });
 
-    it("should return empty array for non-existent CPF", async () => {
+  describe("GET /api/users - Busca por CPF", () => {
+    it("should return empty array when CPF not found", async () => {
       const res = await request(app)
         .get("/api/users?cpf=12345678901")
         .set("Authorization", `Bearer ${adminToken}`);
 
       expect(res.status).toBe(200);
       expect(res.body.users).toEqual([]);
+      expect(res.body.pagination.total).toBe(0);
     });
   });
 
-  describe("PUT /api/users/:id - Validações", () => {
-    it("should fail with invalid update data", async () => {
-      const invalidData = {
-        name: "Ab", // Nome muito curto
-        email: "invalid-email", // Email inválido
-      };
+  describe("GET /api/users - Busca por search e role", () => {
+    it("should search users and filter by role", async () => {
+      const res = await request(app)
+        .get("/api/users?search=test&role=customer")
+        .set("Authorization", `Bearer ${adminToken}`);
 
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty("users");
+      expect(res.body).toHaveProperty("pagination");
+    });
+  });
+
+  describe("GET /api/users - Busca por role", () => {
+    it("should get users by role", async () => {
+      const res = await request(app)
+        .get("/api/users?role=customer")
+        .set("Authorization", `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty("users");
+      expect(res.body).toHaveProperty("pagination");
+    });
+  });
+
+  describe("GET /api/users - Busca sem filtro", () => {
+    it("should get all users without filters", async () => {
+      const res = await request(app)
+        .get("/api/users")
+        .set("Authorization", `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty("users");
+      expect(res.body).toHaveProperty("pagination");
+      expect(res.body.pagination.total).toBeGreaterThan(0);
+    });
+  });
+
+  describe("GET /api/users/cpf/:cpf", () => {
+    it("should fail when CPF is not provided", async () => {
+      const res = await request(app)
+        .get("/api/users/cpf/")
+        .set("Authorization", `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(404); // Rota não encontrada
+    });
+
+    it("should return 404 for non-existent CPF", async () => {
+      const res = await request(app)
+        .get("/api/users/cpf/12345678901")
+        .set("Authorization", `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(404);
+    });
+  });
+
+  describe("PUT /api/users/:id - Validação de dados", () => {
+    it("should fail with invalid user data", async () => {
       const res = await request(app)
         .put(`/api/users/${customerId}`)
         .set("Authorization", `Bearer ${adminToken}`)
-        .field("name", invalidData.name)
-        .field("email", invalidData.email);
+        .send({
+          name: "", // Nome vazio
+          email: "invalid-email", // Email inválido
+          role: "invalid-role" // Role inválido
+        });
 
       expect(res.status).toBe(400);
       expect(res.body.message).toBe("Dados inválidos");
     });
+  });
 
-    it("should not allow employee to change role", async () => {
+  describe("PUT /api/users/:id - Permissões de funcionário", () => {
+    it("should fail when employee tries to change role", async () => {
+      const employee = await User.create({
+        name: "Employee for Update Test",
+        email: `employee-update-test-${Date.now()}@test.com`,
+        password: await bcrypt.hash("123456", 10),
+        role: "employee",
+        cpf: validCPFs.newUser, // Usar um CPF válido diferente
+        rg: "987654321",
+        birthDate: new Date("1990-01-01"),
+      });
+
+      const employeeToken = generateToken(employee._id.toString(), "employee");
+
       const res = await request(app)
         .put(`/api/users/${customerId}`)
         .set("Authorization", `Bearer ${employeeToken}`)
-        .field("name", "Updated Name")
-        .field("role", "admin");
+        .send({
+          name: "Updated Name",
+          role: "admin" // Tentando alterar role
+        });
 
       expect(res.status).toBe(403);
       expect(res.body.message).toBe("Funcionários não podem alterar 'roles'");
     });
 
-    it("should not allow employee to update non-customer", async () => {
+    it("should fail when employee tries to update non-customer", async () => {
+      const employee = await User.create({
+        name: "Employee for Update Test 2",
+        email: `employee-update-test-2-${Date.now()}@test.com`,
+        password: await bcrypt.hash("123456", 10),
+        role: "employee",
+        cpf: validCPFs.anotherUser,
+        rg: "987654321",
+        birthDate: new Date("1990-01-01"),
+      });
+
+      const adminToUpdate = await User.create({
+        name: "Admin to Update",
+        email: `admin-to-update-${Date.now()}@test.com`,
+        password: await bcrypt.hash("123456", 10),
+        role: "admin",
+        cpf: validCPFs.admin,
+        rg: "987654321",
+        birthDate: new Date("1990-01-01"),
+      });
+
+      const employeeToken = generateToken(employee._id.toString(), "employee");
+
       const res = await request(app)
-        .put(`/api/users/${employeeId}`)
+        .put(`/api/users/${adminToUpdate._id}`) // Tentando atualizar admin
         .set("Authorization", `Bearer ${employeeToken}`)
-        .field("name", "Updated Name");
+        .send({
+          name: "Updated Name"
+        });
 
       expect(res.status).toBe(403);
       expect(res.body.message).toBe("Funcionários só podem atualizar dados de clientes");
+    });
+  });
+
+  describe("DELETE /api/users/:id", () => {
+    it("should delete user successfully", async () => {
+      const userToDelete = await User.create({
+        name: "User to Delete",
+        email: `user-to-delete-${Date.now()}@test.com`,
+        password: await bcrypt.hash("123456", 10),
+        role: "customer",
+        cpf: validCPFs.newUser, // Usar um CPF válido diferente
+        rg: "123456789",
+        birthDate: new Date("1990-01-01"),
+      });
+
+      const res = await request(app)
+        .delete(`/api/users/${userToDelete._id}`)
+        .set("Authorization", `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(204);
+    });
+  });
+
+  describe("PUT /api/users/profile - Validação de dados", () => {
+    it("should fail with invalid profile data", async () => {
+      const res = await request(app)
+        .put("/api/users/profile")
+        .set("Authorization", `Bearer ${customerToken}`)
+        .send({
+          name: "", // Nome vazio
+          email: "invalid-email", // Email inválido
+          birthDate: "invalid-date" // Data inválida
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe("Dados inválidos");
+    });
+  });
+
+  describe("PUT /api/users/profile - Usuário não autenticado", () => {
+    it("should fail when user is not authenticated", async () => {
+      const res = await request(app)
+        .put("/api/users/profile")
+        .send({
+          name: "Updated Name"
+        });
+
+      expect(res.status).toBe(401);
+      expect(res.body.message).toBe("Token não fornecido");
     });
   });
 
