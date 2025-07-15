@@ -79,7 +79,7 @@ export const getProductSpecifications = (product: any) => {
     specifications.push({
       label: 'Referência',
       value: product.reference,
-      icon: 'Hash'
+      icon: 'ScanBarcode'
     });
   }
 

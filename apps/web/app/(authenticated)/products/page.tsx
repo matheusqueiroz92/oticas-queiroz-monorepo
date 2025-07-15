@@ -66,7 +66,7 @@ export default function ProductsPage() {
           searchTerm={state.searchTerm}
           onSearchChange={actions.setSearchTerm}
           productType={state.productType}
-          onProductTypeChange={(value) => {
+          onProductTypeChange={(value: string) => {
             actions.setProductType(value);
             handleProductTypeChange(value);
           }}

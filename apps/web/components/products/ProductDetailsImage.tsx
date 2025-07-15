@@ -28,7 +28,6 @@ export function ProductDetailsImage({ product }: ProductDetailsImageProps) {
             </div>
           )}
           
-          {/* Product type badge overlay */}
           <div className="absolute top-4 left-4">
             <Badge className={`${typeBadge.className} font-medium`}>
               {typeBadge.label}

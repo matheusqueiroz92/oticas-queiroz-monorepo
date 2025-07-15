@@ -65,9 +65,9 @@ export function PaymentFilters({ onUpdateFilters }: PaymentFiltersProps) {
         <CardTitle className="text-base flex items-center justify-between">
           Filtros Avançados
           <div className="flex gap-2">
-            <Button variant="ghost" size="sm" onClick={clearFilters}>
-              <X className="h-4 w-4 mr-1" />
-              Limpar
+            <Button variant="outline" size="sm" onClick={clearFilters}>
+              <X className="h-4 w-4" />
+              Limpar Filtros
             </Button>
           </div>
         </CardTitle>

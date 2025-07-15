@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { ShoppingBag } from "lucide-react";
+import { Clock, ShoppingBag } from "lucide-react";
 import { formatCurrency, getOrderStatusClass, translateOrderStatus } from "@/app/_utils/formatters";
 import { RenderListSkeleton } from "@/components/dashboard/RenderListSkeleton";
 import type { Order } from "@/app/_types/order";
@@ -25,10 +26,16 @@ export function RecentOrdersList({
   getClientName,
 }: RecentOrdersListProps) {
   return (
-    <Card className="h-[420px] flex flex-col">
-      <CardHeader>
+    <Card className="h-full flex flex-col">
+      <CardHeader className="border-b border-gray-200 bg-gray-100 dark:border-gray-800 dark:bg-gray-800/50 ">
         <div className="flex items-center justify-between">
-          <CardTitle>Pedidos Recentes</CardTitle>
+          <div className="flex flex-col gap-1">
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-[var(--primary-blue)]" />
+              Pedidos Recentes
+            </CardTitle>
+            <CardDescription>Útimos pedidos realizados no sistema</CardDescription>
+          </div>
           <Link href="/orders">
             <Button variant="outline" size="sm">
               Ver todos

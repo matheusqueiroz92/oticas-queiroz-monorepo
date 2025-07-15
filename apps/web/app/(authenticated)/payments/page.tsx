@@ -90,17 +90,17 @@ export default function PaymentsPage() {
             onToggleFilters={actions.toggleFilters}
             activeFiltersCount={getActiveFiltersCount()}
             typeFilter={typeFilter}
-            onTypeFilterChange={(value) => {
+            onTypeFilterChange={(value: string) => {
               setTypeFilter(value);
               handleTypeFilterChange(value);
             }}
             paymentMethodFilter={paymentMethodFilter}
-            onPaymentMethodFilterChange={(value) => {
+            onPaymentMethodFilterChange={(value: string) => {
               setPaymentMethodFilter(value);
               handlePaymentMethodFilterChange(value);
             }}
             statusFilter={statusFilter}
-            onStatusFilterChange={(value) => {
+            onStatusFilterChange={(value: string) => {
               setStatusFilter(value);
               handleStatusFilterChange(value);
             }}
@@ -115,8 +115,8 @@ export default function PaymentsPage() {
             showEmptyState={showEmptyState}
             cancelPayment={handleCancelPayment}
             navigateToPaymentDetails={navigateToPaymentDetails}
-            getClientName={(id) => customerIdToName[id] || 'Cliente'}
-            getOrderNumber={(id) => orderIdToServiceOrder[id] || id}
+            getClientName={(id: string) => customerIdToName[id] || 'Cliente'}
+            getOrderNumber={(id: string) => orderIdToServiceOrder[id] || id}
           />
         </div>
       </PageContainer>

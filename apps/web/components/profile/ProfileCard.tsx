@@ -56,16 +56,16 @@ export function ProfileCard({ user, getUserImageUrl, onEditClick }: ProfileCardP
   };
 
   return (
-    <Card className="w-full bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 border-0 shadow-xl">
+    <Card className="w-full bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-700 border-0 shadow-xl">
       <CardContent className="p-0">
         {/* Header com gradiente */}
-        <div className="relative h-24 bg-gradient-to-r from-blue-600 to-purple-600 rounded-t-lg">
+        <div className="relative h-28 bg-[var(--primary-blue)] rounded-t-lg">
           <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2">
             <Avatar className="w-24 h-24 border-4 border-white shadow-lg">
               <AvatarImage
                 src={getUserImageUrl(user.image)}
                 alt={user.name}
-                className="object-cover"
+                className="object-cover size-32"
               />
               <AvatarFallback className="text-xl font-bold bg-white text-slate-700">
                 {getInitials(user.name)}

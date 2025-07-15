@@ -124,8 +124,7 @@ export function CashRegisterStatus({
             variant="outline"
             size="sm"
             onClick={() => router.push(`/cash-register/${cashRegister._id}`)}
-            className="border-green-300 text-green-700 hover:bg-green-100 dark:hover:bg-green-900"
-          >
+            className="border-green-300 text-green-700 hover:bg-green-100 dark:text-green-300 dark:hover:bg-green-900 dark:hover:text-white"          >
             <Eye className="h-4 w-4" />
           </Button>
           {showDetailsButton && (
@@ -141,10 +140,11 @@ export function CashRegisterStatus({
           {cashRegister.status === "open" && (
             <Button
               size="sm"
+              variant="outline"
               onClick={() =>
                 router.push(`/cash-register/close/${cashRegister._id}`)
               }
-              className="bg-green-600 hover:bg-green-700 text-white"
+              className="border-green-300 text-green-600 hover:bg-green-100 hover:text-green-900 dark:text-green-300  dark:hover:bg-green-900 dark:hover:text-white"
             >
               Fechar Caixa
             </Button>

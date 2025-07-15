@@ -78,7 +78,7 @@ export function ProductActions({ product, onViewDetails, onRefresh }: ProductAct
       <>
         <Button 
           onClick={() => setShowCreateDialog(true)}
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 text-[var(--primary-color)] bg-[var(--primary-blue)]"
           size="sm"
         >
           <Plus className="w-4 h-4" />

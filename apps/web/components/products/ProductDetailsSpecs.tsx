@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { Layers, Eye, Palette, Hash, Star, Calendar } from "lucide-react";
+import { Layers, Eye, Palette, Hash, Star, Calendar, ScanBarcode } from "lucide-react";
 import { getProductSpecifications } from "@/app/_utils/product-details-utils";
 
 interface ProductDetailsSpecsProps {
@@ -10,6 +10,7 @@ const iconMap = {
   Eye,
   Palette,
   Hash,
+  ScanBarcode,
   Star,
   Calendar,
 };
@@ -21,7 +22,7 @@ export function ProductDetailsSpecs({ product }: ProductDetailsSpecsProps) {
     <Card>
       <CardContent className="p-6">
         <h3 className="font-semibold mb-4 flex items-center gap-2">
-          <Layers className="h-5 w-5" />
+          <Layers className="h-5 w-5 text-[var(--primary-blue)]" />
           Especificações
         </h3>
         
@@ -31,7 +32,9 @@ export function ProductDetailsSpecs({ product }: ProductDetailsSpecsProps) {
             
             return (
               <div key={index} className="flex items-center gap-3 p-3 bg-muted/20 rounded-lg">
-                {IconComponent && <IconComponent className="h-4 w-4 text-muted-foreground" />}
+                <div className="dark:bg-blue-200/10 bg-blue-100 rounded-full p-2">
+                  {IconComponent && <IconComponent className="h-4 w-4 text-[var(--primary-blue)]" />}
+                </div>
                 <div>
                   <p className="text-sm text-muted-foreground">{spec.label}</p>
                   <p className="font-medium">{spec.value}</p>

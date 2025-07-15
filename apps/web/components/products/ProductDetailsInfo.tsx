@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { DollarSign, User } from "lucide-react";
+import { Tag } from "lucide-react";
 import { formatCurrency } from "@/app/_utils/product-utils";
 import { getStockStatusConfig } from "@/app/_utils/product-details-utils";
 
@@ -18,7 +18,7 @@ export function ProductDetailsInfo({ product }: ProductDetailsInfoProps) {
             <h2 className="text-xl font-semibold mb-2">{product.name}</h2>
             {product.brand && (
               <p className="text-muted-foreground flex items-center gap-2">
-                <User className="h-4 w-4" />
+                <Tag className="h-4 w-4 text-[var(--primary-blue)]" />
                 Marca: {product.brand}
               </p>
             )}
@@ -33,9 +33,7 @@ export function ProductDetailsInfo({ product }: ProductDetailsInfoProps) {
             </div>
           )}
 
-          {/* Price section */}
           <div className="flex items-center gap-4 p-4 bg-muted/30 rounded-lg">
-            <DollarSign className="h-5 w-5 text-green-600" />
             <div>
               <p className="text-2xl font-bold text-green-600">
                 {formatCurrency(product.sellPrice)}
@@ -48,7 +46,6 @@ export function ProductDetailsInfo({ product }: ProductDetailsInfoProps) {
             </div>
           </div>
 
-          {/* Stock status */}
           {stockStatus && (
             <div className={`flex items-center gap-3 p-3 rounded-lg border ${stockStatus.className}`}>
               <stockStatus.icon className="h-5 w-5" />

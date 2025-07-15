@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect } from "react";
-import { User } from "lucide-react";
 import Cookies from "js-cookie";
 import { useOrders } from "@/hooks/useOrders";
 import { OrderDialog } from "@/components/orders/OrderDialog";
@@ -44,7 +43,6 @@ export default function MyOrdersPage() {
     data: myOrdersData,
     isLoading: isLoadingMyOrders,
     error: myOrdersError,
-    refetch: refetchMyOrders,
   } = useMyOrders();
 
   // Configurar dados baseado no tipo de usuário
@@ -123,13 +121,6 @@ export default function MyOrdersPage() {
       }
     }
   }, [shouldUseFilters, state.loggedUserId, state.loggedUserRole, filters, updateFilters, state.isEmployee]);
-
-  const titleWithIcon = state.isEmployee ? (
-    <div className="flex items-center gap-2">
-      <User className="h-5 w-5 text-blue-600" />
-      {title}
-    </div>
-  ) : title;
 
   return (
     <>

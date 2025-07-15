@@ -1,10 +1,6 @@
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, Filter, Plus, Clock, Settings, Box, Truck, XCircle } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Clock, Settings, Box, Truck, XCircle } from "lucide-react";
+import { DataTableWithFilters, FilterOption } from "@/components/ui/data-table-with-filters";
 import { OrderFilters } from "@/components/orders/OrderFilters";
-import { OrderExportButton } from "@/components/orders/exports/OrderExportButton";
 import { OrdersContent } from "@/components/orders/OrdersContent";
 import type { Order } from "@/app/_types/order";
 
@@ -53,119 +49,85 @@ export function OrdersTableWithFilters({
   totalOrders,
   showEmptyState,
 }: OrdersTableWithFiltersProps) {
-  return (
-    <Card>
-      <CardHeader className="bg-gray-100 dark:bg-slate-800/50">
-        <CardTitle className="text-lg">Lista de Pedidos</CardTitle>
-        <div className="flex flex-col sm:flex-row gap-4 mt-4 sm:items-center">
-          {/* Área esquerda: Input de busca e selects */}
-          <div className="flex flex-1 flex-col sm:flex-row gap-4">
-            <div className="relative flex-1 max-w-md">
-              <Input
-                placeholder="Buscar por cliente, CPF ou O.S."
-                value={search}
-                onChange={(e) => onSearchChange(e.target.value)}
-                className="pl-9"
-              />
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            </div>
-            
-            <Select value={filters.status || "todos"} onValueChange={onStatusFilterChange}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Status do pedido" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">
-                  <span className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-gray-500" />
-                    Todos os Status
-                  </span>
-                </SelectItem>
-                <SelectItem value="pending">
-                  <span className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-yellow-500" />
-                    Pendente
-                  </span>
-                </SelectItem>
-                <SelectItem value="in_production">
-                  <span className="flex items-center gap-2">
-                    <Settings className="w-4 h-4 text-orange-500" />
-                    Em produção
-                  </span>
-                </SelectItem>
-                <SelectItem value="ready">
-                  <span className="flex items-center gap-2">
-                    <Box className="w-4 h-4 text-green-500" />
-                    Pronto
-                  </span>
-                </SelectItem>
-                <SelectItem value="delivered">
-                  <span className="flex items-center gap-2">
-                    <Truck className="w-4 h-4 text-blue-500" />
-                    Entregue
-                  </span>
-                </SelectItem>
-                <SelectItem value="cancelled">
-                  <span className="flex items-center gap-2">
-                    <XCircle className="w-4 h-4 text-red-500" />
-                    Cancelado
-                  </span>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+  // Configuração dos filtros básicos
+  const statusFilterOptions: FilterOption[] = [
+    {
+      value: "todos",
+      label: "Todos os Status",
+      icon: <Clock className="w-4 h-4 text-gray-500" />
+    },
+    {
+      value: "pending",
+      label: "Pendente",
+      icon: <Clock className="w-4 h-4 text-yellow-500" />
+    },
+    {
+      value: "in_production",
+      label: "Em produção",
+      icon: <Settings className="w-4 h-4 text-orange-500" />
+    },
+    {
+      value: "ready",
+      label: "Pronto",
+      icon: <Box className="w-4 h-4 text-green-500" />
+    },
+    {
+      value: "delivered",
+      label: "Entregue",
+      icon: <Truck className="w-4 h-4 text-blue-500" />
+    },
+    {
+      value: "cancelled",
+      label: "Cancelado",
+      icon: <XCircle className="w-4 h-4 text-red-500" />
+    }
+  ];
 
-          {/* Área direita: Botões de ação */}
-          <div className="flex gap-2 justify-end sm:ml-auto">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={onToggleFilters}
-              className={activeFiltersCount > 0 ? "bg-blue-50 border-blue-200" : ""}
-            >
-              <Filter className="w-4 h-4 mr-2" />
-              Filtros Avançados
-              {activeFiltersCount > 0 && (
-                <span className="ml-1 bg-blue-500 text-white text-xs rounded-full px-1.5 py-0.5">
-                  {activeFiltersCount}
-                </span>
-              )}
-            </Button>
-            <OrderExportButton 
-              filters={filters}
-              buttonText="Exportar"
-              variant="outline"
-              disabled={isLoading || orders.length === 0}
-              size="sm"
-            />
-            <Button size="sm" className="bg-[var(--primary-blue)] text-white" onClick={onOpenNewOrder}>
-              <Plus className="w-4 h-4 mr-2" /> Novo Pedido
-            </Button>
-          </div>
-        </div>
-      </CardHeader>
-      
-      {showFilters && (
+  const basicFilters = [
+    {
+      options: statusFilterOptions,
+      value: filters.status || "todos",
+      onChange: onStatusFilterChange,
+      placeholder: "Status do pedido",
+      width: "w-[180px]"
+    }
+  ];
+
+  return (
+    <DataTableWithFilters
+      title="Lista de Pedidos"
+      searchPlaceholder="Buscar por cliente, CPF ou O.S."
+      searchValue={search}
+      onSearchChange={onSearchChange}
+      basicFilters={basicFilters}
+      showFilters={showFilters}
+      onToggleFilters={onToggleFilters}
+      activeFiltersCount={activeFiltersCount}
+      advancedFiltersComponent={
         <OrderFilters onUpdateFilters={onUpdateFilters} />
-      )}
-      
-      <CardContent className="p-0">
-        <OrdersContent
-          orders={orders}
-          isLoading={isLoading}
-          error={error}
-          search={search}
-          showEmptyState={showEmptyState}
-          orderColumns={orderColumns}
-          onDetailsClick={onDetailsClick}
-          onEditClick={onEditClick}
-          onOpenNewOrder={onOpenNewOrder}
-          currentPage={currentPage}
-          totalPages={totalPages}
-          setCurrentPage={setCurrentPage}
-          totalOrders={totalOrders}
-        />
-      </CardContent>
-    </Card>
+      }
+      onNewItem={onOpenNewOrder}
+      newButtonText="Novo Pedido"
+      onExport={() => {
+        // Implementar lógica de exportação
+      }}
+      exportDisabled={isLoading || orders.length === 0}
+    >
+      <OrdersContent
+        orders={orders}
+        isLoading={isLoading}
+        error={error}
+        search={search}
+        showEmptyState={showEmptyState}
+        orderColumns={orderColumns}
+        onDetailsClick={onDetailsClick}
+        onEditClick={onEditClick}
+        onOpenNewOrder={onOpenNewOrder}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        setCurrentPage={setCurrentPage}
+        totalOrders={totalOrders}
+      />
+    </DataTableWithFilters>
   );
 } 

@@ -91,9 +91,8 @@ export const CustomerFilters = ({ onUpdateFilters, hasDebts: hasDebtsProp }: Cus
           variant="outline"
           size="sm"
           onClick={handleClearFilters}
-          className="h-10 text-sm"
         >
-          <X className="h-3.5 w-3.5 mr-1" />
+          <X className="h-4 w-4" />
           Limpar Filtros
         </Button>
       </div>
