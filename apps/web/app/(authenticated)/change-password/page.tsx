@@ -1,6 +1,6 @@
 "use client";
 
-import { useProfile } from "@/hooks/useProfile";
+import { useProfile } from "@/hooks/profile/useProfile";
 import { ChangePasswordForm } from "@/components/change-password/ChangePasswordForm";
 import { ChangePasswordHeader } from "@/components/change-password/ChangePasswordHeader";
 import type { ChangePasswordFormValues } from "@/schemas/change-password-schema";

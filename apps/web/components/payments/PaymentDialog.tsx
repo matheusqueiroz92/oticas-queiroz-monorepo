@@ -42,7 +42,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { usePayments } from "@/hooks/usePayments";
+import { usePayments } from "@/hooks/payments/usePayments";
 import { useToast } from "@/hooks/useToast";
 import { handleError, showSuccess } from "@/app/_utils/error-handler";
 import { IPayment, PaymentType, PaymentMethod, PaymentStatus } from "@/app/_types/payment";

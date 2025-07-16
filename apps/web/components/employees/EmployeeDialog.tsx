@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { format } from "date-fns";
 import {
   Dialog,
   DialogContent,
@@ -27,7 +26,7 @@ import { ImageUpload } from "@/components/ui/image-upload";
 import { DatePicker } from "@/components/ui/date-picker";
 import { useToast } from "@/hooks/useToast";
 import { useUsers } from "@/hooks/useUsers";
-import { User, UserPlus, Mail, Phone, Loader2 } from "lucide-react";
+import { UserPlus, Mail, Phone, Loader2 } from "lucide-react";
 import type { User as UserType } from "@/app/_types/user";
 
 // Schema para funcionário - simplificado sem role e com birthDate

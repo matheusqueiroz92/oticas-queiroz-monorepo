@@ -39,7 +39,7 @@ import { formatCurrency, formatDate, formatDateTime } from "@/app/_utils/formatt
 import type { IPayment } from "@/app/_types/payment";
 import type { LegacyClient } from "@/app/_types/legacy-client";
 import { useUsers } from "@/hooks/useUsers";
-import { useOrders } from "@/hooks/useOrders";
+import { useOrders } from "@/hooks/orders/useOrders";
 
 interface PaymentDetailsProps {
   payment: IPayment | null;

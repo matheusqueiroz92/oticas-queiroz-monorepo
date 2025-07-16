@@ -23,7 +23,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 
 import { useInstitutions } from "@/hooks/useInstitutions";
-import { useOrders } from "@/hooks/useOrders";
+import { useOrders } from "@/hooks/orders/useOrders";
 import ClientSearch from "@/components/orders/ClientSearch";
 import ProductSearch from "@/components/orders/ProductSearch";
 import SelectedProductsList from "@/components/orders/SelectedProductList";

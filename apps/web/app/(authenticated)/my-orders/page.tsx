@@ -2,15 +2,15 @@
 
 import { useEffect } from "react";
 import Cookies from "js-cookie";
-import { useOrders } from "@/hooks/useOrders";
+import { useOrders } from "@/hooks/orders/useOrders";
 import { OrderDialog } from "@/components/orders/OrderDialog";
 import { OrdersStatsCards } from "@/components/orders/OrdersStatsCards";
 import { MyOrdersTableWithFilters } from "@/components/orders/MyOrdersTableWithFilters";
 import { PageContainer } from "@/components/ui/page-container";
-import { useMyOrdersPageState } from "@/hooks/useMyOrdersPageState";
-import { useMyOrdersFilters } from "@/hooks/useMyOrdersFilters";
-import { useMyOrdersPageTitle } from "@/hooks/useMyOrdersPageTitle";
-import { useOrdersStats } from "@/hooks/useOrdersStats";
+import { useMyOrdersPageState } from "@/hooks/my-orders/useMyOrdersPageState";
+import { useMyOrdersFilters } from "@/hooks/my-orders/useMyOrdersFilters";
+import { useMyOrdersPageTitle } from "@/hooks/my-orders/useMyOrdersPageTitle";
+import { useOrdersStats } from "@/hooks/orders/useOrdersStats";
 import { getMyOrdersTableColumns } from "@/app/_utils/my-orders-table-config";
 import { customBadgeStyles } from "@/app/_utils/custom-badge-styles";
 

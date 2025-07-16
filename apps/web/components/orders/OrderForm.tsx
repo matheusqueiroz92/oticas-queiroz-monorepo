@@ -11,7 +11,7 @@ import OrderStepProgress from "@/components/orders/OrderStepProgress";
 import OrderClientProducts from "@/components/orders/OrderClientProducts";
 import OrderPrescription from "@/components/orders/OrderPrescription";
 import OrderConfirmation from "@/components/orders/OrderConfirmation";
-import { useCustomers } from "@/hooks/useCustomers";
+import { useCustomers } from "@/hooks/customers/useCustomers";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { isLens } from "@/app/_utils/product-utils";

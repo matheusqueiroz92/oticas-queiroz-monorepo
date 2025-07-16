@@ -5,10 +5,10 @@ import { PageContainer } from "@/components/ui/page-container";
 import { EmployeeStatsCards } from "@/components/employees/EmployeeStatsCards";
 import { EmployeeTableWithFilters } from "@/components/employees/EmployeeTableWithFilters";
 import { EmployeeDialogs } from "@/components/employees/EmployeeDialogs";
-import { useEmployees } from "@/hooks/useEmployees";
-import { useEmployeePageState } from "@/hooks/useEmployeePageState";
-import { useEmployeeFilters } from "@/hooks/useEmployeeFilters";
-import { useEmployeeStats } from "@/hooks/useEmployeeStats";
+import { useEmployees } from "@/hooks/employees/useEmployees";
+import { useEmployeePageState } from "@/hooks/employees/useEmployeePageState";
+import { useEmployeeFilters } from "@/hooks/employees/useEmployeeFilters";
+import { useEmployeeStats } from "@/hooks/employees/useEmployeeStats";
 
 export default function EmployeesPage() {
   const { state, actions } = useEmployeePageState();
@@ -31,18 +31,14 @@ export default function EmployeesPage() {
     getActiveFiltersCount,
   } = useEmployees();
 
+
+
   const {
     handleUpdateFilters,
     handleClearAllFilters,
-    applyBasicFilters,
   } = useEmployeeFilters(search, setSearch, filters, updateFilters, getActiveFiltersCount);
 
   const stats = useEmployeeStats(employees, totalItems);
-
-  // Aplicar filtros quando os selects básicos mudarem
-  useEffect(() => {
-    applyBasicFilters(state.selectedRole, state.selectedStatus);
-  }, [state.selectedRole, state.selectedStatus, applyBasicFilters]);
 
   // Limpar filtros incluindo os estados locais
   const handleClearFilters = () => {
@@ -73,8 +69,6 @@ export default function EmployeesPage() {
           showFilters={state.showFilters}
           onToggleFilters={actions.toggleFilters}
           activeFiltersCount={getActiveFiltersCount}
-          selectedRole={state.selectedRole}
-          onRoleChange={actions.setSelectedRole}
           filters={filters}
           onUpdateFilters={handleUpdateFilters}
           onClearFilters={handleClearFilters}

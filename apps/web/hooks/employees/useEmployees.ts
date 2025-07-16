@@ -4,7 +4,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/app/_services/authService";
-import { API_ROUTES } from "@/app/_constants/api-routes";
 import { QUERY_KEYS } from "@/app/_constants/query-keys";
 import { useUsers } from "@/hooks/useUsers";
 import debounce from 'lodash/debounce';
@@ -25,6 +24,7 @@ interface EmployeeFilters {
   cpf?: string;
   limit?: number;
   salesRange?: string;
+  totalSalesRange?: string;
   startDate?: string;
   endDate?: string;
 }
@@ -45,8 +45,6 @@ export function useEmployees(options: UseEmployeesOptions = {}) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { getUserImageUrl } = useUsers();
-
-  const filterKey = JSON.stringify(filters);
 
   // Função para processar busca
   const processSearch = useCallback((value: string) => {
@@ -105,13 +103,16 @@ export function useEmployees(options: UseEmployeesOptions = {}) {
 
   // Função para atualizar filtros
   const updateFilters = useCallback((newFilters: EmployeeFilters) => {
-    setFilters(prevFilters => ({
-      ...newFilters,
-      sort: "name",
-      search: newFilters.search !== undefined ? newFilters.search : prevFilters.search,
-      cpf: newFilters.cpf !== undefined ? newFilters.cpf : prevFilters.cpf,
-      limit: pageSize
-    }));
+    setFilters(prevFilters => {
+      const updatedFilters = {
+        ...prevFilters, // Manter filtros existentes
+        ...newFilters,  // Aplicar novos filtros
+        sort: "name",
+        limit: pageSize
+      };
+      
+      return updatedFilters;
+    });
     
     setCurrentPage(1);
     
@@ -136,9 +137,8 @@ export function useEmployees(options: UseEmployeesOptions = {}) {
   const getActiveFiltersCount = useMemo(() => {
     let count = 0;
     if (filters.search || filters.cpf) count++;
-    if (filters.role && filters.role !== 'todos') count++;
-    if (filters.status && filters.status !== 'todos') count++;
     if (filters.salesRange && filters.salesRange !== 'todos') count++;
+    if (filters.totalSalesRange && filters.totalSalesRange !== 'todos') count++;
     return count;
   }, [filters]);
 
@@ -172,12 +172,21 @@ export function useEmployees(options: UseEmployeesOptions = {}) {
           searchParams.cpf = filters.cpf;
         }
         
-        if (filters.role && filters.role !== 'todos') {
-          searchParams.role = filters.role;
-        }
+        // Buscar apenas funcionários (não admins)
+        searchParams.role = 'employee';
         
         if (filters.sort) {
           searchParams.sort = filters.sort;
+        }
+
+        // Adicionar filtro de faixa de vendas
+        if (filters.salesRange && filters.salesRange !== 'todos') {
+          searchParams.salesRange = filters.salesRange;
+        }
+
+        // Adicionar filtro de valor total em vendas
+        if (filters.totalSalesRange && filters.totalSalesRange !== 'todos') {
+          searchParams.totalSalesRange = filters.totalSalesRange;
         }
 
         const queryString = new URLSearchParams(searchParams).toString();
@@ -203,38 +212,17 @@ export function useEmployees(options: UseEmployeesOptions = {}) {
 
   const employees = useMemo(() => {
     if (Array.isArray(employeesData.users)) {
-      // Filtrar apenas funcionários (employees e admins)
+      // Filtrar apenas funcionários (não admins)
       const onlyEmployees = employeesData.users.filter((user: User) => 
-        user.role === 'employee' || user.role === 'admin'
+        user.role === 'employee'
       );
       
-      // Aplicar filtros adicionais se necessário
-      let filteredEmployees = onlyEmployees;
+      const sortedEmployees = [...onlyEmployees].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
       
-      if (filters.salesRange && filters.salesRange !== 'todos') {
-        filteredEmployees = filteredEmployees.filter((employee: User) => {
-          const sales = employee.sales?.length || 0;
-          switch (filters.salesRange) {
-            case '0':
-              return sales === 0;
-            case '1+':
-              return sales >= 1;
-            case '1-5':
-              return sales >= 1 && sales <= 5;
-            case '6-10':
-              return sales >= 6 && sales <= 10;
-            case '10+':
-              return sales > 10;
-            default:
-              return true;
-          }
-        });
-      }
-      
-      return [...filteredEmployees].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      return sortedEmployees;
     }
     return [];
-  }, [employeesData.users, filters.salesRange]);
+  }, [employeesData.users]);
 
   const pagination = useMemo(() => {
     return {

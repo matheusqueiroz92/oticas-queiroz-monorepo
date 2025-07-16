@@ -10,8 +10,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { X, Calendar, Users, CreditCard, Beaker, AlertCircle, DollarSign, BadgeCheck, Ban, Clock } from "lucide-react";
-import { useLaboratories } from "@/hooks/useLaboratories";
-import { useEmployees } from "@/hooks/useEmployees";
+import { useLaboratories } from "@/hooks/laboratories/useLaboratories";
+import { useEmployees } from "@/hooks/employees/useEmployees";
 import { Employee } from "@/app/_types/employee";
 
 interface OrderFiltersProps {

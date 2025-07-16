@@ -1,9 +1,9 @@
 "use client";
 
-import { useProducts } from "@/hooks/useProducts";
-import { useProductsPageState } from "@/hooks/useProductsPageState";
-import { useProductsFilters } from "@/hooks/useProductsFilters";
-import { useProductsStats } from "@/hooks/useProductsStats";
+import { useProducts } from "@/hooks/products/useProducts";
+import { useProductsPageState } from "@/hooks/products/useProductsPageState";
+import { useProductsFilters } from "@/hooks/products/useProductsFilters";
+import { useProductsStats } from "@/hooks/products/useProductsStats";
 import { ProductsStatsCards } from "@/components/products/ProductsStatsCards";
 import { ProductsTableWithFilters } from "@/components/products/ProductsTableWithFilters";
 import { PageContainer } from "@/components/ui/page-container";

@@ -7,7 +7,7 @@ import { Eye, Edit, Trash2 } from "lucide-react";
 import { Product } from "@/app/_types/product";
 import { getProductTypeName } from "@/app/_services/productService";
 import { ProductDialog } from "./ProductDialog";
-import { useProducts } from "@/hooks/useProducts";
+import { useProducts } from "@/hooks/products/useProducts";
 import {
   AlertDialog,
   AlertDialogAction,

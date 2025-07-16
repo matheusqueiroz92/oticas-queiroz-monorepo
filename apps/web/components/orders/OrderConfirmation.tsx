@@ -3,7 +3,7 @@ import type { Customer } from "@/app/_types/customer";
 import type { Product } from "@/app/_types/product";
 import { formatCurrency } from "@/app/_utils/formatters";
 import OrderSummary from "./OrderSummary";
-import { useOrders } from "@/hooks/useOrders";
+import { useOrders } from "@/hooks/orders/useOrders";
 
 interface OrderConfirmationProps {
   form: any;

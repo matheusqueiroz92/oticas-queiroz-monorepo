@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useCashRegister } from "@/hooks/useCashRegister";
+import { useCashRegister } from "@/hooks/cash-register/useCashRegister";
 import {
   translatePaymentType,
   translatePaymentMethod,

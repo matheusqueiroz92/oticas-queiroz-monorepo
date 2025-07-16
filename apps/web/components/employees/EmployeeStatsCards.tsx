@@ -1,5 +1,5 @@
 import { StatCard } from "@/components/ui/StatCard";
-import { Users, Crown, Calendar, DollarSign, TrendingUp } from "lucide-react";
+import { Users, Crown, DollarSign, TrendingUp } from "lucide-react";
 
 interface EmployeeStatsCardsProps {
   totalEmployees: number;
@@ -13,8 +13,6 @@ interface EmployeeStatsCardsProps {
 export function EmployeeStatsCards({ 
   totalEmployees, 
   topEmployees, 
-  newThisMonth, 
-  activeEmployees,
   totalSales,
   totalRevenue
 }: EmployeeStatsCardsProps) {

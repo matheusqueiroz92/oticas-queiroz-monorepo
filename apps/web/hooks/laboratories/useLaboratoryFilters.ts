@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 
-export function useEmployeeFilters(
+export function useLaboratoryFilters(
   search: string,
   setSearch: (value: string) => void,
   filters: Record<string, any>,
@@ -16,19 +16,15 @@ export function useEmployeeFilters(
     updateFilters({ sort: "name" });
   }, [setSearch, updateFilters]);
 
-  const applyBasicFilters = useCallback((selectedRole: string, selectedStatus: string) => {
+  const applyBasicFilters = useCallback((selectedStatus: string, selectedCity: string) => {
     const newFilters: Record<string, any> = {};
     
-    if (selectedRole !== "todos") {
-      newFilters.role = selectedRole;
+    if (selectedStatus !== "todos") {
+      newFilters.isActive = selectedStatus === 'ativo';
     }
     
-    if (selectedStatus !== "todos") {
-      if (selectedStatus === 'ativo') {
-        newFilters.salesRange = '1+';
-      } else if (selectedStatus === 'inativo') {
-        newFilters.salesRange = '0';
-      }
+    if (selectedCity !== "todos") {
+      newFilters.city = selectedCity;
     }
     
     updateFilters(newFilters);

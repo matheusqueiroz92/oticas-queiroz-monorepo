@@ -28,8 +28,8 @@ import {
   Trophy
 } from "lucide-react";
 import { useDebts } from "@/hooks/useDebts";
-import { useOrders } from "@/hooks/useOrders";
-import { useProfile } from "@/hooks/useProfile";
+import { useOrders } from "@/hooks/orders/useOrders";
+import { useProfile } from "@/hooks/profile/useProfile";
 import { formatCurrency, formatDate } from "@/app/_utils/formatters";
 
 interface CustomerDashboardProps {

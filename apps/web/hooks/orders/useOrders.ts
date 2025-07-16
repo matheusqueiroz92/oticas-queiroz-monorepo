@@ -14,7 +14,7 @@ import {
   updateOrder,
   getMyOrders,
 } from "@/app/_services/orderService";
-import { QUERY_KEYS } from "../app/_constants/query-keys";
+import { QUERY_KEYS } from "../../app/_constants/query-keys";
 import { API_ROUTES } from "@/app/_constants/api-routes";
 import type { Order } from "@/app/_types/order";
 import { useUsers } from "@/hooks/useUsers";

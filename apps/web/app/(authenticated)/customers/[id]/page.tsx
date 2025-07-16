@@ -8,10 +8,10 @@ import { CustomerDetailsStatsSection } from "@/components/customers/CustomerDeta
 import { CustomerOrdersHistory } from "@/components/customers/CustomerOrdersHistory";
 import { CustomerDetailsLoading } from "@/components/customers/CustomerDetailsLoading";
 import { CustomerDetailsError } from "@/components/customers/CustomerDetailsError";
-import { useCustomerDetailsState } from "@/hooks/useCustomerDetailsState";
-import { useCustomerDetailsData } from "@/hooks/useCustomerDetailsData";
-import { useCustomerDetailsStats } from "@/hooks/useCustomerDetailsStats";
-import { useCustomerOrderFilters } from "@/hooks/useCustomerOrderFilters";
+import { useCustomerDetailsState } from "@/hooks/customers/useCustomerDetailsState";
+import { useCustomerDetailsData } from "@/hooks/customers/useCustomerDetailsData";
+import { useCustomerDetailsStats } from "@/hooks/customers/useCustomerDetailsStats";
+import { useCustomerOrderFilters } from "@/hooks/customers/useCustomerOrderFilters";
 
 export default function CustomerDetailsPage() {
   const { id } = useParams<{ id: string }>();

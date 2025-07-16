@@ -1,12 +1,12 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useOrders } from "@/hooks/useOrders";
+import { useOrders } from "@/hooks/orders/useOrders";
 import { useToast } from "@/hooks/useToast";
 import { OrderDetailsContent } from "@/components/orders/OrderDetailsContent";
 import { OrderDetailsLoading } from "@/components/orders/OrderDetailsLoading";
 import { OrderDetailsError } from "@/components/orders/OrderDetailsError";
-import { useOrderDetailsState } from "@/hooks/useOrderDetailsState";
+import { useOrderDetailsState } from "@/hooks/orders/useOrderDetailsState";
 
 export default function OrderDetailsPage() {
   const { id } = useParams() as { id: string };

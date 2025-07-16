@@ -5,8 +5,6 @@ export interface EmployeePageState {
   editEmployeeDialogOpen: boolean;
   employeeToEdit: any;
   showFilters: boolean;
-  selectedRole: string;
-  selectedStatus: string;
 }
 
 export function useEmployeePageState() {
@@ -14,8 +12,6 @@ export function useEmployeePageState() {
   const [editEmployeeDialogOpen, setEditEmployeeDialogOpen] = useState(false);
   const [employeeToEdit, setEmployeeToEdit] = useState<any>(undefined);
   const [showFilters, setShowFilters] = useState(false);
-  const [selectedRole, setSelectedRole] = useState("todos");
-  const [selectedStatus, setSelectedStatus] = useState("todos");
 
   const handleOpenNewEmployee = useCallback(() => {
     setNewEmployeeDialogOpen(true);
@@ -40,8 +36,7 @@ export function useEmployeePageState() {
   }, []);
 
   const resetFilters = useCallback(() => {
-    setSelectedRole("todos");
-    setSelectedStatus("todos");
+    // Reset filters if needed
   }, []);
 
   return {
@@ -50,8 +45,6 @@ export function useEmployeePageState() {
       editEmployeeDialogOpen,
       employeeToEdit,
       showFilters,
-      selectedRole,
-      selectedStatus,
     },
     actions: {
       handleOpenNewEmployee,
@@ -60,8 +53,6 @@ export function useEmployeePageState() {
       handleCloseEditEmployee,
       toggleFilters,
       resetFilters,
-      setSelectedRole,
-      setSelectedStatus,
     },
   };
 } 

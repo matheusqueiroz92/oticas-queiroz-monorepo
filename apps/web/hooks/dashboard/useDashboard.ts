@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Cookies from "js-cookie";
-import { useOrders } from "@/hooks/useOrders";
-import { usePayments } from "@/hooks/usePayments";
-import { useCashRegister } from "@/hooks/useCashRegister";
-import { useLegacyClients } from "@/hooks/useLegacyClients";
-import { useCustomers } from "@/hooks/useCustomers";
+import { useOrders } from "@/hooks/orders/useOrders";
+import { usePayments } from "@/hooks/payments/usePayments";
+import { useCashRegister } from "@/hooks/cash-register/useCashRegister";
+import { useLegacyClients } from "@/hooks/legacy-clients/useLegacyClients";
+import { useCustomers } from "@/hooks/customers/useCustomers";
 import { 
   getTodayPayments, 
   getWeeklyCustomersCount, 

@@ -14,12 +14,12 @@ import {
   getPaymentsByCashRegister,
 } from "@/app/_services/paymentService";
 import { checkOpenCashRegister } from "@/app/_services/cashRegisterService";
-import { QUERY_KEYS } from "../app/_constants/query-keys";
-import { API_ROUTES } from "../app/_constants/api-routes";
+import { QUERY_KEYS } from "../../app/_constants/query-keys";
+import { API_ROUTES } from "../../app/_constants/api-routes";
 import { api } from "@/app/_services/authService";
 import { paymentFormSchema } from "@/schemas/payment-schema";
-import { useCustomers } from "@/hooks/useCustomers";
-import { useOrders } from "@/hooks/useOrders";
+import { useCustomers } from "@/hooks/customers/useCustomers";
+import { useOrders } from "@/hooks/orders/useOrders";
 import type {
   CreatePaymentDTO,
   PaymentType,

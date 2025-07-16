@@ -1,4 +1,4 @@
-import { Crown, User as UserIcon, Grid3X3 } from "lucide-react";
+import { TrendingUp } from "lucide-react";
 import { DataTableWithFilters, FilterOption } from "@/components/ui/data-table-with-filters";
 import { EmployeeFilters } from "@/components/employees/EmployeeFilters";
 import { EmployeeTableSection } from "@/components/employees/EmployeeTableSection";
@@ -13,8 +13,6 @@ interface EmployeeTableWithFiltersProps {
   showFilters: boolean;
   onToggleFilters: () => void;
   activeFiltersCount: number;
-  selectedRole: string;
-  onRoleChange: (role: string) => void;
   filters: Record<string, any>;
   onUpdateFilters: (filters: Record<string, any>) => void;
   onClearFilters: () => void;
@@ -37,8 +35,7 @@ export function EmployeeTableWithFilters({
   showFilters,
   onToggleFilters,
   activeFiltersCount,
-  selectedRole,
-  onRoleChange,
+  filters,
   onUpdateFilters,
   onClearFilters,
   onNewEmployee,
@@ -51,31 +48,54 @@ export function EmployeeTableWithFilters({
   limit,
 }: EmployeeTableWithFiltersProps) {
   // Configuração dos filtros básicos
-  const roleFilterOptions: FilterOption[] = [
+  const salesRangeFilterOptions: FilterOption[] = [
     {
       value: "todos",
-      label: "Todas as funções",
-      icon: <Grid3X3 className="w-4 h-4 text-gray-500" />
+      label: "Todas as faixas",
+      icon: <TrendingUp className="w-4 h-4 text-gray-500" />
     },
     {
-      value: "admin",
-      label: "Administrador",
-      icon: <Crown className="w-4 h-4 text-purple-500" />
+      value: "0",
+      label: "Sem vendas",
+      icon: <TrendingUp className="w-4 h-4 text-red-500" />
     },
     {
-      value: "employee",
-      label: "Funcionário",
-      icon: <UserIcon className="w-4 h-4 text-blue-500" />
+      value: "1+",
+      label: "Com vendas",
+      icon: <TrendingUp className="w-4 h-4 text-green-500" />
+    },
+    {
+      value: "1-5",
+      label: "1-5 vendas",
+      icon: <TrendingUp className="w-4 h-4 text-blue-500" />
+    },
+    {
+      value: "6-10",
+      label: "6-10 vendas",
+      icon: <TrendingUp className="w-4 h-4 text-purple-500" />
+    },
+    {
+      value: "10+",
+      label: "10+ vendas",
+      icon: <TrendingUp className="w-4 h-4 text-orange-500" />
     }
   ];
 
+  const handleSalesRangeChange = (value: string) => {
+    if (value === "todos") {
+      onUpdateFilters({ sort: "name" });
+    } else {
+      onUpdateFilters({ salesRange: value, sort: "name" });
+    }
+  };
+
   const basicFilters = [
     {
-      options: roleFilterOptions,
-      value: selectedRole,
-      onChange: onRoleChange,
-      placeholder: "Função",
-      width: "w-[210px]"
+      options: salesRangeFilterOptions,
+      value: filters.salesRange || "todos",
+      onChange: handleSalesRangeChange,
+      placeholder: "Faixa de vendas",
+      width: "w-[200px]"
     }
   ];
 

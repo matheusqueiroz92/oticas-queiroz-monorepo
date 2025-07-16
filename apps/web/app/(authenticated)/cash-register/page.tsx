@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Loader2, PlusCircle } from "lucide-react";
-import { useCashRegister } from "@/hooks/useCashRegister";
+import { useCashRegister } from "@/hooks/cash-register/useCashRegister";
 import { ActiveCashRegisterCard } from "@/components/cash-register/ActiveCashRegisterCard";
 import { CashRegisterFilters } from "@/components/cash-register/CashRegisterFilters";
 import { CashRegisterList } from "@/components/cash-register/CashRegisterList";

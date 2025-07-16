@@ -29,7 +29,7 @@ import {
   PencilIcon,
   ArrowLeft,
 } from "lucide-react";
-import { useOrders } from "@/hooks/useOrders";
+import { useOrders } from "@/hooks/orders/useOrders";
 import { useToast } from "@/hooks/useToast";
 import type { Order } from "@/app/_types/order";
 import { useRouter } from "next/navigation";

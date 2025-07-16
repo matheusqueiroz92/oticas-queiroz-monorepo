@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/useToast";
-import { useCashRegister } from "@/hooks/useCashRegister";
+import { useCashRegister } from "@/hooks/cash-register/useCashRegister";
 import { CashRegisterCloseForm } from "@/components/cash-register/CashRegisterCloseForm";
 import { CashRegisterInfoCard } from "@/components/cash-register/CashRegisterInfoCard";
 import { CashRegisterSummary } from "@/components/cash-register/CashRegisterSummary";

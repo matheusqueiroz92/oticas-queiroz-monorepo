@@ -5,10 +5,10 @@ import { PageContainer } from "@/components/ui/page-container";
 import { CustomerStatsCards } from "@/components/customers/CustomerStatsCards";
 import { CustomerTableWithFilters } from "@/components/customers/CustomerTableWithFilters";
 import { CustomerDialogs } from "@/components/customers/CustomerDialogs";
-import { useCustomers } from "@/hooks/useCustomers";
-import { useCustomerPageState } from "@/hooks/useCustomerPageState";
-import { useCustomerFilters } from "@/hooks/useCustomerFilters";
-import { useCustomerStats } from "@/hooks/useCustomerStats";
+import { useCustomers } from "@/hooks/customers/useCustomers";
+import { useCustomerPageState } from "@/hooks/customers/useCustomerPageState";
+import { useCustomerFilters } from "@/hooks/customers/useCustomerFilters";
+import { useCustomerStats } from "@/hooks/customers/useCustomerStats";
 
 export default function CustomersPage() {
   const { state, actions } = useCustomerPageState();

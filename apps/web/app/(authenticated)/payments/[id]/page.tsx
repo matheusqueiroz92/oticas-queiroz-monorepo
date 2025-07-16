@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { getPaymentById } from "@/app/_services/paymentService";
 import { QUERY_KEYS } from "@/app/_constants/query-keys";
-import { usePayments } from "@/hooks/usePayments";
+import { usePayments } from "@/hooks/payments/usePayments";
 import {
   translatePaymentType,
   translatePaymentMethod,

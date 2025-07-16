@@ -66,7 +66,13 @@ export class MongoUserRepository extends BaseRepository<IUser> implements IUserR
 
     // Filtros específicos para usuários
     if (filters.role) {
-      baseQuery.role = filters.role;
+      // Verificar se role contém múltiplos valores (separados por vírgula)
+      if (typeof filters.role === 'string' && filters.role.includes(',')) {
+        const roles = filters.role.split(',').map(r => r.trim());
+        baseQuery.role = { $in: roles };
+      } else {
+        baseQuery.role = filters.role;
+      }
     }
 
     if (filters.searchTerm) {
@@ -79,7 +85,12 @@ export class MongoUserRepository extends BaseRepository<IUser> implements IUserR
           ]
         });
       } else {
-        andFilters.push({ name: { $regex: filters.searchTerm, $options: 'i' } });
+        andFilters.push({
+          $or: [
+            { name: { $regex: filters.searchTerm, $options: 'i' } },
+            { email: { $regex: filters.searchTerm, $options: 'i' } }
+          ]
+        });
       }
     }
 
@@ -127,13 +138,71 @@ export class MongoUserRepository extends BaseRepository<IUser> implements IUserR
       andFilters.push({ debts: { $gt: 0 } });
     }
 
+    // Filtro por faixa de vendas (para funcionários)
+    if (filters.salesRange && filters.salesRange !== 'todos') {
+      const salesRanges = Array.isArray(filters.salesRange)
+        ? filters.salesRange
+        : [filters.salesRange];
+      
+      const orFilters = salesRanges.map((range) => {
+        if (range === '0') {
+          return { $expr: { $eq: [ { $size: "$sales" }, 0 ] } };
+        } else if (range === '1+') {
+          return { $expr: { $gte: [ { $size: "$sales" }, 1 ] } };
+        } else if (range === '1-5') {
+          return { $expr: { $and: [
+            { $gte: [ { $size: "$sales" }, 1 ] },
+            { $lte: [ { $size: "$sales" }, 5 ] }
+          ] } };
+        } else if (range === '6-10') {
+          return { $expr: { $and: [
+            { $gte: [ { $size: "$sales" }, 6 ] },
+            { $lte: [ { $size: "$sales" }, 10 ] }
+          ] } };
+        } else if (range === '10+') {
+          return { $expr: { $gt: [ { $size: "$sales" }, 10 ] } };
+        }
+        return null;
+      }).filter(Boolean);
+      if (orFilters.length > 0) {
+        andFilters.push({ $or: orFilters });
+      }
+    }
+
+    // Filtro por valor total em vendas
+    if (filters.totalSalesRange && filters.totalSalesRange !== 'todos') {
+      const totalSalesRanges = Array.isArray(filters.totalSalesRange)
+        ? filters.totalSalesRange
+        : [filters.totalSalesRange];
+      
+      const orFilters = totalSalesRanges.map((range) => {
+        if (range === '0') {
+          return { $expr: { $eq: [ { $sum: "$sales.total" }, 0 ] } };
+        } else if (range === '1000+') {
+          return { $expr: { $gte: [ { $sum: "$sales.total" }, 1000 ] } };
+        } else if (range === '5000+') {
+          return { $expr: { $gte: [ { $sum: "$sales.total" }, 5000 ] } };
+        } else if (range === '10000+') {
+          return { $expr: { $gte: [ { $sum: "$sales.total" }, 10000 ] } };
+        }
+        return null;
+      }).filter(Boolean);
+      if (orFilters.length > 0) {
+        andFilters.push({ $or: orFilters });
+      }
+    }
+
     // Combinar todos os filtros
     const finalQuery = { ...baseQuery };
     if (andFilters.length > 0) {
       finalQuery.$and = andFilters;
     }
+    
+
     // Remover campos auxiliares que não existem no banco
     delete finalQuery.purchaseRange;
+    delete finalQuery.salesRange;
+    delete finalQuery.totalSalesRange;
     delete finalQuery.page;
     delete finalQuery.limit;
     delete finalQuery._t;
@@ -183,6 +252,8 @@ export class MongoUserRepository extends BaseRepository<IUser> implements IUserR
       .exec();
 
     const total = await this.model.countDocuments(query);
+
+
 
     return {
       items: docs.map((doc: any) => this.convertToInterface(doc)),

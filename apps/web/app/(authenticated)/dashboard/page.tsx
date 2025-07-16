@@ -3,7 +3,7 @@
 import { PageContainer } from "@/components/ui/page-container";
 import { EmployeeDashboard } from "@/components/dashboard/EmployeeDashboard";
 import { CustomerDashboard } from "@/components/dashboard/CustomerDashboard";
-import { useDashboard } from "@/hooks/useDashboard";
+import { useDashboard } from "@/hooks/dashboard/useDashboard";
 
 export default function DashboardPage() {
   const { 

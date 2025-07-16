@@ -3,8 +3,8 @@
 import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
-import { useProfile } from "@/hooks/useProfile";
-import { useOrders } from "@/hooks/useOrders";
+import { useProfile } from "@/hooks/profile/useProfile";
+import { useOrders } from "@/hooks/orders/useOrders";
 import { useQuery } from "@tanstack/react-query";
 import { getAllOrders, getOrdersByClient, getMyOrders } from "@/app/_services/orderService";
 import { QUERY_KEYS } from "@/app/_constants/query-keys";

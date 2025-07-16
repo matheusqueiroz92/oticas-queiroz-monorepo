@@ -2,9 +2,9 @@
 
 import { useEffect } from "react";
 import { useParams } from "next/navigation";
-import { useProductById } from "@/hooks/useProductById";
-import { useProductDetailsState } from "@/hooks/useProductDetailsState";
-import { useProductDetailsData } from "@/hooks/useProductDetailsData";
+import { useProductById } from "@/hooks/products/useProductById";
+import { useProductDetailsState } from "@/hooks/products/useProductDetailsState";
+import { useProductDetailsData } from "@/hooks/products/useProductDetailsData";
 import { ProductDetailsContent } from "@/components/products/ProductDetailsContent";
 import { ProductDetailsLoading } from "@/components/products/ProductDetailsLoading";
 import { ProductDetailsError } from "@/components/products/ProductDetailsError";

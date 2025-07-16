@@ -37,7 +37,7 @@ import {
   Package
 } from "lucide-react";
 import { useRef, useState } from "react";
-import { useProducts } from "@/hooks/useProducts";
+import { useProducts } from "@/hooks/products/useProducts";
 import { Product } from "@/app/_types/product";
 import { createProductForm, ProductFormData } from "@/schemas/product-schema";
 import { useToast } from "@/hooks/useToast";

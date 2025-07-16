@@ -6,7 +6,7 @@ import { ProfileStats } from "@/components/profile/ProfileStats";
 import { ProfileEditDialog } from "@/components/profile/ProfileEditDialog";
 import { RecentOrdersCard } from "@/components/profile/RecentOrdersCard";
 import { PageContainer } from "@/components/ui/page-container";
-import { useProfileData } from "@/hooks/useProfileData";
+import { useProfileData } from "@/hooks/profile/useProfileData";
 import { ProfileErrorAlert } from "@/components/profile/ProfileErrorAlert";
 
 export default function ProfilePage() {

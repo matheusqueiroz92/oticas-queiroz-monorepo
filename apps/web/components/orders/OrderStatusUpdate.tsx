@@ -28,7 +28,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { useOrders } from "@/hooks/useOrders";
+import { useOrders } from "@/hooks/orders/useOrders";
 import { useToast } from "@/hooks/useToast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 

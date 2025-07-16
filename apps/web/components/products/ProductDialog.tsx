@@ -33,7 +33,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { ImageUpload } from "@/components/ui/image-upload";
-import { useProducts } from "@/hooks/useProducts";
+import { useProducts } from "@/hooks/products/useProducts";
 import { showSuccess } from "@/app/_utils/error-handler";
 import { Product } from "@/app/_types/product";
 import { getProductTypeName } from "@/app/_services/productService";

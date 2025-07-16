@@ -1,73 +1,102 @@
 "use client";
 
-import { useLaboratories } from "@/hooks/useLaboratories";
-import { LaboratoryTable } from "@/components/laboratories/LaboratoryTable";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Loader2, Beaker } from "lucide-react";
-import { ErrorAlert } from "@/components/ErrorAlert";
+import { useEffect } from "react";
+import { PageContainer } from "@/components/ui/page-container";
+import { LaboratoryStatsCards } from "@/components/laboratories/LaboratoryStatsCards";
+import { LaboratoryTableWithFilters } from "@/components/laboratories/LaboratoryTableWithFilters";
+import { LaboratoryDialogs } from "@/components/laboratories/LaboratoryDialogs";
+import { useLaboratoriesList } from "@/hooks/laboratories/useLaboratoriesList";
+import { useLaboratoryPageState } from "@/hooks/laboratories/useLaboratoryPageState";
+import { useLaboratoryFilters } from "@/hooks/laboratories/useLaboratoryFilters";
+import { useLaboratoryStats } from "@/hooks/laboratories/useLaboratoryStats";
 
 export default function LaboratoriesPage() {
+  const { state, actions } = useLaboratoryPageState();
+  
   const {
     laboratories,
     isLoading,
     error,
     search,
-    showEmptyState,
     setSearch,
-    handleSearch,
     navigateToLaboratoryDetails,
-    navigateToCreateLaboratory,
-  } = useLaboratories().useLaboratoriesList();
+    currentPage,
+    totalPages,
+    setCurrentPage,
+    totalItems,
+    limit,
+    refetch,
+    filters,
+    updateFilters,
+    getActiveFiltersCount,
+  } = useLaboratoriesList();
+
+  const {
+    handleUpdateFilters,
+    handleClearAllFilters,
+    applyBasicFilters,
+  } = useLaboratoryFilters(search, setSearch, filters, updateFilters, getActiveFiltersCount);
+
+  const stats = useLaboratoryStats(laboratories, totalItems);
+
+  // Aplicar filtros quando os selects básicos mudarem
+  useEffect(() => {
+    applyBasicFilters(state.selectedStatus, state.selectedCity);
+  }, [state.selectedStatus, state.selectedCity, applyBasicFilters]);
+
+  // Limpar filtros incluindo os estados locais
+  const handleClearFilters = () => {
+    actions.resetFilters();
+    handleClearAllFilters();
+  };
 
   return (
-    <div className="space-y-2 max-w-auto mx-auto p-1 md:p-2">
-      <div className="flex justify-between">
-        <div className="flex gap-2">
-          <Input
-            placeholder="Buscar laboratório..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-            className="max-w-sm"
-          />
-          <Button variant="outline" onClick={handleSearch}>
-            Buscar
-          </Button>
-        </div>
+    <PageContainer>
+      <div className="space-y-8">
+        {/* Cards de Estatísticas */}
+        <LaboratoryStatsCards
+          totalLaboratories={stats.totalLaboratories}
+          activeLaboratories={stats.activeLaboratories}
+          inactiveLaboratories={stats.inactiveLaboratories}
+          newThisMonth={stats.newThisMonth}
+          topCities={stats.topCities}
+        />
 
-        <Button onClick={navigateToCreateLaboratory}>Novo Laboratório</Button>
-      </div>
-
-      {isLoading && (
-        <div className="flex justify-center items-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin" />
-        </div>
-      )}
-
-      {error && <ErrorAlert message={error} />}
-
-      {showEmptyState && (
-        <div className="flex flex-col items-center justify-center py-12 text-center border rounded-lg bg-background">
-          <Beaker className="h-16 w-16 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-semibold">
-            Não há laboratórios cadastrados
-          </h3>
-          <p className="text-muted-foreground mt-2">
-            Clique em "Novo Laboratório" para adicionar um laboratório ao
-            sistema.
-          </p>
-        </div>
-      )}
-
-      {!isLoading && !error && laboratories.length > 0 && (
-        <LaboratoryTable
+        {/* Tabela de Laboratórios com Filtros */}
+        <LaboratoryTableWithFilters
           laboratories={laboratories}
           isLoading={isLoading}
           error={error}
-          onViewDetails={navigateToLaboratoryDetails}
+          search={search}
+          onSearchChange={setSearch}
+          showFilters={state.showFilters}
+          onToggleFilters={actions.toggleFilters}
+          activeFiltersCount={getActiveFiltersCount}
+          selectedStatus={state.selectedStatus}
+          onStatusChange={actions.setSelectedStatus}
+          filters={filters}
+          onUpdateFilters={handleUpdateFilters}
+          onClearFilters={handleClearFilters}
+          onNewLaboratory={actions.handleOpenNewLaboratory}
+          onDetailsClick={navigateToLaboratoryDetails}
+          onEditClick={actions.handleEditLaboratory}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          setCurrentPage={setCurrentPage}
+          totalItems={totalItems}
+          limit={limit}
         />
-      )}
-    </div>
+
+        {/* Diálogos */}
+        <LaboratoryDialogs
+          newLaboratoryDialogOpen={state.newLaboratoryDialogOpen}
+          editLaboratoryDialogOpen={state.editLaboratoryDialogOpen}
+          laboratoryToEdit={state.laboratoryToEdit}
+          onNewLaboratoryDialogChange={actions.handleCloseNewLaboratory}
+          onEditLaboratoryDialogChange={actions.handleCloseEditLaboratory}
+          onSuccess={refetch}
+        />
+      </div>
+    </PageContainer>
   );
 }

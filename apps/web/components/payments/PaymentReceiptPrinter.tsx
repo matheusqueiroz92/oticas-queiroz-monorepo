@@ -4,7 +4,7 @@ import { Printer, RefreshCw } from "lucide-react";
 import { formatCurrency, formatDate, formatDateTime } from "@/app/_utils/formatters";
 import type { IPayment } from "@/app/_types/payment";
 import type { LegacyClient } from "@/app/_types/legacy-client";
-import { useOrders } from '@/hooks/useOrders';
+import { useOrders } from '@/hooks/orders/useOrders';
 
 interface PaymentReceiptPrinterProps {
   payment: IPayment;

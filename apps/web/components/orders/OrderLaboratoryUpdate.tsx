@@ -31,7 +31,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { api } from "@/app/_services/authService";
-import { useOrders } from "@/hooks/useOrders";
+import { useOrders } from "@/hooks/orders/useOrders";
 import { API_ROUTES } from "../../app/_constants/api-routes";
 import type { Order } from "@/app/_types/order";
 

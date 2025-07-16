@@ -1,17 +1,19 @@
 "use client";
 
-import { useState } from "react";
-import { useParams } from "next/navigation";
-import { useRouter } from "next/navigation";
-import { useLaboratories } from "@/hooks/useLaboratories";
+import { useParams, useRouter } from "next/navigation";
 import { LaboratoryDetailsCard } from "@/components/laboratories/LaboratoryDetailsCard";
+import { LaboratoryDialog } from "@/components/laboratories/LaboratoryDialog";
+import { useLaboratories } from "@/hooks/laboratories/useLaboratories";
+import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { PageContainer } from "@/components/ui/page-container";
 
 export default function LaboratoryDetailsPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   
   const {
     fetchLaboratoryById,
@@ -26,7 +28,7 @@ export default function LaboratoryDetailsPage() {
   };
 
   const handleEdit = () => {
-    router.push(`/laboratories/${id}/edit`);
+    setEditDialogOpen(true);
   };
 
   const handleToggleStatus = async (id: string) => {
@@ -43,15 +45,17 @@ export default function LaboratoryDetailsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
+      <PageContainer>
+        <div className="flex justify-center items-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      </PageContainer>
     );
   }
 
   if (error || !laboratory) {
     return (
-      <div className="max-w-4xl mx-auto p-4">
+      <PageContainer>
         <Alert variant="destructive">
           <AlertTitle>Erro</AlertTitle>
           <AlertDescription>
@@ -61,12 +65,12 @@ export default function LaboratoryDetailsPage() {
             Voltar para Laboratórios
           </Button>
         </Alert>
-      </div>
+      </PageContainer>
     );
   }
 
   return (
-    <div className="p-4">
+    <PageContainer>
       <LaboratoryDetailsCard
         laboratory={laboratory}
         isTogglingStatus={isTogglingStatus}
@@ -74,6 +78,19 @@ export default function LaboratoryDetailsPage() {
         onGoBack={handleGoBack}
         onEdit={handleEdit}
       />
-    </div>
+
+      {/* Dialog de Edição do Laboratório */}
+      {editDialogOpen && (
+        <LaboratoryDialog
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+          laboratory={laboratory}
+          mode="edit"
+          onSuccess={() => {
+            refetch();
+          }}
+        />
+      )}
+    </PageContainer>
   );
 }

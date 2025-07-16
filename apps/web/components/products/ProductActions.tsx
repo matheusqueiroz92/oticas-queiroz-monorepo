@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { ProductDialog } from "./ProductDialog";
 import { Product } from "@/app/_types/product";
-import { useProducts } from "@/hooks/useProducts";
+import { useProducts } from "@/hooks/products/useProducts";
 import {
   AlertDialog,
   AlertDialogAction,

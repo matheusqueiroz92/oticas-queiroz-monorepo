@@ -1,17 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { usePayments } from "@/hooks/usePayments";
-import { usePaymentsFilters } from "@/hooks/usePaymentsFilters";
-import { usePaymentsStats } from "@/hooks/usePaymentsStats";
-import { usePaymentsPageState } from "@/hooks/usePaymentsPageState";
+import { usePayments } from "@/hooks/payments/usePayments";
+import { usePaymentsFilters } from "@/hooks/payments/usePaymentsFilters";
+import { usePaymentsStats } from "@/hooks/payments/usePaymentsStats";
+import { usePaymentsPageState } from "@/hooks/payments/usePaymentsPageState";
 import { PaymentsStatsCards } from "@/components/payments/PaymentsStatsCards";
 import { PaymentsTableWithFilters } from "@/components/payments/PaymentsTableWithFilters";
 import { PaymentDialog } from "@/components/payments/PaymentDialog";
 import { PageContainer } from "@/components/ui/page-container";
 import { CashRegisterStatus } from "@/components/cash-register/CashRegisterStatus";
 import { customBadgeStyles } from "@/app/_utils/custom-badge-styles";
-import { usePaymentsEntitiesMaps } from '@/hooks/usePaymentsEntitiesMaps';
+import { usePaymentsEntitiesMaps } from '@/hooks/payments/usePaymentsEntitiesMaps';
 
 export default function PaymentsPage() {
   const { state, actions } = usePaymentsPageState();

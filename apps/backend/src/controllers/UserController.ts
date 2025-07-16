@@ -34,18 +34,34 @@ export class UserController {
       const page = Number(req.query.page) || 1;
       const limit = Number(req.query.limit) || 10;
   
+
+  
       let result: { users: IUser[]; total: number } = { users: [], total: 0 };
   
-      // Detecta se há filtros avançados
+      // Detecta se há filtros avançados (excluindo role e search)
       const hasAdvancedFilters =
         req.query.purchaseRange ||
+        req.query.salesRange ||
+        req.query.totalSalesRange ||
         req.query.startDate ||
         req.query.endDate ||
         req.query.hasDebts;
 
-      if (hasAdvancedFilters) {
+      // Se há busca (search) ou filtros avançados, usar getAllUsers com filtros
+      if (search || hasAdvancedFilters) {
         // Repassa todos os filtros para o service
         const filters = { ...req.query };
+        
+        // Garantir que o filtro de role seja aplicado
+        if (role && !filters.role) {
+          filters.role = role;
+        }
+        // Converter 'search' para 'searchTerm' para busca textual
+        if (filters.search) {
+          filters.searchTerm = filters.search;
+          delete filters.search;
+        }
+        
         result = await this.userService.getAllUsers(page, limit, filters);
       }
       else if (serviceOrder) {
@@ -77,17 +93,22 @@ export class UserController {
           }
         }
       }
-      else if (search) {
-        result = await this.userService.searchUsers(search as string, page, limit);
-        
-        // Filtrar por role se fornecido
-        if (role) {
-          const filteredUsers = result.users.filter(user => user.role === role);
-          result = { users: filteredUsers, total: filteredUsers.length };
-        }
-      }
+
       else if (role) {
-        result = await this.userService.getUsersByRole(role as string, page, limit);
+        // Verificar se role contém múltiplos valores (separados por vírgula)
+        if (typeof role === 'string' && role.includes(',')) {
+          const roles = role.split(',').map(r => r.trim());
+          // Buscar usuários com qualquer um dos roles especificados
+          const allUsers = await Promise.all(
+            roles.map(r => this.userService.getUsersByRole(r, page, limit))
+          );
+          // Combinar resultados
+          const combinedUsers = allUsers.flatMap(result => result.users);
+          const total = allUsers.reduce((sum, result) => sum + result.total, 0);
+          result = { users: combinedUsers, total };
+        } else {
+          result = await this.userService.getUsersByRole(role as string, page, limit);
+        }
       }
       else {
         result = await this.userService.getAllUsers(page, limit);
@@ -97,6 +118,8 @@ export class UserController {
         const filteredUsers = result.users.filter(user => user.role === 'customer');
         result = { users: filteredUsers, total: filteredUsers.length };
       }
+    
+
     
       res.status(200).json({
         users: result.users,

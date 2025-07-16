@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Cookies from "js-cookie";
 import { useUsers } from "@/hooks/useUsers";
-import { useProfile } from "@/hooks/useProfile";
+import { useProfile } from "@/hooks/profile/useProfile";
 
 export function useHeaderUser() {
   const [cookieUserName, setCookieUserName] = useState("");

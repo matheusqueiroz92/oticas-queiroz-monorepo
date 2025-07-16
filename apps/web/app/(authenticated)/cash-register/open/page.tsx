@@ -1,6 +1,6 @@
 "use client";
 
-import { useCashRegister } from "@/hooks/useCashRegister";
+import { useCashRegister } from "@/hooks/cash-register/useCashRegister";
 import { CashRegisterOpenForm } from "@/components/cash-register/CashRegisterOpenForm";
 import { 
   createOpenCashRegisterForm, 
