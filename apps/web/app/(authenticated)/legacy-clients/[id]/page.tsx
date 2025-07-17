@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useLegacyClients } from "@/hooks/laboratories/useLegacyClients";
+import { useLegacyClients } from "@/hooks/legacy-clients/useLegacyClients";
 import { Button } from "@/components/ui/button";
 import { PageTitle } from "@/components/ui/page-title";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";

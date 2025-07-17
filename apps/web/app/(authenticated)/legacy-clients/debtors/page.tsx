@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { PageTitle } from "@/components/ui/page-title";
 import { formatCurrency, formatDate } from "@/app/_utils/formatters";
-import { useLegacyClients } from "@/hooks/laboratories/useLegacyClients";
+import { useLegacyClients } from "@/hooks/legacy-clients/useLegacyClients";
 import { ArrowLeft, FileDown } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {

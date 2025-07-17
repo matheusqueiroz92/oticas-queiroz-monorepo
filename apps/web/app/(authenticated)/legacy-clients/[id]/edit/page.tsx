@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useLegacyClients } from "@/hooks/laboratories/useLegacyClients";
+import { useLegacyClients } from "@/hooks/legacy-clients/useLegacyClients";
 import { updateLegacyClientForm, UpdateLegacyClientFormData } from "@/schemas/legacy-client-schema";
 import { Button } from "@/components/ui/button";
 import { PageTitle } from "@/components/ui/page-title";
