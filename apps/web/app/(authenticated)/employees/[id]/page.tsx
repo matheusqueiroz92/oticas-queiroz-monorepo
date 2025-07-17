@@ -1,6 +1,7 @@
 "use client";
 
 import type { Employee } from "@/app/_types/employee";
+import UserDetailsPage from "@/components/profile/UserDetailsPage";
 import { Mail, Phone, MapPin, Briefcase, ShoppingCart, Info, Activity } from "lucide-react";
 
 export default function EmployeeDetailsPage() {
