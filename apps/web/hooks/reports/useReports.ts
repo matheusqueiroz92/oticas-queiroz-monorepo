@@ -8,16 +8,15 @@ import {
   createReport,
   getReportById,
   getUserReports,
-  downloadReport,
 } from "@/app/_services/reportService";
-import { QUERY_KEYS } from "../app/_constants/query-keys";
+import { QUERY_KEYS } from "@/app/_constants/query-keys";
 import type {
   CreateReportDTO,
   ReportType,
   ReportStatus,
   ReportFormat,
-} from "../app/_types/report";
-import { exportService } from "../app/_services/exportService";
+} from "@/app/_types/report";
+import { exportService } from "@/app/_services/exportService";
 
 interface ReportFilters {
   search?: string;
