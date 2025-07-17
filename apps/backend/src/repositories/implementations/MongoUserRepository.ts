@@ -61,6 +61,8 @@ export class MongoUserRepository extends BaseRepository<IUser> implements IUserR
    * Constrói query de filtros específica para usuários
    */
   protected buildFilterQuery(filters: Record<string, any>): Record<string, any> {
+
+    
     const baseQuery = super.buildFilterQuery(filters);
     const andFilters: any[] = [];
 
@@ -73,24 +75,29 @@ export class MongoUserRepository extends BaseRepository<IUser> implements IUserR
       } else {
         baseQuery.role = filters.role;
       }
+      
     }
 
     if (filters.searchTerm) {
-      const isNumeric = /^\d+$/.test(filters.searchTerm);
-      if (isNumeric) {
-        andFilters.push({
-          $or: [
-            { cpf: { $regex: filters.searchTerm, $options: 'i' } },
-            { cnpj: { $regex: filters.searchTerm, $options: 'i' } }
-          ]
-        });
-      } else {
-        andFilters.push({
-          $or: [
-            { name: { $regex: filters.searchTerm, $options: 'i' } },
-            { email: { $regex: filters.searchTerm, $options: 'i' } }
-          ]
-        });
+      const searchTerm = filters.searchTerm.trim();
+      if (searchTerm) {
+        const isNumeric = /^\d+$/.test(searchTerm);
+        
+        if (isNumeric) {
+          andFilters.push({
+            $or: [
+              { cpf: { $regex: searchTerm, $options: 'i' } },
+              { cnpj: { $regex: searchTerm, $options: 'i' } }
+            ]
+          });
+        } else {
+          andFilters.push({
+            $or: [
+              { name: { $regex: searchTerm, $options: 'i' } },
+              { email: { $regex: searchTerm, $options: 'i' } }
+            ]
+          });
+        }
       }
     }
 
@@ -169,7 +176,7 @@ export class MongoUserRepository extends BaseRepository<IUser> implements IUserR
       }
     }
 
-    // Filtro por valor total em vendas
+    // Filtro por valor total em vendas (por enquanto, apenas contar número de vendas)
     if (filters.totalSalesRange && filters.totalSalesRange !== 'todos') {
       const totalSalesRanges = Array.isArray(filters.totalSalesRange)
         ? filters.totalSalesRange
@@ -177,13 +184,13 @@ export class MongoUserRepository extends BaseRepository<IUser> implements IUserR
       
       const orFilters = totalSalesRanges.map((range) => {
         if (range === '0') {
-          return { $expr: { $eq: [ { $sum: "$sales.total" }, 0 ] } };
+          return { $expr: { $eq: [ { $size: "$sales" }, 0 ] } };
         } else if (range === '1000+') {
-          return { $expr: { $gte: [ { $sum: "$sales.total" }, 1000 ] } };
+          return { $expr: { $gte: [ { $size: "$sales" }, 5 ] } };
         } else if (range === '5000+') {
-          return { $expr: { $gte: [ { $sum: "$sales.total" }, 5000 ] } };
+          return { $expr: { $gte: [ { $size: "$sales" }, 10 ] } };
         } else if (range === '10000+') {
-          return { $expr: { $gte: [ { $sum: "$sales.total" }, 10000 ] } };
+          return { $expr: { $gte: [ { $size: "$sales" }, 20 ] } };
         }
         return null;
       }).filter(Boolean);
@@ -198,6 +205,7 @@ export class MongoUserRepository extends BaseRepository<IUser> implements IUserR
       finalQuery.$and = andFilters;
     }
     
+
 
     // Remover campos auxiliares que não existem no banco
     delete finalQuery.purchaseRange;
@@ -240,9 +248,20 @@ export class MongoUserRepository extends BaseRepository<IUser> implements IUserR
       query.isDeleted = { $ne: true };
     }
 
+    // Processar ordenação
     if (!sortOptions) {
-      sortOptions = { createdAt: -1 };
+      if (filters.sort === 'name') {
+        sortOptions = { name: 1 };
+      } else if (filters.sort === 'email') {
+        sortOptions = { email: 1 };
+      } else if (filters.sort === 'createdAt') {
+        sortOptions = { createdAt: -1 };
+      } else {
+        sortOptions = { name: 1 }; // Padrão
+      }
     }
+
+
 
     const docs = await this.model
       .find(query)

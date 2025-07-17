@@ -51,22 +51,10 @@ export function useEmployees(options: UseEmployeesOptions = {}) {
     setFilters(prevFilters => {
       const newFilters: EmployeeFilters = { 
         ...prevFilters,
-        search: undefined,
+        search: value.trim() || undefined,
         cpf: undefined,
         sort: "name"
       };
-      
-      if (value.trim()) {
-        const cleanSearch = value.trim().replace(/\D/g, '');
-        
-        if (/^\d{11}$/.test(cleanSearch)) {
-          newFilters.cpf = cleanSearch;
-          newFilters.search = undefined;
-        } else {
-          newFilters.search = value.trim();
-          newFilters.cpf = undefined;
-        }
-      }
       
       return newFilters;
     });
@@ -107,9 +95,13 @@ export function useEmployees(options: UseEmployeesOptions = {}) {
       const updatedFilters = {
         ...prevFilters, // Manter filtros existentes
         ...newFilters,  // Aplicar novos filtros
-        sort: "name",
         limit: pageSize
       };
+      
+      // Garantir que sempre tenha um sort
+      if (!updatedFilters.sort) {
+        updatedFilters.sort = "name";
+      }
       
       return updatedFilters;
     });
@@ -131,12 +123,12 @@ export function useEmployees(options: UseEmployeesOptions = {}) {
     queryClient.invalidateQueries({ 
       queryKey: QUERY_KEYS.USERS.EMPLOYEES()
     });
-  }, [queryClient, pageSize]);
+  }, [queryClient, pageSize, setSearchValue]);
 
   // Função para contar filtros ativos
   const getActiveFiltersCount = useMemo(() => {
     let count = 0;
-    if (filters.search || filters.cpf) count++;
+    if (filters.search) count++;
     if (filters.salesRange && filters.salesRange !== 'todos') count++;
     if (filters.totalSalesRange && filters.totalSalesRange !== 'todos') count++;
     return count;
@@ -168,10 +160,6 @@ export function useEmployees(options: UseEmployeesOptions = {}) {
           searchParams.search = filters.search;
         }
         
-        if (filters.cpf) {
-          searchParams.cpf = filters.cpf;
-        }
-        
         // Buscar apenas funcionários (não admins)
         searchParams.role = 'employee';
         
@@ -191,6 +179,12 @@ export function useEmployees(options: UseEmployeesOptions = {}) {
 
         const queryString = new URLSearchParams(searchParams).toString();
         const url = `/api/users?${queryString}`;
+        
+        console.log("🔍 DEBUG - Frontend enviando requisição:", {
+          url,
+          searchParams,
+          filters
+        });
         
         const response = await api.get(url);
         
