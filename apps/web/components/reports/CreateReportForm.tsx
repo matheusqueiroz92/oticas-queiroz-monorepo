@@ -37,7 +37,6 @@ import { Separator } from "@/components/ui/separator";
 
 import {
   reportTypeMap,
-  reportFormatMap,
   reportTypeOptions,
   reportFormatOptions,
   orderStatusOptions,
@@ -46,7 +45,6 @@ import {
 } from "@/app/_types/report";
 import type {
   ReportType,
-  ReportFormat,
   CreateReportDTO,
 } from "@/app/_types/report";
 
@@ -108,9 +106,6 @@ export function CreateReportForm({
       },
     },
   });
-
-  // Observar mudanças no tipo de relatório
-  const reportType = form.watch("type");
 
   // Atualizar nome padrão quando o tipo muda
   const handleTypeChange = (type: ReportType) => {
