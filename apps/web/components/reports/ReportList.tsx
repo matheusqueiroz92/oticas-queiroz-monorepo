@@ -31,7 +31,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 
 import type { IReport, ReportFormat } from "@/app/_types/report";
 import { reportTypeMap } from "@/app/_types/report";
-import { useReports } from "@/hooks/useReports";
+import { useReports } from "@/hooks/reports/useReports";
 import { toast } from "@/hooks/useToast";
 import { exportService } from "@/app/_services/exportService";
 import { PaginationItems } from "../PaginationItems";

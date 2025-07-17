@@ -21,7 +21,7 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
 import { reportTypeOptions } from "@/app/_types/report";
-import { useReports } from "@/hooks/useReports";
+import { useReports } from "@/hooks/reports/useReports";
 import type { ReportType, ReportStatus } from "@/app/_types/report";
 
 export function ReportFilters() {
