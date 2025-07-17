@@ -22,7 +22,7 @@ import { ReportFiltersDisplay } from "@/components/reports/ReportFiltersDisplay"
 import { PageTitle } from "@/components/ui/page-title";
 import { reportTypeMap } from "@/app/_types/report";
 import { useToast } from "@/hooks/useToast";
-import { useReports } from "@/hooks/useReports";
+import { useReports } from "@/hooks/reports/useReports";
 import {
   DropdownMenu,
   DropdownMenuContent,

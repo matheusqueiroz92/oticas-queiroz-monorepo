@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/card";
 import { CreateReportForm } from "@/components/reports/CreateReportForm";
 import { PageTitle } from "@/components/ui/page-title";
-import { useReports } from "@/hooks/useReports";
+import { useReports } from "@/hooks/reports/useReports";
 import { useToast } from "@/hooks/useToast";
 import type { CreateReportDTO } from "@/app/_types/report";
 

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PaginationItems } from "@/components/PaginationItems";
 import { useRouter } from "next/navigation";
-import { useLegacyClients } from "@/hooks/laboratories/useLegacyClients";
+import { useLegacyClients } from "@/hooks/legacy-clients/useLegacyClients";
 import { LegacyClientsTable } from "@/components/legacy-clients/LegacyClientsTable";
 import { Search, Plus } from "lucide-react";
 import {

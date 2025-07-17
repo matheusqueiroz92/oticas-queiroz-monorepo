@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/card";
 import { PlusCircle, FileText, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/useToast";
-import { useReports } from "@/hooks/useReports";
+import { useReports } from "@/hooks/reports/useReports";
 import { ReportList } from "@/components/reports/ReportList";
 import { CreateReportModal } from "@/components/reports/CreateReportModal";
 import { ReportFilters } from "@/components/reports/ReportFilters";
