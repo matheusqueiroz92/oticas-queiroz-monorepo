@@ -1,8 +1,9 @@
 import { CreateReportModal } from "./CreateReportModal";
+import type { Report as IReport } from "@/app/_types/report";
 
 interface ReportDialogsProps {
   newReportDialogOpen: boolean;
-  reportToEdit: Report | null;
+  reportToEdit: IReport | null;
   onNewReportDialogChange: (open: boolean) => void;
   onEditReportDialogChange: (open: boolean) => void;
   onSuccess: () => void;
@@ -10,9 +11,9 @@ interface ReportDialogsProps {
 
 export function ReportDialogs({
   newReportDialogOpen,
-  reportToEdit,
+  // reportToEdit,
   onNewReportDialogChange,
-  onEditReportDialogChange,
+  // onEditReportDialogChange,
   onSuccess,
 }: ReportDialogsProps) {
   return (

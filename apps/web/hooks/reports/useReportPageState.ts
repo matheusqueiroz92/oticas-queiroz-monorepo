@@ -1,19 +1,19 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import type { Report } from "@/app/_types/report";
+import type { Report as IReport } from "@/app/_types/report";
 
 interface ReportPageState {
   showFilters: boolean;
   newReportDialogOpen: boolean;
-  reportToEdit: Report | null;
+  reportToEdit: IReport | null;
 }
 
 interface ReportPageActions {
   toggleFilters: () => void;
   handleOpenNewReport: () => void;
   handleCloseNewReport: () => void;
-  handleEditReport: (report: Report) => void;
+  handleEditReport: (report: IReport) => void;
   handleCloseEditReport: () => void;
   resetFilters: () => void;
 }
@@ -37,7 +37,7 @@ export function useReportPageState() {
     setState(prev => ({ ...prev, newReportDialogOpen: false }));
   }, []);
 
-  const handleEditReport = useCallback((report: Report) => {
+  const handleEditReport = useCallback((report: IReport) => {
     setState(prev => ({ ...prev, reportToEdit: report }));
   }, []);
 

@@ -35,10 +35,10 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { TableIcon, BarChart2, AlertCircle } from "lucide-react";
 
-import type { IReport } from "@/app/_types/report";
+import type { Report } from "@/app/_types/report";
 
 interface ReportDataVisualizationProps {
-  report: IReport;
+  report: Report;
 }
 
 export function ReportDataVisualization({

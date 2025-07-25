@@ -15,7 +15,7 @@ import { ReportStatusBadge } from "./ReportStatusBadge";
 import { formatDate } from "@/app/_utils/formatters";
 import { reportTypeMap } from "@/app/_types/report";
 import { Eye, FileDown, AlertCircle } from "lucide-react";
-import type { Report, ReportFormat } from "@/app/_types/report";
+import type { Report as IReport, ReportFormat } from "@/app/_types/report";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -24,13 +24,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 interface ReportTableSectionProps {
-  reports: Report[];
+  reports: IReport[];
   isLoading: boolean;
   error: string | null;
   search: string;
   activeFiltersCount: number;
   onDetailsClick: (reportId: string) => void;
-  onDownloadClick: (report: Report, format: ReportFormat) => void;
+  onDownloadClick: (report: IReport, format: ReportFormat) => void;
   currentPage: number;
   totalPages: number;
   setCurrentPage: (page: number) => void;
@@ -54,7 +54,7 @@ export function ReportTableSection({
 }: ReportTableSectionProps) {
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
-  const handleDownload = async (report: Report, format: ReportFormat) => {
+  const handleDownload = async (report: IReport, format: ReportFormat) => {
     setDownloadingId(report._id + format);
     try {
       await onDownloadClick(report, format);
@@ -167,7 +167,7 @@ export function ReportTableSection({
                 <TableCell className="font-medium">{report.name}</TableCell>
                 <TableCell>
                   <Badge variant="outline">
-                    {reportTypeMap[report.type]}
+                    {reportTypeMap[report.type as keyof typeof reportTypeMap]}
                   </Badge>
                 </TableCell>
                 <TableCell>

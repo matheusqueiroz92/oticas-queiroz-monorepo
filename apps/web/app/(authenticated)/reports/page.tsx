@@ -8,7 +8,7 @@ import { useReports } from "@/hooks/reports/useReports";
 import { useReportPageState } from "@/hooks/reports/useReportPageState";
 import { useReportFilters } from "@/hooks/reports/useReportFilters";
 import { useReportStats } from "@/hooks/reports/useReportStats";
-import type { IReport, ReportFormat } from "@/app/_types/report";
+import type { Report, ReportFormat } from "@/app/_types/report";
 
 export default function ReportsPage() {
   const { state, actions } = useReportPageState();
@@ -52,7 +52,7 @@ export default function ReportsPage() {
   };
 
   // Handler para passar o formato corretamente
-  const handleDownload = (report: IReport, format: ReportFormat) => {
+  const handleDownload = (report: Report, format: ReportFormat) => {
     handleDownloadReport(report._id, format);
   };
 

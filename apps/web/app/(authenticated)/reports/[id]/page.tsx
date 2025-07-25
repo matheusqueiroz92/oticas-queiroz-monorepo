@@ -126,7 +126,7 @@ export default function ReportDetailsPage() {
           </Button>
           <PageTitle
             title={report.name}
-            description={`Relatório de ${reportTypeMap[report.type]}`}
+            description={`Relatório de ${reportTypeMap[report.type as keyof typeof reportTypeMap]}`}
           />
         </div>
         <div className="flex gap-2">
@@ -172,7 +172,7 @@ export default function ReportDetailsPage() {
                 Criado em {formatDate(new Date(report.createdAt))}
               </CardDescription>
             </div>
-            <Badge variant="outline">{reportTypeMap[report.type]}</Badge>
+            <Badge variant="outline">{reportTypeMap[report.type as keyof typeof reportTypeMap]}</Badge>
           </div>
         </CardHeader>
         <CardContent>

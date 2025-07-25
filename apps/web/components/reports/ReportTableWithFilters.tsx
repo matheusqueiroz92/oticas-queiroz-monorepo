@@ -1,11 +1,11 @@
 import { DataTableWithFilters, FilterOption } from "@/components/ui/data-table-with-filters";
 import { ReportFilters } from "./ReportFilters";
 import { ReportTableSection } from "./ReportTableSection";
-import type { Report, ReportFormat } from "@/app/_types/report";
+import type { Report as IReport, ReportFormat } from "@/app/_types/report";
 import { FileText, Filter } from "lucide-react";
 
 interface ReportTableWithFiltersProps {
-  reports: Report[];
+  reports: IReport[];
   isLoading: boolean;
   error: string | null;
   search: string;
@@ -18,7 +18,7 @@ interface ReportTableWithFiltersProps {
   onClearFilters: () => void;
   onNewReport: () => void;
   onDetailsClick: (reportId: string) => void;
-  onDownloadClick: (report: Report, format: ReportFormat) => void;
+  onDownloadClick: (report: IReport, format: ReportFormat) => void;
   currentPage: number;
   totalPages: number;
   setCurrentPage: (page: number) => void;
@@ -37,7 +37,6 @@ export function ReportTableWithFilters({
   activeFiltersCount,
   filters,
   onUpdateFilters,
-  onClearFilters,
   onNewReport,
   onDetailsClick,
   onDownloadClick,
