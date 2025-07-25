@@ -1,7 +1,7 @@
 import { api } from "./authService";
 import { API_ROUTES } from "../_constants/api-routes";
 import type {
-  IReport,
+  Report,
   CreateReportDTO,
   ReportType,
   ReportStatus,
@@ -21,7 +21,7 @@ interface ReportFilters {
 /**
  * Cria um novo relatório
  */
-export const createReport = async (data: CreateReportDTO): Promise<IReport> => {
+export const createReport = async (data: CreateReportDTO): Promise<Report> => {
   try {
     const response = await api.post(API_ROUTES.REPORTS.BASE, data);
     return response.data;
@@ -34,7 +34,7 @@ export const createReport = async (data: CreateReportDTO): Promise<IReport> => {
 /**
  * Busca um relatório pelo seu ID
  */
-export const getReportById = async (id: string): Promise<IReport> => {
+export const getReportById = async (id: string): Promise<Report> => {
   try {
     const response = await api.get(API_ROUTES.REPORTS.BY_ID(id));
     return response.data;
@@ -51,7 +51,7 @@ export const getUserReports = async (
   page = 1, 
   limit = 10, 
   filters: ReportFilters = {}
-): Promise<{ reports: IReport[]; pagination: any }> => {
+): Promise<{ reports: Report[]; pagination: any }> => {
   try {
     const params = new URLSearchParams();
     params.append('page', String(page));
