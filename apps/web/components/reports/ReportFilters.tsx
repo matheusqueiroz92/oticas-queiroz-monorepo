@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarIcon, Search, X } from "lucide-react";
+import { CalendarIcon, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -19,216 +19,163 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { reportTypeOptions } from "@/app/_types/report";
-import { useReports } from "@/hooks/reports/useReports";
 import type { ReportType, ReportStatus } from "@/app/_types/report";
 
-export function ReportFilters() {
-  const { filters, updateFilters } = useReports();
+interface ReportFiltersProps {
+  onUpdateFilters: (filters: Record<string, any>) => void;
+}
 
-  const [search, setSearch] = useState(filters.search || "");
-  const [reportType, setReportType] = useState<ReportType | "all">(
-    (filters.type as ReportType) || "all"
-  );
-  const [status, setStatus] = useState<ReportStatus | "all">(
-    (filters.status as ReportStatus) || "all"
-  );
-  const [startDate, setStartDate] = useState<Date | undefined>(
-    filters.startDate ? new Date(filters.startDate) : undefined
-  );
-  const [endDate, setEndDate] = useState<Date | undefined>(
-    filters.endDate ? new Date(filters.endDate) : undefined
-  );
+export function ReportFilters({ onUpdateFilters }: ReportFiltersProps) {
+  const [localFilters, setLocalFilters] = useState({
+    reportType: "todos" as ReportType | "todos",
+    status: "todos" as ReportStatus | "todos",
+    startDate: undefined as Date | undefined,
+    endDate: undefined as Date | undefined,
+  });
 
-  // Função para aplicar os filtros
-  const applyFilters = () => {
-    const newFilters: {
-      search?: string;
-      type?: ReportType;
-      status?: ReportStatus;
-      startDate?: string;
-      endDate?: string;
-    } = {};
-
-    if (search) newFilters.search = search;
-    if (reportType !== "all") newFilters.type = reportType;
-    if (status !== "all") newFilters.status = status;
-    if (startDate) newFilters.startDate = format(startDate, "yyyy-MM-dd");
-    if (endDate) newFilters.endDate = format(endDate, "yyyy-MM-dd");
-
-    updateFilters(newFilters);
+  const handleFilterChange = (key: string, value: any) => {
+    const newFilters = { ...localFilters, [key]: value };
+    setLocalFilters(newFilters);
+    
+    // Aplicar filtros
+    const filtersToApply: Record<string, any> = {};
+    
+    if (newFilters.reportType && newFilters.reportType !== "todos") {
+      filtersToApply.type = newFilters.reportType;
+    }
+    if (newFilters.status && newFilters.status !== "todos") {
+      filtersToApply.status = newFilters.status;
+    }
+    if (newFilters.startDate) {
+      filtersToApply.startDate = format(newFilters.startDate, "yyyy-MM-dd");
+    }
+    if (newFilters.endDate) {
+      filtersToApply.endDate = format(newFilters.endDate, "yyyy-MM-dd");
+    }
+    
+    onUpdateFilters(filtersToApply);
   };
 
-  // Função para limpar todos os filtros
   const clearFilters = () => {
-    setSearch("");
-    setReportType("all");
-    setStatus("all");
-    setStartDate(undefined);
-    setEndDate(undefined);
-    updateFilters({});
+    setLocalFilters({
+      reportType: "todos",
+      status: "todos",
+      startDate: undefined,
+      endDate: undefined,
+    });
+    onUpdateFilters({});
   };
-
-  // Verificar se existem filtros ativos
-  const hasActiveFilters =
-    search || reportType !== "all" || status !== "all" || startDate || endDate;
 
   return (
-    <div className="space-y-4 mb-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-        <div className="col-span-1 md:col-span-1 lg:col-span-2">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar relatório por nome..."
-              className="pl-8"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-lg font-medium">Filtros Avançados</CardTitle>
+          <Button variant="outline" size="sm" onClick={clearFilters} className="flex items-center gap-2">
+            <X className="w-4 h-4" /> Limpar Filtros
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="reportType">Tipo de Relatório</Label>
+            <Select
+              value={localFilters.reportType}
+              onValueChange={(value) => handleFilterChange("reportType", value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Todos os tipos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os tipos</SelectItem>
+                {reportTypeOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="status">Status</Label>
+            <Select
+              value={localFilters.status}
+              onValueChange={(value) => handleFilterChange("status", value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Todos os status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os status</SelectItem>
+                <SelectItem value="pending">Pendente</SelectItem>
+                <SelectItem value="processing">Em processamento</SelectItem>
+                <SelectItem value="completed">Concluído</SelectItem>
+                <SelectItem value="error">Erro</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="startDate">Data Inicial</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start text-left font-normal"
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {localFilters.startDate ? (
+                    format(localFilters.startDate, "dd/MM/yyyy")
+                  ) : (
+                    <span>Selecionar data</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={localFilters.startDate}
+                  onSelect={(date) => handleFilterChange("startDate", date)}
+                  initialFocus
+                  locale={ptBR}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="endDate">Data Final</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start text-left font-normal"
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {localFilters.endDate ? (
+                    format(localFilters.endDate, "dd/MM/yyyy")
+                  ) : (
+                    <span>Selecionar data</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={localFilters.endDate}
+                  onSelect={(date) => handleFilterChange("endDate", date)}
+                  initialFocus
+                  locale={ptBR}
+                />
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
-
-        <Select
-          value={reportType}
-          onValueChange={(value) => setReportType(value as ReportType | "all")}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Tipo de Relatório" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os tipos</SelectItem>
-            {reportTypeOptions.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select
-          value={status}
-          onValueChange={(value) => setStatus(value as ReportStatus | "all")}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os status</SelectItem>
-            <SelectItem value="pending">Pendente</SelectItem>
-            <SelectItem value="processing">Em processamento</SelectItem>
-            <SelectItem value="completed">Concluído</SelectItem>
-            <SelectItem value="error">Erro</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <div className="flex space-x-2">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className="flex-1 justify-start text-left font-normal"
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {startDate ? (
-                  format(startDate, "dd/MM/yyyy")
-                ) : (
-                  <span>Data Inicial</span>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={startDate}
-                onSelect={setStartDate}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between">
-        <div className="flex flex-wrap gap-2 max-w-3xl">
-          {hasActiveFilters && (
-            <>
-              {search && (
-                <Badge variant="secondary" className="flex items-center gap-1">
-                  Busca: {search}
-                  <X
-                    className="h-3 w-3 cursor-pointer"
-                    onClick={() => setSearch("")}
-                  />
-                </Badge>
-              )}
-
-              {reportType !== "all" && (
-                <Badge variant="secondary" className="flex items-center gap-1">
-                  Tipo:{" "}
-                  {
-                    reportTypeOptions.find((opt) => opt.value === reportType)
-                      ?.label
-                  }
-                  <X
-                    className="h-3 w-3 cursor-pointer"
-                    onClick={() => setReportType("all")}
-                  />
-                </Badge>
-              )}
-
-              {status !== "all" && (
-                <Badge variant="secondary" className="flex items-center gap-1">
-                  Status:{" "}
-                  {status === "pending"
-                    ? "Pendente"
-                    : status === "processing"
-                      ? "Em processamento"
-                      : status === "completed"
-                        ? "Concluído"
-                        : "Erro"}
-                  <X
-                    className="h-3 w-3 cursor-pointer"
-                    onClick={() => setStatus("all")}
-                  />
-                </Badge>
-              )}
-
-              {startDate && (
-                <Badge variant="secondary" className="flex items-center gap-1">
-                  A partir de:{" "}
-                  {format(startDate, "dd/MM/yyyy", { locale: ptBR })}
-                  <X
-                    className="h-3 w-3 cursor-pointer"
-                    onClick={() => setStartDate(undefined)}
-                  />
-                </Badge>
-              )}
-
-              {endDate && (
-                <Badge variant="secondary" className="flex items-center gap-1">
-                  Até: {format(endDate, "dd/MM/yyyy", { locale: ptBR })}
-                  <X
-                    className="h-3 w-3 cursor-pointer"
-                    onClick={() => setEndDate(undefined)}
-                  />
-                </Badge>
-              )}
-            </>
-          )}
-        </div>
-
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={clearFilters}
-            disabled={!hasActiveFilters}
-          >
-            Limpar Filtros
-          </Button>
-          <Button onClick={applyFilters}>Aplicar Filtros</Button>
-        </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

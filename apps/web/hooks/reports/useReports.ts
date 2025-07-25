@@ -28,6 +28,7 @@ interface ReportFilters {
 
 export function useReports() {
   const [filters, setFilters] = useState<ReportFilters>({});
+  const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
@@ -39,9 +40,10 @@ export function useReports() {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: QUERY_KEYS.REPORTS.PAGINATED(currentPage, {
       ...filters,
+      search,
       limit: pageSize,
     }),
-    queryFn: () => getUserReports(currentPage, pageSize, filters),
+    queryFn: () => getUserReports(currentPage, pageSize, { ...filters, search }),
     placeholderData: (prevData) => prevData,
   });
 
@@ -151,6 +153,17 @@ export function useReports() {
     setCurrentPage(1); // Voltar para a primeira página ao filtrar
   };
 
+  // Função para contar filtros ativos
+  const getActiveFiltersCount = () => {
+    let count = 0;
+    if (search) count++;
+    if (filters.type) count++;
+    if (filters.status) count++;
+    if (filters.startDate) count++;
+    if (filters.endDate) count++;
+    return count;
+  };
+
   // Funções que utilizam as mutations
   const handleCreateReport = (data: CreateReportDTO) => {
     return createReportMutation.mutateAsync(data);
@@ -170,6 +183,7 @@ export function useReports() {
     reports,
     isLoading,
     error: error ? String(error) : null,
+    search,
     currentPage,
     pageSize,
     totalPages,
@@ -180,9 +194,11 @@ export function useReports() {
     isCreating: createReportMutation.isPending,
 
     // Ações
+    setSearch,
     setCurrentPage,
     setPageSize,
     updateFilters,
+    getActiveFiltersCount: getActiveFiltersCount(),
     fetchReportById,
     handleCreateReport,
     handleDownloadReport,
