@@ -217,9 +217,9 @@ export function ReportTableSection({
         <PaginationItems
           currentPage={currentPage}
           totalPages={totalPages}
-          onPageChange={setCurrentPage}
+          setCurrentPage={setCurrentPage}
           totalItems={totalItems}
-          itemsPerPage={limit}
+          pageSize={limit}
         />
       )}
     </div>

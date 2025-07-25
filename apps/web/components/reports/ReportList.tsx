@@ -29,7 +29,7 @@ import { Button } from "@/components/ui/button";
 import { ReportStatusBadge } from "./ReportStatusBadge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
-import type { IReport, ReportFormat } from "@/app/_types/report";
+import type { Report, ReportFormat } from "@/app/_types/report";
 import { reportTypeMap } from "@/app/_types/report";
 import { useReports } from "@/hooks/reports/useReports";
 import { toast } from "@/hooks/useToast";
@@ -37,7 +37,7 @@ import { exportService } from "@/app/_services/exportService";
 import { PaginationItems } from "../PaginationItems";
 
 interface ReportListProps {
-  reports: IReport[];
+  reports: Report[];
   pagination: {
     page: number;
     pageSize: number;

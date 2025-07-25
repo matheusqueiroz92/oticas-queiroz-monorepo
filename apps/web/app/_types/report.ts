@@ -86,7 +86,7 @@ export type ReportData =
   | FinancialReportData
   | null;
 
-export interface IReport {
+export interface Report {
   _id: string;
   name: string;
   type: ReportType;
@@ -116,7 +116,7 @@ export interface CreateReportDTO {
 }
 
 export interface ReportsResponse {
-  reports: IReport[];
+  reports: Report[];
   pagination?: {
     page: number;
     limit: number;
