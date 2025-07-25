@@ -1,5 +1,4 @@
 import { CreateReportModal } from "./CreateReportModal";
-import type { Report } from "@/app/_types/report";
 
 interface ReportDialogsProps {
   newReportDialogOpen: boolean;
