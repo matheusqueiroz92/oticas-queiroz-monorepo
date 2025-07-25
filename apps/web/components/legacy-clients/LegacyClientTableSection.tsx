@@ -11,26 +11,17 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PaginationItems } from "@/components/PaginationItems";
-import { ReportStatusBadge } from "./ReportStatusBadge";
 import { formatDate } from "@/app/_utils/formatters";
-import { reportTypeMap } from "@/app/_types/report";
-import { Eye, FileDown, AlertCircle } from "lucide-react";
-import type { Report, ReportFormat } from "@/app/_types/report";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-} from "@/components/ui/dropdown-menu";
+import { Eye, AlertCircle } from "lucide-react";
+import type { LegacyClient } from "@/app/_types/legacy-client";
 
-interface ReportTableSectionProps {
-  reports: Report[];
+interface LegacyClientTableSectionProps {
+  clients: LegacyClient[];
   isLoading: boolean;
   error: string | null;
   search: string;
   activeFiltersCount: number;
-  onDetailsClick: (reportId: string) => void;
-  onDownloadClick: (report: Report, format: ReportFormat) => void;
+  onDetailsClick: (clientId: string) => void;
   currentPage: number;
   totalPages: number;
   setCurrentPage: (page: number) => void;
@@ -38,29 +29,24 @@ interface ReportTableSectionProps {
   limit: number;
 }
 
-export function ReportTableSection({
-  reports,
+export function LegacyClientTableSection({
+  clients,
   isLoading,
   error,
   search,
   activeFiltersCount,
   onDetailsClick,
-  onDownloadClick,
   currentPage,
   totalPages,
   setCurrentPage,
   totalItems,
   limit,
-}: ReportTableSectionProps) {
-  const [downloadingId, setDownloadingId] = useState<string | null>(null);
-
-  const handleDownload = async (report: Report, format: ReportFormat) => {
-    setDownloadingId(report._id + format);
-    try {
-      await onDownloadClick(report, format);
-    } finally {
-      setDownloadingId(null);
-    }
+}: LegacyClientTableSectionProps) {
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(value);
   };
 
   if (isLoading) {
@@ -71,9 +57,9 @@ export function ReportTableSection({
             <TableHeader>
               <TableRow>
                 <TableHead>Nome</TableHead>
-                <TableHead>Tipo</TableHead>
+                <TableHead>CPF/CNPJ</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Formato</TableHead>
+                <TableHead>Dívida</TableHead>
                 <TableHead>Criado em</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
@@ -85,13 +71,13 @@ export function ReportTableSection({
                     <Skeleton className="h-4 w-32" />
                   </TableCell>
                   <TableCell>
-                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-4 w-24" />
                   </TableCell>
                   <TableCell>
                     <Skeleton className="h-4 w-16" />
                   </TableCell>
                   <TableCell>
-                    <Skeleton className="h-4 w-12" />
+                    <Skeleton className="h-4 w-20" />
                   </TableCell>
                   <TableCell>
                     <Skeleton className="h-4 w-24" />
@@ -113,21 +99,21 @@ export function ReportTableSection({
       <div className="text-center py-8">
         <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
         <h3 className="text-lg font-semibold text-destructive mb-2">
-          Erro ao carregar relatórios
+          Erro ao carregar clientes
         </h3>
         <p className="text-muted-foreground">{error}</p>
       </div>
     );
   }
 
-  if (reports.length === 0) {
+  if (clients.length === 0) {
     return (
       <div className="text-center py-8">
         <div className="text-muted-foreground">
           {search || activeFiltersCount > 0 ? (
             <>
               <p className="text-lg font-medium mb-2">
-                Nenhum relatório encontrado
+                Nenhum cliente encontrado
               </p>
               <p>
                 Tente ajustar os filtros ou termos de busca para encontrar o que
@@ -137,9 +123,9 @@ export function ReportTableSection({
           ) : (
             <>
               <p className="text-lg font-medium mb-2">
-                Nenhum relatório criado ainda
+                Nenhum cliente cadastrado ainda
               </p>
-              <p>Crie seu primeiro relatório para começar.</p>
+              <p>Cadastre seu primeiro cliente para começar.</p>
             </>
           )}
         </div>
@@ -154,57 +140,38 @@ export function ReportTableSection({
           <TableHeader>
             <TableRow>
               <TableHead>Nome</TableHead>
-              <TableHead>Tipo</TableHead>
+              <TableHead>CPF/CNPJ</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Formato</TableHead>
+              <TableHead>Dívida</TableHead>
               <TableHead>Criado em</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {reports.map((report) => (
-              <TableRow key={report._id}>
-                <TableCell className="font-medium">{report.name}</TableCell>
+            {clients.map((client) => (
+              <TableRow key={client._id}>
+                <TableCell className="font-medium">{client.name}</TableCell>
+                <TableCell>{client.identifier}</TableCell>
                 <TableCell>
-                  <Badge variant="outline">
-                    {reportTypeMap[report.type as keyof typeof reportTypeMap]}
+                  <Badge variant={client.status === "active" ? "default" : "secondary"}>
+                    {client.status === "active" ? "Ativo" : "Inativo"}
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <ReportStatusBadge status={report.status} />
+                  <span className={client.debt && client.debt > 0 ? "text-red-600 font-medium" : "text-green-600"}>
+                    {formatCurrency(client.debt || 0)}
+                  </span>
                 </TableCell>
-                <TableCell>
-                  <Badge variant="secondary">
-                    {report.format.toUpperCase()}
-                  </Badge>
-                </TableCell>
-                <TableCell>{formatDate(new Date(report.createdAt))}</TableCell>
+                <TableCell>{formatDate(new Date(client.createdAt))}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => onDetailsClick(report._id)}
+                      onClick={() => onDetailsClick(client._id)}
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
-                    {report.status === "completed" && (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            disabled={downloadingId?.startsWith(report._id)}
-                          >
-                            <FileDown className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleDownload(report, "pdf")}>Baixar PDF</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleDownload(report, "csv")}>Baixar CSV</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
                   </div>
                 </TableCell>
               </TableRow>

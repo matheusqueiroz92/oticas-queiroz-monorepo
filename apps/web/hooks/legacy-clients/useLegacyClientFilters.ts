@@ -1,29 +1,31 @@
 "use client";
 
 import { useCallback } from "react";
-import type { ReportFilters } from "@/app/_types/report";
 
-interface UseReportFiltersProps {
+interface LegacyClientFilters {
+  status?: "active" | "inactive" | "all";
+  debtRange?: "low" | "medium" | "high" | "all";
+  search?: string;
+}
+
+interface UseLegacyClientFiltersProps {
   search: string;
   setSearch: (search: string) => void;
-  filters: ReportFilters;
-  updateFilters: (filters: ReportFilters) => void;
+  filters: LegacyClientFilters;
+  updateFilters: (filters: LegacyClientFilters) => void;
   getActiveFiltersCount: number;
 }
 
-export function useReportFilters({
-  // search,
+export function useLegacyClientFilters({
+  search,
   setSearch,
   filters,
   updateFilters,
   getActiveFiltersCount,
-}: UseReportFiltersProps) {
-  const handleUpdateFilters = useCallback(
-    (newFilters: Record<string, any>) => {
-      updateFilters({ ...filters, ...newFilters });
-    },
-    [filters, updateFilters]
-  );
+}: UseLegacyClientFiltersProps) {
+  const handleUpdateFilters = useCallback((newFilters: Record<string, any>) => {
+    updateFilters({ ...filters, ...newFilters });
+  }, [filters, updateFilters]);
 
   const handleClearAllFilters = useCallback(() => {
     setSearch("");

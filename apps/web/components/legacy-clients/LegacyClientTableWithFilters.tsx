@@ -1,11 +1,11 @@
 import { DataTableWithFilters, FilterOption } from "@/components/ui/data-table-with-filters";
-import { ReportFilters } from "./ReportFilters";
-import { ReportTableSection } from "./ReportTableSection";
-import type { Report, ReportFormat } from "@/app/_types/report";
-import { FileText, Filter } from "lucide-react";
+import { LegacyClientFilters } from "./LegacyClientFilters";
+import { LegacyClientTableSection } from "./LegacyClientTableSection";
+import type { LegacyClient } from "@/app/_types/legacy-client";
+import { Users, Filter } from "lucide-react";
 
-interface ReportTableWithFiltersProps {
-  reports: Report[];
+interface LegacyClientTableWithFiltersProps {
+  clients: LegacyClient[];
   isLoading: boolean;
   error: string | null;
   search: string;
@@ -16,9 +16,8 @@ interface ReportTableWithFiltersProps {
   filters: Record<string, any>;
   onUpdateFilters: (filters: Record<string, any>) => void;
   onClearFilters: () => void;
-  onNewReport: () => void;
-  onDetailsClick: (reportId: string) => void;
-  onDownloadClick: (report: Report, format: ReportFormat) => void;
+  onNewClient: () => void;
+  onDetailsClick: (clientId: string) => void;
   currentPage: number;
   totalPages: number;
   setCurrentPage: (page: number) => void;
@@ -26,8 +25,8 @@ interface ReportTableWithFiltersProps {
   limit: number;
 }
 
-export function ReportTableWithFilters({
-  reports,
+export function LegacyClientTableWithFilters({
+  clients,
   isLoading,
   error,
   search,
@@ -37,15 +36,14 @@ export function ReportTableWithFilters({
   activeFiltersCount,
   filters,
   onUpdateFilters,
-  onNewReport,
+  onNewClient,
   onDetailsClick,
-  onDownloadClick,
   currentPage,
   totalPages,
   setCurrentPage,
   totalItems,
   limit,
-}: ReportTableWithFiltersProps) {
+}: LegacyClientTableWithFiltersProps) {
   // Configuração dos filtros básicos
   const statusFilterOptions: FilterOption[] = [
     {
@@ -54,24 +52,14 @@ export function ReportTableWithFilters({
       icon: <Filter className="w-4 h-4 text-gray-500" />
     },
     {
-      value: "completed",
-      label: "Concluído",
-      icon: <FileText className="w-4 h-4 text-green-500" />
+      value: "active",
+      label: "Ativo",
+      icon: <Users className="w-4 h-4 text-green-500" />
     },
     {
-      value: "pending",
-      label: "Pendente",
-      icon: <FileText className="w-4 h-4 text-yellow-500" />
-    },
-    {
-      value: "processing",
-      label: "Processando",
-      icon: <FileText className="w-4 h-4 text-blue-500" />
-    },
-    {
-      value: "error",
-      label: "Com erro",
-      icon: <FileText className="w-4 h-4 text-red-500" />
+      value: "inactive",
+      label: "Inativo",
+      icon: <Users className="w-4 h-4 text-red-500" />
     }
   ];
 
@@ -88,15 +76,15 @@ export function ReportTableWithFilters({
       options: statusFilterOptions,
       value: filters.status || "todos",
       onChange: handleStatusChange,
-      placeholder: "Status do relatório",
+      placeholder: "Status do cliente",
       width: "w-[200px]"
     }
   ];
 
   return (
     <DataTableWithFilters
-      title="Lista de Relatórios"
-      searchPlaceholder="Buscar por nome do relatório"
+      title="Lista de Clientes Legados"
+      searchPlaceholder="Buscar por nome ou CPF/CNPJ..."
       searchValue={search}
       onSearchChange={onSearchChange}
       basicFilters={basicFilters}
@@ -104,24 +92,23 @@ export function ReportTableWithFilters({
       onToggleFilters={onToggleFilters}
       activeFiltersCount={activeFiltersCount}
       advancedFiltersComponent={
-        <ReportFilters onUpdateFilters={onUpdateFilters} />
+        <LegacyClientFilters onUpdateFilters={onUpdateFilters} />
       }
-      onNewItem={onNewReport}
-      newButtonText="Novo Relatório"
-      newButtonIcon={<FileText className="w-4 h-4" />}
+      onNewItem={onNewClient}
+      newButtonText="Novo Cliente"
+      newButtonIcon={<Users className="w-4 h-4" />}
       onExport={() => {
         // Implementar lógica de exportação
       }}
-      exportDisabled={isLoading || reports.length === 0}
+      exportDisabled={isLoading || clients.length === 0}
     >
-      <ReportTableSection
-        reports={reports}
+      <LegacyClientTableSection
+        clients={clients}
         isLoading={isLoading}
         error={error}
         search={search}
         activeFiltersCount={activeFiltersCount}
         onDetailsClick={onDetailsClick}
-        onDownloadClick={onDownloadClick}
         currentPage={currentPage}
         totalPages={totalPages}
         setCurrentPage={setCurrentPage}

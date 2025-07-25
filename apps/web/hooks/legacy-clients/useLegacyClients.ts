@@ -19,6 +19,12 @@ import { api } from "@/app/_services/authService";
 import type { LegacyClient } from "@/app/_types/legacy-client";
 import { useRouter } from "next/navigation";
 
+interface LegacyClientFilters {
+  status?: "active" | "inactive" | "all";
+  debtRange?: "low" | "medium" | "high" | "all";
+  search?: string;
+}
+
 interface UseLegacyClientOptions {
   enableQueries?: boolean;
 }
@@ -39,77 +45,75 @@ function useDebounce<T>(value: T, delay: number = 500): T {
   return debouncedValue;
 }
 
-interface LegacyClientsListParams {
-  page: number;
-  limit?: number;
-  search?: string;
-  status?: "active" | "inactive" | "all";
-}
-
 export function useLegacyClients(options: UseLegacyClientOptions = {}) {
   const router = useRouter();
   const { enableQueries = true } = options;
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const useLegacyClientsList = (params: LegacyClientsListParams) => {
-    const { page, limit = 10, search, status } = params;
-    const debouncedSearch = useDebounce(search || "", 500);
+  // Estados
+  const [filters, setFilters] = useState<LegacyClientFilters>({});
+  const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(10);
 
-    return useQuery({
-      queryKey: [QUERY_KEYS.LEGACY_CLIENT.ALL, page, debouncedSearch, status],
-      queryFn: async () => {
-        const queryParams = new URLSearchParams();
-        queryParams.append("page", page.toString());
-        queryParams.append("limit", limit.toString());
+  const debouncedSearch = useDebounce(search, 500);
 
-        if (debouncedSearch) {
-          queryParams.append("search", debouncedSearch);
-        }
+  // Query principal
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: QUERY_KEYS.LEGACY_CLIENT.PAGINATED(currentPage, {
+      ...filters,
+      search: debouncedSearch,
+      limit: pageSize,
+    }),
+    queryFn: async () => {
+      const queryParams = new URLSearchParams();
+      queryParams.append("page", currentPage.toString());
+      queryParams.append("limit", pageSize.toString());
 
-        if (status && status !== "all") {
-          queryParams.append("status", status);
-        }
+      if (debouncedSearch) {
+        queryParams.append("search", debouncedSearch);
+      }
 
-        const response = await api.get(`${API_ROUTES.LEGACY_CLIENTS.LIST}?${queryParams.toString()}`);
-        return response.data;
-      },
-      enabled: enableQueries,
-    });
-  };
+      if (filters.status && filters.status !== "all") {
+        queryParams.append("status", filters.status);
+      }
 
-  const useSearchLegacyClient = (identifier?: string) => {
-    return useQuery({
-      queryKey: QUERY_KEYS.LEGACY_CLIENT.SEARCH(identifier || ''),
-      queryFn: () => searchLegacyClientByIdentifier(identifier || ''),
-      enabled: enableQueries && !!identifier,
-    });
-  };
+      if (filters.debtRange && filters.debtRange !== "all") {
+        queryParams.append("debtRange", filters.debtRange);
+      }
 
-  const fetchLegacyClientById = (id?: string) => {
-    return useQuery({
-      queryKey: QUERY_KEYS.LEGACY_CLIENT.DETAIL(id || ''),
-      queryFn: () => getLegacyClientById(id || ''),
-      enabled: enableQueries && !!id,
-    });
-  };
+      const response = await api.get(`${API_ROUTES.LEGACY_CLIENTS.LIST}?${queryParams.toString()}`);
+      return response.data;
+    },
+    enabled: enableQueries,
+  });
 
-  const useDebtors = () => {
-    return useQuery({
-      queryKey: QUERY_KEYS.LEGACY_CLIENT.DEBTORS,
-      queryFn: getDebtors,
-      enabled: enableQueries,
-    });
-  };
+  const clients = data?.clients || [];
+  const totalPages = data?.pagination?.totalPages || 1;
+  const totalClients = data?.pagination?.total || 0;
 
-  const usePaymentHistory = (clientId?: string) => {
-    return useQuery({
-      queryKey: QUERY_KEYS.LEGACY_CLIENT.PAYMENT_HISTORY(clientId || ''),
-      queryFn: () => getPaymentHistory(clientId || ''),
-      enabled: enableQueries && !!clientId,
-    });
-  };
+  // Navegação
+  const navigateToLegacyClientDetails = useCallback((id: string) => {
+    router.push(`/legacy-clients/${id}`);
+  }, [router]);
 
+  // Atualização de filtros
+  const updateFilters = useCallback((newFilters: LegacyClientFilters) => {
+    setFilters(newFilters);
+    setCurrentPage(1);
+  }, []);
+
+  // Contagem de filtros ativos
+  const getActiveFiltersCount = useCallback(() => {
+    let count = 0;
+    if (filters.status && filters.status !== "all") count++;
+    if (filters.debtRange && filters.debtRange !== "all") count++;
+    if (debouncedSearch) count++;
+    return count;
+  }, [filters, debouncedSearch]);
+
+  // Mutations
   const updateLegacyClientMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<LegacyClient> }) =>
       updateLegacyClient(id, data),
@@ -172,10 +176,7 @@ export function useLegacyClients(options: UseLegacyClientOptions = {}) {
     },
   });
 
-  const navigateToCreateLegacyClient = () => {
-    router.push("/legacy-clients/new");
-  };
-
+  // Handlers
   const handleUpdateLegacyClient = useCallback(
     (id: string, data: Partial<LegacyClient>) => {
       return updateLegacyClientMutation.mutateAsync({ id, data });
@@ -198,16 +199,33 @@ export function useLegacyClients(options: UseLegacyClientOptions = {}) {
   );
 
   return {
-    useDebounce,
-    useLegacyClientsList,
-    useSearchLegacyClient,
-    fetchLegacyClientById,
-    useDebtors,
-    usePaymentHistory,
-    navigateToCreateLegacyClient,
+    // Dados
+    clients,
+    isLoading,
+    error,
+    currentPage,
+    pageSize,
+    totalPages,
+    totalClients,
+    
+    // Estados
+    search,
+    setSearch,
+    filters,
+    updateFilters,
+    
+    // Ações
+    setCurrentPage,
+    refetch,
+    navigateToLegacyClientDetails,
     handleUpdateLegacyClient,
     handleToggleStatus,
     handleCreateLegacyClient,
+    
+    // Utilitários
+    getActiveFiltersCount: getActiveFiltersCount(),
+    
+    // Estados de loading
     isUpdating: updateLegacyClientMutation.isPending,
     isTogglingStatus: toggleStatusMutation.isPending,
     isCreating: createLegacyClientMutation.isPending,
