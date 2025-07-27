@@ -1,6 +1,7 @@
 export interface LegacyClient {
   _id?: string;
   name: string;
+  identifier?: string; // CPF/CNPJ
   cpf?: string;
   email?: string;
   phone?: string;
@@ -13,7 +14,8 @@ export interface LegacyClient {
     state: string;
     zipCode: string;
   };
-  totalDebt: number;
+  debt?: number; // Dívida atual
+  totalDebt: number; // Dívida total
   lastPayment?: {
     date: Date;
     amount: number;

@@ -38,7 +38,7 @@ export default function LegacyClientsPage() {
     setSearch,
     filters,
     updateFilters,
-    getActiveFiltersCount,
+    getActiveFiltersCount: getActiveFiltersCount(),
   });
 
   const stats = useLegacyClientStats(clients);
@@ -66,17 +66,18 @@ export default function LegacyClientsPage() {
         <LegacyClientTableWithFilters
           clients={clients}
           isLoading={isLoading}
-          error={error}
+          error={error?.message || null}
           search={search}
           onSearchChange={setSearch}
           showFilters={state.showFilters}
           onToggleFilters={actions.toggleFilters}
-          activeFiltersCount={getActiveFiltersCount}
+          activeFiltersCount={getActiveFiltersCount()}
           filters={filters}
           onUpdateFilters={handleUpdateFilters}
           onClearFilters={handleClearFilters}
           onNewClient={actions.handleOpenNewClient}
           onDetailsClick={navigateToLegacyClientDetails}
+          onEditClick={actions.handleEditClient}
           currentPage={currentPage}
           totalPages={totalPages}
           setCurrentPage={setCurrentPage}

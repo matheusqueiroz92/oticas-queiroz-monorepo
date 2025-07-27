@@ -86,6 +86,12 @@ export const QUERY_KEYS = {
 
   LEGACY_CLIENT: {
     ALL: ["legacyClients"],
+    PAGINATED: (page = 1, filters = {}) => [
+      "legacyClients",
+      "paginated",
+      page,
+      JSON.stringify(filters),
+    ],
     DETAIL: (id: string) => ["legacyClients", "detail", id],
     SEARCH: (identifier: string) => ["legacyClients", "search", identifier],
     DEBTORS: ["legacyClients", "debtors"],

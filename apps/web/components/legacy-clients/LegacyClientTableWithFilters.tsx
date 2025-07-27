@@ -18,6 +18,7 @@ interface LegacyClientTableWithFiltersProps {
   onClearFilters: () => void;
   onNewClient: () => void;
   onDetailsClick: (clientId: string) => void;
+  onEditClick: (client: LegacyClient) => void;
   currentPage: number;
   totalPages: number;
   setCurrentPage: (page: number) => void;
@@ -38,6 +39,7 @@ export function LegacyClientTableWithFilters({
   onUpdateFilters,
   onNewClient,
   onDetailsClick,
+  onEditClick,
   currentPage,
   totalPages,
   setCurrentPage,
@@ -109,6 +111,7 @@ export function LegacyClientTableWithFilters({
         search={search}
         activeFiltersCount={activeFiltersCount}
         onDetailsClick={onDetailsClick}
+        onEditClick={onEditClick}
         currentPage={currentPage}
         totalPages={totalPages}
         setCurrentPage={setCurrentPage}

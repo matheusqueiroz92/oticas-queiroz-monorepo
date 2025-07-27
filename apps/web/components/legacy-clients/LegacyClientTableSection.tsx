@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PaginationItems } from "@/components/PaginationItems";
 import { formatDate } from "@/app/_utils/formatters";
-import { Eye, AlertCircle } from "lucide-react";
+import { Eye, Edit, AlertCircle } from "lucide-react";
 import type { LegacyClient } from "@/app/_types/legacy-client";
 
 interface LegacyClientTableSectionProps {
@@ -22,6 +22,7 @@ interface LegacyClientTableSectionProps {
   search: string;
   activeFiltersCount: number;
   onDetailsClick: (clientId: string) => void;
+  onEditClick: (client: LegacyClient) => void;
   currentPage: number;
   totalPages: number;
   setCurrentPage: (page: number) => void;
@@ -36,6 +37,7 @@ export function LegacyClientTableSection({
   search,
   activeFiltersCount,
   onDetailsClick,
+  onEditClick,
   currentPage,
   totalPages,
   setCurrentPage,
@@ -162,13 +164,20 @@ export function LegacyClientTableSection({
                     {formatCurrency(client.debt || 0)}
                   </span>
                 </TableCell>
-                <TableCell>{formatDate(new Date(client.createdAt))}</TableCell>
+                <TableCell>{formatDate(new Date(client.createdAt || new Date()))}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => onDetailsClick(client._id)}
+                      onClick={() => onEditClick(client)}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onDetailsClick(client._id || "")}
                     >
                       <Eye className="h-4 w-4" />
                     </Button>

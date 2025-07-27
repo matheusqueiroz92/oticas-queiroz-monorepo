@@ -123,7 +123,7 @@ export function useLegacyClients(options: UseLegacyClientOptions = {}) {
         description: "Os dados do cliente foram atualizados com sucesso.",
       });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.LEGACY_CLIENT.DETAIL(variables.id) });
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.LEGACY_CLIENT.ALL });
+      queryClient.invalidateQueries({ queryKey: ["legacyClients"] });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.LEGACY_CLIENT.DEBTORS });
     },
     onError: (error) => {
@@ -144,7 +144,7 @@ export function useLegacyClients(options: UseLegacyClientOptions = {}) {
         description: "O status do cliente foi alterado com sucesso.",
       });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.LEGACY_CLIENT.DETAIL(id) });
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.LEGACY_CLIENT.ALL });
+      queryClient.invalidateQueries({ queryKey: ["legacyClients"] });
     },
     onError: (error) => {
       console.error("Erro ao alterar status:", error);
@@ -163,7 +163,7 @@ export function useLegacyClients(options: UseLegacyClientOptions = {}) {
         title: "Cliente criado",
         description: "O cliente foi cadastrado com sucesso.",
       });
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.LEGACY_CLIENT.ALL });
+      queryClient.invalidateQueries({ queryKey: ["legacyClients"] });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.LEGACY_CLIENT.DEBTORS });
     },
     onError: (error) => {
@@ -223,7 +223,7 @@ export function useLegacyClients(options: UseLegacyClientOptions = {}) {
     handleCreateLegacyClient,
     
     // Utilitários
-    getActiveFiltersCount: getActiveFiltersCount(),
+    getActiveFiltersCount,
     
     // Estados de loading
     isUpdating: updateLegacyClientMutation.isPending,

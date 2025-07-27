@@ -3,7 +3,9 @@
 import { Button } from "@/components/ui/button";
 import { PageTitle } from "@/components/ui/page-title";
 import { formatCurrency, formatDate } from "@/app/_utils/formatters";
-import { useLegacyClients } from "@/hooks/legacy-clients/useLegacyClients";
+import { useQuery } from "@tanstack/react-query";
+import { getDebtors } from "@/app/_services/legacyClientService";
+import { QUERY_KEYS } from "@/app/_constants/query-keys";
 import { ArrowLeft, FileDown } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
@@ -25,11 +27,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { exportToPDF } from "@/app/_utils/exportToPdf";
 import { useToast } from "@/hooks/useToast";
 
+import type { LegacyClient } from "@/app/_types/legacy-client";
+
 export default function DebtorsPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { useDebtors } = useLegacyClients();
-  const { data: debtors, isLoading } = useDebtors();
+  const { data: debtors, isLoading } = useQuery({
+    queryKey: QUERY_KEYS.LEGACY_CLIENT.DEBTORS,
+    queryFn: getDebtors,
+  });
 
   const exportDebtorsList = async () => {
     if (!debtors?.length) {
@@ -49,7 +55,7 @@ export default function DebtorsPage() {
         Telefone: debtor.phone
           ? debtor.phone.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3")
           : "-",
-        "Valor da Dívida": formatCurrency(debtor.totalDebt),
+        "Valor da Dívida": formatCurrency(debtor.debt || 0),
         "Último Pagamento": debtor.lastPayment
           ? `${formatCurrency(debtor.lastPayment.amount)} em ${formatDate(
               debtor.lastPayment.date
@@ -153,7 +159,7 @@ export default function DebtorsPage() {
                           : "-"}
                       </TableCell>
                       <TableCell className="font-medium text-red-600">
-                        {formatCurrency(debtor.totalDebt)}
+                        {formatCurrency(debtor.debt || 0)}
                       </TableCell>
                       <TableCell>
                         {debtor.lastPayment ? (
@@ -174,7 +180,7 @@ export default function DebtorsPage() {
                           variant="ghost"
                           size="sm"
                           onClick={() =>
-                            router.push(`/dashboard/legacy-clients/${debtor._id}`)
+                            router.push(`/legacy-clients/${debtor._id}`)
                           }
                         >
                           Ver detalhes

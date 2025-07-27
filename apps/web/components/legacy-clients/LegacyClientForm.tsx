@@ -1,6 +1,6 @@
 "use client";
 
-import { useForm, UseFormReturn } from "react-hook-form";
+import { useFormContext } from "react-hook-form";
 import { 
   FormField, 
   FormItem, 
@@ -23,11 +23,11 @@ import { useState } from "react";
 
 // Definição simples das props do componente
 interface LegacyClientFormProps {
-  form: any;
   isEdit?: boolean;
 }
 
-export function LegacyClientForm({ form, isEdit = false }: LegacyClientFormProps) {
+export function LegacyClientForm({ isEdit = false }: LegacyClientFormProps) {
+  const form = useFormContext();
   const [includeAddress, setIncludeAddress] = useState(
     !!form.getValues()?.address?.street
   );

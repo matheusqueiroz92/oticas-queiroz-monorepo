@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useLegacyClients } from "@/hooks/legacy-clients/useLegacyClients";
+import { useLegacyClientDetails } from "@/hooks/legacy-clients/useLegacyClientDetails";
+import { useLegacyClientPaymentHistory } from "@/hooks/legacy-clients/useLegacyClientPaymentHistory";
+import { useLegacyClientPageState } from "@/hooks/legacy-clients/useLegacyClientPageState";
 import { Button } from "@/components/ui/button";
 import { PageTitle } from "@/components/ui/page-title";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -17,6 +20,7 @@ import { Separator } from "@/components/ui/separator";
 import { formatCurrency, formatDate } from "@/app/_utils/formatters";
 import { LegacyClientInfo } from "@/components/legacy-clients/LegacyClientInfo";
 import { PaymentHistoryTable } from "@/components/legacy-clients/PaymentHistoryTable";
+import { LegacyClientDialogs } from "@/components/legacy-clients/LegacyClientDialogs";
 import { ArrowLeft, Edit, ToggleLeft, AlertTriangle } from "lucide-react";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { Badge } from "@/components/ui/badge";
@@ -32,7 +36,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import Link from "next/link";
 
 export default function LegacyClientDetails() {
   const router = useRouter();
@@ -40,19 +43,20 @@ export default function LegacyClientDetails() {
   const clientId = Array.isArray(id) ? id[0] : id;
   const [activeTab, setActiveTab] = useState("details");
 
-  const { fetchLegacyClientById, usePaymentHistory, handleToggleStatus, isTogglingStatus } = useLegacyClients();
+  const { state, actions } = useLegacyClientPageState();
+  const { handleToggleStatus, isTogglingStatus } = useLegacyClients();
   
   const { 
     data: client, 
     isLoading, 
     isError, 
     error 
-  } = fetchLegacyClientById(clientId);
+  } = useLegacyClientDetails(clientId || "");
   
   const { 
     data: paymentHistory, 
     isLoading: isLoadingHistory 
-  } = usePaymentHistory(clientId);
+  } = useLegacyClientPaymentHistory(clientId || "");
 
   if (isError) {
     return (
@@ -76,7 +80,7 @@ export default function LegacyClientDetails() {
     }
   };
 
-  const canDeactivate = client?.totalDebt === 0 || client?.status === "inactive";
+  const canDeactivate = (client?.debt || 0) === 0 || client?.status === "inactive";
 
   return (
     <div className="space-y-6">
@@ -101,12 +105,14 @@ export default function LegacyClientDetails() {
           )}
         </div>
         <div className="flex gap-2">
-          <Link href={`/dashboard/legacy-clients/${clientId}/edit`}>
-            <Button variant="outline">
-              <Edit className="h-4 w-4 mr-2" />
-              Editar
-            </Button>
-          </Link>
+          <Button 
+            variant="outline"
+            onClick={() => client && actions.handleEditClient(client)}
+            disabled={!client}
+          >
+            <Edit className="h-4 w-4 mr-2" />
+            Editar
+          </Button>
           
           <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -193,6 +199,18 @@ export default function LegacyClientDetails() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Diálogos */}
+      <LegacyClientDialogs
+        newClientDialogOpen={false}
+        clientToEdit={state.clientToEdit}
+        onNewClientDialogChange={() => {}}
+        onEditClientDialogChange={actions.handleCloseEditClient}
+        onSuccess={() => {
+          // Recarregar dados do cliente
+          window.location.reload();
+        }}
+      />
     </div>
   );
 }

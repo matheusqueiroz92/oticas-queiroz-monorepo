@@ -6,6 +6,7 @@ import { useOrders } from "@/hooks/orders/useOrders";
 import { usePayments } from "@/hooks/payments/usePayments";
 import { useCashRegister } from "@/hooks/cash-register/useCashRegister";
 import { useLegacyClients } from "@/hooks/legacy-clients/useLegacyClients";
+import { useSearchLegacyClient } from "@/hooks/legacy-clients/useSearchLegacyClient";
 import { useCustomers } from "@/hooks/customers/useCustomers";
 import { 
   getTodayPayments, 
@@ -67,12 +68,12 @@ export function useDashboard() {
   
   const { isLoading: isLoadingCashRegister, currentCashRegister } = useCashRegister();
   
-  const { useSearchLegacyClient } = useLegacyClients();
-  
+  // Buscar cliente legado por CPF/CNPJ do usuário logado
+  const userCpf = Cookies.get("cpf") || "";
   const {
     data: legacyClient,
     isLoading: isLoadingLegacyClient
-  } = useSearchLegacyClient(isCustomer ? userId : undefined);
+  } = useSearchLegacyClient(isCustomer && userCpf ? userCpf : undefined);
 
   // Cálculos memoizados para performance
   const dashboardData = useMemo(() => {

@@ -1,4 +1,5 @@
-import { LegacyClientForm } from "./LegacyClientForm";
+import { CreateLegacyClientModal } from "./CreateLegacyClientModal";
+import { EditLegacyClientModal } from "./EditLegacyClientModal";
 import type { LegacyClient } from "@/app/_types/legacy-client";
 
 interface LegacyClientDialogsProps {
@@ -18,21 +19,20 @@ export function LegacyClientDialogs({
 }: LegacyClientDialogsProps) {
   return (
     <>
-      <LegacyClientForm
+      <CreateLegacyClientModal
         isOpen={newClientDialogOpen}
         onClose={() => onNewClientDialogChange(false)}
         onSuccess={onSuccess}
       />
       
-      {/* Futuro: Modal de edição de cliente */}
-      {/* {clientToEdit && (
+      {clientToEdit && (
         <EditLegacyClientModal
           isOpen={!!clientToEdit}
           client={clientToEdit}
           onClose={() => onEditClientDialogChange(false)}
           onSuccess={onSuccess}
         />
-      )} */}
+      )}
     </>
   );
 } 
