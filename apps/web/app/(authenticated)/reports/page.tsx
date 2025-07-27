@@ -78,7 +78,7 @@ export default function ReportsPage() {
           onSearchChange={setSearch}
           showFilters={state.showFilters}
           onToggleFilters={actions.toggleFilters}
-          activeFiltersCount={getActiveFiltersCount}
+          activeFiltersCount={getActiveFiltersCount()}
           filters={filters}
           onUpdateFilters={handleUpdateFilters}
           onClearFilters={handleClearFilters}

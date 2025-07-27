@@ -1,14 +1,22 @@
 "use client";
 
 import { useCallback } from "react";
-import type { ReportFilters } from "@/app/_types/report";
+import type { ReportType, ReportStatus } from "@/app/_types/report";
+
+interface ReportFilters {
+  search?: string;
+  type?: ReportType;
+  status?: ReportStatus;
+  startDate?: Date;
+  endDate?: Date;
+}
 
 interface UseReportFiltersProps {
   search: string;
   setSearch: (search: string) => void;
   filters: ReportFilters;
   updateFilters: (filters: ReportFilters) => void;
-  getActiveFiltersCount: number;
+  getActiveFiltersCount: () => number;
 }
 
 export function useReportFilters({

@@ -22,8 +22,8 @@ interface ReportFilters {
   search?: string;
   type?: ReportType;
   status?: ReportStatus;
-  startDate?: string;
-  endDate?: string;
+  startDate?: Date;
+  endDate?: Date;
 }
 
 export function useReports() {
@@ -198,7 +198,7 @@ export function useReports() {
     setCurrentPage,
     setPageSize,
     updateFilters,
-    getActiveFiltersCount: getActiveFiltersCount(),
+    getActiveFiltersCount,
     fetchReportById,
     handleCreateReport,
     handleDownloadReport,
