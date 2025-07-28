@@ -25,7 +25,7 @@ export function useLegacyClientStats(clients: LegacyClient[]): LegacyClientStats
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     const recentClients = clients.filter(client => 
-      new Date(client.createdAt) > thirtyDaysAgo
+      client.createdAt && new Date(client.createdAt) > thirtyDaysAgo
     ).length;
 
     return {
