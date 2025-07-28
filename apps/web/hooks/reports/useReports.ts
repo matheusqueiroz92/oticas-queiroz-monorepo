@@ -43,7 +43,12 @@ export function useReports() {
       search,
       limit: pageSize,
     }),
-    queryFn: () => getUserReports(currentPage, pageSize, { ...filters, search }),
+    queryFn: () => getUserReports(currentPage, pageSize, { 
+      ...filters, 
+      search,
+      startDate: filters.startDate?.toISOString(),
+      endDate: filters.endDate?.toISOString(),
+    }),
     placeholderData: (prevData) => prevData,
   });
 

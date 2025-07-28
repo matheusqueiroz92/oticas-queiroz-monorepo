@@ -39,7 +39,7 @@ export function useReportFilters({
   }, [setSearch, updateFilters]);
 
   const applyBasicFilters = useCallback(() => {
-    if (getActiveFiltersCount === 0) {
+    if (getActiveFiltersCount() === 0) {
       updateFilters({});
     }
   }, [getActiveFiltersCount, updateFilters]);
