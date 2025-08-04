@@ -29,7 +29,7 @@ export function PaymentHistoryTable({
     return <LoadingSkeleton />;
   }
 
-  if (!paymentHistory.length) {
+  if (!paymentHistory || !paymentHistory.length) {
     return (
       <div className="text-center py-6 text-gray-500">
         Nenhum pagamento encontrado.

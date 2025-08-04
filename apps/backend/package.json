@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "start": "node dist/server.js",
     "dev": "nodemon src/server.ts",
     "test": "jest",
     "test:auth-user": "jest \"(User|Auth)\" --detectOpenHandles --forceExit",

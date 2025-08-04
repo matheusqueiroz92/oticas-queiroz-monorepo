@@ -6,6 +6,9 @@ export interface ProductsPageState {
   viewMode: "grid" | "table";
   stockFilter: "all" | "low" | "out";
   showFilters: boolean;
+  newProductDialogOpen: boolean;
+  editProductDialogOpen: boolean;
+  productToEdit: any;
 }
 
 export function useProductsPageState() {
@@ -14,6 +17,9 @@ export function useProductsPageState() {
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
   const [stockFilter, setStockFilter] = useState<"all" | "low" | "out">("all");
   const [showFilters, setShowFilters] = useState(false);
+  const [newProductDialogOpen, setNewProductDialogOpen] = useState(false);
+  const [editProductDialogOpen, setEditProductDialogOpen] = useState(false);
+  const [productToEdit, setProductToEdit] = useState<any>(undefined);
 
   const handleToggleFilters = useCallback(() => {
     setShowFilters((prev) => !prev);
@@ -29,6 +35,24 @@ export function useProductsPageState() {
     setViewMode(mode);
   }, []);
 
+  const handleOpenNewProduct = useCallback(() => {
+    setNewProductDialogOpen(true);
+  }, []);
+
+  const handleCloseNewProduct = useCallback(() => {
+    setNewProductDialogOpen(false);
+  }, []);
+
+  const handleEditProduct = useCallback((product: any) => {
+    setProductToEdit(product);
+    setEditProductDialogOpen(true);
+  }, []);
+
+  const handleCloseEditProduct = useCallback(() => {
+    setEditProductDialogOpen(false);
+    setProductToEdit(undefined);
+  }, []);
+
   return {
     state: {
       searchTerm,
@@ -36,6 +60,9 @@ export function useProductsPageState() {
       viewMode,
       stockFilter,
       showFilters,
+      newProductDialogOpen,
+      editProductDialogOpen,
+      productToEdit,
     },
     actions: {
       setSearchTerm,
@@ -45,6 +72,10 @@ export function useProductsPageState() {
       setShowFilters,
       handleToggleFilters,
       handleClearFilters,
+      handleOpenNewProduct,
+      handleCloseNewProduct,
+      handleEditProduct,
+      handleCloseEditProduct,
     },
   };
 } 

@@ -12,6 +12,7 @@ import {
 } from "../utils/AppError";
 import { ErrorCode } from "../utils/errorCodes";
 import { userSchema, UserType } from "../validators/userValidators";
+import type { ExportOptions } from "../utils/exportUtils";
 
 interface AuthRequest extends Request {
   user?: JwtPayload;
@@ -271,5 +272,62 @@ export class UserController {
     await this.userService.updatePassword(req.user.id, newPassword);
 
     res.status(200).json({ message: "Senha alterada com sucesso" });
+  }
+
+  async exportUsers(req: Request, res: Response): Promise<void> {
+    try {
+      const { format = "pdf", title } = req.query;
+
+      // Construir filtros com base nos parâmetros da query
+      const filters: Record<string, any> = {};
+
+      // Filtrar apenas funcionários (admin e employee)
+      filters.role = { $in: ['admin', 'employee'] };
+
+      if (req.query.search) {
+        filters.searchTerm = req.query.search;
+      }
+
+      if (req.query.status) {
+        filters.status = req.query.status;
+      }
+
+      if (req.query.salesRange) {
+        filters.salesRange = req.query.salesRange;
+      }
+
+      if (req.query.totalSalesRange) {
+        filters.totalSalesRange = req.query.totalSalesRange;
+      }
+
+      // Exportar os usuários
+      const exportOptions: ExportOptions = {
+        format: format as "excel" | "pdf" | "csv" | "json",
+        title: title as string || "Lista de Funcionários",
+        filename: `funcionarios-${Date.now()}`,
+      };
+
+      const { buffer, contentType, filename } =
+        await this.userService.exportUsers(exportOptions, filters);
+
+      // Configurar cabeçalhos e enviar arquivo
+      res.setHeader("Content-Type", contentType);
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${filename}"`
+      );
+      res.send(buffer);
+    } catch (error) {
+      console.error("Error exporting users:", error);
+      res.status(500).json({
+        message: "Erro interno do servidor ao exportar funcionários",
+        details:
+          process.env.NODE_ENV !== "production"
+            ? error instanceof Error
+              ? error.message
+              : String(error)
+            : undefined,
+      });
+    }
   }
 }

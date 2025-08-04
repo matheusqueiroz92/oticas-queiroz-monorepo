@@ -437,4 +437,81 @@ router.delete(
   asyncHandler((req, res) => userController.deleteUser(req, res))
 );
 
+/**
+ * @swagger
+ * /api/users/export:
+ *   get:
+ *     summary: Exporta lista de funcionários
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Users]
+ *     description: Exporta a lista de funcionários em diferentes formatos (PDF, Excel, CSV, JSON)
+ *     parameters:
+ *       - in: query
+ *         name: format
+ *         schema:
+ *           type: string
+ *           enum: [pdf, excel, csv, json]
+ *           default: pdf
+ *         description: Formato de exportação
+ *       - in: query
+ *         name: title
+ *         schema:
+ *           type: string
+ *         description: Título do relatório
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Termo de busca para nome, email ou CPF
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [active, inactive]
+ *         description: Filtrar por status
+ *       - in: query
+ *         name: salesRange
+ *         schema:
+ *           type: string
+ *         description: Filtrar por faixa de vendas
+ *       - in: query
+ *         name: totalSalesRange
+ *         schema:
+ *           type: string
+ *         description: Filtrar por faixa de vendas totais
+ *     responses:
+ *       200:
+ *         description: Arquivo exportado com sucesso
+ *         content:
+ *           application/pdf:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *           application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *           text/csv:
+ *             schema:
+ *               type: string
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Não autorizado
+ *       403:
+ *         description: Acesso negado. Requer permissão de administrador ou funcionário.
+ *       500:
+ *         description: Erro interno do servidor
+ */
+router.get(
+  "/users/export",
+  authenticate,
+  authorize(["admin", "employee"]),
+  asyncHandler((req, res) => userController.exportUsers(req, res))
+);
+
 export default router;

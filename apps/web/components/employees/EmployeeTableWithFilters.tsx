@@ -2,6 +2,7 @@ import { TrendingUp } from "lucide-react";
 import { DataTableWithFilters, FilterOption } from "@/components/ui/data-table-with-filters";
 import { EmployeeFilters } from "@/components/employees/EmployeeFilters";
 import { EmployeeTableSection } from "@/components/employees/EmployeeTableSection";
+import { useEmployeeExport } from "@/hooks/employees/useEmployeeExport";
 import type { User } from "@/app/_types/user";
 
 interface EmployeeTableWithFiltersProps {
@@ -47,6 +48,8 @@ export function EmployeeTableWithFilters({
   totalItems,
   limit,
 }: EmployeeTableWithFiltersProps) {
+  const { exportEmployeesWithFilters, isExporting } = useEmployeeExport();
+
   // Configuração dos filtros básicos
   const salesRangeFilterOptions: FilterOption[] = [
     {
@@ -89,6 +92,15 @@ export function EmployeeTableWithFilters({
     }
   };
 
+  const handleExport = async () => {
+    await exportEmployeesWithFilters("pdf", {
+      search: search || undefined,
+      status: filters.status || undefined,
+      salesRange: filters.salesRange || undefined,
+      totalSalesRange: filters.totalSalesRange || undefined,
+    });
+  };
+
   const basicFilters = [
     {
       options: salesRangeFilterOptions,
@@ -114,10 +126,9 @@ export function EmployeeTableWithFilters({
       }
       onNewItem={onNewEmployee}
       newButtonText="Novo Funcionário"
-      onExport={() => {
-        // Implementar lógica de exportação
-      }}
-      exportDisabled={isLoading || employees.length === 0}
+      onExport={handleExport}
+      exportButtonText={isExporting ? "Exportando..." : "Exportar PDF"}
+      exportDisabled={isLoading || employees.length === 0 || isExporting}
     >
       <EmployeeTableSection
         employees={employees}

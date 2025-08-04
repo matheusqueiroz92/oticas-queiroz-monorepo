@@ -11,8 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { PaginationItems } from "@/components/PaginationItems";
-import { Eye, Building } from "lucide-react";
+import { Eye, Building, Edit } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useUsers } from "@/hooks/useUsers";
@@ -20,11 +19,7 @@ import { useUsers } from "@/hooks/useUsers";
 interface InstitutionTableProps {
   data: Institution[];
   onDetailsClick: (id: string) => void;
-  currentPage: number;
-  totalPages: number;
-  setCurrentPage: (page: number) => void;
-  totalItems?: number;
-  pageSize?: number;
+  onEditClick: (institution: Institution) => void;
   sortField?: keyof Institution;
   sortDirection?: "asc" | "desc";
 }
@@ -32,11 +27,7 @@ interface InstitutionTableProps {
 export function InstitutionTable({
   data,
   onDetailsClick,
-  currentPage,
-  totalPages,
-  setCurrentPage,
-  totalItems,
-  pageSize,
+  onEditClick,
   sortField = "name",
   sortDirection = "asc",
 }: InstitutionTableProps) {
@@ -75,6 +66,7 @@ export function InstitutionTable({
             <TableHead>CNPJ</TableHead>
             <TableHead>Contato</TableHead>
             <TableHead>Ramo de Atividade</TableHead>
+            <TableHead>Status</TableHead>
             <TableHead className="text-right">Ações</TableHead>
           </TableRow>
         </TableHeader>
@@ -100,52 +92,58 @@ export function InstitutionTable({
                   </div>
                 </div>
               </TableCell>
-              <TableCell>{formatCNPJ(item.cnpj)}</TableCell>
               <TableCell>
-                {item.contactPerson ? (
-                  <div>
-                    <p>{item.contactPerson}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {item.phone || "Sem telefone"}
-                    </p>
-                  </div>
-                ) : (
-                  "Não informado"
-                )}
+                <span className="font-mono text-sm">
+                  {formatCNPJ(item.cnpj)}
+                </span>
               </TableCell>
               <TableCell>
-                {item.industryType ? (
-                  <Badge variant="outline" className="bg-primary/5 text-primary">
-                    {item.industryType}
-                  </Badge>
-                ) : (
-                  "Não informado"
-                )}
+                <div className="space-y-1">
+                  <p className="text-sm">{item.phone || "Sem telefone"}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {item.contactPerson || "Sem contato"}
+                  </p>
+                </div>
+              </TableCell>
+              <TableCell>
+                <span className="text-sm">
+                  {item.industryType || "Não informado"}
+                </span>
+              </TableCell>
+              <TableCell>
+                <Badge
+                  variant={item.status === "active" ? "default" : "secondary"}
+                  className={
+                    item.status === "active" 
+                      ? "bg-green-100 text-green-800" 
+                      : "bg-gray-100 text-gray-800"
+                  }
+                >
+                  {item.status === "active" ? "Ativo" : "Inativo"}
+                </Badge>
               </TableCell>
               <TableCell className="text-right">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => onDetailsClick(item._id)}
-                  title="Ver detalhes"
-                >
-                  <Eye className="h-4 w-4" />
-                </Button>
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onDetailsClick(item._id)}
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onEditClick(item)}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                </div>
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
-
-      {(totalItems ?? 0) > 10 && (
-        <PaginationItems
-          currentPage={currentPage}
-          totalPages={totalPages}
-          setCurrentPage={setCurrentPage}
-          totalItems={totalItems}
-          pageSize={pageSize}
-        />
-      )}
     </div>
   );
 }

@@ -11,6 +11,7 @@ export function LegacyClientInfo({ client }: LegacyClientInfoProps) {
   if (!client) return null;
 
   const formatCPF = (cpf: string) => {
+    if (!cpf) return "-";
     return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
   };
 
@@ -94,24 +95,24 @@ export function LegacyClientInfo({ client }: LegacyClientInfoProps) {
             <div>
               <span className="block text-sm text-gray-500">Logradouro</span>
               <span className="block font-medium">
-                {client.address.street}, {client.address.number}
+                {client.address.street || "-"}, {client.address.number || "-"}
                 {client.address.complement && ` - ${client.address.complement}`}
               </span>
             </div>
             <div>
               <span className="block text-sm text-gray-500">Bairro</span>
-              <span className="block font-medium">{client.address.neighborhood}</span>
+              <span className="block font-medium">{client.address.neighborhood || "-"}</span>
             </div>
             <div>
               <span className="block text-sm text-gray-500">Cidade/UF</span>
               <span className="block font-medium">
-                {client.address.city}/{client.address.state}
+                {client.address.city || "-"}/{client.address.state || "-"}
               </span>
             </div>
             <div>
               <span className="block text-sm text-gray-500">CEP</span>
               <span className="block font-medium">
-                {client.address.zipCode.replace(/(\d{5})(\d{3})/, "$1-$2")}
+                {client.address.zipCode ? client.address.zipCode.replace(/(\d{5})(\d{3})/, "$1-$2") : "-"}
               </span>
             </div>
           </div>

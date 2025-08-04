@@ -14,6 +14,7 @@ export interface IUser {
   purchases?: string[];
   debts?: number;
   sales?: string[];
+  status?: "active" | "inactive";
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;

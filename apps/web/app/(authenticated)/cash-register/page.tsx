@@ -1,15 +1,15 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Loader2, PlusCircle } from "lucide-react";
-import { useCashRegister } from "@/hooks/cash-register/useCashRegister";
-import { ActiveCashRegisterCard } from "@/components/cash-register/ActiveCashRegisterCard";
-import { CashRegisterFilters } from "@/components/cash-register/CashRegisterFilters";
-import { CashRegisterList } from "@/components/cash-register/CashRegisterList";
-import { CashRegisterEmptyState } from "@/components/cash-register/CashRegisterEmptyState";
+import { useMemo } from "react";
 import { PageContainer } from "@/components/ui/page-container";
+import { ActiveCashRegisterCard } from "@/components/cash-register/ActiveCashRegisterCard";
+import { CashRegisterTableWithFilters } from "@/components/cash-register/CashRegisterTableWithFilters";
+import { useCashRegister } from "@/hooks/cash-register/useCashRegister";
+import { useCashRegisterPageState } from "@/hooks/cash-register/useCashRegisterPageState";
 
 export default function CashRegisterPage() {
+  const { state, actions } = useCashRegisterPageState();
+  
   const {
     cashRegisters,
     activeRegister,
@@ -19,76 +19,81 @@ export default function CashRegisterPage() {
     totalPages,
     totalRegisters,
     search,
-    date,
+    // date,
     setSearch,
-    setDate,
+    // setDate,
     setCurrentPage,
-    applyDateFilter,
+    // applyDateFilter,
     clearFilters,
     navigateToOpenRegister,
     navigateToRegisterDetails,
     navigateToCloseRegister,
   } = useCashRegister().useCashRegisterList();
 
-  const showEmptyState = !isLoading && !error && cashRegisters.length === 0;
+  // Filtrar caixas localmente baseado nos filtros selecionados
+  const filteredCashRegisters = useMemo(() => {
+    let filtered = [...cashRegisters];
+
+    // Filtro por status
+    if (state.selectedStatus && state.selectedStatus !== "todos") {
+      filtered = filtered.filter(register => register.status === state.selectedStatus);
+    }
+
+    return filtered;
+  }, [cashRegisters, state.selectedStatus]);
+
+  // Contar filtros ativos
+  const getActiveFiltersCount = () => {
+    let count = 0;
+    if (search) count++;
+    if (state.selectedStatus && state.selectedStatus !== "todos") count++;
+    if (state.date) count++;
+    return count;
+  };
+
+  // Limpar filtros
+  const handleClearFilters = () => {
+    actions.resetFilters();
+    clearFilters();
+  };
 
   return (
     <PageContainer>
-      <div className="space-y-6">
-      {activeRegister && (
-        <ActiveCashRegisterCard 
-          register={activeRegister}
-          onViewDetails={navigateToRegisterDetails}
-          onCloseCashRegister={navigateToCloseRegister}
-        />
-      )}
-
-      <div className="flex flex-col md:flex-row justify-between gap-4">
-        <CashRegisterFilters
-          search={search}
-          setSearch={setSearch}
-          date={date}
-          setDate={setDate}
-          onApplyDateFilter={applyDateFilter}
-          onClearFilters={clearFilters}
-        />
-
-        {!activeRegister && (
-          <Button onClick={navigateToOpenRegister}>
-            <PlusCircle className="h-4 w-4 mr-2" />
-            Abrir Caixa
-          </Button>
+      <div className="space-y-8">
+        {/* Card do Caixa Ativo */}
+        {activeRegister && (
+          <ActiveCashRegisterCard 
+            register={activeRegister}
+            onViewDetails={navigateToRegisterDetails}
+            onCloseCashRegister={navigateToCloseRegister}
+          />
         )}
-      </div>
 
-      {isLoading && (
-        <div className="flex justify-center items-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin" />
-        </div>
-      )}
-
-      {error && (
-        <div className="p-4 bg-red-50 text-red-600 rounded-md">{error}</div>
-      )}
-
-      {showEmptyState && (
-        <CashRegisterEmptyState 
-          activeRegister={!!activeRegister}
+        {/* Tabela de Caixas com Filtros */}
+        <CashRegisterTableWithFilters
+          cashRegisters={filteredCashRegisters}
+          isLoading={isLoading}
+          error={error}
+          search={search}
+          onSearchChange={setSearch}
+          showFilters={state.showFilters}
+          onToggleFilters={actions.toggleFilters}
+          activeFiltersCount={getActiveFiltersCount()}
+          selectedStatus={state.selectedStatus}
+          onStatusChange={actions.setSelectedStatus}
+          date={state.date}
+          onDateChange={actions.setDate}
+          onClearFilters={handleClearFilters}
           onOpenRegister={navigateToOpenRegister}
-        />
-      )}
-
-      {!isLoading && !error && cashRegisters.length > 0 && (
-        <CashRegisterList
-          cashRegisters={cashRegisters}
-          currentPage={currentPage}
-          totalPages={totalPages}
-          totalRegisters={totalRegisters}
           onDetailsClick={navigateToRegisterDetails}
           onCloseClick={navigateToCloseRegister}
+          currentPage={currentPage}
+          totalPages={totalPages}
           setCurrentPage={setCurrentPage}
+          totalItems={totalRegisters}
+          limit={cashRegisters.length}
+          hasActiveRegister={!!activeRegister}
         />
-      )}
       </div>
     </PageContainer>
   );

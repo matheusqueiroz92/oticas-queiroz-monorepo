@@ -18,6 +18,7 @@ export interface User {
   createdAt?: Date;
   updatedAt?: Date;
   customerCategory?: 'vip' | 'regular' | 'novo';
+  status?: 'active' | 'inactive';
 }
 
 export interface Column {

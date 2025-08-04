@@ -7,7 +7,6 @@ import {
   Users,
   FileText,
   DollarSign,
-  BarChart,
   LogOut,
   CircleUser,
   User,
@@ -21,6 +20,7 @@ import {
   type LucideIcon,
   ListCheck,
   ContactRound,
+  ChartNoAxesCombined,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -137,7 +137,7 @@ const menuItems: MenuItem[] = [
   },
   {
     title: "Relatórios",
-    icon: BarChart,
+    icon: ChartNoAxesCombined,
     href: "/reports",
     roles: ["admin", "employee"],
   },

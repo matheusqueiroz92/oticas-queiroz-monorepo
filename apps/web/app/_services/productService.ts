@@ -40,7 +40,21 @@ export async function getAllProducts(
       params: filters,
     });
     return response.data;
-  } catch (error) {
+  } catch (error: any) {
+    // Verificar se é o erro específico de "Nenhum produto encontrado"
+    if (error.response?.status === 404 && error.response?.data?.message === "Nenhum produto encontrado") {
+      // Retornar uma resposta vazia ao invés de lançar erro
+      return {
+        products: [],
+        pagination: {
+          page: filters.page || 1,
+          limit: filters.limit || 15,
+          total: 0,
+          totalPages: 0,
+        },
+      };
+    }
+    
     console.error("Erro ao buscar produtos:", error);
     throw new Error("Falha ao carregar produtos");
   }
@@ -109,7 +123,7 @@ export async function deleteProduct(id: string): Promise<void> {
 }
 
 /**
- * Função para formatar preço em formato de moeda brasileira
+ * Formata um valor monetário para exibição
  */
 export function formatCurrency(value: number): string {
   return new Intl.NumberFormat("pt-BR", {
@@ -127,38 +141,20 @@ export async function getProductStockHistory(productId: string): Promise<any[]> 
     return response.data;
   } catch (error) {
     console.error(`Erro ao buscar histórico de estoque do produto ${productId}:`, error);
-    throw new Error("Não foi possível buscar o histórico de estoque");
+    return [];
   }
 }
 
 /**
- * Obtém o nome amigável para o tipo de produto
+ * Retorna o nome amigável do tipo de produto
  */
 export function getProductTypeName(productType: string): string {
-  switch (productType) {
-    case 'lenses':
-      return 'Lentes';
-    case 'clean_lenses':
-      return 'Limpa-lentes';
-    case 'cleaning_products':
-      return 'Limpa-lentes';
-    case 'prescription_frame':
-      return 'Armação de Grau';
-    case 'sunglasses':
-      return 'Armação Solar';
-    case 'sunglasses_frame':
-      return 'Armação Solar';
-    case 'frame':
-      return 'Armação';
-    case 'contact_lenses':
-      return 'Lentes de Contato';
-    case 'accessories':
-      return 'Acessórios';
-    case 'cases':
-      return 'Estojo';
-    case 'others':
-      return 'Outros';
-    default:
-      return 'Produto';
-  }
+  const typeNames: Record<string, string> = {
+    lenses: "Lentes",
+    clean_lenses: "Lentes de Limpeza",
+    prescription_frame: "Armação de Grau",
+    sunglasses_frame: "Armação de Sol",
+  };
+  
+  return typeNames[productType] || productType;
 }

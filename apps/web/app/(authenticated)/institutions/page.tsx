@@ -1,13 +1,17 @@
 "use client";
 
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Loader2, Search, Building, Plus } from "lucide-react";
+import { useMemo } from "react";
+import { PageContainer } from "@/components/ui/page-container";
+import { InstitutionStatsCards } from "@/components/institutions/InstitutionStatsCards";
+import { InstitutionTableWithFilters } from "@/components/institutions/InstitutionTableWithFilters";
+import { InstitutionDialogs } from "@/components/institutions/InstitutionDialogs";
 import { useInstitutions } from "@/hooks/useInstitutions";
-import { ErrorAlert } from "@/components/ErrorAlert";
-import { InstitutionTable } from "@/components/institutions/InstitutionTable";
+import { useInstitutionPageState } from "@/hooks/institutions/useInstitutionPageState";
+import { useInstitutionStats } from "@/hooks/institutions/useInstitutionStats";
 
 export default function InstitutionsPage() {
+  const { state, actions } = useInstitutionPageState();
+  
   const {
     institutions,
     isLoading,
@@ -15,66 +19,95 @@ export default function InstitutionsPage() {
     search,
     setSearch,
     navigateToInstitutionDetails,
-    navigateToNewInstitution,
     currentPage,
     totalPages,
     setCurrentPage,
     totalItems,
-    limit
+    limit,
+    refetch,
   } = useInstitutions();
 
-  const showEmptyState = !isLoading && !error && institutions.length === 0;
+  const stats = useInstitutionStats(institutions);
+
+  // Filtrar instituições localmente baseado nos filtros selecionados
+  const filteredInstitutions = useMemo(() => {
+    let filtered = [...institutions];
+
+    // Filtro por status
+    if (state.selectedStatus && state.selectedStatus !== "todos") {
+      filtered = filtered.filter(inst => inst.status === state.selectedStatus);
+    }
+
+    // Filtro por tipo de indústria
+    if (state.selectedIndustryType && state.selectedIndustryType !== "todos") {
+      filtered = filtered.filter(inst => inst.industryType === state.selectedIndustryType);
+    }
+
+    return filtered;
+  }, [institutions, state.selectedStatus, state.selectedIndustryType]);
+
+  // Contar filtros ativos
+  const getActiveFiltersCount = () => {
+    let count = 0;
+    if (search) count++;
+    if (state.selectedStatus && state.selectedStatus !== "todos") count++;
+    if (state.selectedIndustryType && state.selectedIndustryType !== "todos") count++;
+    return count;
+  };
+
+  // Limpar filtros
+  const handleClearFilters = () => {
+    actions.resetFilters();
+    setSearch("");
+  };
 
   return (
-    <div className="space-y-2 max-w-auto mx-auto p-1 md:p-2">
-      <div className="flex justify-between">
-        <div className="relative w-full max-w-md">
-          <Input
-            placeholder="Buscar instituição..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 pr-4"
-          />
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        </div>
-        <Button onClick={navigateToNewInstitution} className="ml-4">
-          <Plus className="mr-2 h-4 w-4" />
-          Nova Instituição
-        </Button>
-      </div>
+    <PageContainer>
+      <div className="space-y-8">
+        {/* Cards de Estatísticas */}
+        <InstitutionStatsCards
+          totalInstitutions={stats.totalInstitutions}
+          activeInstitutions={stats.activeInstitutions}
+          inactiveInstitutions={stats.inactiveInstitutions}
+          institutionsWithContact={stats.institutionsWithContact}
+          institutionsWithImage={stats.institutionsWithImage}
+          averageInstitutionsPerMonth={stats.averageInstitutionsPerMonth}
+        />
 
-      {isLoading && (
-        <div className="flex justify-center items-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin" />
-        </div>
-      )}
-
-      {error && <ErrorAlert message={error} />}
-
-      {showEmptyState && (
-        <div className="flex flex-col items-center justify-center py-12 text-center border rounded-lg bg-background">
-          <Building className="h-16 w-16 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-semibold">
-            Não há instituições cadastradas
-          </h3>
-          <p className="text-muted-foreground mt-2">
-            Clique em "Nova Instituição" para adicionar uma instituição ao
-            sistema.
-          </p>
-        </div>
-      )}
-
-      {!isLoading && !error && institutions.length > 0 && (
-        <InstitutionTable
-          data={institutions}
+        {/* Tabela de Instituições com Filtros */}
+        <InstitutionTableWithFilters
+          institutions={filteredInstitutions}
+          isLoading={isLoading}
+          error={error}
+          search={search}
+          onSearchChange={setSearch}
+          showFilters={state.showFilters}
+          onToggleFilters={actions.toggleFilters}
+          activeFiltersCount={getActiveFiltersCount()}
+          selectedStatus={state.selectedStatus}
+          onStatusChange={actions.setSelectedStatus}
+          selectedIndustryType={state.selectedIndustryType}
+          onIndustryTypeChange={actions.setSelectedIndustryType}
+          onClearFilters={handleClearFilters}
+          onNewInstitution={actions.handleOpenNewDialog}
           onDetailsClick={navigateToInstitutionDetails}
+          onEditClick={actions.handleEditInstitution}
           currentPage={currentPage}
           totalPages={totalPages}
           setCurrentPage={setCurrentPage}
           totalItems={totalItems}
-          pageSize={limit}
+          limit={limit}
         />
-      )}
-    </div>
+
+        {/* Diálogos */}
+        <InstitutionDialogs
+          newInstitutionDialogOpen={state.newInstitutionDialogOpen}
+          institutionToEdit={state.institutionToEdit}
+          onNewInstitutionDialogChange={actions.handleCloseNewDialog}
+          onEditInstitutionDialogChange={actions.handleCloseEditDialog}
+          onSuccess={refetch}
+        />
+      </div>
+    </PageContainer>
   );
 }

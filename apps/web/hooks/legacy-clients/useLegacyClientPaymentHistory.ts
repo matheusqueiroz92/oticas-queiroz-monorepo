@@ -9,5 +9,9 @@ export function useLegacyClientPaymentHistory(clientId: string) {
     queryKey: QUERY_KEYS.LEGACY_CLIENT.PAYMENT_HISTORY(clientId),
     queryFn: () => getPaymentHistory(clientId),
     enabled: !!clientId,
+    retry: 1,
+    retryDelay: 1000,
+    refetchOnWindowFocus: false,
+    staleTime: 5 * 60 * 1000, // 5 minutos
   });
 } 

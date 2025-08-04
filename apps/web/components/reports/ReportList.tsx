@@ -33,7 +33,7 @@ import type { Report, ReportFormat } from "@/app/_types/report";
 import { reportTypeMap } from "@/app/_types/report";
 import { useReports } from "@/hooks/reports/useReports";
 import { toast } from "@/hooks/useToast";
-import { exportService } from "@/app/_services/exportService";
+import { ExportService } from "@/app/_services/exportService";
 import { PaginationItems } from "../PaginationItems";
 
 interface ReportListProps {
@@ -88,21 +88,21 @@ export function ReportList({
       });
       
       // Usar o serviço de exportação
-      const blob = await exportService.exportReport(id, { format });
+      const blob = await ExportService.exportReport(id, { format });
       
       // Verificar se o blob contém uma mensagem de erro
-      if (await exportService.isErrorBlob(blob)) {
+      if (await ExportService.isErrorBlob(blob)) {
         throw new Error("O servidor retornou um erro ao gerar o relatório");
       }
       
       // Nome do arquivo baseado no relatório
-      const filename = exportService.generateFilename(
+      const filename = ExportService.generateFilename(
         currentReport.name.replace(/\s+/g, "-").toLowerCase(),
         format
       );
       
       // Fazer download
-      exportService.downloadBlob(blob, filename);
+      ExportService.downloadBlob(blob, filename);
       
       toast({
         title: "Download concluído",

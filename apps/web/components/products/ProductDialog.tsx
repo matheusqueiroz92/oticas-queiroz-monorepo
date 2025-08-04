@@ -33,11 +33,9 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { ImageUpload } from "@/components/ui/image-upload";
-import { useProducts } from "@/hooks/products/useProducts";
-import { showSuccess } from "@/app/_utils/error-handler";
+import { useProductDialog } from "@/hooks/products/useProductDialog";
 import { Product } from "@/app/_types/product";
 import { getProductTypeName } from "@/app/_services/productService";
-import { handleError } from "@/app/_utils/error-handler";
 
 const productSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
@@ -73,7 +71,7 @@ export function ProductDialog({
   product,
   mode,
 }: ProductDialogProps) {
-  const { createProductMutation, updateProductMutation } = useProducts(1, "", "all");
+  const { createProductMutation, updateProductMutation } = useProductDialog();
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imageUrl, setImageUrl] = useState<string | undefined>(undefined);
   
@@ -243,53 +241,39 @@ export function ProductDialog({
           id: memoizedProduct._id,
           formData,
         });
-
-        showSuccess(
-          "Produto atualizado",
-          "O produto foi atualizado com sucesso."
-        );
       } else {
         await createProductMutation.mutateAsync(formData);
-        
-        showSuccess(
-          "Produto cadastrado",
-          "O produto foi cadastrado com sucesso."
-        );
-        
-        // Fechar dropdowns antes de resetar
-        document.querySelectorAll('[data-radix-popper-content-wrapper]').forEach((element) => {
-          const htmlElement = element as HTMLElement;
-          if (htmlElement.style.display !== 'none') {
-            const escEvent = new KeyboardEvent('keydown', {
-              key: 'Escape',
-              code: 'Escape',
-              keyCode: 27,
-              which: 27,
-              bubbles: true,
-              cancelable: true
-            });
-            document.dispatchEvent(escEvent);
-          }
-        });
-        
-        // Resetar formulário e fechar dialog
-        form.reset();
-        setSelectedImage(null);
-        setImageUrl(undefined);
-        onOpenChange(false);
-        
-        // Callback de sucesso
-        if (onSuccess) {
-          onSuccess();
+      }
+      
+      // Fechar dropdowns antes de resetar
+      document.querySelectorAll('[data-radix-popper-content-wrapper]').forEach((element) => {
+        const htmlElement = element as HTMLElement;
+        if (htmlElement.style.display !== 'none') {
+          const escEvent = new KeyboardEvent('keydown', {
+            key: 'Escape',
+            code: 'Escape',
+            keyCode: 27,
+            which: 27,
+            bubbles: true,
+            cancelable: true
+          });
+          document.dispatchEvent(escEvent);
         }
+      });
+      
+      // Resetar formulário e fechar dialog
+      form.reset();
+      setSelectedImage(null);
+      setImageUrl(undefined);
+      onOpenChange(false);
+      
+      // Callback de sucesso
+      if (onSuccess) {
+        onSuccess();
       }
     } catch (error: any) {
       console.error(`Erro ao ${isEditMode ? 'atualizar' : 'cadastrar'} produto:`, error);
-      handleError(
-        error,
-        `Erro ao ${isEditMode ? 'atualizar' : 'cadastrar'} produto`,
-        true // Mostrar detalhes do erro
-      );
+      // O erro já é tratado pelo hook useProductDialog
     }
   };
 
@@ -403,10 +387,10 @@ export function ProductDialog({
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="lenses">{getProductTypeName("lenses")}</SelectItem>
-                          <SelectItem value="clean_lenses">{getProductTypeName("clean_lenses")}</SelectItem>
-                          <SelectItem value="prescription_frame">{getProductTypeName("prescription_frame")}</SelectItem>
-                          <SelectItem value="sunglasses_frame">{getProductTypeName("sunglasses_frame")}</SelectItem>
+                          <SelectItem value="lenses">Lentes</SelectItem>
+                          <SelectItem value="clean_lenses">Lentes de Limpeza</SelectItem>
+                          <SelectItem value="prescription_frame">Armação de Grau</SelectItem>
+                          <SelectItem value="sunglasses_frame">Armação de Sol</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -421,7 +405,7 @@ export function ProductDialog({
                     <FormItem>
                       <FormLabel>Marca</FormLabel>
                       <FormControl>
-                        <Input placeholder="Marca (opcional)" {...field} />
+                        <Input placeholder="Marca do produto" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -437,8 +421,8 @@ export function ProductDialog({
                       <FormControl>
                         <Input 
                           type="number" 
-                          step="0.01"
-                          min="0"
+                          step="0.01" 
+                          min="0.01"
                           placeholder="0,00" 
                           {...field}
                         />
@@ -457,9 +441,27 @@ export function ProductDialog({
                       <FormControl>
                         <Input 
                           type="number" 
-                          step="0.01"
+                          step="0.01" 
                           min="0"
-                          placeholder="0,00 (opcional)" 
+                          placeholder="0,00" 
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>Descrição</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Descrição do produto" 
+                          className="resize-none"
                           {...field}
                         />
                       </FormControl>
@@ -468,67 +470,42 @@ export function ProductDialog({
                   )}
                 />
               </div>
-
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Descrição</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="Descrição do produto (opcional)"
-                        className="min-h-[80px]"
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
             </div>
 
-            {/* Campos específicos por tipo */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold flex items-center gap-2">
-                <Package className="w-5 h-5 text-[var(--primary-blue)]" />
-                Informações Específicas - {getProductTypeName(watchedProductType)}
-              </h3>
-
-              {watchedProductType === "lenses" && (
-                <FormField
-                  control={form.control}
-                  name="lensType"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tipo de Lente</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Ex: Monofocal, Multifocal, Progressiva" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
-
-              {(watchedProductType === "prescription_frame" || watchedProductType === "sunglasses_frame") && (
+            {/* Campos específicos por tipo de produto */}
+            {watchedProductType === "lenses" && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <Package className="w-5 h-5 text-[var(--primary-blue)]" />
+                  Informações da Lente
+                </h3>
+                
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {watchedProductType === "sunglasses_frame" && (
-                    <FormField
-                      control={form.control}
-                      name="modelSunglasses"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Modelo</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Modelo dos óculos de sol" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  )}
+                  <FormField
+                    control={form.control}
+                    name="lensType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tipo de Lente</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Ex: Monofocal, Bifocal, Progressiva" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+            )}
 
+            {(watchedProductType === "prescription_frame" || watchedProductType === "sunglasses_frame") && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <Package className="w-5 h-5 text-[var(--primary-blue)]" />
+                  Informações da Armação
+                </h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="typeFrame"
@@ -536,7 +513,7 @@ export function ProductDialog({
                       <FormItem>
                         <FormLabel>Tipo de Armação</FormLabel>
                         <FormControl>
-                          <Input placeholder="Ex: Acetato, Metal, TR90" {...field} />
+                          <Input placeholder="Ex: Metal, Acetato, Nylon" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -604,8 +581,8 @@ export function ProductDialog({
                     )}
                   />
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* Botões */}
             <div className="flex justify-end space-x-2 pt-4 border-t">

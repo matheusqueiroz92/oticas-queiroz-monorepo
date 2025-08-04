@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Eye, Calendar, User, DollarSign, Pencil } from "lucide-react";
+import { Eye, Calendar, User, DollarSign, Edit } from "lucide-react";
 import { formatCurrency, translateOrderStatus } from "@/app/_utils/formatters";
 
 import type { Order } from "@/app/_types/order";
@@ -163,7 +163,7 @@ export function RecentOrdersCard({
                         variant="outline"
                         onClick={() => onViewDetails(order._id)}
                       >
-                        <Eye className="h-4 w-4 mr-1" />
+                        <Eye className="h-4 w-4" />
                       </Button>
                       
                       {!isClient && (
@@ -172,7 +172,7 @@ export function RecentOrdersCard({
                           onClick={() => {}}
                           className="ml-2"
                         >
-                          <Pencil className="h-4 w-4 mr-1" />
+                          <Edit className="h-4 w-4" />
                         </Button>
                       )}
                     </td>

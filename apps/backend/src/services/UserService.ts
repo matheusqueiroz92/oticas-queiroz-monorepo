@@ -7,16 +7,20 @@ import {
   PermissionError,
 } from "../utils/AppError";
 import { ErrorCode } from "../utils/errorCodes";
+import { ExportUtils } from "../utils/exportUtils";
+import type { ExportOptions } from "../utils/exportUtils";
 
 type CreateUserInput = Omit<IUser, "comparePassword">;
 type UpdateUserInput = Partial<CreateUserInput>;
 
 export class UserService {
   private userRepository: IUserRepository;
+  private exportUtils: ExportUtils;
 
   constructor() {
     const { userRepository } = getRepositories();
     this.userRepository = userRepository;
+    this.exportUtils = new ExportUtils();
   }
 
   private validateUserData(userData: CreateUserInput | UpdateUserInput): void {
@@ -386,5 +390,25 @@ export class UserService {
       role: "employee",
       isDeleted: { $ne: true }
     });
+  }
+
+  async exportUsers(
+    options: ExportOptions,
+    filters: Record<string, any> = {}
+  ): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
+    try {
+      // Buscar todos os usuários com os filtros aplicados
+      const { users } = await this.getAllUsers(1, 1000, filters);
+      
+      // Filtrar apenas funcionários (admin e employee) se necessário
+      const employees = users.filter(user => 
+        user.role === 'admin' || user.role === 'employee'
+      );
+
+      return await this.exportUtils.exportUsers(employees, options);
+    } catch (error) {
+      console.error("Erro ao exportar usuários:", error);
+      throw new Error("Erro ao exportar lista de funcionários");
+    }
   }
 }

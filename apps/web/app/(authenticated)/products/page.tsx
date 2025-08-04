@@ -6,6 +6,7 @@ import { useProductsFilters } from "@/hooks/products/useProductsFilters";
 import { useProductsStats } from "@/hooks/products/useProductsStats";
 import { ProductsStatsCards } from "@/components/products/ProductsStatsCards";
 import { ProductsTableWithFilters } from "@/components/products/ProductsTableWithFilters";
+import { ProductDialogs } from "@/components/products/ProductDialogs";
 import { PageContainer } from "@/components/ui/page-container";
 import { useState } from "react";
 
@@ -90,6 +91,17 @@ export default function ProductsPage() {
           navigateToProductDetails={navigateToProductDetails}
           formatCurrency={formatCurrency}
           onSearch={handleSearch}
+          onNewProduct={actions.handleOpenNewProduct}
+        />
+
+        {/* Diálogos */}
+        <ProductDialogs
+          newProductDialogOpen={state.newProductDialogOpen}
+          editProductDialogOpen={state.editProductDialogOpen}
+          productToEdit={state.productToEdit}
+          onNewProductDialogChange={actions.handleCloseNewProduct}
+          onEditProductDialogChange={actions.handleCloseEditProduct}
+          onSuccess={refetch}
         />
       </div>
     </PageContainer>

@@ -4,6 +4,7 @@ import { Parser } from "json2csv";
 import type { IPayment } from "../interfaces/IPayment";
 import type { ICashRegister } from "../interfaces/ICashRegister";
 import type { IOrder } from "../interfaces/IOrder";
+import type { IUser } from "../interfaces/IUser";
 import type {
   InventoryReportData,
   SalesReportData,
@@ -328,6 +329,24 @@ export class ExportUtils {
     }
   }
 
+  async exportUsers(
+    users: IUser[],
+    options: ExportOptions
+  ): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
+    const filename = options.filename || `users-export-${Date.now()}`;
+
+    switch (options.format) {
+      case "excel":
+        return this.generateUsersExcel(users, filename, options.title);
+      case "pdf":
+        return this.generateUsersPDF(users, filename, options.title);
+      case "csv":
+        return this.generateUsersCSV(users, filename);
+      default:
+        return this.generateUsersJSON(users, filename);
+    }
+  }
+
   private translatePaymentType(type: IPayment["type"]): string {
     const types: Record<IPayment["type"], string> = {
       sale: "Venda",
@@ -464,7 +483,7 @@ export class ExportUtils {
     const buffer = await workbook.xlsx.writeBuffer();
   
     return {
-      buffer: buffer as Buffer,
+      buffer: Buffer.from(buffer),
       contentType:
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       filename: `${filename}.xlsx`,
@@ -625,7 +644,7 @@ export class ExportUtils {
     const buffer = await workbook.xlsx.writeBuffer();
   
     return {
-      buffer: buffer as Buffer,
+      buffer: Buffer.from(buffer),
       contentType:
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       filename: `${filename}.xlsx`,
@@ -1163,7 +1182,7 @@ export class ExportUtils {
     const buffer = await workbook.xlsx.writeBuffer();
   
     return {
-      buffer: buffer as Buffer,
+      buffer: Buffer.from(buffer),
       contentType:
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       filename: `${filename}.xlsx`,
@@ -1719,7 +1738,7 @@ export class ExportUtils {
     const buffer = await workbook.xlsx.writeBuffer();
 
     return {
-      buffer: buffer as Buffer,
+      buffer: Buffer.from(buffer),
       contentType:
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       filename: `${filename}.xlsx`,
@@ -2028,7 +2047,7 @@ export class ExportUtils {
     const buffer = await workbook.xlsx.writeBuffer();
 
     return {
-      buffer: buffer as Buffer,
+      buffer: Buffer.from(buffer),
       contentType:
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       filename: `${filename}.xlsx`,
@@ -2306,7 +2325,7 @@ export class ExportUtils {
     const buffer = await workbook.xlsx.writeBuffer();
 
     return {
-      buffer: buffer as Buffer,
+      buffer: Buffer.from(buffer),
       contentType:
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       filename: `${filename}.xlsx`,
@@ -2523,7 +2542,7 @@ export class ExportUtils {
     const buffer = await workbook.xlsx.writeBuffer();
 
     return {
-      buffer: buffer as Buffer,
+      buffer: Buffer.from(buffer),
       contentType:
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       filename: `${filename}.xlsx`,
@@ -2744,7 +2763,7 @@ export class ExportUtils {
     const buffer = await workbook.xlsx.writeBuffer();
 
     return {
-      buffer: buffer as Buffer,
+      buffer: Buffer.from(buffer),
       contentType:
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       filename: `${filename}.xlsx`,
@@ -2949,7 +2968,7 @@ export class ExportUtils {
     const buffer = await workbook.xlsx.writeBuffer();
 
     return {
-      buffer: buffer as Buffer,
+      buffer: Buffer.from(buffer),
       contentType:
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       filename: `${filename}.xlsx`,
@@ -3102,6 +3121,237 @@ export class ExportUtils {
       buffer: Buffer.from(csv),
       contentType: "text/csv",
       filename: `${filename}.csv`,
+    };
+  }
+
+  private async generateUsersExcel(
+    users: IUser[],
+    filename: string,
+    title?: string
+  ): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
+    const workbook = new Excel.Workbook();
+    const worksheet = workbook.addWorksheet("Funcionários");
+
+    // Configurar cabeçalhos
+    worksheet.columns = [
+      { header: "Nome", key: "name", width: 30 },
+      { header: "Email", key: "email", width: 30 },
+      { header: "CPF", key: "cpf", width: 15 },
+      { header: "RG", key: "rg", width: 15 },
+      { header: "Telefone", key: "phone", width: 15 },
+      { header: "Endereço", key: "address", width: 40 },
+      { header: "Função", key: "role", width: 15 },
+      { header: "Status", key: "status", width: 15 },
+      { header: "Data de Cadastro", key: "createdAt", width: 20 },
+    ];
+
+    // Adicionar dados
+    users.forEach((user) => {
+      worksheet.addRow({
+        name: user.name || "",
+        email: user.email || "",
+        cpf: user.cpf || "",
+        rg: user.rg || "",
+        phone: user.phone || "",
+        address: user.address || "",
+        role: user.role === "admin" ? "Administrador" : "Funcionário",
+        status: user.status === "active" ? "Ativo" : "Inativo",
+        createdAt: user.createdAt 
+          ? new Date(user.createdAt).toLocaleDateString("pt-BR")
+          : "",
+      });
+    });
+
+    // Estilizar cabeçalhos
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FFE0E0E0" },
+    };
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    return {
+      buffer: Buffer.from(buffer),
+      contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      filename: `${filename}.xlsx`,
+    };
+  }
+
+  private async generateUsersPDF(
+    users: IUser[],
+    filename: string,
+    title?: string
+  ): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
+    return new Promise((resolve, reject) => {
+      try {
+        const doc = new PDFDocument({ margin: 50 });
+        const chunks: Buffer[] = [];
+
+        doc.on("data", (chunk) => chunks.push(chunk));
+        doc.on("end", () => {
+          const buffer = Buffer.concat(chunks);
+          resolve({
+            buffer,
+            contentType: "application/pdf",
+            filename: `${filename}.pdf`,
+          });
+        });
+
+        // Título
+        const reportTitle = title || "Lista de Funcionários";
+        doc.fontSize(20).text(reportTitle, { align: "center" });
+        doc.moveDown();
+
+        // Data de geração
+        doc.fontSize(12).text(`Gerado em: ${new Date().toLocaleString("pt-BR")}`, {
+          align: "right",
+        });
+        doc.moveDown(2);
+
+        // Cabeçalhos da tabela
+        const tableTop = 150;
+        const tableHeaders = ["Nome", "Email", "CPF", "Função", "Status"];
+        const columnWidths = [120, 120, 80, 80, 60];
+
+        // Desenhar linha de cabeçalho
+        doc.fontSize(12).font("Helvetica-Bold");
+        let x = 50;
+        tableHeaders.forEach((header, i) => {
+          doc.text(header, x, tableTop, {
+            width: columnWidths[i],
+            align: "left",
+          });
+          x += columnWidths[i];
+        });
+
+        // Linha separadora
+        doc
+          .moveTo(50, tableTop + 20)
+          .lineTo(50 + columnWidths.reduce((a, b) => a + b, 0), tableTop + 20)
+          .stroke();
+
+        // Dados
+        doc.font("Helvetica");
+        let y = tableTop + 30;
+
+        for (let i = 0; i < users.length; i++) {
+          const user = users[i];
+          
+          // Verificar se precisa de nova página
+          if (y > 700) {
+            doc.addPage();
+            y = 50;
+          }
+
+          x = 50;
+          doc.text(user.name || "", x, y, {
+            width: columnWidths[0],
+            align: "left",
+          });
+          x += columnWidths[0];
+
+          doc.text(user.email || "", x, y, {
+            width: columnWidths[1],
+            align: "left",
+          });
+          x += columnWidths[1];
+
+          doc.text(user.cpf || "", x, y, {
+            width: columnWidths[2],
+            align: "left",
+          });
+          x += columnWidths[2];
+
+          doc.text(
+            user.role === "admin" ? "Administrador" : "Funcionário",
+            x,
+            y,
+            {
+              width: columnWidths[3],
+              align: "left",
+            }
+          );
+          x += columnWidths[3];
+
+          doc.text(
+            user.status === "active" ? "Ativo" : "Inativo",
+            x,
+            y,
+            {
+              width: columnWidths[4],
+              align: "left",
+            }
+          );
+
+          y += 20;
+        }
+
+        doc.end();
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
+  private async generateUsersCSV(
+    users: IUser[],
+    filename: string
+  ): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
+    const fields = [
+      { label: "Nome", value: "name" },
+      { label: "Email", value: "email" },
+      { label: "CPF", value: "cpf" },
+      { label: "RG", value: "rg" },
+      { label: "Telefone", value: "phone" },
+      { label: "Endereço", value: "address" },
+      { 
+        label: "Função", 
+        value: (row: IUser) => row.role === "admin" ? "Administrador" : "Funcionário"
+      },
+      { 
+        label: "Status", 
+        value: (row: IUser) => row.status === "active" ? "Ativo" : "Inativo"
+      },
+      { 
+        label: "Data de Cadastro", 
+        value: (row: IUser) => row.createdAt 
+          ? new Date(row.createdAt).toLocaleDateString("pt-BR")
+          : ""
+      },
+    ];
+
+    const parser = new Parser({ fields });
+    const csv = parser.parse(users);
+    const buffer = Buffer.from(csv);
+
+    return {
+      buffer,
+      contentType: "text/csv",
+      filename: `${filename}.csv`,
+    };
+  }
+
+  private async generateUsersJSON(
+    users: IUser[],
+    filename: string
+  ): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
+    const data = users.map((user) => ({
+      name: user.name,
+      email: user.email,
+      cpf: user.cpf,
+      rg: user.rg,
+      phone: user.phone,
+      address: user.address,
+      role: user.role,
+      status: user.status,
+      createdAt: user.createdAt,
+    }));
+
+    return {
+      buffer: Buffer.from(JSON.stringify(data, null, 2)),
+      contentType: "application/json",
+      filename: `${filename}.json`,
     };
   }
 }

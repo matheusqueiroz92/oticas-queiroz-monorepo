@@ -27,7 +27,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { exportToPDF } from "@/app/_utils/exportToPdf";
 import { useToast } from "@/hooks/useToast";
 
-import type { LegacyClient } from "@/app/_types/legacy-client";
+// import type { LegacyClient } from "@/app/_types/legacy-client";
 
 export default function DebtorsPage() {
   const router = useRouter();

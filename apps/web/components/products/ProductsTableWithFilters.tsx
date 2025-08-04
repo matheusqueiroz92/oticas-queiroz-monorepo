@@ -29,6 +29,7 @@ interface ProductsTableWithFiltersProps {
   navigateToProductDetails: (productId: string) => void;
   formatCurrency: (value: number) => string;
   onSearch: (event: React.FormEvent) => void;
+  onNewProduct: () => void;
 }
 
 export function ProductsTableWithFilters({
@@ -55,6 +56,7 @@ export function ProductsTableWithFilters({
   setCurrentPage,
   navigateToProductDetails,
   formatCurrency,
+  onNewProduct,
 }: ProductsTableWithFiltersProps) {
   const showEmptyState = !isLoading && !error && products.length === 0;
   const productTypeOptions = getProductTypeFilterOptions();
@@ -106,9 +108,7 @@ export function ProductsTableWithFilters({
           onClearFilters={onClearFilters}
         />
       }
-      onNewItem={() => {
-        // Implementar lógica para novo produto
-      }}
+      onNewItem={onNewProduct}
       newButtonText="Novo Produto"
       onExport={() => {
         // Implementar lógica de exportação
@@ -133,6 +133,7 @@ export function ProductsTableWithFilters({
         formatCurrency={formatCurrency}
         onRefresh={onRefresh}
         onClearFilters={onClearFilters}
+        onNewProduct={onNewProduct}
       />
     </DataTableWithFilters>
   );

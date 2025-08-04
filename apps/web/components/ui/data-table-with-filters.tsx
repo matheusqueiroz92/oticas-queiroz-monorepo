@@ -144,7 +144,7 @@ export function DataTableWithFilters({
             <Button 
               size="sm" 
               onClick={onNewItem}
-              className="text-[var(--primary-color)] bg-[var(--primary-blue)]"
+              className="bg-[var(--primary-blue)] text-white"
             >
               {newButtonIcon}
               {newButtonText}

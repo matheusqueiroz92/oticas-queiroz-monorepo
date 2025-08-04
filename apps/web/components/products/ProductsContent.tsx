@@ -22,6 +22,7 @@ interface ProductsContentProps {
   formatCurrency: (value: number) => string;
   onRefresh: () => void;
   onClearFilters: () => void;
+  onNewProduct?: () => void;
 }
 
 export function ProductsContent({
@@ -63,12 +64,15 @@ export function ProductsContent({
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
         <Package className="h-16 w-16 text-muted-foreground mb-4" />
-        <h3 className="text-lg font-semibold">Nenhum produto encontrado</h3>
+        <h3 className="text-lg font-semibold">Nenhum produto cadastrado</h3>
         <p className="text-muted-foreground mt-2 mb-4">
-          {searchTerm ? "Tente ajustar os filtros de busca." : "Clique em 'Novo Produto' para adicionar um produto ao sistema."}
+          {searchTerm || productType !== "all" || stockFilter !== "all" 
+            ? "Tente ajustar os filtros de busca." 
+            : "Clique em 'Novo Produto' para adicionar um produto ao sistema."
+          }
         </p>
         <div className="flex gap-2">
-          {searchTerm && (
+          {(searchTerm || productType !== "all" || stockFilter !== "all") && (
             <Button 
               variant="outline" 
               onClick={onClearFilters}

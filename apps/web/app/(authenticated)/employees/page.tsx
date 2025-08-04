@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
 import { PageContainer } from "@/components/ui/page-container";
 import { EmployeeStatsCards } from "@/components/employees/EmployeeStatsCards";
 import { EmployeeTableWithFilters } from "@/components/employees/EmployeeTableWithFilters";
