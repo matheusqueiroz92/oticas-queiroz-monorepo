@@ -11,6 +11,7 @@ import {
   beforeEach,
   beforeAll,
   afterAll,
+  jest,
 } from "@jest/globals";
 import path from "node:path";
 import fs from "node:fs";
@@ -878,6 +879,71 @@ describe("AuthController", () => {
 
       expect(res.status).toBe(401);
       expect(res.body.message).toBe("Token não fornecido");
+    });
+
+    // NOVOS TESTES PARA COBERTURA 100%
+
+
+    it("should handle non-institution registration without CNPJ", async () => {
+      const admin = await User.create({
+        name: "Admin",
+        email: "admin-customer-cnpj@test.com",
+        password: await bcrypt.hash("123456", 10),
+        role: "admin",
+        cpf: generateValidCPF(),
+        rg: "987654321",
+        birthDate: new Date("1990-01-01"),
+      });
+
+      const adminToken = generateToken(admin._id.toString(), "admin");
+
+      const res = await request(app)
+        .post("/api/auth/register")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .field("name", "Test Customer")
+        .field("email", "customer@test.com")
+        .field("password", "password123")
+        .field("role", "customer")
+        .field("cpf", generateValidCPF())
+        .field("cnpj", "12345678000195") // CNPJ deve ser removido para clientes
+        .field("birthDate", "1990-01-01");
+
+      expect(res.status).toBe(201);
+      expect(res.body).toHaveProperty("_id");
+      expect(res.body.role).toBe("customer");
+      expect(res.body).toHaveProperty("cpf");
+      expect(res.body).not.toHaveProperty("cnpj"); // CNPJ deve ser removido
+    });
+
+    it("should handle non-institution registration without CNPJ", async () => {
+      const admin = await User.create({
+        name: "Admin",
+        email: "admin-customer-cnpj@test.com",
+        password: await bcrypt.hash("123456", 10),
+        role: "admin",
+        cpf: generateValidCPF(),
+        rg: "987654321",
+        birthDate: new Date("1990-01-01"),
+      });
+
+      const adminToken = generateToken(admin._id.toString(), "admin");
+
+      const res = await request(app)
+        .post("/api/auth/register")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .field("name", "Test Customer")
+        .field("email", "customer@test.com")
+        .field("password", "password123")
+        .field("role", "customer")
+        .field("cpf", generateValidCPF())
+        .field("cnpj", "12345678000195") // CNPJ deve ser removido para clientes
+        .field("birthDate", "1990-01-01");
+
+      expect(res.status).toBe(201);
+      expect(res.body).toHaveProperty("_id");
+      expect(res.body.role).toBe("customer");
+      expect(res.body).toHaveProperty("cpf");
+      expect(res.body).not.toHaveProperty("cnpj"); // CNPJ deve ser removido
     });
   });
 });

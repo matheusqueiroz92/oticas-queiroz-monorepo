@@ -4,7 +4,7 @@ import { Product } from "../../../schemas/ProductSchema";
 import { User } from "../../../schemas/UserSchema";
 import { generateToken } from "../../../utils/jwt";
 import mongoose from "mongoose";
-import type { ICreateProductDTO } from "../../../interfaces/IProduct";
+import type { CreateProductDTO } from "../../../interfaces/IProduct";
 import bcrypt from "bcrypt";
 import { config } from "dotenv";
 import {
@@ -24,14 +24,18 @@ describe("ProductController", () => {
   let adminToken: string;
   let employeeToken: string;
 
-  const mockProduct: ICreateProductDTO = {
+  const mockProduct: CreateProductDTO<"sunglasses_frame"> = {
     name: "Óculos de Sol Ray-Ban",
-    category: "solar",
+    productType: "sunglasses_frame",
     description: "Óculos de sol estiloso",
     image: "src/public/images/ray-ban-aviator.png",
     brand: "Ray-Ban",
-    modelGlasses: "Aviador",
-    price: 599.99,
+    modelSunglasses: "Aviador",
+    sellPrice: 599.99,
+    typeFrame: "aviador",
+    color: "dourado",
+    shape: "redondo",
+    reference: "RB3025",
     stock: 10,
   };
 
@@ -92,7 +96,7 @@ describe("ProductController", () => {
       const res = await request(app)
         .post("/api/products")
         .set("Authorization", `Bearer ${adminToken}`)
-        .send({ ...mockProduct, price: -10 });
+        .send({ ...mockProduct, sellPrice: -10 });
 
       expect(res.status).toBe(400);
     });
@@ -116,17 +120,21 @@ describe("ProductController", () => {
       await Product.create(mockProduct);
       await Product.create({
         ...mockProduct,
-        category: "grau",
+        productType: "prescription_frame",
         name: "Óculos de Grau",
+        typeFrame: "grau",
+        color: "preto",
+        shape: "quadrado",
+        reference: "PG001",
       });
 
       const res = await request(app)
-        .get("/api/products?category=solar")
+        .get("/api/products?productType=sunglasses_frame")
         .set("Authorization", `Bearer ${adminToken}`);
 
       expect(res.status).toBe(200);
       expect(res.body.products).toHaveLength(1);
-      expect(res.body.products[0].category).toBe("solar");
+      expect(res.body.products[0].productType).toBe("sunglasses_frame");
     });
   });
 
@@ -154,7 +162,7 @@ describe("ProductController", () => {
   describe("PUT /api/products/:id", () => {
     it("should update a product", async () => {
       const product = await Product.create(mockProduct);
-      const updateData = { price: 699.99 };
+      const updateData = { sellPrice: 699.99 };
 
       const res = await request(app)
         .put(`/api/products/${product._id}`)
@@ -162,7 +170,7 @@ describe("ProductController", () => {
         .send(updateData);
 
       expect(res.status).toBe(200);
-      expect(res.body.price).toBe(updateData.price);
+      expect(res.body.sellPrice).toBe(updateData.sellPrice);
     });
 
     it("should not update with invalid data", async () => {
@@ -171,7 +179,7 @@ describe("ProductController", () => {
       const res = await request(app)
         .put(`/api/products/${product._id}`)
         .set("Authorization", `Bearer ${adminToken}`)
-        .send({ price: -10 });
+        .send({ sellPrice: -10 });
 
       expect(res.status).toBe(400);
     });

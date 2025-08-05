@@ -4,8 +4,12 @@ export default {
   testMatch: ["**/*.test.ts"],
   testTimeout: 30000,
   setupFilesAfterEnv: ["./src/__tests__/setup.ts"],
-  collectCoverage: true,
+  collectCoverage: false, // Desabilitar cobertura global
   coverageReporters: ["text", "lcov", "json"],
+  verbose: false,
+  silent: true,
+  detectOpenHandles: true,
+  forceExit: true,
   collectCoverageFrom: [
     "src/**/*.ts", 
     "!**/node_modules/**", 

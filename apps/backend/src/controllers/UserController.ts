@@ -44,8 +44,34 @@ export class UserController {
         limit,
         allQuery: req.query
       });
-  
 
+      // Validação de serviceOrder
+      if (serviceOrder && typeof serviceOrder === 'string') {
+        const serviceOrderStr = serviceOrder.toString();
+        if (serviceOrderStr.length < 4 || serviceOrderStr.length > 7) {
+          throw new ValidationError(
+            "Número de OS inválido. Deve ter entre 4 e 7 dígitos.",
+            ErrorCode.VALIDATION_ERROR
+          );
+        }
+        if (!/^\d+$/.test(serviceOrderStr)) {
+          throw new ValidationError(
+            "Número de OS inválido. Deve conter apenas dígitos.",
+            ErrorCode.VALIDATION_ERROR
+          );
+        }
+      }
+
+      // Validação de CPF
+      if (cpf && typeof cpf === 'string') {
+        const cpfStr = cpf.toString();
+        if (cpfStr.length !== 11 || !/^\d+$/.test(cpfStr)) {
+          throw new ValidationError(
+            "CPF inválido. Deve conter 11 dígitos numéricos",
+            ErrorCode.INVALID_CPF
+          );
+        }
+      }
   
       let result: { users: IUser[]; total: number } = { users: [], total: 0 };
   
@@ -57,8 +83,6 @@ export class UserController {
         req.query.startDate ||
         req.query.endDate ||
         req.query.hasDebts;
-
-
 
       // Sempre usar getAllUsers com filtros
       const filters = { ...req.query };
@@ -73,14 +97,12 @@ export class UserController {
         delete filters.search;
       }
       
-              result = await this.userService.getAllUsers(page, limit, filters);
+      result = await this.userService.getAllUsers(page, limit, filters);
     
       if (serviceOrder && role === 'customer') {
         const filteredUsers = result.users.filter(user => user.role === 'customer');
         result = { users: filteredUsers, total: filteredUsers.length };
       }
-    
-
     
       res.status(200).json({
         users: result.users,
