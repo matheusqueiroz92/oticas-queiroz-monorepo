@@ -104,6 +104,12 @@ export class StockService {
    */
   private async supportsTransactions(): Promise<boolean> {
     try {
+      // Verificar se a conexão está disponível
+      if (!mongoose.connection.db) {
+        console.warn('Conexão com MongoDB não disponível');
+        return false;
+      }
+
       // Primeiro, tentar verificar via serverStatus
       const admin = mongoose.connection.db.admin();
       const serverStatus = await admin.serverStatus();
@@ -128,12 +134,14 @@ export class StockService {
         console.log('✅ MongoDB standalone suporta transações');
         return true;
       } catch (transactionError) {
-        console.log('❌ MongoDB standalone não suporta transações:', transactionError.message);
+        const errorMessage = transactionError instanceof Error ? transactionError.message : String(transactionError);
+        console.log('❌ MongoDB standalone não suporta transações:', errorMessage);
         return false;
       }
       
     } catch (error) {
-      console.warn('Não foi possível verificar suporte a transações, assumindo que não suporta:', error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.warn('Não foi possível verificar suporte a transações, assumindo que não suporta:', errorMessage);
       return false;
     }
   }

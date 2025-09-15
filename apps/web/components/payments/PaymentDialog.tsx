@@ -1,9 +1,6 @@
 "use client";
 
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { Loader2, DollarSign, CreditCard, Banknote, Calendar as CalendarIcon, User, Store, ClipboardCheck } from "lucide-react";
+import { Loader2, DollarSign, Banknote, Calendar as CalendarIcon, User, Store, ClipboardCheck } from "lucide-react";
 import React, { useState, useEffect, useMemo } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -45,50 +42,38 @@ import { Calendar } from "@/components/ui/calendar";
 import { usePayments } from "@/hooks/payments/usePayments";
 import { useToast } from "@/hooks/useToast";
 import { handleError, showSuccess } from "@/app/_utils/error-handler";
-import { IPayment, PaymentType, PaymentMethod, PaymentStatus } from "@/app/_types/payment";
+import { IPayment } from "@/app/_types/payment";
 import { formatCurrency, formatDate } from "@/app/_utils/formatters";
 import ClientSearch from "@/components/orders/ClientSearch";
 import type { User as UserType } from "@/app/_types/user";
 import type { LegacyClient } from "@/app/_types/legacy-client";
 import type { Order } from "@/app/_types/order";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
-// Schema de validação para pagamentos - CORRIGIDO
-const paymentSchema = z.object({
-  type: z.enum(["sale", "debt_payment", "expense"], {
-    required_error: "Selecione um tipo de pagamento",
-  }),
-  paymentMethod: z.enum(["credit", "debit", "cash", "pix", "check", "bank_slip", "promissory_note", "mercado_pago"], {
-    required_error: "Selecione um método de pagamento",
-  }),
-  amount: z.coerce.number().min(0.01, "Valor deve ser maior que zero"),
-  paymentDate: z.date({
-    required_error: "Selecione a data do pagamento",
-  }),
-  description: z.string().optional(),
-  customerId: z.string().optional(),
-  legacyClientId: z.string().optional(),
-  orderId: z.string().optional(),
-  installments: z.number().min(1).max(12).optional(), // CORRIGIDO: apenas um número
-  cashRegisterId: z.string({
-    required_error: "É necessário ter um caixa aberto",
-  }),
-  // Campos para cheque
-  check: z.object({
-    bank: z.string().optional(),
-    checkNumber: z.string().optional(),
-    checkDate: z.date().optional(),
-    presentationDate: z.date().optional(),
-    accountHolder: z.string().optional(),
-    branch: z.string().optional(),
-    accountNumber: z.string().optional(),
-  }).optional(),
-  category: z.string().optional(),
-  status: z.enum(["completed", "pending", "cancelled"]).default("completed"),
-});
-
-type PaymentFormData = z.infer<typeof paymentSchema>;
+// Tipo para dados do formulário de pagamento
+type PaymentFormData = {
+  type: "sale" | "debt_payment" | "expense";
+  paymentMethod: "credit" | "debit" | "cash" | "pix" | "check" | "bank_slip" | "promissory_note" | "mercado_pago" | "sicredi_boleto";
+  amount: number;
+  paymentDate: Date;
+  description?: string;
+  customerId?: string;
+  legacyClientId?: string;
+  orderId?: string;
+  installments?: number;
+  cashRegisterId: string;
+  check?: {
+    bank?: string;
+    checkNumber?: string;
+    checkDate?: Date;
+    presentationDate?: Date;
+    accountHolder?: string;
+    branch?: string;
+    accountNumber?: string;
+  };
+  category?: string;
+  status: "completed" | "pending" | "cancelled";
+};
 
 interface PaymentDialogProps {
   open: boolean;
@@ -114,20 +99,13 @@ export function PaymentDialog({
     isLoadingCashRegister,
     cashRegister,
     customers,
-    isLoadingCustomers,
     legacyClients,
-    isLoadingLegacyClients,
     clientOrders,
     isLoadingOrders,
-    customerSearch,
-    orderSearch,
     legacyClientSearch,
     selectedEntityType,
-    setCustomerSearch,
-    setOrderSearch,
     setLegacyClientSearch,
     onClientSelect,
-    onLegacyClientSelect,
     onOrderSelect,
     onEntityTypeSelect,
     fetchAllCustomers,
@@ -410,12 +388,6 @@ export function PaymentDialog({
     { value: "mercado_pago", label: "Mercado Pago" },
   ];
 
-  const getPaymentTypeText = () => {
-    const type = form.watch("type");
-    const options = getPaymentTypeOptions();
-    const selectedOption = options.find(option => option.value === type);
-    return selectedOption ? selectedOption.label : type;
-  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
