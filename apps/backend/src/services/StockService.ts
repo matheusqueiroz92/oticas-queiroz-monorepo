@@ -122,22 +122,15 @@ export class StockService {
         return true;
       }
       
-      // Se não é replica set, testar transações diretamente
-      console.log('🔍 MongoDB standalone detectado - testando suporte a transações...');
+      // Se não é replica set, NÃO usar transações
+      console.log('⚠️ MongoDB standalone detectado - NÃO suporta transações');
+      console.log('📊 Detalhes do servidor:');
+      console.log('- Host:', serverStatus.host);
+      console.log('- Versão:', serverStatus.version);
+      console.log('- Repl.ismaster:', serverStatus.repl?.ismaster);
+      console.log('- Repl.secondary:', serverStatus.repl?.secondary);
       
-      try {
-        const session = await mongoose.connection.startSession();
-        session.startTransaction();
-        await session.commitTransaction();
-        session.endSession();
-        
-        console.log('✅ MongoDB standalone suporta transações');
-        return true;
-      } catch (transactionError) {
-        const errorMessage = transactionError instanceof Error ? transactionError.message : String(transactionError);
-        console.log('❌ MongoDB standalone não suporta transações:', errorMessage);
-        return false;
-      }
+      return false;
       
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
