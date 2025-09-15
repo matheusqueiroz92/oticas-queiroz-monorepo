@@ -365,7 +365,8 @@ export class ExportUtils {
       bank_slip: "Boleto",
       promissory_note: "Promissória",
       mercado_pago: "Mercado Pago",
-      check: "check"
+      check: "check",
+      sicredi_boleto: "Boleto SICREDI"
     };
     return methods[method] || method;
   }

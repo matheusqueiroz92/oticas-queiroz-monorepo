@@ -18,7 +18,8 @@ export interface IPayment {
     | "bank_slip"
     | "promissory_note"
     | "check"
-    | "mercado_pago";
+    | "mercado_pago"
+    | "sicredi_boleto";
   status: "pending" | "completed" | "cancelled";
 
   mercadoPagoId?: string;
@@ -31,8 +32,21 @@ export interface IPayment {
   };
 
   bank_slip?: {
-    code: string;
-    bank: string;
+    code?: string;
+    bank?: string;
+    sicredi?: {
+      nossoNumero?: string;
+      codigoBarras?: string;
+      linhaDigitavel?: string;
+      pdfUrl?: string;
+      qrCode?: string;
+      status?: "REGISTRADO" | "BAIXADO" | "PAGO" | "VENCIDO" | "PROTESTADO" | "CANCELADO";
+      dataVencimento?: Date;
+      dataPagamento?: Date;
+      dataBaixa?: Date;
+      valorPago?: number;
+      motivoCancelamento?: string;
+    };
   };
 
   promissoryNote?: {

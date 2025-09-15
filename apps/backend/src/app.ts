@@ -10,12 +10,14 @@ import paymentRoutes from "./routes/paymentRoutes";
 import cashRegisterRoutes from "./routes/cashRegisterRoutes";
 import legacyClientRoutes from "./routes/legacyClientRoutes";
 import reportRoutes from "./routes/reportRoutes";
-import mercadoPagoRoutes from "./routes/mercadoPagoRoutes";
+import sicrediRoutes from "./routes/sicrediRoutes";
+import sicrediSyncRoutes from "./routes/sicrediSyncRoutes";
 import connectDB from "./config/db";
 import cors from "cors";
 import path from "node:path";
 import dotenv from "dotenv";
-import { initMercadoPago } from "./config/mercadoPago";
+import { initSicredi } from "./config/sicredi";
+import { startSicrediSync } from "./scripts/startSicrediSync";
 
 dotenv.config();
 
@@ -95,7 +97,8 @@ class App {
     this.app.use("/api", cashRegisterRoutes);
     this.app.use("/api", legacyClientRoutes);
     this.app.use("/api", reportRoutes);
-    this.app.use("/api", mercadoPagoRoutes);
+    this.app.use("/api/sicredi", sicrediRoutes);
+    this.app.use("/api/sicredi-sync", sicrediSyncRoutes);
     
     // Adicione a rota de diagnóstico aqui
     this.app.get("/api/debug/images-path", (_req, res) => {
@@ -143,7 +146,22 @@ class App {
   }
 
   private initPaymentGateways(): void {
-    initMercadoPago();
+    // Inicializar SICREDI
+    try {
+      initSicredi();
+      
+      // Iniciar sincronização automática após 5 segundos
+      setTimeout(async () => {
+        try {
+          await startSicrediSync();
+        } catch (error) {
+          console.warn("⚠️  SICREDI Sync: Não foi possível iniciar a sincronização:", error);
+        }
+      }, 5000);
+      
+    } catch (error) {
+      console.warn("⚠️  SICREDI: Não foi possível inicializar a integração:", error);
+    }
   }
 
   private swagger(): void {

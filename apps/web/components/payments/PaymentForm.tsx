@@ -295,6 +295,13 @@ export function PaymentForm({
                       <SelectItem value="debit">Cartão de Débito</SelectItem>
                       <SelectItem value="pix">PIX</SelectItem>
                       <SelectItem value="check">Cheque</SelectItem>
+                      <SelectItem value="bank_slip">Boleto Bancário</SelectItem>
+                      <SelectItem value="sicredi_boleto">
+                        <div className="flex items-center">
+                          <CreditCard className="h-4 w-4 mr-2" />
+                          Boleto SICREDI
+                        </div>
+                      </SelectItem>
                       {showMercadoPagoOption && (
                         <SelectItem value="mercado_pago">
                           <div className="flex items-center">

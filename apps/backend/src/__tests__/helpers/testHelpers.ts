@@ -1,15 +1,19 @@
 import { CashRegister } from "../../schemas/CashRegisterSchema";
 import { User } from "../../schemas/UserSchema";
 import { generateToken } from "../../utils/jwt";
+import { generateValidCPF } from "../../utils/validators";
 import bcrypt from "bcrypt";
 
 export const createTestUser = async (
-  role: "admin" | "employee" | "customer"
+  role: "admin" | "employee" | "customer" | "institution"
 ) => {
   const password = "123456";
   const hashedPassword = await bcrypt.hash(password, 10);
   const email = `${role}${Date.now()}@test.com`;
-  const cpf = "12345678901";
+  
+  // Usar CPF válido ou undefined para institution
+  const cpf = role === "institution" ? undefined : generateValidCPF();
+  
   const rg = "987654321";
   const birthDate = new Date("1990-01-01");
 
@@ -39,6 +43,7 @@ export const createTestCashRegister = async (userId: string) => {
       credit: 0,
       debit: 0,
       pix: 0,
+      check: 0, // Adicionando campo check que estava faltando
     },
     payments: {
       received: 0,

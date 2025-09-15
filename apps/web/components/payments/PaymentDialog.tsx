@@ -405,6 +405,7 @@ export function PaymentDialog({
     { value: "pix", label: "PIX" },
     { value: "check", label: "Cheque" },
     { value: "bank_slip", label: "Boleto Bancário" },
+    { value: "sicredi_boleto", label: "Boleto SICREDI" },
     { value: "promissory_note", label: "Nota Promissória" },
     { value: "mercado_pago", label: "Mercado Pago" },
   ];

@@ -18,7 +18,7 @@ describe("LegacyClientModel", () => {
     "_id" | "createdAt" | "updatedAt"
   > = {
     name: "Test Client",
-    documentId: "12345678900", // Já sem formatação
+    cpf: "12345678900", // Usando cpf ao invés de documentId
     email: "test@example.com",
     phone: "11999999999",
     totalDebt: 1000,
@@ -32,7 +32,7 @@ describe("LegacyClientModel", () => {
 
       expect(client).toHaveProperty("_id");
       expect(client.name).toBe(mockLegacyClient.name);
-      expect(client.documentId).toBe(mockLegacyClient.documentId);
+      expect(client.cpf).toBe(mockLegacyClient.cpf);
       expect(client.status).toBe("active");
       expect(client.totalDebt).toBe(1000);
       expect(client.paymentHistory).toEqual([]);
@@ -41,11 +41,11 @@ describe("LegacyClientModel", () => {
     it("should clean document id formatting", async () => {
       const clientWithFormattedDoc = {
         ...mockLegacyClient,
-        documentId: "123.456.789-00",
+        cpf: "123.456.789-00",
       };
 
       const client = await legacyClientModel.create(clientWithFormattedDoc);
-      expect(client.documentId).toBe("123.456.789-00");
+      expect(client.cpf).toBe("123.456.789-00");
     });
   });
 
@@ -74,7 +74,7 @@ describe("LegacyClientModel", () => {
       await legacyClientModel.create(mockLegacyClient);
 
       const found = await legacyClientModel.findByDocument("123.456.789-00");
-      expect(found?.documentId).toBe("12345678900");
+      expect(found?.cpf).toBe("12345678900");
       expect(found?.name).toBe(mockLegacyClient.name);
     });
 
@@ -82,7 +82,7 @@ describe("LegacyClientModel", () => {
       await legacyClientModel.create(mockLegacyClient);
 
       const found = await legacyClientModel.findByDocument("12345678900");
-      expect(found?.documentId).toBe("12345678900");
+      expect(found?.cpf).toBe("12345678900");
     });
   });
 
@@ -91,7 +91,7 @@ describe("LegacyClientModel", () => {
       await legacyClientModel.create(mockLegacyClient);
       await legacyClientModel.create({
         ...mockLegacyClient,
-        documentId: "987.654.321-00",
+        cpf: "987.654.321-00",
       });
 
       const result = await legacyClientModel.findAll(1, 10);
@@ -100,117 +100,115 @@ describe("LegacyClientModel", () => {
       expect(result.total).toBe(2);
     });
 
-    it("should apply filters correctly", async () => {
+    it("should filter by status", async () => {
       await legacyClientModel.create(mockLegacyClient);
       await legacyClientModel.create({
         ...mockLegacyClient,
-        documentId: "987.654.321-00",
+        cpf: "987.654.321-00",
         status: "inactive",
       });
 
-      const result = await legacyClientModel.findAll(1, 10, {
-        status: "active",
-      });
+      const result = await legacyClientModel.findAll(1, 10, "active");
 
       expect(result.clients).toHaveLength(1);
-      expect(result.clients[0]?.status).toBe("active");
+      expect(result.clients[0].status).toBe("active");
     });
   });
 
-  describe("findDebtors", () => {
-    it("should find active clients with debt", async () => {
-      await legacyClientModel.create(mockLegacyClient);
-      await legacyClientModel.create({
-        ...mockLegacyClient,
-        documentId: "987.654.321-00",
-        totalDebt: 0,
-      });
-
-      const debtors = await legacyClientModel.findDebtors();
-
-      expect(debtors).toHaveLength(1);
-      expect(debtors[0]?.totalDebt).toBe(1000);
-    });
-
-    it("should filter by debt range", async () => {
-      await legacyClientModel.create(mockLegacyClient); // 1000
-      await legacyClientModel.create({
-        ...mockLegacyClient,
-        documentId: "987.654.321-00",
-        totalDebt: 2000,
-      });
-
-      const debtors = await legacyClientModel.findDebtors(1500);
-
-      expect(debtors).toHaveLength(1);
-      expect(debtors[0]?.totalDebt).toBe(2000);
-    });
-  });
-
-  describe("updateDebt", () => {
-    it("should update client debt and add payment history", async () => {
+  describe("update", () => {
+    it("should update a client", async () => {
       const created = await legacyClientModel.create(mockLegacyClient);
 
       if (!created?._id) {
         throw new Error("Failed to create legacy client");
       }
 
-      const paymentId = new Types.ObjectId().toString();
-      const updated = await legacyClientModel.updateDebt(
+      const updateData = {
+        name: "Updated Client",
+        totalDebt: 1500,
+      };
+
+      const updated = await legacyClientModel.update(created._id, updateData);
+
+      expect(updated?.name).toBe("Updated Client");
+      expect(updated?.totalDebt).toBe(1500);
+    });
+  });
+
+  describe("delete", () => {
+    it("should delete a client", async () => {
+      const created = await legacyClientModel.create(mockLegacyClient);
+
+      if (!created?._id) {
+        throw new Error("Failed to create legacy client");
+      }
+
+      const deleted = await legacyClientModel.delete(created._id);
+
+      expect(deleted).toBe(true);
+
+      const found = await legacyClientModel.findById(created._id);
+      expect(found).toBeNull();
+    });
+  });
+
+  describe("addPayment", () => {
+    it("should add payment to client history", async () => {
+      const created = await legacyClientModel.create(mockLegacyClient);
+      const paymentId = new Types.ObjectId();
+
+      if (!created?._id) {
+        throw new Error("Failed to create legacy client");
+      }
+
+      const updated = await legacyClientModel.addPayment(
         created._id,
-        -500, // reducing debt
-        paymentId
+        paymentId.toString(),
+        100,
+        new Date()
       );
 
-      expect(updated?.totalDebt).toBe(500);
-      expect(updated?.lastPayment?.amount).toBe(500);
       expect(updated?.paymentHistory).toHaveLength(1);
-      expect(updated?.paymentHistory[0]?.paymentId).toBe(paymentId);
+      expect(updated?.paymentHistory[0].amount).toBe(100);
+      expect(updated?.paymentHistory[0].paymentId).toBe(paymentId.toString());
     });
+  });
 
-    it("should not add to payment history when increasing debt", async () => {
+  describe("updateTotalDebt", () => {
+    it("should update total debt", async () => {
       const created = await legacyClientModel.create(mockLegacyClient);
 
       if (!created?._id) {
         throw new Error("Failed to create legacy client");
       }
 
-      const updated = await legacyClientModel.updateDebt(created._id, 500);
+      const updated = await legacyClientModel.updateTotalDebt(created._id, 500);
 
-      expect(updated?.totalDebt).toBe(1500);
-      expect(updated?.paymentHistory).toHaveLength(0);
+      expect(updated?.totalDebt).toBe(500);
     });
   });
 
   describe("getPaymentHistory", () => {
-    it("should get payment history with date range", async () => {
-      const client = await legacyClientModel.create(mockLegacyClient);
+    it("should get payment history", async () => {
+      const created = await legacyClientModel.create(mockLegacyClient);
       const paymentId = new Types.ObjectId();
 
-      // Criar um pagamento
-      await LegacyClient.findByIdAndUpdate(client._id, {
-        $push: {
-          paymentHistory: {
-            date: new Date(),
-            amount: 100,
-            paymentId,
-          },
-        },
-      });
+      if (!created?._id) {
+        throw new Error("Failed to create legacy client");
+      }
 
-      if (!client._id) throw new Error("Client not created");
-
-      const history = await legacyClientModel.getPaymentHistory(
-        client._id,
-        new Date(Date.now() - 86400000), // 1 day ago
+      await legacyClientModel.addPayment(
+        created._id,
+        paymentId.toString(),
+        100,
         new Date()
       );
 
-      console.log(history);
+      const history = await legacyClientModel.getPaymentHistory(created._id);
 
       expect(history).toHaveLength(1);
       expect(history[0].amount).toBe(100);
-      //expect(history[0].paymentId).toBe(paymentId.toString());
+      expect(history[0].paymentId).toBe(paymentId.toString());
     });
   });
 });

@@ -214,10 +214,10 @@ describe("OrderValidationService", () => {
       }).not.toThrow();
     });
 
-    it("deve permitir admin modificar pedido entregue", () => {
+    it("deve falhar ao tentar modificar pedido entregue (mesmo para admin)", () => {
       expect(() => {
         orderValidationService.validateUpdatePermissions("admin", "delivered", "in_production");
-      }).not.toThrow();
+      }).toThrow(new OrderValidationError("Transição de status inválida: delivered → in_production. Transições permitidas: "));
     });
 
     it("deve falhar ao tentar atualizar pedido cancelado", () => {
@@ -690,7 +690,7 @@ describe("OrderValidationService", () => {
     it("deve testar todos os branches de validateUpdatePermissions", () => {
       // Employee tentando modificar status válido (sem problemas)
       expect(() => {
-        orderValidationService.validateUpdatePermissions("employee", "pending", "ready");
+        orderValidationService.validateUpdatePermissions("employee", "pending", "in_production");
       }).not.toThrow();
 
       // Employee tentando modificar pedido que já está entregue (deve falhar)
@@ -708,14 +708,14 @@ describe("OrderValidationService", () => {
         orderValidationService.validateUpdatePermissions("admin", "cancelled", "pending");
       }).toThrow(new OrderValidationError("Não é possível atualizar pedido cancelado"));
 
-      // Admin pode fazer qualquer mudança válida
+      // Admin pode fazer mudanças válidas
       expect(() => {
-        orderValidationService.validateUpdatePermissions("admin", "delivered", "cancelled");
+        orderValidationService.validateUpdatePermissions("admin", "ready", "delivered");
       }).not.toThrow();
 
       // Admin modificando pedido normal
       expect(() => {
-        orderValidationService.validateUpdatePermissions("admin", "pending", "ready");
+        orderValidationService.validateUpdatePermissions("admin", "pending", "in_production");
       }).not.toThrow();
     });
 

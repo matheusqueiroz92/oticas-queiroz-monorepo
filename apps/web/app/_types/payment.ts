@@ -7,6 +7,7 @@ export type PaymentMethod =
   | "bank_slip"
   | "promissory_note"
   | "mercado_pago"
+  | "sicredi_boleto"
 export type PaymentType = "sale" | "debt_payment" | "expense";
 export type PaymentStatus = "pending" | "completed" | "cancelled";
 

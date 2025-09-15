@@ -30,15 +30,26 @@ describe("OrderController", () => {
   const mockPrescriptionData = {
     doctorName: "Dr. Smith",
     clinicName: "Eye Clinic",
-    appointmentdate: new Date(),
-    leftEye: {
-      near: { sph: -2.5, cyl: -0.5, axis: 180, pd: 32 },
-      far: { sph: -2.0, cyl: -0.5, axis: 180, pd: 32 },
-    },
+    appointmentDate: new Date(),
     rightEye: {
-      near: { sph: -2.0, cyl: -0.5, axis: 175, pd: 32 },
-      far: { sph: -1.5, cyl: -0.5, axis: 175, pd: 32 },
+      sph: "-2.5",
+      cyl: "-0.5",
+      axis: 180,
+      pd: 32,
     },
+    leftEye: {
+      sph: "-2.0",
+      cyl: "-0.5",
+      axis: 175,
+      pd: 32,
+    },
+    nd: 1.5,
+    oc: 1.5,
+    addition: 1.0,
+    bridge: 18,
+    rim: 50,
+    vh: 35,
+    sh: 25,
   };
 
   beforeEach(async () => {
@@ -77,14 +88,18 @@ describe("OrderController", () => {
     // Criar produto
     const product = await Product.create({
       name: "Test Product",
-      category: "solar",
+      productType: "sunglasses_frame",
       description: "Test Description",
       brand: "Test Brand",
-      modelGlasses: "Test Model",
-      price: 100,
+      modelSunglasses: "Test Model",
+      sellPrice: 100,
+      typeFrame: "aviador",
+      color: "preto",
+      shape: "redondo",
+      reference: "TEST001",
       stock: 10,
     });
-    productId = product._id.toString();
+    productId = (product._id as any).toString();
 
     // Criar laboratório
     const laboratory = await Laboratory.create({
@@ -110,15 +125,18 @@ describe("OrderController", () => {
     employeeId: "",
     products: [""],
     description: "Test Order",
-    paymentMethod: "credit_card",
+    paymentMethod: "credit",
+    paymentStatus: "pending",
+    orderDate: new Date(),
     paymentEntry: 100,
     installments: 3,
     deliveryDate: new Date(Date.now() + 86400000),
     status: "pending",
     laboratoryId: "",
-    lensType: "multifocal",
     prescriptionData: mockPrescriptionData,
     totalPrice: 599.99,
+    discount: 0,
+    finalPrice: 599.99,
   };
 
   describe("POST /api/orders", () => {
@@ -127,7 +145,7 @@ describe("OrderController", () => {
         ...mockOrder,
         clientId,
         employeeId,
-        products: [productId],
+        products: [{ _id: productId, productType: "sunglasses_frame" }],
         laboratoryId,
       };
 
@@ -135,6 +153,12 @@ describe("OrderController", () => {
         .post("/api/orders")
         .set("Authorization", `Bearer ${employeeToken}`)
         .send(orderData);
+
+      if (res.status !== 201) {
+        console.log("Response body:", JSON.stringify(res.body, null, 2));
+        console.log("Response status:", res.status);
+        console.log("Request data:", JSON.stringify(orderData, null, 2));
+      }
 
       expect(res.status).toBe(201);
       expect(res.body).toHaveProperty("_id");
@@ -170,7 +194,7 @@ describe("OrderController", () => {
         ...mockOrder,
         clientId,
         employeeId,
-        products: [productId],
+        products: [{ _id: productId, productType: "sunglasses_frame" }],
         laboratoryId,
       });
 
@@ -188,7 +212,7 @@ describe("OrderController", () => {
         ...mockOrder,
         clientId,
         employeeId,
-        products: [productId],
+        products: [{ _id: productId, productType: "sunglasses_frame" }],
         laboratoryId,
         status: "pending",
       });
@@ -197,7 +221,7 @@ describe("OrderController", () => {
         ...mockOrder,
         clientId,
         employeeId,
-        products: [productId],
+        products: [{ _id: productId, productType: "sunglasses_frame" }],
         laboratoryId,
         status: "delivered",
       });
@@ -218,7 +242,7 @@ describe("OrderController", () => {
         ...mockOrder,
         clientId,
         employeeId,
-        products: [productId],
+        products: [{ _id: productId, productType: "sunglasses_frame" }],
         laboratoryId,
       });
 
@@ -245,7 +269,7 @@ describe("OrderController", () => {
         ...mockOrder,
         clientId,
         employeeId,
-        products: [productId],
+        products: [{ _id: productId, productType: "sunglasses_frame" }],
         laboratoryId,
       });
 
@@ -263,7 +287,7 @@ describe("OrderController", () => {
         ...mockOrder,
         clientId,
         employeeId,
-        products: [productId],
+        products: [{ _id: productId, productType: "sunglasses_frame" }],
         laboratoryId,
       });
 

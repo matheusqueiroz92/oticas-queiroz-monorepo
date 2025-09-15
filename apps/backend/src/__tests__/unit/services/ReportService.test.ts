@@ -120,7 +120,13 @@ describe("ReportService", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    
+    // Mock do construtor do ReportModel
+    const { ReportModel } = require("../../../models/ReportModel");
+    ReportModel.mockImplementation(() => mockReportModel);
+    
     reportService = new ReportService();
+    
     // Injetar os mocks necessários após a criação
     (reportService as any).reportModel = mockReportModel;
     (reportService as any).userRepository = mockUserRepository;

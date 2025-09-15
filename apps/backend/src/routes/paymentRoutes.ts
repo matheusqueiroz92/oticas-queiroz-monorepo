@@ -816,7 +816,7 @@ router.get(
  *         description: Erro interno do servidor
  */
 router.get(
-  "/api/payments/my-debts",
+  "/payments/my-debts",
   authenticate,
   authorize(["customer"]),
   asyncHandler(paymentController.getMyDebts.bind(paymentController))
@@ -902,7 +902,7 @@ router.get(
  *         description: Erro interno do servidor
  */
 router.get(
-  "/api/payments/my-payments",
+  "/payments/my-payments",
   authenticate,
   authorize(["customer"]),
   asyncHandler(paymentController.getMyPayments.bind(paymentController))
@@ -953,13 +953,18 @@ router.get(
  *         description: Erro interno do servidor
  */
 router.get(
-  "/api/payments/client/:clientId/debts",
+  "/payments/client/:clientId/debts",
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler(paymentController.getClientDebts.bind(paymentController))
 );
 
-// DEBUG: Rota temporária para verificar dados do pagamento/pedido
+// Essas duas rotas são rotas de depuração (debug) temporárias, utilizadas para auxiliar no desenvolvimento e manutenção do sistema de pagamentos.
+// Elas não devem ser expostas em produção sem restrições.
+
+//  Rota GET /debug/payments/order/:orderId
+//    - Serve para consultar e verificar os dados de pagamento associados a um pedido específico (orderId).
+//    - Útil para desenvolvedores e administradores inspecionarem rapidamente a relação entre pagamentos e pedidos, facilitando a identificação de inconsistências ou problemas.
 router.get(
   "/debug/payments/order/:orderId",
   authenticate,
@@ -967,7 +972,11 @@ router.get(
   asyncHandler(paymentController.debugPaymentOrder.bind(paymentController))
 );
 
-// DEBUG: Rota temporária para corrigir status de um pagamento
+
+//  Rota POST /debug/payments/:paymentId/fix-status
+//    - Serve para corrigir manualmente o status de um pagamento identificado por paymentId.
+//    - Pode ser utilizada para ajustar pagamentos que ficaram com status incorreto devido a falhas de integração, bugs ou testes.
+//    - Permite que administradores/funcionários atualizem o status sem necessidade de manipulação direta no banco de dados.
 router.post(
   "/debug/payments/:paymentId/fix-status",
   authenticate,

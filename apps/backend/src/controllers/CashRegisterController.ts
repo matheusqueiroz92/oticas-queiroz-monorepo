@@ -66,7 +66,7 @@ export class CashRegisterController {
         return;
       }
 
-      if (req.user.role === "customer") {
+      if (req.user.role !== "admin") {
         res.status(403).json({ message: "Acesso não autorizado" });
         return;
       }
@@ -107,7 +107,7 @@ export class CashRegisterController {
         return;
       }
 
-      if (req.user.role === "customer") {
+      if (req.user.role !== "admin") {
         res.status(403).json({ message: "Acesso não autorizado" });
         return;
       }

@@ -22,7 +22,7 @@ const paymentSchema = new Schema(
     },
     paymentMethod: {
       type: String,
-      enum: ["credit", "debit", "cash", "pix", "bank_slip", "promissory_note", "check", "mercado_pago"],
+      enum: ["credit", "debit", "cash", "pix", "bank_slip", "promissory_note", "check", "mercado_pago", "sicredi_boleto"],
       required: true,
     },
     mercadoPagoId: { type: String },
@@ -54,6 +54,24 @@ const paymentSchema = new Schema(
     bank_slip: {
       code: { type: String },
       bank: { type: String },
+      // Campos específicos da SICREDI
+      sicredi: {
+        nossoNumero: { type: String },
+        codigoBarras: { type: String },
+        linhaDigitavel: { type: String },
+        pdfUrl: { type: String },
+        qrCode: { type: String },
+        status: { 
+          type: String, 
+          enum: ["REGISTRADO", "BAIXADO", "PAGO", "VENCIDO", "PROTESTADO", "CANCELADO"],
+          default: "REGISTRADO"
+        },
+        dataVencimento: { type: Date },
+        dataPagamento: { type: Date },
+        dataBaixa: { type: Date },
+        valorPago: { type: Number },
+        motivoCancelamento: { type: String },
+      }
     },
     // Campos específicos para promissória
     promissoryNote: {

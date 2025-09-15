@@ -41,11 +41,15 @@ describe("OrderModel", () => {
   const mockProduct = {
     _id: new Types.ObjectId(),
     name: "Test Product",
-    category: "solar",
+    productType: "sunglasses_frame",
     description: "Test Description",
     brand: "Test Brand",
-    modelGlasses: "Test Model",
-    price: 100,
+    modelSunglasses: "Test Model",
+    sellPrice: 100,
+    typeFrame: "aviador",
+    color: "preto",
+    shape: "redondo",
+    reference: "TEST001",
     stock: 10,
   };
 
@@ -53,24 +57,38 @@ describe("OrderModel", () => {
     clientId: mockClient._id.toString(),
     employeeId: mockEmployee._id.toString(),
     products: [mockProduct._id.toString()],
-    paymentMethod: "credit_card",
+    paymentMethod: "credit",
+    paymentStatus: "pending",
+    orderDate: new Date(),
     deliveryDate: new Date(Date.now() + 86400000),
     status: "pending",
-    lensType: "multifocal",
     prescriptionData: {
       doctorName: "Dr. Smith",
       clinicName: "Eye Clinic",
-      appointmentdate: new Date(),
-      leftEye: {
-        near: { sph: -2.5, cyl: -0.5, axis: 180, pd: 32 },
-        far: { sph: -2.0, cyl: -0.5, axis: 180, pd: 32 },
-      },
+      appointmentDate: new Date(),
       rightEye: {
-        near: { sph: -2.0, cyl: -0.5, axis: 175, pd: 32 },
-        far: { sph: -1.5, cyl: -0.5, axis: 175, pd: 32 },
+        sph: "-2.5",
+        cyl: "-0.5",
+        axis: 180,
+        pd: 32,
       },
+      leftEye: {
+        sph: "-2.0",
+        cyl: "-0.5",
+        axis: 175,
+        pd: 32,
+      },
+      nd: 1.5,
+      oc: 1.5,
+      addition: 1.0,
+      bridge: 18,
+      rim: 50,
+      vh: 35,
+      sh: 25,
     },
     totalPrice: 599.99,
+    discount: 0,
+    finalPrice: 599.99,
   };
 
   describe("create", () => {
@@ -87,7 +105,7 @@ describe("OrderModel", () => {
   describe("findById", () => {
     it("should find an order by id", async () => {
       const created = await orderModel.create(mockOrder);
-      const found = await orderModel.findById(created._id);
+      const found = await orderModel.findById(created._id as string);
 
       expect(found?._id).toBe(created._id);
       expect(found?.clientId).toBe(mockOrder.clientId);
@@ -108,7 +126,7 @@ describe("OrderModel", () => {
 
       // Desabilitar temporariamente o populate para o teste
       // já que estamos usando mongodb-memory-server
-      const found = await orderModel.findById(createdOrder._id, false);
+      const found = await orderModel.findById(createdOrder._id as string, false);
 
       expect(found?._id).toBe(createdOrder._id);
       expect(found?.clientId).toBe(mockOrder.clientId);
@@ -150,7 +168,7 @@ describe("OrderModel", () => {
       const created = await orderModel.create(mockOrder);
       const newStatus = "in_production" as const;
 
-      const updated = await orderModel.update(created._id, {
+      const updated = await orderModel.update(created._id as string, {
         status: newStatus,
       });
 
@@ -168,11 +186,11 @@ describe("OrderModel", () => {
   describe("delete", () => {
     it("should delete an order", async () => {
       const created = await orderModel.create(mockOrder);
-      const deleted = await orderModel.delete(created._id);
+      const deleted = await orderModel.delete(created._id as string);
 
       expect(deleted?._id).toBe(created._id);
 
-      const found = await orderModel.findById(created._id);
+      const found = await orderModel.findById(created._id as string);
       expect(found).toBeNull();
     });
   });
@@ -200,7 +218,7 @@ describe("OrderModel", () => {
       const created = await orderModel.create(mockOrder);
       const newStatus = "in_production" as const;
 
-      const updated = await orderModel.updateStatus(created._id, newStatus);
+      const updated = await orderModel.updateStatus(created._id as string, newStatus);
 
       expect(updated?.status).toBe(newStatus);
     });

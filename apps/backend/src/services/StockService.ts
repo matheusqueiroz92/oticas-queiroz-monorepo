@@ -99,6 +99,46 @@ export class StockService {
   }
 
   /**
+   * Verifica se o MongoDB suporta transações
+   * @returns true se suporta transações, false caso contrário
+   */
+  private async supportsTransactions(): Promise<boolean> {
+    try {
+      // Primeiro, tentar verificar via serverStatus
+      const admin = mongoose.connection.db.admin();
+      const serverStatus = await admin.serverStatus();
+      
+      // Verificar se é replica set
+      const isReplicaSet = serverStatus.repl?.ismaster === true || serverStatus.repl?.secondary === true;
+      
+      if (isReplicaSet) {
+        console.log('✅ MongoDB configurado como Replica Set - suporta transações');
+        return true;
+      }
+      
+      // Se não é replica set, testar transações diretamente
+      console.log('🔍 MongoDB standalone detectado - testando suporte a transações...');
+      
+      try {
+        const session = await mongoose.connection.startSession();
+        session.startTransaction();
+        await session.commitTransaction();
+        session.endSession();
+        
+        console.log('✅ MongoDB standalone suporta transações');
+        return true;
+      } catch (transactionError) {
+        console.log('❌ MongoDB standalone não suporta transações:', transactionError.message);
+        return false;
+      }
+      
+    } catch (error) {
+      console.warn('Não foi possível verificar suporte a transações, assumindo que não suporta:', error);
+      return false;
+    }
+  }
+
+  /**
    * Diminui o estoque de um produto quando um pedido é criado
    * @param productId ID do produto
    * @param quantity Quantidade a diminuir
@@ -114,72 +154,108 @@ export class StockService {
     performedBy: string = 'system',
     orderId?: string
   ): Promise<IProduct | null> {
-    const session = await mongoose.connection.startSession();
-    session.startTransaction();
+    // Validar se productId é um ObjectId válido
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      throw new StockError(`ID do produto inválido: ${productId}`);
+    }
+
+    const product = await this.productRepository.findById(productId);
     
-    try {
-      // Validar se productId é um ObjectId válido
-      if (!mongoose.Types.ObjectId.isValid(productId)) {
-        throw new StockError(`ID do produto inválido: ${productId}`);
-      }
+    if (!product) {
+      throw new StockError(`Produto com ID ${productId} não encontrado`);
+    }
+    
+    // Se não for um produto de armação, não mexer no estoque
+    if (!this.isFrameProduct(product)) {
+      return product;
+    }
+    
+    const currentStock = product.stock || 0;
+    
+    if (currentStock < quantity) {
+      throw new StockError(`Estoque insuficiente para o produto ${product.name}. Disponível: ${currentStock}, Necessário: ${quantity}`);
+    }
+    
+    const newStock = currentStock - quantity;
 
-      const product = await this.productRepository.findById(productId);
+    // Verificar se o MongoDB suporta transações
+    const supportsTransactions = await this.supportsTransactions();
+    
+    if (supportsTransactions) {
+      // Usar transações se suportado
+      const session = await mongoose.connection.startSession();
+      session.startTransaction();
       
-      if (!product) {
-        throw new StockError(`Produto com ID ${productId} não encontrado`);
-      }
-      
-      // Se não for um produto de armação, não mexer no estoque
-      if (!this.isFrameProduct(product)) {
+      try {
+        // Atualizar o estoque usando repository com sessão da transação
+        const updatedProduct = await this.productRepository.updateStock(productId, quantity, "subtract", session);
+        
+        if (!updatedProduct) {
+          throw new StockError(`Falha ao atualizar estoque do produto ${productId}`);
+        }
+        
+        // Preparar dados para o log com validação de ObjectIds
+        const logData = {
+          productId: new mongoose.Types.ObjectId(productId),
+          orderId: this.validateAndConvertToObjectId(orderId),
+          previousStock: currentStock,
+          newStock,
+          quantity,
+          operation: 'decrease' as const,
+          reason,
+          performedBy: this.validateAndConvertToObjectId(performedBy) || new mongoose.Types.ObjectId() // Criar um ObjectId genérico se não for válido
+        };
+
+        // Registrar log dentro da transação
+        await createStockLogWithSession(logData, session);
+        
+        // Tudo deu certo, comitar a transação
         await session.commitTransaction();
-        return product;
+        
+        return updatedProduct;
+      } catch (error) {
+        // Algo deu errado, abortar a transação
+        await session.abortTransaction();
+        console.error(`Erro ao reduzir estoque para ${productId}:`, error);
+        
+        if (error instanceof StockError) {
+          throw error;
+        }
+        throw new StockError(`Erro desconhecido ao processar estoque: ${error instanceof Error ? error.message : String(error)}`);
+      } finally {
+        session.endSession();
       }
-      
-      const currentStock = product.stock || 0;
-      
-      if (currentStock < quantity) {
-        throw new StockError(`Estoque insuficiente para o produto ${product.name}. Disponível: ${currentStock}, Necessário: ${quantity}`);
+    } else {
+      // Executar sem transações se não suportado
+      try {
+        // Atualizar o estoque sem sessão de transação
+        const updatedProduct = await this.productRepository.updateStock(productId, quantity, "subtract");
+        
+        if (!updatedProduct) {
+          throw new StockError(`Falha ao atualizar estoque do produto ${productId}`);
+        }
+        
+        // Criar log sem transação
+        await this.createStockLog(
+          productId,
+          currentStock,
+          newStock,
+          quantity,
+          'decrease',
+          reason,
+          performedBy,
+          orderId
+        );
+        
+        return updatedProduct;
+      } catch (error) {
+        console.error(`Erro ao reduzir estoque para ${productId}:`, error);
+        
+        if (error instanceof StockError) {
+          throw error;
+        }
+        throw new StockError(`Erro desconhecido ao processar estoque: ${error instanceof Error ? error.message : String(error)}`);
       }
-      
-      const newStock = currentStock - quantity;
-
-      // Atualizar o estoque usando repository com sessão da transação
-      const updatedProduct = await this.productRepository.updateStock(productId, quantity, "subtract", session);
-      
-      if (!updatedProduct) {
-        throw new StockError(`Falha ao atualizar estoque do produto ${productId}`);
-      }
-      
-      // Preparar dados para o log com validação de ObjectIds
-      const logData = {
-        productId: new mongoose.Types.ObjectId(productId),
-        orderId: this.validateAndConvertToObjectId(orderId),
-        previousStock: currentStock,
-        newStock,
-        quantity,
-        operation: 'decrease' as const,
-        reason,
-        performedBy: this.validateAndConvertToObjectId(performedBy) || new mongoose.Types.ObjectId() // Criar um ObjectId genérico se não for válido
-      };
-
-      // Registrar log dentro da transação
-      await createStockLogWithSession(logData, session);
-      
-      // Tudo deu certo, comitar a transação
-      await session.commitTransaction();
-      
-      return updatedProduct;
-    } catch (error) {
-      // Algo deu errado, abortar a transação
-      await session.abortTransaction();
-      console.error(`Erro ao reduzir estoque para ${productId}:`, error);
-      
-      if (error instanceof StockError) {
-        throw error;
-      }
-      throw new StockError(`Erro desconhecido ao processar estoque: ${error instanceof Error ? error.message : String(error)}`);
-    } finally {
-      session.endSession();
     }
   }
 
@@ -199,65 +275,101 @@ export class StockService {
     performedBy: string = 'system',
     orderId?: string
   ): Promise<IProduct | null> {
-    const session = await mongoose.connection.startSession();
-    session.startTransaction();
-    
-    try {
-      // Validar se productId é um ObjectId válido
-      if (!mongoose.Types.ObjectId.isValid(productId)) {
-        throw new StockError(`ID do produto inválido: ${productId}`);
-      }
+    // Validar se productId é um ObjectId válido
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      throw new StockError(`ID do produto inválido: ${productId}`);
+    }
 
-      const product = await this.productRepository.findById(productId);
+    const product = await this.productRepository.findById(productId);
+    
+    if (!product) {
+      throw new StockError(`Produto com ID ${productId} não encontrado`);
+    }
+    
+    // Se não for um produto de armação, não mexer no estoque
+    if (!this.isFrameProduct(product)) {
+      return product;
+    }
+    
+    const currentStock = product.stock || 0;
+    const newStock = currentStock + quantity;
+    
+    // Verificar se o MongoDB suporta transações
+    const supportsTransactions = await this.supportsTransactions();
+    
+    if (supportsTransactions) {
+      // Usar transações se suportado
+      const session = await mongoose.connection.startSession();
+      session.startTransaction();
       
-      if (!product) {
-        throw new StockError(`Produto com ID ${productId} não encontrado`);
-      }
-      
-      // Se não for um produto de armação, não mexer no estoque
-      if (!this.isFrameProduct(product)) {
+      try {
+        // Atualizar o estoque usando repository com sessão da transação
+        const updatedProduct = await this.productRepository.updateStock(productId, quantity, "add", session);
+        
+        if (!updatedProduct) {
+          throw new StockError(`Falha ao atualizar estoque do produto ${productId}`);
+        }
+        
+        // Registrar log dentro da transação
+        await this.createStockLogWithSession(
+          productId,
+          currentStock,
+          newStock,
+          quantity,
+          'increase',
+          reason,
+          performedBy,
+          orderId,
+          session
+        );
+        
+        // Tudo deu certo, comitar a transação
         await session.commitTransaction();
-        return product;
+        
+        return updatedProduct;
+      } catch (error) {
+        // Algo deu errado, abortar a transação
+        await session.abortTransaction();
+        console.error(`Erro ao aumentar estoque para ${productId}:`, error);
+        
+        if (error instanceof StockError) {
+          throw error;
+        }
+        throw new StockError(`Erro desconhecido ao processar estoque: ${error instanceof Error ? error.message : String(error)}`);
+      } finally {
+        session.endSession();
       }
-      
-      const currentStock = product.stock || 0;
-      const newStock = currentStock + quantity;
-      
-      // Atualizar o estoque usando repository com sessão da transação
-      const updatedProduct = await this.productRepository.updateStock(productId, quantity, "add", session);
-      
-      if (!updatedProduct) {
-        throw new StockError(`Falha ao atualizar estoque do produto ${productId}`);
+    } else {
+      // Executar sem transações se não suportado
+      try {
+        // Atualizar o estoque sem sessão de transação
+        const updatedProduct = await this.productRepository.updateStock(productId, quantity, "add");
+        
+        if (!updatedProduct) {
+          throw new StockError(`Falha ao atualizar estoque do produto ${productId}`);
+        }
+        
+        // Criar log sem transação
+        await this.createStockLog(
+          productId,
+          currentStock,
+          newStock,
+          quantity,
+          'increase',
+          reason,
+          performedBy,
+          orderId
+        );
+        
+        return updatedProduct;
+      } catch (error) {
+        console.error(`Erro ao aumentar estoque para ${productId}:`, error);
+        
+        if (error instanceof StockError) {
+          throw error;
+        }
+        throw new StockError(`Erro desconhecido ao processar estoque: ${error instanceof Error ? error.message : String(error)}`);
       }
-      
-      // Registrar log dentro da transação
-      await this.createStockLogWithSession(
-        productId,
-        currentStock,
-        newStock,
-        quantity,
-        'increase',
-        reason,
-        performedBy,
-        orderId,
-        session
-      );
-      
-      // Tudo deu certo, comitar a transação
-      await session.commitTransaction();
-      
-      return updatedProduct;
-    } catch (error) {
-      // Algo deu errado, abortar a transação
-      await session.abortTransaction();
-      console.error(`Erro ao aumentar estoque para ${productId}:`, error);
-      
-      if (error instanceof StockError) {
-        throw error;
-      }
-      throw new StockError(`Erro desconhecido ao processar estoque: ${error instanceof Error ? error.message : String(error)}`);
-    } finally {
-      session.endSession();
     }
   }
 

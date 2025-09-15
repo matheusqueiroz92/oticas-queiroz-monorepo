@@ -91,6 +91,7 @@ export class OrderService {
 
         // Passar o ID do usuário (employeeId) em vez de 'system'
         const performedBy = orderData.employeeId ? orderData.employeeId.toString() : 'system';
+        // Processar estoque - agora com suporte automático a transações ou não
         await this.stockService.decreaseStock(productId, quantity, 'Pedido criado', performedBy, order._id!.toString());
       }
 
@@ -182,7 +183,14 @@ export class OrderService {
     }
 
     // Validar permissões
-    this.validationService.validateUpdatePermissions(userRole, order.status, status);
+    try {
+      this.validationService.validateUpdatePermissions(userRole, order.status, status);
+    } catch (error) {
+      if (error instanceof OrderValidationError) {
+        throw new OrderError(error.message);
+      }
+      throw error;
+    }
 
     // Atualizar status
     const updateData: Partial<IOrder> = { status };

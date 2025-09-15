@@ -101,6 +101,8 @@ export function translatePaymentMethod(method: string): string {
       return "Cheque";
     case "mercado_pago":
       return "Mercado Pago";
+    case "sicredi_boleto":
+      return "Boleto SICREDI";
     default:
       return method;
   }

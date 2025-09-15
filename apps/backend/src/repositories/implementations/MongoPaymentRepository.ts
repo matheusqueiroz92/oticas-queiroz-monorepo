@@ -437,7 +437,8 @@ export class MongoPaymentRepository extends BaseRepository<IPayment, CreatePayme
         bank_slip: { count: 0, total: 0 },
         promissory_note: { count: 0, total: 0 },
         check: { count: 0, total: 0 },
-        mercado_pago: { count: 0, total: 0 }
+        mercado_pago: { count: 0, total: 0 },
+        sicredi_boleto: { count: 0, total: 0 }
       };
 
       // Preencher com os resultados da agregação
@@ -590,7 +591,8 @@ export class MongoPaymentRepository extends BaseRepository<IPayment, CreatePayme
             bank_slip: 0,
             promissory_note: 0,
             check: 0,
-            mercado_pago: 0
+            mercado_pago: 0,
+            sicredi_boleto: 0
           }
         };
       }
@@ -609,7 +611,8 @@ export class MongoPaymentRepository extends BaseRepository<IPayment, CreatePayme
         bank_slip: 0,
         promissory_note: 0,
         check: 0,
-        mercado_pago: 0
+        mercado_pago: 0,
+        sicredi_boleto: 0
       };
 
       if (Array.isArray(result.paymentsByMethod)) {

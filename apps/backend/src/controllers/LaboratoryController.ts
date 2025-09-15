@@ -4,6 +4,11 @@ import {
   LaboratoryError,
 } from "../services/LaboratoryService";
 import { z } from "zod";
+import type { JwtPayload } from "jsonwebtoken";
+
+interface AuthRequest extends Request {
+  user?: JwtPayload & { role?: string };
+}
 
 const addressSchema = z.object({
   street: z.string().min(1, "Rua é obrigatória"),
@@ -39,8 +44,18 @@ export class LaboratoryController {
     this.laboratoryService = new LaboratoryService();
   }
 
-  async createLaboratory(req: Request, res: Response): Promise<void> {
+  async createLaboratory(req: AuthRequest, res: Response): Promise<void> {
     try {
+      if (!req.user?.id) {
+        res.status(401).json({ message: "Usuário não autenticado" });
+        return;
+      }
+
+      if (req.user.role !== "admin") {
+        res.status(403).json({ message: "Acesso não autorizado" });
+        return;
+      }
+
       const validatedData = createLaboratorySchema.parse(req.body);
       const laboratory =
         await this.laboratoryService.createLaboratory(validatedData);

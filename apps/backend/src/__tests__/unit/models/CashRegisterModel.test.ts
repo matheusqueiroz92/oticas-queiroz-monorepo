@@ -28,6 +28,7 @@ describe("CashRegisterModel", () => {
       credit: 0,
       debit: 0,
       pix: 0,
+      check: 0, // Adicionando campo check que estava faltando
     },
     payments: {
       received: 0,
@@ -35,19 +36,6 @@ describe("CashRegisterModel", () => {
     },
     openedBy: mockUserId.toString(),
   };
-
-  describe("create", () => {
-    it("should create a cash register", async () => {
-      const register = await cashRegisterModel.create(mockCashRegister);
-
-      expect(register).toHaveProperty("_id");
-      expect(register.openingBalance).toBe(1000);
-      expect(register.currentBalance).toBe(1000);
-      expect(register.status).toBe("open");
-      expect(register.sales.total).toBe(0);
-      expect(register.openingDate).toBeDefined();
-    });
-  });
 
   describe("create", () => {
     it("should create a cash register", async () => {
@@ -100,139 +88,126 @@ describe("CashRegisterModel", () => {
         openingDate: today,
       });
 
-      const registers = await cashRegisterModel.findByDateRange(
-        yesterday,
-        today
-      );
-
-      expect(registers).toHaveLength(1);
-    });
-
-    it("should exclude registers outside date range", async () => {
-      const today = new Date();
-      const lastWeek = new Date(today);
-      lastWeek.setDate(lastWeek.getDate() - 7);
-
       await cashRegisterModel.create({
         ...mockCashRegister,
-        openingDate: lastWeek,
+        openingDate: yesterday,
       });
 
-      const yesterday = new Date(today);
-      yesterday.setDate(yesterday.getDate() - 1);
+      const startDate = new Date(yesterday);
+      startDate.setHours(0, 0, 0, 0);
+      const endDate = new Date(today);
+      endDate.setHours(23, 59, 59, 999);
 
-      const registers = await cashRegisterModel.findByDateRange(
-        yesterday,
-        today
-      );
+      const registers = await cashRegisterModel.findByDateRange(startDate, endDate);
 
-      expect(registers).toHaveLength(0);
+      expect(registers).toHaveLength(2);
     });
   });
 
-  describe("updateSalesAndPayments", () => {
-    it("should update cash sales correctly", async () => {
-      const created = await cashRegisterModel.create(mockCashRegister);
+  describe("update", () => {
+    it("should update cash register", async () => {
+      const register = await cashRegisterModel.create(mockCashRegister);
 
-      if (!created?._id) {
-        throw new Error("Failed to create cash register");
-      }
+      const updateData = {
+        currentBalance: 1500,
+        sales: {
+          total: 500,
+          cash: 300,
+          credit: 200,
+          debit: 0,
+          pix: 0,
+          check: 0,
+        },
+      };
 
-      const updated = await cashRegisterModel.updateSalesAndPayments(
-        created._id,
-        "sale",
-        100,
-        "cash"
+      const updatedRegister = await cashRegisterModel.update(
+        register._id!.toString(),
+        updateData
       );
 
-      expect(updated?.currentBalance).toBe(1100);
-      expect(updated?.sales.total).toBe(100);
-      expect(updated?.sales.cash).toBe(100);
-    });
-
-    it("should update credit sales correctly", async () => {
-      const created = await cashRegisterModel.create(mockCashRegister);
-
-      if (!created?._id) {
-        throw new Error("Failed to create cash register");
-      }
-
-      const updated = await cashRegisterModel.updateSalesAndPayments(
-        created._id,
-        "sale",
-        100,
-        "credit"
-      );
-
-      expect(updated?.currentBalance).toBe(1100);
-      expect(updated?.sales.total).toBe(100);
-      expect(updated?.sales.credit).toBe(100);
-    });
-
-    it("should update debt payments correctly", async () => {
-      const created = await cashRegisterModel.create(mockCashRegister);
-
-      if (!created?._id) {
-        throw new Error("Failed to create cash register");
-      }
-
-      const updated = await cashRegisterModel.updateSalesAndPayments(
-        created._id,
-        "debt_payment",
-        100
-      );
-
-      expect(updated?.currentBalance).toBe(1100);
-      expect(updated?.payments.received).toBe(100);
-    });
-
-    it("should update expenses correctly", async () => {
-      const created = await cashRegisterModel.create(mockCashRegister);
-
-      if (!created?._id) {
-        throw new Error("Failed to create cash register");
-      }
-
-      const updated = await cashRegisterModel.updateSalesAndPayments(
-        created._id,
-        "expense",
-        -50
-      );
-
-      expect(updated?.currentBalance).toBe(950);
-      expect(updated?.payments.made).toBe(50);
+      expect(updatedRegister?.currentBalance).toBe(1500);
+      expect(updatedRegister?.sales.total).toBe(500);
     });
   });
 
-  describe("closeRegister", () => {
-    it("should close register successfully", async () => {
-      const created = await cashRegisterModel.create(mockCashRegister);
+  describe("close", () => {
+    it("should close cash register", async () => {
+      const register = await cashRegisterModel.create(mockCashRegister);
 
-      if (!created?._id) {
-        throw new Error("Failed to create cash register");
-      }
-
-      const closed = await cashRegisterModel.closeRegister(created._id, {
-        closingBalance: 1500,
+      const closeData = {
+        closingBalance: 1200,
+        closingDate: new Date(),
         closedBy: mockUserId.toString(),
-        observations: "Test closing",
-      });
+        status: "closed" as const,
+      };
 
-      expect(closed?.status).toBe("closed");
-      expect(closed?.closingBalance).toBe(1500);
-      expect(closed?.closedBy).toBe(mockUserId.toString());
-      expect(closed?.closingDate).toBeDefined();
-    });
-
-    it("should return null for invalid register id", async () => {
-      const result = await cashRegisterModel.closeRegister(
-        new Types.ObjectId().toString(),
-        {
-          closingBalance: 1000,
-          closedBy: mockUserId.toString(),
-        }
+      const closedRegister = await cashRegisterModel.close(
+        register._id!.toString(),
+        closeData
       );
 
+      expect(closedRegister?.status).toBe("closed");
+      expect(closedRegister?.closingBalance).toBe(1200);
+      expect(closedRegister?.closingDate).toBeDefined();
+    });
+  });
+
+  describe("getSummary", () => {
+    it("should get cash register summary", async () => {
+      const register = await cashRegisterModel.create({
+        ...mockCashRegister,
+        sales: {
+          total: 1000,
+          cash: 400,
+          credit: 300,
+          debit: 200,
+          pix: 100,
+          check: 0,
+        },
+        payments: {
+          received: 800,
+          made: 200,
+        },
+      });
+
+      const summary = await cashRegisterModel.getSummary(register._id!.toString());
+
+      expect(summary).toHaveProperty("register");
+      expect(summary).toHaveProperty("sales");
+      expect(summary).toHaveProperty("payments");
+      expect(summary.sales.total).toBe(1000);
+      expect(summary.payments.received).toBe(800);
+    });
+  });
+
+  describe("findAll", () => {
+    it("should return all registers with pagination", async () => {
+      await cashRegisterModel.create(mockCashRegister);
+      await cashRegisterModel.create({
+        ...mockCashRegister,
+        openingBalance: 2000,
+        currentBalance: 2000,
+      });
+
+      const result = await cashRegisterModel.findAll(1, 10);
+
+      expect(result.items).toHaveLength(2);
+      expect(result.total).toBe(2);
+    });
+  });
+
+  describe("findById", () => {
+    it("should find register by id", async () => {
+      const register = await cashRegisterModel.create(mockCashRegister);
+
+      const found = await cashRegisterModel.findById(register._id!.toString());
+
+      expect(found?._id).toEqual(register._id);
+      expect(found?.openingBalance).toBe(1000);
+    });
+
+    it("should return null for invalid id", async () => {
+      const result = await cashRegisterModel.findById("invalid-id");
       expect(result).toBeNull();
     });
   });

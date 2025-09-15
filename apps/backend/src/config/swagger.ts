@@ -1,6 +1,7 @@
 import swaggerJsdoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
 import dotenv from "dotenv";
+import type { Application } from "express";
 
 dotenv.config();
 
@@ -10,7 +11,7 @@ const options: swaggerJsdoc.Options = {
     info: {
       title: "Óticas Queiroz API",
       version: "1.0.0",
-      description: "API para gerenciamento da Óticas Queiroz",
+      description: "API para gerenciamento das Óticas Queiroz",
     },
     servers: [
       {
@@ -26,7 +27,6 @@ const options: swaggerJsdoc.Options = {
 
 const swaggerSpec = swaggerJsdoc(options);
 
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-export const setupSwagger = (app: any) => {
+export const setupSwagger = (app: Application) => {
   app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 };

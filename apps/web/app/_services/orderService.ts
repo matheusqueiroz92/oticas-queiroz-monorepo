@@ -88,9 +88,6 @@ export async function getAllOrders(filters: OrderFilters = {}): Promise<{
     
     params._t = Date.now() + Math.random().toString(36).substring(7);
 
-    console.log('🔍 getAllOrders - cleanedFilters:', cleanedFilters);
-    console.log('🔍 getAllOrders - params:', params);
-
     const config = {
       params,
       headers: {

@@ -21,7 +21,8 @@ const addressSchema = z
 
 const createClientSchema = z.object({
   name: z.string().min(2, "Nome deve ter no mínimo 2 caracteres"),
-  cpf: z.string().min(11, "CPF deve ter no mínimo 11 dígitos").optional(), // CPF agora é opcional
+  cpf: z.string().min(11, "Documento deve ter no mínimo 11 dígitos").optional(), // CPF agora é opcional
+  documentId: z.string().min(11, "Documento deve ter no mínimo 11 dígitos").optional(), // Aceitar documentId também
   email: z.string().email("Email inválido").optional(),
   phone: z
     .string()
@@ -50,8 +51,14 @@ export class LegacyClientController {
     try {
       const validatedData = createClientSchema.parse(req.body);
 
+      // Mapear documentId para cpf se fornecido
+      const clientData = {
+        ...validatedData,
+        cpf: validatedData.cpf || validatedData.documentId,
+      };
+
       const client =
-        await this.legacyClientService.createLegacyClient(validatedData);
+        await this.legacyClientService.createLegacyClient(clientData);
       res.status(201).json(client);
     } catch (error) {
       if (error instanceof z.ZodError) {

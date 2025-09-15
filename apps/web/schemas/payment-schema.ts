@@ -21,7 +21,8 @@ export const paymentFormSchema = z.object({
     "check",
     "bank_slip",
     "promissory_note",
-    "mercado_pago"
+    "mercado_pago",
+    "sicredi_boleto"
   ] as const, {
     required_error: "Selecione o método de pagamento",
   }),

@@ -13,6 +13,20 @@ const bankSlipSchema = z.object({
   bank_slip: z.object({
     code: z.string().min(1, "Código do boleto é obrigatório"),
     bank: z.string().min(1, "Banco é obrigatório"),
+    // Campos opcionais da SICREDI
+    sicredi: z.object({
+      nossoNumero: z.string().optional(),
+      codigoBarras: z.string().optional(),
+      linhaDigitavel: z.string().optional(),
+      pdfUrl: z.string().optional(),
+      qrCode: z.string().optional(),
+      status: z.enum(["REGISTRADO", "BAIXADO", "PAGO", "VENCIDO", "PROTESTADO", "CANCELADO"]).optional(),
+      dataVencimento: z.date().optional(),
+      dataPagamento: z.date().optional(),
+      dataBaixa: z.date().optional(),
+      valorPago: z.number().optional(),
+      motivoCancelamento: z.string().optional(),
+    }).optional(),
   }),
   clientDebt: z
     .object({
@@ -84,7 +98,7 @@ const basePaymentSchema = z.object({
     errorMap: () => ({ message: "Tipo de pagamento inválido" }),
   }),
   paymentMethod: z.enum(
-    ["credit", "debit", "cash", "pix", "bank_slip", "promissory_note", "check", "mercado_pago"] as const,
+    ["credit", "debit", "cash", "pix", "bank_slip", "promissory_note", "check", "mercado_pago", "sicredi_boleto"] as const,
     {
       errorMap: () => ({ message: "Método de pagamento inválido" }),
     }
@@ -125,6 +139,13 @@ const paymentSchema = z.discriminatedUnion("paymentMethod", [
   basePaymentSchema
     .extend({
       paymentMethod: z.literal("bank_slip"),
+    })
+    .merge(bankSlipSchema),
+
+  // Boleto SICREDI
+  basePaymentSchema
+    .extend({
+      paymentMethod: z.literal("sicredi_boleto"),
     })
     .merge(bankSlipSchema),
 

@@ -7,7 +7,7 @@ const connectDB = async () => {
   const uri = process.env.MONGODB_URI;
 
   if (!uri) {
-    throw new Error("MONGODB_URI não definida");
+    throw new Error("MONGODB_URI not defined");
   }
 
   try {

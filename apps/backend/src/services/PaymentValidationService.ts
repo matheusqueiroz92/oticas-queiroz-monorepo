@@ -219,6 +219,7 @@ export class PaymentValidationService {
       "dinheiro": "cash",
       "pix": "pix",
       "boleto": "bank_slip",
+      "boleto_sicredi": "sicredi_boleto",
       "promissoria": "promissory_note",
       "cheque": "check"
     };

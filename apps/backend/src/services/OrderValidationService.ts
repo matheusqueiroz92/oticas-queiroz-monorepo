@@ -282,6 +282,34 @@ export class OrderValidationService {
         "Apenas administradores podem modificar pedidos entregues"
       );
     }
+
+    // Validar transições de status
+    if (newStatus && currentStatus !== newStatus) {
+      this.validateStatusTransition(currentStatus, newStatus);
+    }
+  }
+
+  /**
+   * Valida transições de status do pedido
+   * @param currentStatus Status atual
+   * @param newStatus Novo status
+   * @throws OrderValidationError se a transição for inválida
+   */
+  private validateStatusTransition(currentStatus: IOrder["status"], newStatus: IOrder["status"]): void {
+    const validTransitions: Record<IOrder["status"], IOrder["status"][]> = {
+      pending: ["in_production", "cancelled"],
+      in_production: ["ready", "cancelled"],
+      ready: ["delivered", "cancelled"],
+      delivered: [], // Não pode mudar de delivered
+      cancelled: [], // Não pode mudar de cancelled
+    };
+
+    const allowedTransitions = validTransitions[currentStatus];
+    if (!allowedTransitions.includes(newStatus)) {
+      throw new OrderValidationError(
+        `Transição de status inválida: ${currentStatus} → ${newStatus}. Transições permitidas: ${allowedTransitions.join(", ")}`
+      );
+    }
   }
 
   /**

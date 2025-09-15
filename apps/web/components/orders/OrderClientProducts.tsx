@@ -309,6 +309,7 @@ export default function OrderClientProducts({
                       <SelectItem value="cash">Dinheiro</SelectItem>
                       <SelectItem value="pix">PIX</SelectItem>
                       <SelectItem value="bank_slip">Boleto Bancário</SelectItem>
+                      <SelectItem value="sicredi_boleto">Boleto SICREDI</SelectItem>
                       <SelectItem value="promissory_note">Nota Promissória</SelectItem>
                       <SelectItem value="check">Cheque</SelectItem>
                     </SelectContent>
