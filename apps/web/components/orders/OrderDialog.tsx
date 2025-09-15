@@ -32,6 +32,7 @@ export const OrderDialog: React.FC<OrderDialogProps> = ({ open, onOpenChange, or
   const [createdOrder, setCreatedOrder] = useState<Order | null>(null);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [formData, setFormData] = useState<OrderFormValues | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Função para transformar dados do pedido em dados do formulário
   const transformOrderToFormData = (orderData: any): Partial<OrderFormValues> => {
@@ -123,6 +124,14 @@ export const OrderDialog: React.FC<OrderDialogProps> = ({ open, onOpenChange, or
   
   // Função para processar o submit do formulário
   const handleSubmit = async (data: OrderFormValues) => {
+    // Proteção contra múltiplas submissões
+    if (isSubmitting) {
+      console.log("⚠️ Submit já em andamento, ignorando nova submissão");
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
     try {
       console.log("=== INÍCIO DO SUBMIT ===");
       console.log("Modo:", mode);
@@ -176,24 +185,8 @@ export const OrderDialog: React.FC<OrderDialogProps> = ({ open, onOpenChange, or
         // Invalidar queries dos produtos para atualizar estoque
         console.log("=== INVALIDANDO QUERIES DOS PRODUTOS ===");
         
-        // Invalidar TODAS as queries relacionadas a produtos
-        await queryClient.invalidateQueries();
-        
-        // Forçar refetch específico das queries de produtos
-        await queryClient.refetchQueries({ 
-          predicate: (query) => {
-            const key = query.queryKey[0];
-            return key === 'products' || key === QUERY_KEYS.PRODUCTS.ALL;
-          }
-        });
-        
-        // Remover dados em cache para forçar nova busca
-        queryClient.removeQueries({
-          predicate: (query) => {
-            const key = query.queryKey[0];
-            return key === 'products' || key === QUERY_KEYS.PRODUCTS.ALL;
-          }
-        });
+        // Invalidar apenas as queries de produtos (não todas as queries)
+        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.PRODUCTS.ALL] });
         
         console.log("=== QUERIES INVALIDADAS COM SUCESSO ===");
         
@@ -222,6 +215,8 @@ export const OrderDialog: React.FC<OrderDialogProps> = ({ open, onOpenChange, or
         "Erro ao criar pedido",
         true // Mostrar detalhes do erro
       );
+    } finally {
+      setIsSubmitting(false);
     }
   };
   

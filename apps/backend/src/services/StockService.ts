@@ -192,9 +192,10 @@ export class StockService {
     if (supportsTransactions) {
       // Usar transações se suportado
       const session = await mongoose.connection.startSession();
-      session.startTransaction();
       
       try {
+        session.startTransaction();
+        
         // Atualizar o estoque usando repository com sessão da transação
         const updatedProduct = await this.productRepository.updateStock(productId, quantity, "subtract", session);
         
@@ -308,9 +309,10 @@ export class StockService {
     if (supportsTransactions) {
       // Usar transações se suportado
       const session = await mongoose.connection.startSession();
-      session.startTransaction();
       
       try {
+        session.startTransaction();
+        
         // Atualizar o estoque usando repository com sessão da transação
         const updatedProduct = await this.productRepository.updateStock(productId, quantity, "add", session);
         
