@@ -270,12 +270,92 @@ export class OrderService {
       );
     }
 
+    // Processar mudanças de estoque se produtos foram alterados
+    if (orderData.products && Array.isArray(orderData.products)) {
+      await this.handleStockChanges(order, orderData.products, userId);
+    }
+
     const updatedOrder = await this.orderRepository.update(id, orderData);
     if (!updatedOrder) {
       throw new OrderError("Erro ao atualizar pedido");
     }
 
     return updatedOrder;
+  }
+
+  /**
+   * Processa mudanças de estoque quando um pedido é editado
+   * @param originalOrder Pedido original
+   * @param newProducts Novos produtos
+   * @param userId ID do usuário que fez a alteração
+   */
+  private async handleStockChanges(
+    originalOrder: IOrder,
+    newProducts: any[],
+    userId: string
+  ): Promise<void> {
+    try {
+      // Converter produtos originais para formato comparável
+      const originalProductIds = originalOrder.products.map(product => {
+        if (typeof product === 'string') return product;
+        if (product instanceof mongoose.Types.ObjectId) return product.toString();
+        if (typeof product === 'object' && product !== null && (product as any)._id) {
+          return (product as any)._id.toString();
+        }
+        return null;
+      }).filter(Boolean);
+
+      // Converter novos produtos para formato comparável
+      const newProductIds = newProducts.map(product => {
+        if (typeof product === 'string') return product;
+        if (product instanceof mongoose.Types.ObjectId) return product.toString();
+        if (typeof product === 'object' && product !== null && (product as any)._id) {
+          return (product as any)._id.toString();
+        }
+        return null;
+      }).filter(Boolean);
+
+      // Encontrar produtos removidos (estavam no original mas não estão no novo)
+      const removedProducts = originalProductIds.filter(id => !newProductIds.includes(id));
+      
+      // Encontrar produtos adicionados (estão no novo mas não estavam no original)
+      const addedProducts = newProductIds.filter(id => !originalProductIds.includes(id));
+
+      console.log(`[OrderService] Processando mudanças de estoque para pedido ${originalOrder._id}:`);
+      console.log(`- Produtos removidos: ${removedProducts.length}`);
+      console.log(`- Produtos adicionados: ${addedProducts.length}`);
+
+      // Aumentar estoque dos produtos removidos
+      for (const productId of removedProducts) {
+        if (mongoose.Types.ObjectId.isValid(productId)) {
+          await this.stockService.increaseStock(
+            productId,
+            1,
+            `Pedido ${originalOrder._id} editado - produto removido`,
+            userId,
+            originalOrder._id!.toString()
+          );
+        }
+      }
+
+      // Diminuir estoque dos produtos adicionados
+      for (const productId of addedProducts) {
+        if (mongoose.Types.ObjectId.isValid(productId)) {
+          await this.stockService.decreaseStock(
+            productId,
+            1,
+            `Pedido ${originalOrder._id} editado - produto adicionado`,
+            userId,
+            originalOrder._id!.toString()
+          );
+        }
+      }
+
+    } catch (error) {
+      console.error(`[OrderService] Erro ao processar mudanças de estoque:`, error);
+      // Não falhar a atualização do pedido por causa do estoque
+      // Apenas logar o erro
+    }
   }
 
   /**

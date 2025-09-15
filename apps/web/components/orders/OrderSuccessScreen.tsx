@@ -14,6 +14,7 @@ interface OrderSuccessScreenProps {
   onViewOrdersList: () => void;
   onViewOrderDetails: (id: string) => void;
   onCreateNewOrder: () => void;
+  isEdit?: boolean;
 }
 
 export default function OrderSuccessScreen({
@@ -24,6 +25,7 @@ export default function OrderSuccessScreen({
   onViewOrdersList,
   // onViewOrderDetails,
   onCreateNewOrder,
+  isEdit = false,
 }: OrderSuccessScreenProps) {
   
   console.log("OrderSuccessScreen - submittedOrder:", submittedOrder);
@@ -144,13 +146,13 @@ export default function OrderSuccessScreen({
               className="text-2xl font-bold mb-2"
               style={{ color: isDark ? '#22c55e' : '#15803d' }}
             >
-              Pedido Criado com Sucesso!
+              {isEdit ? 'Pedido Atualizado com Sucesso!' : 'Pedido Criado com Sucesso!'}
             </h2>
             <p 
               className="mb-4"
               style={{ color: isDark ? '#86efac' : '#16a34a' }}
             >
-              Seu pedido foi processado e está sendo preparado
+              {isEdit ? 'As alterações foram salvas e o pedido foi atualizado' : 'Seu pedido foi processado e está sendo preparado'}
             </p>
             
             {/* Informações principais */}

@@ -110,7 +110,7 @@ export const OrderDialog: React.FC<OrderDialogProps> = ({ open, onOpenChange, or
   });
   
   const { products: productsData } = useProducts(1, "", "all");
-  const { handleCreateOrder } = useOrders();
+  const { handleCreateOrder, handleUpdateOrder } = useOrders();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -167,12 +167,38 @@ export const OrderDialog: React.FC<OrderDialogProps> = ({ open, onOpenChange, or
       console.log("Dados preparados:", orderData);
       
       if (mode === "edit") {
-        console.log("=== MODO EDIÇÃO - FUNCIONALIDADE EM DESENVOLVIMENTO ===");
-        toast({
-          title: "Aviso",
-          description: "A funcionalidade de edição de pedidos ainda está em desenvolvimento. Por enquanto, apenas a visualização dos dados está disponível.",
-        });
-        return;
+        console.log("=== MODO EDIÇÃO - ATUALIZANDO PEDIDO ===");
+        
+        if (!order?._id) {
+          throw new Error("ID do pedido não encontrado");
+        }
+        
+        // Atualizar o pedido
+        const updatedOrder = await handleUpdateOrder(order._id, orderData as any);
+        
+        console.log("=== PEDIDO ATUALIZADO COM SUCESSO ===");
+        console.log("Dados do pedido atualizado:", updatedOrder);
+        
+        // Invalidar queries dos produtos para atualizar estoque
+        console.log("=== INVALIDANDO QUERIES DOS PRODUTOS ===");
+        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.PRODUCTS.ALL] });
+        console.log("=== QUERIES INVALIDADAS COM SUCESSO ===");
+        
+        // Buscar dados do cliente para exibir na tela de sucesso
+        const clientData = customers?.find((customer: any) => customer._id === data.clientId);
+        if (clientData && !selectedCustomer) {
+          setSelectedCustomer(clientData);
+        }
+        
+        // Salvar dados do formulário para a tela de sucesso
+        setFormData(data);
+        setCreatedOrder(updatedOrder);
+        setShowSuccessScreen(true);
+        
+        showSuccess(
+          "Pedido atualizado com sucesso!",
+          `Pedido #${order.serviceOrder} foi atualizado no sistema`
+        );
       } else {
         console.log("=== CHAMANDO handleCreateOrder ===");
         
@@ -296,6 +322,7 @@ export const OrderDialog: React.FC<OrderDialogProps> = ({ open, onOpenChange, or
               onViewOrdersList={handleViewOrdersList}
               onViewOrderDetails={handleViewOrderDetails}
               onCreateNewOrder={handleCreateNewOrder}
+              isEdit={mode === "edit"}
             />
           </div>
         ) : (
