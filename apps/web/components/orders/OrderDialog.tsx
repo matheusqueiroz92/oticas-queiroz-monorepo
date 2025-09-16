@@ -136,6 +136,7 @@ export const OrderDialog: React.FC<OrderDialogProps> = ({ open, onOpenChange, or
       console.log("=== INÍCIO DO SUBMIT ===");
       console.log("Modo:", mode);
       console.log("Dados do formulário recebidos:", data);
+      console.log("🔍 DEBUG: Verificando se é modo de edição...");
       
       // Validações básicas
       if (!data.clientId) {
@@ -168,6 +169,9 @@ export const OrderDialog: React.FC<OrderDialogProps> = ({ open, onOpenChange, or
       
       if (mode === "edit") {
         console.log("=== MODO EDIÇÃO - ATUALIZANDO PEDIDO ===");
+        console.log("Order ID:", order?._id);
+        console.log("Order data:", order);
+        console.log("OrderData to update:", orderData);
         
         if (!order?._id) {
           throw new Error("ID do pedido não encontrado");

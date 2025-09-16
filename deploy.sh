@@ -72,7 +72,8 @@ fi
 
 # Parar aplicações existentes no PM2
 log "Parando aplicações existentes (se houver)"
-pm2 delete all || true
+pm2 delete oticas-queiroz-backend || true
+pm2 delete oticas-queiroz-frontend || true
 
 # Iniciar aplicações com PM2
 log "Iniciando aplicações com PM2"
