@@ -117,8 +117,11 @@ export const OrderDialog: React.FC<OrderDialogProps> = ({ open, onOpenChange, or
   if (mode === "edit" && initialFormData) {
     console.log("=== DEBUG: Dados transformados para edição ===");
     console.log("Order original:", order);
+    console.log("Order.clientId:", order?.clientId);
+    console.log("Order.clientId type:", typeof order?.clientId);
     console.log("InitialFormData:", initialFormData);
     console.log("ClientId no initialFormData:", initialFormData.clientId);
+    console.log("ClientId type:", typeof initialFormData.clientId);
   }
   
   // Hooks
@@ -143,11 +146,21 @@ export const OrderDialog: React.FC<OrderDialogProps> = ({ open, onOpenChange, or
   // Effect para configurar o cliente selecionado quando estiver em modo de edição
   useEffect(() => {
     if (mode === "edit" && initialFormData?.clientId && customers && customers.length > 0) {
+      console.log("=== DEBUG: Tentando configurar cliente selecionado ===");
+      console.log("initialFormData.clientId:", initialFormData.clientId);
+      console.log("customers disponíveis:", customers.length);
+      console.log("Primeiros 3 clientes:", customers.slice(0, 3).map(c => ({ _id: c._id, name: c.name })));
+      
       const customer = customers.find(c => c._id === initialFormData.clientId);
+      console.log("Cliente encontrado:", customer);
+      
       if (customer && (!selectedCustomer || selectedCustomer._id !== customer._id)) {
         console.log("=== DEBUG: Configurando cliente selecionado ===");
         console.log("Cliente encontrado:", customer);
         setSelectedCustomer(customer);
+      } else {
+        console.log("=== DEBUG: Cliente não encontrado ou já selecionado ===");
+        console.log("selectedCustomer atual:", selectedCustomer);
       }
     }
   }, [mode, initialFormData?.clientId, customers, selectedCustomer]);

@@ -26,7 +26,6 @@ import {
   CalendarDays,
   CheckCircle,
   AlertTriangle,
-  PencilIcon,
   ArrowLeft,
 } from "lucide-react";
 import { useOrders } from "@/hooks/orders/useOrders";
@@ -958,15 +957,6 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
               variant="outline"
               size="default"
             />
-            
-            <Button 
-              variant="outline" 
-              onClick={() => router.push(`/orders/${order._id}/edit`)} 
-              className="text-sm gap-2"
-            >
-              <PencilIcon className="h-4 w-4" />
-              Editar
-            </Button>
           </div>
         </CardFooter>
       </Card>
