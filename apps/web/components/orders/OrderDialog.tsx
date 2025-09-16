@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogOverlay } from "@/components/ui/dialog";
 import { OrderForm } from "./OrderForm";
 import OrderSuccessScreen from "./OrderSuccessScreen";
@@ -54,13 +54,21 @@ export const OrderDialog: React.FC<OrderDialogProps> = ({ open, onOpenChange, or
     };
     
     return {
-      clientId: orderData.clientId || "",
-      employeeId: orderData.employeeId || "",
-      institutionId: orderData.institutionId || undefined,
+      clientId: typeof orderData.clientId === 'object' && orderData.clientId?._id 
+        ? orderData.clientId._id 
+        : orderData.clientId || "",
+      employeeId: typeof orderData.employeeId === 'object' && orderData.employeeId?._id 
+        ? orderData.employeeId._id 
+        : orderData.employeeId || "",
+      institutionId: typeof orderData.institutionId === 'object' && orderData.institutionId?._id 
+        ? orderData.institutionId._id 
+        : orderData.institutionId || undefined,
       isInstitutionalOrder: orderData.isInstitutionalOrder || false,
       hasResponsible: false, // Não temos essa informação no Order
       responsibleClientId: undefined,
-      products: orderData.products || [],
+      products: orderData.products?.map((product: any) => 
+        typeof product === 'object' && product?._id ? product._id : product
+      ) || [],
       serviceOrder: orderData.serviceOrder || "",
       paymentMethod: orderData.paymentMethod || "",
       paymentStatus: orderData.paymentStatus || "pending",
@@ -69,7 +77,9 @@ export const OrderDialog: React.FC<OrderDialogProps> = ({ open, onOpenChange, or
       orderDate: formatDate(orderData.orderDate),
       deliveryDate: formatDate(orderData.deliveryDate),
       status: orderData.status || "pending",
-      laboratoryId: orderData.laboratoryId || "",
+      laboratoryId: typeof orderData.laboratoryId === 'object' && orderData.laboratoryId?._id 
+        ? orderData.laboratoryId._id 
+        : orderData.laboratoryId || "",
       observations: orderData.observations || "",
       totalPrice: orderData.totalPrice || 0,
       discount: orderData.discount || 0,
@@ -103,6 +113,14 @@ export const OrderDialog: React.FC<OrderDialogProps> = ({ open, onOpenChange, or
   
   const initialFormData = mode === "edit" ? transformOrderToFormData(order) : undefined;
   
+  // Debug: Log dos dados transformados
+  if (mode === "edit" && initialFormData) {
+    console.log("=== DEBUG: Dados transformados para edição ===");
+    console.log("Order original:", order);
+    console.log("InitialFormData:", initialFormData);
+    console.log("ClientId no initialFormData:", initialFormData.clientId);
+  }
+  
   // Hooks
   const { customers: customers, isLoading: isLoadingCustomers } = useCustomers({
     pageSize: 100,
@@ -121,6 +139,18 @@ export const OrderDialog: React.FC<OrderDialogProps> = ({ open, onOpenChange, or
     email: Cookies.get("userEmail") || "",
     role: Cookies.get("userRole") || "",
   };
+  
+  // Effect para configurar o cliente selecionado quando estiver em modo de edição
+  useEffect(() => {
+    if (mode === "edit" && initialFormData?.clientId && customers && customers.length > 0) {
+      const customer = customers.find(c => c._id === initialFormData.clientId);
+      if (customer && (!selectedCustomer || selectedCustomer._id !== customer._id)) {
+        console.log("=== DEBUG: Configurando cliente selecionado ===");
+        console.log("Cliente encontrado:", customer);
+        setSelectedCustomer(customer);
+      }
+    }
+  }, [mode, initialFormData?.clientId, customers, selectedCustomer]);
   
   // Função para processar o submit do formulário
   const handleSubmit = async (data: OrderFormValues) => {
