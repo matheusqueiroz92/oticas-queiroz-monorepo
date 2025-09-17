@@ -417,60 +417,6 @@ export class OrderService {
   }
 
   /**
-   * Cancela um pedido
-   * @param id ID do pedido
-   * @param userId ID do usuário
-   * @param userRole Role do usuário
-   * @returns Pedido cancelado
-   */
-  async cancelOrder(
-    id: string,
-    userId: string,
-    userRole: string
-  ): Promise<IOrder> {
-    const order = await this.orderRepository.findById(id);
-    if (!order) {
-      throw new OrderError("Pedido não encontrado");
-    }
-
-    // Validar se pode cancelar
-    this.validationService.validateCancellation(order.status, userRole);
-
-    // Reverter estoque
-    for (const product of order.products) {
-      let productId: string;
-      let quantity = 1;
-
-      if (typeof product === 'string') {
-        productId = product;
-      } else if (product instanceof mongoose.Types.ObjectId) {
-        productId = product.toString();
-      } else if (typeof product === 'object' && product._id) {
-        productId = product._id;
-        quantity = (product as any).quantity || 1;
-      } else {
-        continue;
-      }
-
-      await this.stockService.increaseStock(productId, quantity);
-    }
-
-    // Atualizar status
-    const cancelledOrder = await this.orderRepository.update(id, { 
-      status: "cancelled"
-    });
-
-    if (!cancelledOrder) {
-      throw new OrderError("Erro ao cancelar pedido");
-    }
-
-    // Remover relacionamentos
-    await this.relationshipService.removeOrderRelationships(cancelledOrder);
-
-    return cancelledOrder;
-  }
-
-  /**
    * Soft delete de um pedido
    * @param id ID do pedido
    * @param userId ID do usuário
