@@ -10,7 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PaginationItems } from "../PaginationItems";
-import { Eye, Pencil } from "lucide-react";
+import { Edit, Eye } from "lucide-react";
 
 interface OrderTableProps {
   data: Order[];
@@ -116,7 +116,7 @@ export const OrdersList: React.FC<OrderTableProps> = ({
                     onClick={() => onEditClick(item)}
                     className="ml-2"
                   >
-                    <Pencil className="h-4 w-4 mr-1" />
+                    <Edit className="h-4 w-4 mr-1" />
                   </Button>
                 )}
               </TableCell>

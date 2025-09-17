@@ -27,6 +27,7 @@ import {
 import { useToast } from "@/hooks/useToast";
 import { createLaboratory, updateLaboratory } from "@/app/_services/laboratoryService";
 import { Laboratory } from "@/app/_types/laboratory";
+import { handleError, showSuccess } from "@/app/_utils/error-handler";
 
 const laboratorySchema = z.object({
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
@@ -148,18 +149,18 @@ export function LaboratoryDialog({
         // Atualizar laboratório existente
         await updateLaboratory(memoizedLaboratory._id, data);
         
-        toast({
-          title: "Laboratório atualizado",
-          description: "Os dados do laboratório foram atualizados com sucesso.",
-        });
+        showSuccess(
+          "Laboratório atualizado",
+          "Os dados do laboratório foram atualizados com sucesso."
+        );
       } else {
         // Criar novo laboratório
         await createLaboratory(data);
         
-        toast({
-          title: "Laboratório cadastrado",
-          description: "O laboratório foi cadastrado com sucesso.",
-        });
+        showSuccess(
+          "Laboratório cadastrado",
+          "O laboratório foi cadastrado com sucesso."
+        );
       }
       
       // Resetar formulário e fechar dialog
@@ -172,11 +173,11 @@ export function LaboratoryDialog({
       }
     } catch (error: any) {
       console.error(`Erro ao ${isEditMode ? 'atualizar' : 'cadastrar'} laboratório:`, error);
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: error.response?.data?.message || `Erro ao ${isEditMode ? 'atualizar' : 'cadastrar'} laboratório`,
-      });
+      handleError(
+        error,
+        `Erro ao ${isEditMode ? 'atualizar' : 'cadastrar'} laboratório`,
+        true // Mostrar detalhes do erro
+      );
     } finally {
       setIsPending(false);
     }

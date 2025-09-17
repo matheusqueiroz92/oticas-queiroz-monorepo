@@ -15,7 +15,7 @@ export interface LoginResponse {
   user: User;
 }
 
-// Definir a URL base da API e registrar no console para diagnóstico
+// Definir a URL base da API
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333";
 
 export const api = axios.create({
@@ -33,8 +33,6 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-
-    // As URLs já vêm com /api/ do API_ROUTES, não precisamos adicionar novamente
 
     return config;
   },

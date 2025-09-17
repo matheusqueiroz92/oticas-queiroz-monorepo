@@ -449,7 +449,7 @@ export function useOrders(options: UseOrdersOptions = {}) {
   // Mutation para cancelar pedido
   const cancelOrderMutation = useMutation({
     mutationFn: async (id: string) => {
-      const response = await api.post(`/orders/${id}/cancel`);
+      const response = await api.post(`/api/orders/${id}/cancel`);
       return response.data;
     },
     onSuccess: () => {

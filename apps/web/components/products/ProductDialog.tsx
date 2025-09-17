@@ -161,7 +161,7 @@ export function ProductDialog({
           
           if (memoizedProduct?.image) {
             try {
-              const imageFullUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}${memoizedProduct.image}`;
+              const imageFullUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333'}${memoizedProduct.image}`;
               setImageUrl(imageFullUrl);
             } catch (error) {
               console.error("Erro ao processar URL da imagem:", error);

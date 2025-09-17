@@ -124,7 +124,7 @@ export function ProductTableWithActions({
                     <div className="w-10 h-10 bg-muted rounded-md flex items-center justify-center overflow-hidden">
                       {product.image ? (
                         <img 
-                          src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}${product.image}`}
+                          src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333'}${product.image}`}
                           alt={product.name}
                           className="w-full h-full object-cover"
                         />

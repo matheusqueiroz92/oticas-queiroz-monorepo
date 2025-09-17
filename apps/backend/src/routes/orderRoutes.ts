@@ -1056,7 +1056,6 @@ router.get(
 router.post(
   "/orders/:id/cancel",
   authenticate,
-  validateAndUpdateRelationships,
   asyncHandler(orderController.cancelOrder.bind(orderController))
 );
 

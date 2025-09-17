@@ -331,7 +331,7 @@ export const formatCurrency = (value: number): string => {
 
 export const getProductImageUrl = (imagePath: string | null): string | null => {
   if (!imagePath) return null;
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
   return `${baseUrl}${imagePath}`;
 };
 
