@@ -88,7 +88,7 @@ export function OrderExportButton({
           exportOrdersToExcel(allOrders, title, getClientName, getEmployeeName, getOrderStatus);
           break;
         case "pdf":
-          exportOrdersToPDF(allOrders, title, getClientName, getEmployeeName, getOrderStatus);
+          exportOrdersToPDF(allOrders, title, getClientName);
           break;
         case "csv":
           exportOrdersToCSV(allOrders, getClientName, getEmployeeName, getOrderStatus);
