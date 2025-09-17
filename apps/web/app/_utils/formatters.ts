@@ -1,10 +1,5 @@
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import type {
-  PaymentType,
-  PaymentMethod,
-  PaymentStatus,
-} from "../_types/payment";
 
 /**
  * Formata um valor numérico como moeda (R$)

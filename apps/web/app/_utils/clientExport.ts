@@ -88,8 +88,8 @@ export const exportOrdersToPDF = (
   orders: Order[], 
   title: string,
   getClientName: (id: string) => string,
-  getEmployeeName: (order: Order) => string,
-  getOrderStatus: (status: string) => { label: string; className: string }
+  // getEmployeeName: (order: Order) => string,
+  // getOrderStatus: (status: string) => { label: string; className: string }
 ): void => {
   // Carregar jsPDF com autoTable
   import('jspdf-autotable').then(x => {
@@ -246,11 +246,11 @@ interface ExportCustomerOptions {
  * Exporta dados de clientes em diferentes formatos
  */
 export const exportCustomers = async (options: ExportCustomerOptions): Promise<Blob> => {
-  const { data, format, title, filename } = options;
+  const { data, format, title } = options;
 
   switch (format) {
     case 'excel':
-      return exportToExcel(data, title);
+      return exportToExcel(data);
     case 'csv':
       return exportToCSV(data);
     case 'pdf':
@@ -265,7 +265,7 @@ export const exportCustomers = async (options: ExportCustomerOptions): Promise<B
 /**
  * Exporta para Excel
  */
-const exportToExcel = (data: any[], title: string): Blob => {
+const exportToExcel = (data: any[]): Blob => {
   const ws = XLSX.utils.json_to_sheet(data);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Clientes');

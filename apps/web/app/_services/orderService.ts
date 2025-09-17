@@ -276,15 +276,13 @@ export async function createOrder(
   orderData: Omit<Order, "_id" | "createdAt" | "updatedAt">
 ): Promise<Order | null> {
   try {
-    // CORRIGIDO: Remover serviceOrder e serviceNumber dos dados enviados
-    const { serviceOrder, serviceNumber, ...cleanOrderData } = orderData as any;
+    const { ...cleanOrderData } = orderData as any;
     
     const data = {
       ...cleanOrderData,
       products: Array.isArray(orderData.products) 
         ? orderData.products 
         : [orderData.products],
-      // REMOVIDO: serviceOrder - será gerado automaticamente pelo backend
       totalPrice: orderData.totalPrice || 0,
       discount: orderData.discount || 0,
       finalPrice: orderData.finalPrice || (orderData.totalPrice || 0) - (orderData.discount || 0)

@@ -5,7 +5,7 @@ import UserDetailsPage from "@/components/profile/UserDetailsPage";
 import { Mail, Phone, MapPin, Briefcase, ShoppingCart, Info, Activity } from "lucide-react";
 
 export default function EmployeeDetailsPage() {
-  const getEmployeeFields = (_employee: Employee) => [
+  const getEmployeeFields = () => [
     { 
       key: "email", 
       label: "Email", 
@@ -28,11 +28,11 @@ export default function EmployeeDetailsPage() {
     }
   ];
   
-  const getEmployeeSections = (employee: Employee) => [
+  const getEmployeeSections = () => [
     {
       title: "Informações Pessoais",
       icon: <Info />,
-      fields: getEmployeeFields(employee)
+      fields: getEmployeeFields()
     },
     {
       title: "Desempenho Profissional",

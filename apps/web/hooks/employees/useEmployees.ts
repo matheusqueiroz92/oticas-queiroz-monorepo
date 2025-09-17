@@ -180,12 +180,6 @@ export function useEmployees(options: UseEmployeesOptions = {}) {
         const queryString = new URLSearchParams(searchParams).toString();
         const url = `/api/users?${queryString}`;
         
-        console.log("🔍 DEBUG - Frontend enviando requisição:", {
-          url,
-          searchParams,
-          filters
-        });
-        
         const response = await api.get(url);
         
         return response.data;
