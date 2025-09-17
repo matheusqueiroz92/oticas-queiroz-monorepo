@@ -92,11 +92,6 @@ export default function UserDetailsPage({
 
   return (
     <div className="max-w-4xl mx-auto p-4">
-      <PageTitle
-        title={title}
-        description={description || `Visualizando dados ${userType === "customer" ? "do cliente" : "do funcionário"}`}
-      />
-
       <div className="mt-6">
         <UserInfoCard
           user={{ 

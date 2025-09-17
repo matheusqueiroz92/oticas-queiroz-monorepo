@@ -23,7 +23,7 @@ import type {
   CashRegisterFilters,
 } from "@/app/_types/cash-register";
 
-export function useCashRegister() {
+export function useCashRegister(enableQueries: boolean = true) {
   const [filters, setFilters] = useState<CashRegisterFilters>({});
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -44,8 +44,9 @@ export function useCashRegister() {
   } = useQuery({
     queryKey: QUERY_KEYS.CASH_REGISTERS.OPEN,
     queryFn: checkOpenCashRegister,
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: false, // Desabilitado para evitar múltiplas chamadas
     retry: false, // Não tentar novamente em caso de erro 404
+    enabled: enableQueries, // Desabilitar queries quando não necessário
   });
 
   const {
@@ -56,6 +57,7 @@ export function useCashRegister() {
     queryKey: QUERY_KEYS.CASH_REGISTERS.CURRENT,
     queryFn: getCurrentCashRegister,
     retry: false, // Não tentar novamente em caso de erro 404
+    enabled: enableQueries, // Desabilitar queries quando não necessário
   });
 
   const cashRegisters = data?.registers || [];
@@ -199,6 +201,7 @@ export function useCashRegister() {
       queryKey: QUERY_KEYS.CASH_REGISTERS.CURRENT,
       queryFn: () => getCurrentCashRegister(),
       retry: false,
+      enabled: enableQueries, // Desabilitar queries quando não necessário
     });
   };
 
@@ -273,6 +276,7 @@ export function useCashRegister() {
       queryFn: checkOpenCashRegister,
       retry: false,
       refetchOnWindowFocus: false,
+      enabled: enableQueries, // Desabilitar queries quando não necessário
     });
     
     useEffect(() => {

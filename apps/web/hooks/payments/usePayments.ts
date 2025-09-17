@@ -39,7 +39,7 @@ interface PaymentFilters {
   endDate?: string;
 }
 
-export function usePayments() {
+export function usePayments(enableCashRegisterQueries: boolean = true) {
   const [filters, setFilters] = useState<PaymentFilters>({});
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -208,9 +208,10 @@ export function usePayments() {
     {
       queryKey: QUERY_KEYS.CASH_REGISTERS.CURRENT,
       queryFn: checkOpenCashRegister,
-      refetchOnWindowFocus: true,
+      refetchOnWindowFocus: false, // Desabilitado para evitar múltiplas chamadas
       refetchOnMount: true,
       staleTime: 0,
+      enabled: enableCashRegisterQueries, // Desabilitar queries quando não necessário
     }
   );
 
@@ -279,9 +280,10 @@ const usePaymentForm = () => {
   } = useQuery({
     queryKey: QUERY_KEYS.CASH_REGISTERS.CURRENT,
     queryFn: checkOpenCashRegister,
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: false, // Desabilitado para evitar múltiplas chamadas
     refetchOnMount: true,
     staleTime: 0,
+    enabled: enableCashRegisterQueries, // Desabilitar queries quando não necessário
   });
 
   const { customers, isLoading: isLoadingCustomers, fetchAllCustomers } = useCustomers();
@@ -353,15 +355,17 @@ const usePaymentForm = () => {
 
   // Verificar se há um caixa aberto ao carregar a página
   useEffect(() => {
+    if (!enableCashRegisterQueries) return;
+    
     const checkCashRegister = async () => {
       const cashRegisterResult = await checkOpenCashRegister();
       if (cashRegisterResult && cashRegisterResult.isOpen && cashRegisterResult.data) {
         setValue("cashRegisterId", cashRegisterResult.data._id);
       }
     };
-    
+
     checkCashRegister();
-  }, [setValue]);
+  }, [setValue, enableCashRegisterQueries]);
 
   // Gerenciar installments e campos do cheque com base no método de pagamento
   useEffect(() => {

@@ -22,18 +22,20 @@ export async function checkOpenCashRegister(): Promise<CashRegisterCheckResult> 
       data: response.data,
     };
   } catch (error: unknown) {
-    console.error("Erro ao verificar caixa aberto:", error);
-
     if (error && typeof error === "object" && "response" in error) {
       const apiError = error as { response?: { status?: number } };
 
       if (apiError.response && apiError.response.status === 404) {
+        // 404 é esperado quando não há caixa aberto - não é um erro
         return {
           isOpen: false,
           data: null,
         };
       }
     }
+
+    // Só logar erros que não sejam 404
+    console.error("Erro ao verificar caixa aberto:", error);
 
     return {
       isOpen: false,
@@ -108,7 +110,15 @@ export async function getCurrentCashRegister(): Promise<ICashRegister | null> {
     const response = await api.get(API_ROUTES.CASH_REGISTERS.CURRENT);
     return response.data;
   } catch (error) {
-    console.error(`Erro ao buscar caixa atual:`, error);
+    // Não logar erro 404 para verificação de caixa atual (é esperado quando não há caixa aberto)
+    if (error && typeof error === "object" && "response" in error) {
+      const apiError = error as { response?: { status?: number } };
+      if (apiError.response?.status !== 404) {
+        console.error(`Erro ao buscar caixa atual:`, error);
+      }
+    } else {
+      console.error(`Erro ao buscar caixa atual:`, error);
+    }
     return null;
   }
 }

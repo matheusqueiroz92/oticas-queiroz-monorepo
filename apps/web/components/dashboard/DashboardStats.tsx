@@ -88,15 +88,19 @@ export function DashboardStats({
 
       <StatCard
         title="Caixa Atual"
-        value={formatCurrency(currentBalance)}
+        value={currentBalance > 0 ? formatCurrency(currentBalance) : "Fechado"}
         icon={HandCoins}
-        iconColor="text-violet-600"
-        bgColor="bg-violet-100 dark:bg-violet-100/10"
+        iconColor={currentBalance > 0 ? "text-violet-600" : "text-red-600"}
+        bgColor={currentBalance > 0 ? "bg-violet-100 dark:bg-violet-100/10" : "bg-red-100 dark:bg-red-100/10"}
         isLoading={isLoadingCashRegister}
         description={
-          <>
-            Aberto às <span className="text-purple-600 font-semibold">{cashOpenTime}</span>
-          </>
+          currentBalance > 0 ? (
+            <>
+              Aberto às <span className="text-purple-600 font-semibold">{cashOpenTime}</span>
+            </>
+          ) : (
+            <span className="text-red-600 font-semibold">Nenhum caixa aberto</span>
+          )
         }
       />
     </div>

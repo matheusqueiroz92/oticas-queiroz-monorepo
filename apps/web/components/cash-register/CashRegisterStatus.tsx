@@ -29,7 +29,7 @@ export function CashRegisterStatus({
   const { data, isLoading, error } = useQuery({
     queryKey: QUERY_KEYS.CASH_REGISTERS.CURRENT,
     queryFn: checkOpenCashRegister,
-    refetchOnWindowFocus: true, 
+    refetchOnWindowFocus: false, // Desabilitado para evitar múltiplas chamadas
   });
 
   useEffect(() => {

@@ -80,13 +80,16 @@ export function DashboardQuickActions({
         description="Cadastrar pagamento"
         onClick={() => openDialog('paymentDialogOpen')}
         ariaLabel="Abrir novo pagamento"
-      >
+      />
+      
+      {/* Renderizar PaymentDialog apenas quando aberto */}
+      {dialogStates.paymentDialogOpen && (
         <PaymentDialog
           open={dialogStates.paymentDialogOpen}
           onOpenChange={() => closeDialog('paymentDialogOpen')}
           mode="create"
         />
-      </QuickActionButton>
+      )}
 
       {/* <QuickActionButton
         icon={FileText}

@@ -64,9 +64,9 @@ export function useDashboard() {
 
   const { totalItems: totalCustomers, customers } = useCustomers();
   
-  const { isLoading: isLoadingPayments, payments: allPayments } = usePayments();
+  const { isLoading: isLoadingPayments, payments: allPayments } = usePayments(false);
   
-  const { isLoading: isLoadingCashRegister, currentCashRegister } = useCashRegister();
+  const { isLoading: isLoadingCashRegister, currentCashRegister } = useCashRegister(false);
   
   // Buscar cliente legado por CPF/CNPJ do usuário logado
   const userCpf = Cookies.get("cpf") || "";

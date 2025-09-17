@@ -56,8 +56,15 @@ api.interceptors.response.use(
 
       // Log específico para erros 404
       if (error.response?.status === 404) {
-        console.warn(`ERRO 404: URL não encontrada - ${error.config?.url}`);
-        console.warn("Detalhes do erro 404:", errorDetails);
+        // Não logar erros 404 esperados (como verificação de caixa aberto)
+        const url = error.config?.url || '';
+        const isExpected404 = url.includes('/cash-registers/current') || 
+                              url.includes('/api/cash-registers/current');
+        
+        if (!isExpected404) {
+          console.warn(`ERRO 404: URL não encontrada - ${url}`);
+          console.warn("Detalhes do erro 404:", errorDetails);
+        }
       } else {
         console.error(
           `Erro ${error.response?.status || "de rede"} na API:`,
