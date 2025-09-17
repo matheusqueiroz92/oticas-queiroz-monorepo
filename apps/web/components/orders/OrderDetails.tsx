@@ -10,6 +10,17 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import OrderLaboratoryUpdate from "@/components/orders/OrderLaboratoryUpdate";
 import OrderStatusUpdate from "@/components/orders/OrderStatusUpdate";
 import OrderPaymentHistory from "@/components/orders/OrderPaymentHistory";
@@ -27,11 +38,11 @@ import {
   CheckCircle,
   AlertTriangle,
   ArrowLeft,
+  XCircle,
 } from "lucide-react";
 import { useOrders } from "@/hooks/orders/useOrders";
 import { useToast } from "@/hooks/useToast";
 import type { Order } from "@/app/_types/order";
-import { useRouter } from "next/navigation";
 import OrderPdfExporter from "./exports/OrderPdfExporter";
 
 interface OrderDetailsProps {
@@ -45,9 +56,9 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
   const [employee, setEmployee] = useState<any>(null);
   const [laboratoryInfo, setLaboratoryInfo] = useState<any>(null);
   const [isDark, setIsDark] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
   
   const { toast } = useToast();
-  const router = useRouter();
   
   const { 
     getStatusBadge,
@@ -56,7 +67,8 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
     getProductTypeLabel,
     fetchOrderComplementaryDetails,
     formatCurrency,
-    formatDate
+    formatDate,
+    handleCancelOrder
   } = useOrders();
 
   useEffect(() => {
@@ -97,6 +109,31 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
 
     return () => observer.disconnect();
   }, []);
+
+  // Função para cancelar pedido
+  const handleCancelOrderClick = async () => {
+    if (!order._id) return;
+    
+    setIsCancelling(true);
+    try {
+      await handleCancelOrder(order._id);
+      toast({
+        title: "Pedido cancelado",
+        description: `Pedido #${order.serviceOrder} foi cancelado com sucesso.`,
+        variant: "default",
+      });
+      onRefresh(); // Atualizar a lista de pedidos
+    } catch (error: any) {
+      console.error("Erro ao cancelar pedido:", error);
+      toast({
+        title: "Erro ao cancelar pedido",
+        description: error?.response?.data?.message || "Ocorreu um erro inesperado.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCancelling(false);
+    }
+  };
 
   const hasPrescriptionData = order.prescriptionData && 
     order.prescriptionData.leftEye && 
@@ -957,6 +994,43 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
               variant="outline"
               size="default"
             />
+            
+            {/* Botão de cancelar pedido - só aparece se não estiver cancelado ou entregue */}
+            {order.status !== "cancelled" && order.status !== "delivered" && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="destructive"
+                    size="default"
+                    disabled={isCancelling}
+                    className="flex items-center gap-2"
+                  >
+                    <XCircle className="h-4 w-4" />
+                    {isCancelling ? "Cancelando..." : "Cancelar Pedido"}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Cancelar Pedido</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Tem certeza que deseja cancelar o pedido #{order.serviceOrder}?
+                      <br />
+                      <br />
+                      <strong>Esta ação não pode ser desfeita.</strong> O pedido será marcado como cancelado e o número da OS não poderá ser reutilizado.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Não, manter pedido</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleCancelOrderClick}
+                      className="bg-red-600 hover:bg-red-700"
+                    >
+                      Sim, cancelar pedido
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
           </div>
         </CardFooter>
       </Card>

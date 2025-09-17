@@ -118,6 +118,7 @@ export function CashRegisterDetails({
             <Printer className="h-4 w-4 mr-2" />
             Imprimir
           </Button>
+          {/* Close cash register button */}
           {register.status === "open" && (
             <Button
               onClick={() => onCloseCashRegister(register._id)}

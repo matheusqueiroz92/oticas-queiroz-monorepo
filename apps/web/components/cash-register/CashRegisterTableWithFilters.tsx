@@ -32,7 +32,6 @@ interface CashRegisterTableWithFiltersProps {
 export function CashRegisterTableWithFilters({
   cashRegisters,
   isLoading,
-  error,
   search,
   onSearchChange,
   showFilters,

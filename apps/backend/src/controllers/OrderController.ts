@@ -456,6 +456,33 @@ export class OrderController {
     }
   }
 
+  async cancelOrder(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      if (!req.user?.id || !req.user?.role) {
+        res.status(401).json({ message: "Usuário não autenticado" });
+        return;
+      }
+
+      const order = await this.orderService.cancelOrder(
+        req.params.id,
+        req.user.id,
+        req.user.role
+      );
+      
+      res.status(200).json({
+        message: "Pedido cancelado com sucesso",
+        order
+      });
+    } catch (error) {
+      if (error instanceof OrderError) {
+        res.status(400).json({ message: error.message });
+        return;
+      }
+      console.error("Error cancelling order:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  }
+
   async getOrdersByClient(req: AuthRequest, res: Response): Promise<void> {
     try {
       const { clientId } = req.params;

@@ -8,10 +8,7 @@ import { useCashRegister } from "@/hooks/cash-register/useCashRegister";
 import { CashRegisterCloseForm } from "@/components/cash-register/CashRegisterCloseForm";
 import { CashRegisterInfoCard } from "@/components/cash-register/CashRegisterInfoCard";
 import { CashRegisterSummary } from "@/components/cash-register/CashRegisterSummary";
-import { 
-  createCloseCashRegisterForm, 
-  type CloseCashRegisterFormValues 
-} from "@/schemas/cash-register-schema";
+import { createCloseCashRegisterForm } from "@/schemas/cash-register-schema";
 import { BackButton } from "@/components/ui/back-button";
 import { CloseCashRegisterMessageCard } from "@/components/cash-register/CloseCashRegisterMessageCard";
 import { ErrorCashRegisterCard } from "@/components/cash-register/ErrorCashRegisterCard";
@@ -66,7 +63,7 @@ export default function CloseCashRegisterPage() {
   }, [isClosingSuccessful, router]);
 
   // Função para lidar com o envio do formulário
-  const onSubmit = (_data: CloseCashRegisterFormValues) => {
+  const onSubmit = () => {
     if (!cashRegister || cashRegister.status !== "open") {
       toast({
         variant: "destructive",

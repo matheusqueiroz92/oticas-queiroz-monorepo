@@ -24,7 +24,7 @@ export default function OpenCashRegisterPage() {
       openingBalance: data.openingBalance,
       observations: data.observations,
       openingDate: new Date(),
-    }).catch(_error => {
+    }).catch(() => {
       if (hasCashRegisterOpen) {
         form.setError("openingBalance", {
           type: "manual",

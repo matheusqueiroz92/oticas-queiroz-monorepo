@@ -239,6 +239,64 @@ export class OrderService {
   }
 
   /**
+   * Cancela um pedido
+   * @param id ID do pedido
+   * @param userId ID do usuário
+   * @param userRole Role do usuário
+   * @returns Pedido cancelado
+   */
+  async cancelOrder(
+    id: string,
+    userId: string,
+    userRole: string
+  ): Promise<IOrder> {
+    const order = await this.orderRepository.findById(id);
+    if (!order) {
+      throw new OrderError("Pedido não encontrado");
+    }
+
+    // Verificar se o pedido já está cancelado
+    if (order.status === "cancelled") {
+      throw new OrderError("Pedido já está cancelado");
+    }
+
+    // Verificar se o pedido já foi entregue
+    if (order.status === "delivered") {
+      throw new OrderError("Não é possível cancelar um pedido já entregue");
+    }
+
+    // Validar permissões - apenas admin e employee podem cancelar
+    if (userRole !== "admin" && userRole !== "employee") {
+      throw new OrderError("Você não tem permissão para cancelar pedidos");
+    }
+
+    try {
+      // Se o pedido tem produtos, aumentar o estoque
+      if (order.products && order.products.length > 0) {
+        await this.handleStockChanges(order, [], userId);
+      }
+
+      // Atualizar status para cancelado
+      const updateData: Partial<IOrder> = { 
+        status: "cancelled",
+        updatedAt: new Date()
+      };
+
+      const cancelledOrder = await this.orderRepository.update(id, updateData);
+      if (!cancelledOrder) {
+        throw new OrderError("Erro ao cancelar pedido");
+      }
+
+      console.log(`[OrderService] Pedido ${id} cancelado com sucesso pelo usuário ${userId}`);
+      return cancelledOrder;
+
+    } catch (error) {
+      console.error(`[OrderService] Erro ao cancelar pedido ${id}:`, error);
+      throw new OrderError("Erro interno ao cancelar pedido");
+    }
+  }
+
+  /**
    * Atualiza dados do pedido
    * @param id ID do pedido
    * @param orderData Novos dados do pedido

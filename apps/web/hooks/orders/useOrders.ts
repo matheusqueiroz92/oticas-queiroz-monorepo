@@ -445,7 +445,26 @@ export function useOrders(options: UseOrdersOptions = {}) {
   const handleUpdateOrderLaboratory = useCallback((id: string, laboratoryId: string) => {
     return updateOrderLaboratoryMutation.mutateAsync({ id, laboratoryId });
   }, [updateOrderLaboratoryMutation]);
-   
+  
+  // Mutation para cancelar pedido
+  const cancelOrderMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await api.post(`/orders/${id}/cancel`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS.ALL] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS.MY_ORDERS] });
+    },
+    onError: (error: any) => {
+      console.error("Erro ao cancelar pedido:", error);
+    }
+  });
+
+  const handleCancelOrder = useCallback((id: string) => {
+    return cancelOrderMutation.mutateAsync(id);
+  }, [cancelOrderMutation]);
+  
   const handleCreateOrder = useCallback((orderData: Omit<Order, "_id">) => {
     return createOrderMutation.mutateAsync(orderData);
   }, [createOrderMutation]);
@@ -770,6 +789,7 @@ export function useOrders(options: UseOrdersOptions = {}) {
     handleUpdateOrder,
     handleUpdateOrderStatus,
     handleUpdateOrderLaboratory,
+    handleCancelOrder,
     handleCreateOrder,
     navigateToOrders,
     navigateToOrderDetails,
