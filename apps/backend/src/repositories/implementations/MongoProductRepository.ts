@@ -64,8 +64,6 @@ export class MongoProductRepository extends BaseRepository<IProduct, Omit<IProdu
 
       // Se o tipo de produto mudou, precisamos recriar o documento com o discriminator correto
       if (newProductType && newProductType !== existingProductType) {
-        console.log(`Mudando tipo de produto de ${existingProductType} para ${newProductType}`);
-        
         // Preservar o _id original
         const productId = existingProduct._id;
         

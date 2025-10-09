@@ -30,8 +30,6 @@ export class ProductController {
       
       if (req.file) {
         data.image = `/images/products/${req.file.filename}`;
-        console.log(`Arquivo de imagem detectado: ${req.file.filename}`);
-        console.log(`Caminho de imagem salvo: ${data.image}`);
       }
 
       if (data.sellPrice) data.sellPrice = Number(data.sellPrice);
@@ -214,8 +212,6 @@ export class ProductController {
   
       if (req.file) {
         updateData.image = `/images/products/${req.file.filename}`;
-        console.log(`Arquivo de imagem atualizado: ${req.file.filename}`);
-        console.log(`Caminho de imagem atualizado: ${updateData.image}`);
       }
   
       // Aplicar a atualização do produto
