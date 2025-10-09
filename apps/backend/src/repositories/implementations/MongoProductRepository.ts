@@ -45,7 +45,7 @@ export class MongoProductRepository extends BaseRepository<IProduct, Omit<IProdu
   }
 
   /**
-   * Sobrescreve o método update para garantir que não alteramos o productType
+   * Sobrescreve o método update para permitir mudança de productType de forma segura
    */
   async update(id: string, data: Partial<IProduct>): Promise<IProduct | null> {
     try {
@@ -53,19 +53,62 @@ export class MongoProductRepository extends BaseRepository<IProduct, Omit<IProdu
         return null;
       }
 
-      // Buscar o produto existente para determinar o tipo
+      // Buscar o produto existente
       const existingProduct = await this.model.findById(id).exec();
       if (!existingProduct) {
         return null;
       }
 
-      // Remover productType do update para evitar mudança de tipo
+      const newProductType = data.productType;
+      const existingProductType = existingProduct.productType;
+
+      // Se o tipo de produto mudou, precisamos recriar o documento com o discriminator correto
+      if (newProductType && newProductType !== existingProductType) {
+        console.log(`Mudando tipo de produto de ${existingProductType} para ${newProductType}`);
+        
+        // Preservar o _id original
+        const productId = existingProduct._id;
+        
+        // Combinar dados existentes com novos dados
+        const productData = {
+          ...existingProduct.toObject(),
+          ...data,
+          _id: productId,
+          productType: newProductType
+        };
+
+        // Deletar o documento antigo
+        await this.model.findByIdAndDelete(id).exec();
+
+        // Criar novo documento com o discriminator correto
+        let newDoc: any;
+        
+        switch (newProductType) {
+          case 'lenses':
+            newDoc = await Lens.create(productData);
+            break;
+          case 'clean_lenses':
+            newDoc = await CleanLens.create(productData);
+            break;
+          case 'prescription_frame':
+            newDoc = await PrescriptionFrame.create(productData);
+            break;
+          case 'sunglasses_frame':
+            newDoc = await SunglassesFrame.create(productData);
+            break;
+          default:
+            throw new Error(`Tipo de produto inválido: ${newProductType}`);
+        }
+
+        return this.convertToInterface(newDoc);
+      }
+
+      // Se o tipo não mudou, apenas atualizar normalmente
       const { productType, ...updateData } = data as any;
 
-      // Usar o modelo discriminator correto baseado no productType do produto existente
       let doc: any = null;
       
-      switch (existingProduct.productType) {
+      switch (existingProductType) {
         case 'lenses':
           doc = await Lens.findByIdAndUpdate(
             id,
