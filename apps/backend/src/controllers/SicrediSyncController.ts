@@ -83,11 +83,10 @@ export class SicrediSyncController {
    *       403:
    *         description: Acesso negado
    */
-  startAutoSync = asyncHandler(async (req: AuthRequest, res: Response) => {
+  startAutoSync = asyncHandler(async (req: Request, res: Response) => {
     const validatedData = startSyncSchema.parse(req.body);
-    
+
     this.sicrediSyncService.startAutoSync(validatedData.intervalMinutes);
-    
     res.status(200).json({
       success: true,
       message: `Sincronização automática iniciada a cada ${validatedData.intervalMinutes} minutos`,
@@ -120,7 +119,7 @@ export class SicrediSyncController {
    *       403:
    *         description: Acesso negado
    */
-  stopAutoSync = asyncHandler(async (req: AuthRequest, res: Response) => {
+  stopAutoSync = asyncHandler(async (req: Request, res: Response) => {
     this.sicrediSyncService.stopAutoSync();
     
     res.status(200).json({
@@ -170,7 +169,7 @@ export class SicrediSyncController {
    *       403:
    *         description: Acesso negado
    */
-  getSyncStatus = asyncHandler(async (req: AuthRequest, res: Response) => {
+  getSyncStatus = asyncHandler(async (req: Request, res: Response) => {
     const isRunning = this.sicrediSyncService.isSyncRunning();
     const stats = await this.sicrediSyncService.getSyncStats();
     
@@ -237,7 +236,7 @@ export class SicrediSyncController {
    *       500:
    *         description: Erro interno do servidor
    */
-  performSync = asyncHandler(async (req: AuthRequest, res: Response) => {
+  performSync = asyncHandler(async (req: Request, res: Response) => {
     const result = await this.sicrediSyncService.performSync();
     
     res.status(200).json({
@@ -309,7 +308,7 @@ export class SicrediSyncController {
    *       500:
    *         description: Erro interno do servidor
    */
-  syncClient = asyncHandler(async (req: AuthRequest, res: Response) => {
+  syncClient = asyncHandler(async (req: Request, res: Response) => {
     const { clientId } = req.params;
     
     if (!clientId) {
@@ -360,7 +359,7 @@ export class SicrediSyncController {
    *       403:
    *         description: Acesso negado
    */
-  getSyncLogs = asyncHandler(async (req: AuthRequest, res: Response) => {
+  getSyncLogs = asyncHandler(async (req: Request, res: Response) => {
     // Por enquanto, retornamos uma mensagem informativa
     // Em produção, você pode implementar um sistema de logs mais robusto
     res.status(200).json({
