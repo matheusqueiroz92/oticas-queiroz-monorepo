@@ -170,6 +170,9 @@ export class ProductController {
       if (data.sellPrice !== undefined) updateData.sellPrice = Number(data.sellPrice);
       if (data.costPrice !== undefined) updateData.costPrice = Number(data.costPrice);
       
+      // Incluir productType se fornecido (permite mudança de tipo)
+      if (data.productType !== undefined) updateData.productType = data.productType;
+      
       // Importante: buscar o produto original antes de qualquer atualização
       const originalProduct = await this.productService.getProductById(req.params.id);
       if (!originalProduct) {
@@ -189,7 +192,10 @@ export class ProductController {
       }
       
       // Atualizar campos específicos de cada tipo de produto
-      switch (originalProduct.productType) {
+      // Se o tipo está mudando, usar o novo tipo, caso contrário usar o original
+      const targetProductType = data.productType || originalProduct.productType;
+      
+      switch (targetProductType) {
         case 'lenses':
           if (data.lensType !== undefined) updateData.lensType = data.lensType;
           break;
@@ -200,7 +206,7 @@ export class ProductController {
           if (data.shape !== undefined) updateData.shape = data.shape;
           if (data.reference !== undefined) updateData.reference = data.reference;
           
-          if (originalProduct.productType === 'sunglasses_frame' && data.modelSunglasses !== undefined) {
+          if (targetProductType === 'sunglasses_frame' && data.modelSunglasses !== undefined) {
             updateData.modelSunglasses = data.modelSunglasses;
           }
           break;
