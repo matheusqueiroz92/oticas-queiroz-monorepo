@@ -70,12 +70,43 @@ export class MongoProductRepository extends BaseRepository<IProduct, Omit<IProdu
         const productId = existingProduct._id;
         
         // Combinar dados existentes com novos dados
-        const productData = {
+        const productData: any = {
           ...existingProduct.toObject(),
           ...data,
           _id: productId,
           productType: newProductType
         };
+
+        // Garantir que campos obrigatórios do novo tipo estejam presentes
+        switch (newProductType) {
+          case 'lenses':
+            if (!productData.lensType) {
+              productData.lensType = 'Não especificado';
+            }
+            break;
+          case 'sunglasses_frame':
+            // modelSunglasses é obrigatório para sunglasses_frame
+            if (!productData.modelSunglasses) {
+              productData.modelSunglasses = productData.name || 'Sem modelo';
+            }
+            // Garantir campos de armação
+            if (!productData.typeFrame) productData.typeFrame = 'Padrão';
+            if (!productData.color) productData.color = 'Não especificado';
+            if (!productData.shape) productData.shape = 'Padrão';
+            if (!productData.reference) productData.reference = 'Sem referência';
+            if (productData.stock === undefined) productData.stock = 0;
+            break;
+          case 'prescription_frame':
+            // Garantir campos de armação
+            if (!productData.typeFrame) productData.typeFrame = 'Padrão';
+            if (!productData.color) productData.color = 'Não especificado';
+            if (!productData.shape) productData.shape = 'Padrão';
+            if (!productData.reference) productData.reference = 'Sem referência';
+            if (productData.stock === undefined) productData.stock = 0;
+            // Remover modelSunglasses se existir (não é usado em prescription_frame)
+            delete productData.modelSunglasses;
+            break;
+        }
 
         // Deletar o documento antigo
         await this.model.findByIdAndDelete(id).exec();
