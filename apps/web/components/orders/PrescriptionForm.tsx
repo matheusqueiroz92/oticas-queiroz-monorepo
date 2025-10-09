@@ -27,38 +27,41 @@ export default function PrescriptionForm({ form }: PrescriptionFormProps) {
   const syncFieldValues = () => {
     const nd = form.getValues("prescriptionData.nd");
     if (nd !== 0 && nd !== undefined) {
-      setNdInput(nd.toString());
+      // Converter para string e substituir ponto por vírgula para exibição
+      setNdInput(nd.toString().replace('.', ','));
     }
 
     const oc = form.getValues("prescriptionData.oc");
     if (oc !== 0 && oc !== undefined) {
-      setOcInput(oc.toString());
+      // Converter para string e substituir ponto por vírgula para exibição
+      setOcInput(oc.toString().replace('.', ','));
     }
 
     const addition = form.getValues("prescriptionData.addition");
     if (addition && addition !== "") {
-      setAdditionInput(addition);
+      // Converter para formato com vírgula para exibição
+      setAdditionInput(addition.replace('.', ','));
     }
 
     // Sincronizar os campos Ponte, Aro, AV e AM
     const bridge = form.getValues("prescriptionData.bridge");
     if (bridge !== 0 && bridge !== undefined) {
-      setBridgeInput(bridge.toString());
+      setBridgeInput(bridge.toString().replace('.', ','));
     }
 
     const rim = form.getValues("prescriptionData.rim");
     if (rim !== 0 && rim !== undefined) {
-      setRimInput(rim.toString());
+      setRimInput(rim.toString().replace('.', ','));
     }
 
     const vh = form.getValues("prescriptionData.vh");
     if (vh !== 0 && vh !== undefined) {
-      setAvInput(vh.toString());
+      setAvInput(vh.toString().replace('.', ','));
     }
 
     const sh = form.getValues("prescriptionData.sh");
     if (sh !== 0 && sh !== undefined) {
-      setAmInput(sh.toString());
+      setAmInput(sh.toString().replace('.', ','));
     }
   };
 
@@ -91,9 +94,15 @@ export default function PrescriptionForm({ form }: PrescriptionFormProps) {
       return;
     }
     
-    const numValue = Number.parseFloat(inputValue);
-    if (!Number.isNaN(numValue)) {
-      onChange(numValue);
+    // Validar formato: permite números e tanto vírgula quanto ponto decimal
+    if (/^\d*[.,]?\d*$/.test(inputValue)) {
+      // Normalizar para formato consistente (substituir vírgula por ponto para armazenamento)
+      const normalizedValue = inputValue.replace(',', '.');
+      
+      const numValue = Number.parseFloat(normalizedValue);
+      if (!Number.isNaN(numValue)) {
+        onChange(numValue);
+      }
     }
   };
 
@@ -104,7 +113,19 @@ export default function PrescriptionForm({ form }: PrescriptionFormProps) {
   ) => {
     const inputValue = e.target.value;
     setInputState(inputValue);
-    onChange(inputValue);
+    
+    // Se o campo estiver vazio, definimos como string vazia
+    if (inputValue === "") {
+      onChange("");
+      return;
+    }
+    
+    // Validar formato: permite +, -, números e tanto vírgula quanto ponto decimal
+    if (/^[+-]?\d*[.,]?\d*$/.test(inputValue)) {
+      // Normalizar para formato consistente (substituir vírgula por ponto para armazenamento)
+      const normalizedValue = inputValue.replace(',', '.');
+      onChange(normalizedValue);
+    }
   };
 
   return (

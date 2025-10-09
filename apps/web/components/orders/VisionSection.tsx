@@ -43,11 +43,12 @@ export default function VisionSection({ eye, form }: VisionSectionProps) {
 
     const pd = form.getValues(`prescriptionData.${eye}Eye.pd`);
     if (pd !== 0 && pd !== undefined) {
-      setPdInput(pd.toString());
+      // Converter para string e substituir ponto por vírgula para exibição
+      setPdInput(pd.toString().replace('.', ','));
     }
   }, [form, eye]);
 
-  // Função para lidar com inputs numéricos genéricos
+  // Função para lidar com inputs numéricos genéricos (aceita vírgula e ponto)
   const handleNumericInput = (
     e: React.ChangeEvent<HTMLInputElement>,
     onChange: (value: number | undefined) => void,
@@ -62,10 +63,16 @@ export default function VisionSection({ eye, form }: VisionSectionProps) {
       return;
     }
     
-    // Caso contrário, convertemos para número
-    const numValue = Number.parseFloat(inputValue);
-    if (!Number.isNaN(numValue)) {
-      onChange(numValue);
+    // Validar formato: permite números e tanto vírgula quanto ponto decimal
+    if (/^\d*[.,]?\d*$/.test(inputValue)) {
+      // Normalizar para formato consistente (substituir vírgula por ponto para armazenamento)
+      const normalizedValue = inputValue.replace(',', '.');
+      
+      // Converter para número
+      const numValue = Number.parseFloat(normalizedValue);
+      if (!Number.isNaN(numValue)) {
+        onChange(numValue);
+      }
     }
   };
 
