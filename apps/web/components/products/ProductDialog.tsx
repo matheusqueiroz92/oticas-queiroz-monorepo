@@ -35,7 +35,6 @@ import {
 import { ImageUpload } from "@/components/ui/image-upload";
 import { useProductDialog } from "@/hooks/products/useProductDialog";
 import { Product } from "@/app/_types/product";
-import { getProductTypeName } from "@/app/_services/productService";
 
 const productSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
@@ -193,7 +192,7 @@ export function ProductDialog({
     };
     
     handleFormReset();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Note: 'form' was intentionally removed from dependencies to prevent reset loop
   }, [memoizedProduct, isEditMode, open]);
 
   const handleSubmit = async (data: ProductFormData) => {
