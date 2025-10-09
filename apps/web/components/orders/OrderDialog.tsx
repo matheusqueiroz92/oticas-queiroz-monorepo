@@ -102,7 +102,7 @@ export const OrderDialog: React.FC<OrderDialogProps> = ({ open, onOpenChange, or
         },
         nd: orderData.prescriptionData?.nd || 0,
         oc: orderData.prescriptionData?.oc || 0,
-        addition: orderData.prescriptionData?.addition || 0,
+        addition: orderData.prescriptionData?.addition || "",
         bridge: orderData.prescriptionData?.bridge || 0,
         rim: orderData.prescriptionData?.rim || 0,
         vh: orderData.prescriptionData?.vh || 0,

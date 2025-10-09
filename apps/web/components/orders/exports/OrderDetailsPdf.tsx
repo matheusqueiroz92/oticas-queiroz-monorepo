@@ -193,11 +193,11 @@ const OrderPDFDocument = ({
   };
 
   // Formatar valores de grau
-  const formatRefractionValue = (value?: number) => {
-    if (value === undefined || value === null) return "N/A";
-    const prefix = value > 0 ? "+" : "";
-    return `${prefix}${value.toFixed(2)}`.replace(".", ",");
-  };
+  // const formatRefractionValue = (value?: number) => {
+  //   if (value === undefined || value === null) return "N/A";
+  //   const prefix = value > 0 ? "+" : "";
+  //   return `${prefix}${value.toFixed(2)}`.replace(".", ",");
+  // };
 
   // Formatar valores monetários
   const formatCurrency = (value: number) => {

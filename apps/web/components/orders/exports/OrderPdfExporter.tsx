@@ -96,7 +96,7 @@ export default function OrderPdfExporter({
         },
         nd: sourceOrder.prescriptionData?.nd || 0,
         oc: sourceOrder.prescriptionData?.oc || 0,
-        addition: sourceOrder.prescriptionData?.addition || 0,
+        addition: sourceOrder.prescriptionData?.addition || "",
         bridge: sourceOrder.prescriptionData?.bridge || 0,
         rim: sourceOrder.prescriptionData?.rim || 0,
         vh: sourceOrder.prescriptionData?.vh || 0,

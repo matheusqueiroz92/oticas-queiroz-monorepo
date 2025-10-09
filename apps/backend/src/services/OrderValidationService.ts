@@ -198,8 +198,8 @@ export class OrderValidationService {
    * @param prescriptionData Dados da prescrição
    * @throws OrderValidationError se os dados forem inválidos
    */
-  validatePrescriptionData(prescriptionData?: { appointmentDate: Date }): void {
-    if (!prescriptionData) return;
+  validatePrescriptionData(prescriptionData?: { appointmentDate?: Date }): void {
+    if (!prescriptionData || !prescriptionData.appointmentDate) return;
 
     const appointmentDate = new Date(prescriptionData.appointmentDate);
     const today = new Date();

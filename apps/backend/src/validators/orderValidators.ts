@@ -1,10 +1,10 @@
 import { z } from 'zod';
 
-// Schema para dados de prescrição
+// Schema para dados de prescrição (todos os campos opcionais)
 const prescriptionDataSchema = z.object({
-  doctorName: z.string().min(2, "Nome do médico deve ter no mínimo 2 caracteres"),
-  clinicName: z.string().min(2, "Nome da clínica deve ter no mínimo 2 caracteres"),
-  appointmentDate: z.coerce.date(),
+  doctorName: z.string().optional(),
+  clinicName: z.string().optional(),
+  appointmentDate: z.coerce.date().optional(),
   rightEye: z.object({
     sph: z.string().default('0'),
     cyl: z.string().default('0'),
@@ -19,7 +19,7 @@ const prescriptionDataSchema = z.object({
   }),
   nd: z.number().default(0),
   oc: z.number().default(0),
-  addition: z.number().default(0),
+  addition: z.string().default(""),
   bridge: z.number().default(0),
   rim: z.number().default(0),
   vh: z.number().default(0),
@@ -132,7 +132,8 @@ export const createOrderSchema = baseOrderSchema
       message: "Desconto não pode ser maior que o preço total",
       path: ["discount"],
     }
-  ).refine(
+  )
+  .refine(
     (data) => {
       // Se é pedido institucional, verificar se institutionId está preenchido
       if (data.isInstitutionalOrder === true && !data.institutionId) {
@@ -143,6 +144,60 @@ export const createOrderSchema = baseOrderSchema
     {
       message: "Para pedidos institucionais, o ID da instituição é obrigatório",
       path: ["institutionId"],
+    }
+  )
+  .refine(
+    (data) => {
+      // Verificar se há lentes nos produtos
+      const hasLenses = data.products?.some((product: any) => 
+        product.productType === "lenses"
+      );
+      
+      // Se há lentes, data de entrega é obrigatória
+      if (hasLenses && !data.deliveryDate) {
+        return false;
+      }
+      
+      return true;
+    },
+    {
+      message: "Pedidos com lentes exigem data de entrega",
+      path: ["deliveryDate"],
+    }
+  )
+  .refine(
+    (data) => {
+      // Verificar se há lentes nos produtos
+      const hasLenses = data.products?.some((product: any) => 
+        product.productType === "lenses"
+      );
+      
+      // Se há lentes, dados de prescrição são obrigatórios
+      if (hasLenses) {
+        if (!data.prescriptionData) {
+          return false;
+        }
+        
+        const { doctorName, clinicName, appointmentDate } = data.prescriptionData;
+        
+        if (!doctorName || doctorName.trim().length < 2) {
+          return false;
+        }
+        
+        if (!clinicName || clinicName.trim().length < 2) {
+          return false;
+        }
+        
+        if (!appointmentDate) {
+          return false;
+        }
+      }
+      
+      return true;
+    },
+    {
+      message: "Pedidos com lentes exigem dados de prescrição (médico, clínica e data da consulta)",
+      path: ["prescriptionData"],
     }
   );
 
@@ -176,6 +231,70 @@ export const updateOrderSchema = baseOrderSchema
     {
       message: "Desconto não pode ser maior que o preço total",
       path: ["discount"],
+    }
+  )
+  .refine(
+    (data) => {
+      // Verificar se há produtos para validação
+      if (!data.products || data.products.length === 0) {
+        return true; // Não valida se não há produtos
+      }
+      
+      // Verificar se há lentes nos produtos
+      const hasLenses = data.products?.some((product: any) => 
+        product.productType === "lenses"
+      );
+      
+      // Se há lentes, data de entrega é obrigatória
+      if (hasLenses && !data.deliveryDate) {
+        return false;
+      }
+      
+      return true;
+    },
+    {
+      message: "Pedidos com lentes exigem data de entrega",
+      path: ["deliveryDate"],
+    }
+  )
+  .refine(
+    (data) => {
+      // Verificar se há produtos para validação
+      if (!data.products || data.products.length === 0) {
+        return true; // Não valida se não há produtos
+      }
+      
+      // Verificar se há lentes nos produtos
+      const hasLenses = data.products?.some((product: any) => 
+        product.productType === "lenses"
+      );
+      
+      // Se há lentes, dados de prescrição são obrigatórios
+      if (hasLenses) {
+        if (!data.prescriptionData) {
+          return false;
+        }
+        
+        const { doctorName, clinicName, appointmentDate } = data.prescriptionData;
+        
+        if (!doctorName || doctorName.trim().length < 2) {
+          return false;
+        }
+        
+        if (!clinicName || clinicName.trim().length < 2) {
+          return false;
+        }
+        
+        if (!appointmentDate) {
+          return false;
+        }
+      }
+      
+      return true;
+    },
+    {
+      message: "Pedidos com lentes exigem dados de prescrição (médico, clínica e data da consulta)",
+      path: ["prescriptionData"],
     }
   );
 

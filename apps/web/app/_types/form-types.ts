@@ -19,7 +19,7 @@ export interface PrescriptionData {
   leftEye: EyeData;
   nd: number;
   oc: number;
-  addition: number;
+  addition: string;
   bridge: number;
   rim: number;
   vh: number;
@@ -66,13 +66,14 @@ export const orderFormSchema = z.object({
     }),
     nd: z.number().default(0),
     oc: z.number().default(0),
-    addition: z.number().default(0),
+    addition: z.string().default(""),
     bridge: z.number().default(0),
     rim: z.number().default(0),
     vh: z.number().default(0),
     sh: z.number().default(0),
   }),
-}).refine((data) => {
+})
+.refine((data) => {
   // Verificar se há lentes nos produtos
   const hasLenses = data.products?.some((product: any) => 
     product.productType === "lenses" || 
@@ -97,6 +98,35 @@ export const orderFormSchema = z.object({
 }, {
   message: "Pedidos com lentes exigem data de entrega futura",
   path: ["deliveryDate"],
+})
+.refine((data) => {
+  // Verificar se há lentes nos produtos
+  const hasLenses = data.products?.some((product: any) => 
+    product.productType === "lenses" || 
+    (product.name && product.name.toLowerCase().includes('lente'))
+  );
+  
+  // Se há lentes, os dados de prescrição são obrigatórios
+  if (hasLenses) {
+    const { doctorName, clinicName, appointmentDate } = data.prescriptionData;
+    
+    if (!doctorName || doctorName.trim().length === 0) {
+      return false;
+    }
+    
+    if (!clinicName || clinicName.trim().length === 0) {
+      return false;
+    }
+    
+    if (!appointmentDate || appointmentDate.trim().length === 0) {
+      return false;
+    }
+  }
+  
+  return true;
+}, {
+  message: "Pedidos com lentes exigem dados de prescrição (médico, clínica e data da consulta)",
+  path: ["prescriptionData.doctorName"],
 });
 
 export interface OrderFormValues {
@@ -138,7 +168,7 @@ export interface OrderFormValues {
     };
     nd: number;
     oc: number;
-    addition: number;
+    addition: string;
     bridge: number;
     rim: number;
     vh: number;

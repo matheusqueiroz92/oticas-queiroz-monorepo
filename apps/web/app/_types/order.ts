@@ -41,7 +41,7 @@ export interface Order {
     };
     nd?: number;
     oc?: number;
-    addition?: number;
+    addition?: string;
     bridge?: number;
     rim?: number;
     vh?: number;
@@ -86,7 +86,7 @@ export interface PrescriptionData {
   leftEye: EyeData;
   nd: number;
   oc: number;
-  addition: number;
+  addition: string;
   bridge: number;
   rim: number;
   vh: number;
@@ -119,7 +119,7 @@ export interface OrderFormValues {
     leftEye: EyeData;
     nd: number;
     oc: number;
-    addition: number;
+    addition: string;
     bridge: number;
     rim: number;
     vh: number;

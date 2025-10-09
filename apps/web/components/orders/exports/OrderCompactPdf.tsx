@@ -276,6 +276,7 @@ const formatDate = (dateString?: string) => {
   try {
     return new Date(dateString).toLocaleDateString();
   } catch (error) {
+    console.error("Erro ao formatar data:", error);
     return "Data inválida";
   }
 };
@@ -541,7 +542,7 @@ const PrescriptionSection = ({ data }: { data: OrderFormValues & { _id?: string 
         <Text style={styles.value}>{data.prescriptionData.nd || 0} mm</Text>
       </View>
       
-      {data.prescriptionData.addition > 0 && (
+      {data.prescriptionData.addition && data.prescriptionData.addition !== "" && (
         <View style={styles.dataRow}>
           <Text style={styles.label}>Adição:</Text>
           <Text style={styles.value}>{data.prescriptionData.addition}</Text>

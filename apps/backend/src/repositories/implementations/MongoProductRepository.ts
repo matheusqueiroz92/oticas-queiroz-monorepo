@@ -1,4 +1,4 @@
-import { Product, PrescriptionFrame, SunglassesFrame } from "../../schemas/ProductSchema";
+import { Product, PrescriptionFrame, SunglassesFrame, Lens, CleanLens } from "../../schemas/ProductSchema";
 import { BaseRepository } from "./BaseRepository";
 import { IProductRepository } from "../interfaces/IProductRepository";
 import type { IProduct } from "../../interfaces/IProduct";
@@ -10,6 +10,68 @@ import { Types } from "mongoose";
 export class MongoProductRepository extends BaseRepository<IProduct, Omit<IProduct, "_id">> implements IProductRepository {
   constructor() {
     super(Product);
+  }
+
+  /**
+   * Sobrescreve o método create para usar o discriminator correto baseado em productType
+   */
+  async create(data: Omit<IProduct, "_id">): Promise<IProduct> {
+    try {
+      // Determinar qual modelo usar baseado no productType
+      let model;
+      switch (data.productType) {
+        case 'lenses':
+          model = Lens;
+          break;
+        case 'clean_lenses':
+          model = CleanLens;
+          break;
+        case 'prescription_frame':
+          model = PrescriptionFrame;
+          break;
+        case 'sunglasses_frame':
+          model = SunglassesFrame;
+          break;
+        default:
+          throw new Error(`Tipo de produto inválido: ${data.productType}`);
+      }
+
+      // Criar o documento usando o modelo discriminator correto
+      const doc = await model.create(data);
+      return this.convertToInterface(doc);
+    } catch (error) {
+      console.error('Erro ao criar produto:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Sobrescreve o método update para garantir que não alteramos o productType
+   */
+  async update(id: string, data: Partial<IProduct>): Promise<IProduct | null> {
+    try {
+      if (!this.isValidId(id)) {
+        return null;
+      }
+
+      // Remover productType do update para evitar mudança de tipo
+      const { productType, ...updateData } = data as any;
+
+      const doc = await this.model.findByIdAndUpdate(
+        id,
+        { $set: updateData },
+        { new: true, runValidators: true }
+      ).exec();
+
+      if (!doc) {
+        return null;
+      }
+
+      return this.convertToInterface(doc);
+    } catch (error) {
+      console.error(`Erro ao atualizar produto ${id}:`, error);
+      throw error;
+    }
   }
 
   /**

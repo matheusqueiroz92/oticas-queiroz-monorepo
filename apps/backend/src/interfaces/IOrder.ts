@@ -32,9 +32,9 @@ export interface IOrder {
   status: "pending" | "in_production" | "ready" | "delivered" | "cancelled";
   laboratoryId?: Types.ObjectId | string | null;
   prescriptionData?: {
-    doctorName: string;
-    clinicName: string;
-    appointmentDate: Date;
+    doctorName?: string;
+    clinicName?: string;
+    appointmentDate?: Date;
     rightEye: {
       sph: string;
       cyl: string;
@@ -49,7 +49,7 @@ export interface IOrder {
     };
     nd: number;
     oc: number;
-    addition: number;
+    addition: string;
     bridge: number;
     rim: number;
     vh: number;

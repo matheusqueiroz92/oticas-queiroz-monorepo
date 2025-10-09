@@ -110,7 +110,7 @@ const orderSchema = new Schema<IOrder>({
     },
     nd: Number,
     oc: Number,
-    addition: Number,
+    addition: String,
     bridge: Number,
     rim: Number,
     vh: Number,

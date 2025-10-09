@@ -36,8 +36,8 @@ export default function PrescriptionForm({ form }: PrescriptionFormProps) {
     }
 
     const addition = form.getValues("prescriptionData.addition");
-    if (addition !== 0 && addition !== undefined) {
-      setAdditionInput(addition.toString());
+    if (addition && addition !== "") {
+      setAdditionInput(addition);
     }
 
     // Sincronizar os campos Ponte, Aro, AV e AM
@@ -95,6 +95,16 @@ export default function PrescriptionForm({ form }: PrescriptionFormProps) {
     if (!Number.isNaN(numValue)) {
       onChange(numValue);
     }
+  };
+
+  const handleAdditionInput = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    onChange: (value: string) => void,
+    setInputState: React.Dispatch<React.SetStateAction<string>>
+  ) => {
+    const inputValue = e.target.value;
+    setInputState(inputValue);
+    onChange(inputValue);
   };
 
   return (
@@ -217,12 +227,13 @@ export default function PrescriptionForm({ form }: PrescriptionFormProps) {
               <FormControl>
                 <Input
                   type="text"
-                  inputMode="decimal"
+                  inputMode="text"
                   value={additionInput}
                   onChange={(e) => 
-                    handleNumericInput(e, field.onChange, setAdditionInput)
+                    handleAdditionInput(e, field.onChange, setAdditionInput)
                   }
                   className="h-9 text-sm"
+                  placeholder="Ex: +3,00 ou +3,50"
                 />
               </FormControl>
               <FormMessage />

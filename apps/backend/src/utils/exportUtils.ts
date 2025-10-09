@@ -1099,15 +1099,17 @@ export class ExportUtils {
       worksheet.getCell(`A${rowIndex}`).font = { bold: true };
       rowIndex++;
   
-      worksheet.addRow(["Médico", order.prescriptionData.doctorName]);
+      worksheet.addRow(["Médico", order.prescriptionData.doctorName || 'N/A']);
       rowIndex++;
       
-      worksheet.addRow(["Clínica", order.prescriptionData.clinicName]);
+      worksheet.addRow(["Clínica", order.prescriptionData.clinicName || 'N/A']);
       rowIndex++;
       
       worksheet.addRow([
         "Data da Consulta",
-        new Date(order.prescriptionData.appointmentDate).toLocaleDateString(),
+        order.prescriptionData.appointmentDate 
+          ? new Date(order.prescriptionData.appointmentDate).toLocaleDateString()
+          : 'N/A',
       ]);
       rowIndex++;
       
@@ -1315,10 +1317,12 @@ export class ExportUtils {
           doc.moveDown();
   
           doc.fontSize(12);
-          doc.text(`Médico: ${order.prescriptionData.doctorName}`);
-          doc.text(`Clínica: ${order.prescriptionData.clinicName}`);
+          doc.text(`Médico: ${order.prescriptionData.doctorName || 'N/A'}`);
+          doc.text(`Clínica: ${order.prescriptionData.clinicName || 'N/A'}`);
           doc.text(
-            `Data da Consulta: ${new Date(order.prescriptionData.appointmentDate).toLocaleDateString()}`
+            `Data da Consulta: ${order.prescriptionData.appointmentDate 
+              ? new Date(order.prescriptionData.appointmentDate).toLocaleDateString()
+              : 'N/A'}`
           );
           doc.moveDown();
   
@@ -1436,9 +1440,11 @@ export class ExportUtils {
     // Dados da prescrição (se existirem)
     if (order.prescriptionData) {
       csv += `"Dados da Prescrição"\n`;
-      csv += `"Médico","${order.prescriptionData.doctorName}"\n`;
-      csv += `"Clínica","${order.prescriptionData.clinicName}"\n`;
-      csv += `"Data da Consulta","${new Date(order.prescriptionData.appointmentDate).toLocaleDateString()}"\n`;
+      csv += `"Médico","${order.prescriptionData.doctorName || 'N/A'}"\n`;
+      csv += `"Clínica","${order.prescriptionData.clinicName || 'N/A'}"\n`;
+      csv += `"Data da Consulta","${order.prescriptionData.appointmentDate 
+        ? new Date(order.prescriptionData.appointmentDate).toLocaleDateString()
+        : 'N/A'}"\n`;
   
       csv += `\n"Olho Esquerdo"\n`;
       csv += `"SPH","${order.prescriptionData.leftEye.sph}"\n`;

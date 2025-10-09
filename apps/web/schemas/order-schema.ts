@@ -42,7 +42,7 @@ const orderFormSchema = z
       }),
       nd: z.number(),
       oc: z.number(),
-      addition: z.number(),
+      addition: z.string(),
       bridge: z.number(),
       rim: z.number(),
       vh: z.number(),
@@ -50,30 +50,82 @@ const orderFormSchema = z
     }),
   })
   .passthrough()
-      .refine(
-      (data) => {
-        if (data.isInstitutionalOrder && !data.institutionId) {
+  .refine(
+    (data) => {
+      if (data.isInstitutionalOrder && !data.institutionId) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message: "Instituição é obrigatória para pedidos institucionais",
+      path: ["institutionId"],
+    }
+  )
+  .refine(
+    (data) => {
+      if (data.hasResponsible && !data.responsibleClientId) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message: "Cliente responsável é obrigatório quando há responsável",
+      path: ["responsibleClientId"],
+    }
+  )
+  .refine(
+    (data) => {
+      // Verificar se há lentes nos produtos
+      const hasLenses = data.products?.some((product: any) => 
+        product.productType === "lenses" || 
+        (product.name && product.name.toLowerCase().includes('lente'))
+      );
+      
+      // Se há lentes, a data de entrega é obrigatória
+      if (hasLenses && !data.deliveryDate) {
+        return false;
+      }
+      
+      return true;
+    },
+    {
+      message: "Pedidos com lentes exigem data de entrega",
+      path: ["deliveryDate"],
+    }
+  )
+  .refine(
+    (data) => {
+      // Verificar se há lentes nos produtos
+      const hasLenses = data.products?.some((product: any) => 
+        product.productType === "lenses" || 
+        (product.name && product.name.toLowerCase().includes('lente'))
+      );
+      
+      // Se há lentes, os dados de prescrição são obrigatórios
+      if (hasLenses) {
+        const { doctorName, clinicName, appointmentDate } = data.prescriptionData;
+        
+        if (!doctorName || doctorName.trim().length === 0) {
           return false;
         }
-        return true;
-      },
-      {
-        message: "Instituição é obrigatória para pedidos institucionais",
-        path: ["institutionId"],
-      }
-    )
-    .refine(
-      (data) => {
-        if (data.hasResponsible && !data.responsibleClientId) {
+        
+        if (!clinicName || clinicName.trim().length === 0) {
           return false;
         }
-        return true;
-      },
-      {
-        message: "Cliente responsável é obrigatório quando há responsável",
-        path: ["responsibleClientId"],
+        
+        if (!appointmentDate || appointmentDate.trim().length === 0) {
+          return false;
+        }
       }
-    );
+      
+      return true;
+    },
+    {
+      message: "Pedidos com lentes exigem dados de prescrição (médico, clínica e data da consulta)",
+      path: ["prescriptionData.doctorName"],
+    }
+  );
 
 export type OrderFormData = z.infer<typeof orderFormSchema>;
 
@@ -105,7 +157,7 @@ export const createOrderform = () => {
         leftEye: { sph: '', cyl: '', axis: 0, pd: 0 },
         nd: 0,
         oc: 0,
-        addition: 0,
+        addition: "",
         bridge: 0,
         rim: 0,
         vh: 0,
