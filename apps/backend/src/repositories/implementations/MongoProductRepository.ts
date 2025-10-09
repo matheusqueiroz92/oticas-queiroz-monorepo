@@ -54,10 +54,35 @@ export class MongoProductRepository extends BaseRepository<IProduct, Omit<IProdu
         return null;
       }
 
+      // Buscar o produto existente para determinar o tipo
+      const existingProduct = await this.model.findById(id).exec();
+      if (!existingProduct) {
+        return null;
+      }
+
+      // Determinar qual modelo usar baseado no productType do produto existente
+      let targetModel;
+      switch (existingProduct.productType) {
+        case 'lenses':
+          targetModel = Lens;
+          break;
+        case 'clean_lenses':
+          targetModel = CleanLens;
+          break;
+        case 'prescription_frame':
+          targetModel = PrescriptionFrame;
+          break;
+        case 'sunglasses_frame':
+          targetModel = SunglassesFrame;
+          break;
+        default:
+          targetModel = this.model;
+      }
+
       // Remover productType do update para evitar mudança de tipo
       const { productType, ...updateData } = data as any;
 
-      const doc = await this.model.findByIdAndUpdate(
+      const doc = await targetModel.findByIdAndUpdate(
         id,
         { $set: updateData },
         { new: true, runValidators: true }

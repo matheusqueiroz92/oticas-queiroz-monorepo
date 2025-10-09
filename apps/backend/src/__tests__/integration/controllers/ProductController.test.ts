@@ -183,6 +183,128 @@ describe("ProductController", () => {
 
       expect(res.status).toBe(400);
     });
+
+    it("should create sunglasses frame with correct type", async () => {
+      const sunglassesData: CreateProductDTO<"sunglasses_frame"> = {
+        name: "Óculos de Sol Oakley",
+        productType: "sunglasses_frame",
+        description: "Óculos esportivo",
+        brand: "Oakley",
+        modelSunglasses: "Holbrook",
+        sellPrice: 799.99,
+        typeFrame: "esportivo",
+        color: "preto",
+        shape: "quadrado",
+        reference: "OO9102",
+        stock: 5,
+      };
+
+      const res = await request(app)
+        .post("/api/products")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send(sunglassesData);
+
+      expect(res.status).toBe(201);
+      expect(res.body.productType).toBe("sunglasses_frame");
+      expect(res.body.modelSunglasses).toBe("Holbrook");
+    });
+
+    it("should create prescription frame with correct type", async () => {
+      const prescriptionData: CreateProductDTO<"prescription_frame"> = {
+        name: "Óculos de Grau Classic",
+        productType: "prescription_frame",
+        description: "Armação clássica",
+        brand: "Classic Brand",
+        sellPrice: 499.99,
+        typeFrame: "metal",
+        color: "prata",
+        shape: "redondo",
+        reference: "CL001",
+        stock: 8,
+      };
+
+      const res = await request(app)
+        .post("/api/products")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send(prescriptionData);
+
+      expect(res.status).toBe(201);
+      expect(res.body.productType).toBe("prescription_frame");
+      expect(res.body).not.toHaveProperty("modelSunglasses");
+    });
+
+    it("should not change productType when updating sunglasses frame", async () => {
+      // Criar armação de sol
+      const sunglassesData: CreateProductDTO<"sunglasses_frame"> = {
+        name: "Óculos de Sol Aviador",
+        productType: "sunglasses_frame",
+        brand: "Test Brand",
+        modelSunglasses: "Aviador",
+        sellPrice: 599.99,
+        typeFrame: "aviador",
+        color: "dourado",
+        shape: "aviador",
+        reference: "AV001",
+        stock: 10,
+      };
+
+      const createRes = await request(app)
+        .post("/api/products")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send(sunglassesData);
+
+      expect(createRes.status).toBe(201);
+      expect(createRes.body.productType).toBe("sunglasses_frame");
+
+      const productId = createRes.body._id;
+
+      // Tentar atualizar o produto
+      const updateRes = await request(app)
+        .put(`/api/products/${productId}`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({ sellPrice: 799.99, color: "preto" });
+
+      expect(updateRes.status).toBe(200);
+      expect(updateRes.body.productType).toBe("sunglasses_frame");
+      expect(updateRes.body.sellPrice).toBe(799.99);
+      expect(updateRes.body.color).toBe("preto");
+    });
+
+    it("should not change productType when updating prescription frame", async () => {
+      // Criar armação de grau
+      const prescriptionData: CreateProductDTO<"prescription_frame"> = {
+        name: "Óculos de Grau Moderno",
+        productType: "prescription_frame",
+        brand: "Modern Brand",
+        sellPrice: 399.99,
+        typeFrame: "acetato",
+        color: "preto",
+        shape: "retangular",
+        reference: "MD001",
+        stock: 15,
+      };
+
+      const createRes = await request(app)
+        .post("/api/products")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send(prescriptionData);
+
+      expect(createRes.status).toBe(201);
+      expect(createRes.body.productType).toBe("prescription_frame");
+
+      const productId = createRes.body._id;
+
+      // Tentar atualizar o produto
+      const updateRes = await request(app)
+        .put(`/api/products/${productId}`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({ sellPrice: 449.99, stock: 20 });
+
+      expect(updateRes.status).toBe(200);
+      expect(updateRes.body.productType).toBe("prescription_frame");
+      expect(updateRes.body.sellPrice).toBe(449.99);
+      expect(updateRes.body.stock).toBe(20);
+    });
   });
 
   describe("DELETE /api/products/:id", () => {
