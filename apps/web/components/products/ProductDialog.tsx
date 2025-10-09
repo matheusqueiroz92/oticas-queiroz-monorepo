@@ -193,7 +193,8 @@ export function ProductDialog({
     };
     
     handleFormReset();
-  }, [memoizedProduct, isEditMode, open, form]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [memoizedProduct, isEditMode, open]);
 
   const handleSubmit = async (data: ProductFormData) => {
     try {
