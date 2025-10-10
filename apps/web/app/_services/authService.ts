@@ -16,7 +16,9 @@ export interface LoginResponse {
 }
 
 // Definir a URL base da API
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333";
+// Em produção, usa URLs relativas (vazio) para que o NGINX faça o proxy
+// Em desenvolvimento, usa http://localhost:3333
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3333');
 
 export const api = axios.create({
   baseURL: API_URL,
