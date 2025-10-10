@@ -1,156 +1,163 @@
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export function usePageTitle() {
   const pathname = usePathname();
+  const [isClient, setIsClient] = useState(false);
+
+  // Garante que só renderiza descrições após hidratação
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const getPageTitle = (): { title: string; description?: string } => {
     switch (pathname) {
       case "/dashboard":
         return {
           title: "Dashboard",
-          description: "Visão geral do negócio e ações rápidas"
+          description: isClient ? "Visão geral da loja: atalhos, informações e estatísticas" : undefined
         };
       case "/profile":
         return {
           title: "Perfil",
-          description: "Configurações da sua conta"
+          description: isClient ? "Configurações da sua conta e informações pessoais" : undefined
         };
       case "/customers":
         return {
           title: "Clientes",
-          description: "Cadastro e gestão de clientes"
+          description: isClient ? "Cadastro e gestão de clientes da loja" : undefined
         };
       case "/employees":
         return {
           title: "Funcionários",
-          description: "Gestão da equipe e permissões"
+          description: isClient ? "Gestão da equipe e permissões de acesso" : undefined
         };
       case "/orders":
         return {
           title: "Pedidos",
-          description: "Gerencie todos os pedidos da loja"
+          description: isClient ? "Gerencie todos os pedidos da loja: visualização, filtragem e detalhes" : undefined
         };
       case "/my-orders":
         return {
           title: "Meus Pedidos",
-          description: "Histórico dos seus pedidos"
+          description: isClient ? "Histórico dos seus pedidos: visualização, filtragem e detalhes" : undefined
         };
       case "/my-debts":
         return {
           title: "Meus Débitos",
-          description: "Controle das suas pendências financeiras"
+          description: isClient ? "Controle das suas pendências financeiras: visualização, filtragem e detalhes" : undefined
         };
       case "/products":
         return {
           title: "Produtos",
-          description: "Catálogo e controle de estoque"
+          description: isClient ? "Catálogo e controle de estoque: visualização, filtragem e detalhes" : undefined
         };
       case "/payments":
         return {
           title: "Pagamentos",
-          description: "Controle financeiro e transações"
+          description: isClient ? "Controle financeiro e transações: visualização, filtragem e detalhes" : undefined
         };
       case "/cash-register":
         return {
           title: "Caixa",
-          description: "Controle de abertura e fechamento de caixa"
+          description: isClient ? "Controle de abertura e fechamento de caixa: visualização, filtragem e detalhes" : undefined
         };
       case "/laboratories":
         return {
           title: "Laboratórios",
-          description: "Gestão de laboratórios parceiros"
+          description: isClient ? "Gestão de laboratórios parceiros: visualização, filtragem e detalhes" : undefined
         };
       case "/reports":
         return {
           title: "Relatórios",
-          description: "Análises e relatórios gerenciais"
+          description: isClient ? "Análises e relatórios gerenciais: visualização, filtragem e detalhes" : undefined
         };
       case "/legacy-clients":
         return {
           title: "Clientes Legados",
-          description: "Clientes do sistema anterior"
+          description: isClient ? "Clientes do sistema anterior: visualização, filtragem e detalhes" : undefined
         };
       case "/institutions":
         return {
           title: "Instituições",
-          description: "Gestão de instituições parceiras"
+          description: isClient ? "Gestão de instituições parceiras: visualização, filtragem e detalhes" : undefined
         };
       case "/checks":
         return {
           title: "Gestão de Cheques",
-          description: "Controle de cheques recebidos"
+          description: isClient ? "Controle de cheques recebidos: visualização, filtragem e detalhes" : undefined
         };
       default:
         // Para rotas dinâmicas, extrair o título da URL
         if (pathname.includes("/customers/")) {
           return { 
             title: "Detalhes do Cliente",
-            description: "Visualize os detalhes do cliente"
+            description: isClient ? "Visualize os detalhes do cliente" : undefined
           };
         }
         if (pathname.includes("/employees/")) {
           return { 
             title: "Detalhes do Funcionário",
-            description: "Visualize os detalhes do funcionário"
+            description: isClient ? "Visualize os detalhes do funcionário" : undefined
           };
         }
         if (pathname.includes("/orders/")) {
           return { 
             title: "Detalhes do Pedido",
-            description: "Visualize os detalhes do pedido"
+            description: isClient ? "Visualize os detalhes do pedido" : undefined
           };
         }
         if (pathname.includes("/products/")) {
           return { 
             title: "Detalhes do Produto",
-            description: "Visualize os detalhes do produto"
+            description: isClient ? "Visualize os detalhes do produto" : undefined
           };
         }
         if (pathname.includes("/payments/")) {
           return { 
             title: "Detalhes do Pagamento",
-            description: "Visualize os detalhes do pagamento"
+            description: isClient ? "Visualize os detalhes do pagamento" : undefined
           };
         }
         if (pathname.includes("/cash-register/")) {
           return { 
             title: "Detalhes do caixa",
-            description: "Visualize os detalhes do caixa"
+            description: isClient ? "Visualize os detalhes do caixa" : undefined
           };
         }
         if (pathname.includes("/laboratories/")) {
           return { 
             title: "Detalhes do Laboratório",
-            description: "Visualize os detalhes do laboratório"
+            description: isClient ? "Visualize os detalhes do laboratório" : undefined
           };
         }
         if (pathname.includes("/reports/")) {
           return { 
             title: "Relatórios",
-            description: "Visualize os relatórios"
+            description: isClient ? "Visualize os relatórios" : undefined
           };
         }
         if (pathname.includes("/legacy-clients/")) {
           return { 
             title: "Detalhes do Cliente Legado",
-            description: "Visualize os detalhes do cliente legado"
+            description: isClient ? "Visualize os detalhes do cliente legado" : undefined
           };
         }
         if (pathname.includes("/institutions/")) {
           return { 
             title: "Detalhes da Instituição",
-            description: "Visualize os detalhes da instituição"
+            description: isClient ? "Visualize os detalhes da instituição" : undefined
           };
         }
         if (pathname.includes("/checks/")) {
           return { 
             title: "Detalhes do Cheque",
-            description: "Visualize os detalhes do cheque"
+            description: isClient ? "Visualize os detalhes do cheque" : undefined
           };
         }
         return { 
           title: "Página",
-          description: "Página não encontrada"
+          description: isClient ? "Página não encontrada" : undefined
         };
     }
   };
