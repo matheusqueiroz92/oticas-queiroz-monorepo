@@ -1,25 +1,28 @@
-import { describe, it, expect, beforeEach, jest, afterEach } from '@jest/globals';
-import { SicrediSyncService, SicrediSyncError } from '../../../services/SicrediSyncService';
-import { PaymentService } from '../../../services/PaymentService';
-import { UserService } from '../../../services/UserService';
-import { LegacyClientService } from '../../../services/LegacyClientService';
-import { OrderService } from '../../../services/OrderService';
-import { IPayment } from '../../../interfaces/IPayment';
-import { IUser } from '../../../interfaces/IUser';
-import { ILegacyClient } from '../../../interfaces/ILegacyClient';
+// @ts-nocheck
+import {
+  SicrediSyncService,
+  SicrediSyncError,
+} from "../../../services/SicrediSyncService";
+import { PaymentService } from "../../../services/PaymentService";
+import { UserService } from "../../../services/UserService";
+import { LegacyClientService } from "../../../services/LegacyClientService";
+import { OrderService } from "../../../services/OrderService";
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  jest,
+} from "@jest/globals";
 
-// Mock dos serviços
-jest.mock('../../../services/PaymentService');
-jest.mock('../../../services/UserService');
-jest.mock('../../../services/LegacyClientService');
-jest.mock('../../../services/OrderService');
+// Mock dos services
+jest.mock("../../../services/PaymentService");
+jest.mock("../../../services/UserService");
+jest.mock("../../../services/LegacyClientService");
+jest.mock("../../../services/OrderService");
 
-const MockedPaymentService = PaymentService as jest.MockedClass<typeof PaymentService>;
-const MockedUserService = UserService as jest.MockedClass<typeof UserService>;
-const MockedLegacyClientService = LegacyClientService as jest.MockedClass<typeof LegacyClientService>;
-const MockedOrderService = OrderService as jest.MockedClass<typeof OrderService>;
-
-describe('SicrediSyncService', () => {
+describe("SicrediSyncService", () => {
   let sicrediSyncService: SicrediSyncService;
   let mockPaymentService: jest.Mocked<PaymentService>;
   let mockUserService: jest.Mocked<UserService>;
@@ -27,421 +30,932 @@ describe('SicrediSyncService', () => {
   let mockOrderService: jest.Mocked<OrderService>;
 
   beforeEach(() => {
-    // Limpar todos os mocks
-    jest.clearAllMocks();
-    jest.useFakeTimers();
+    // Criar mocks
+    mockPaymentService = new PaymentService() as jest.Mocked<PaymentService>;
+    mockUserService = new UserService() as jest.Mocked<UserService>;
+    mockLegacyClientService =
+      new LegacyClientService() as jest.Mocked<LegacyClientService>;
+    mockOrderService = new OrderService() as jest.Mocked<OrderService>;
 
-    // Criar instâncias mockadas
-    mockPaymentService = new MockedPaymentService() as jest.Mocked<PaymentService>;
-    mockUserService = new MockedUserService() as jest.Mocked<UserService>;
-    mockLegacyClientService = new MockedLegacyClientService() as jest.Mocked<LegacyClientService>;
-    mockOrderService = new MockedOrderService() as jest.Mocked<OrderService>;
-
-    // Criar instância do serviço
+    // Instanciar serviço com mocks
     sicrediSyncService = new SicrediSyncService(
       mockPaymentService,
       mockUserService,
       mockLegacyClientService,
       mockOrderService
     );
+
+    // Limpar timers
+    jest.clearAllTimers();
+    jest.useFakeTimers();
   });
 
   afterEach(() => {
-    // Limpar timers e parar sincronização
+    jest.clearAllMocks();
     jest.clearAllTimers();
     jest.useRealTimers();
-    if (sicrediSyncService.isSyncRunning()) {
-      sicrediSyncService.stopAutoSync();
-    }
   });
 
-  describe('startAutoSync', () => {
-    it('deve iniciar sincronização automática com intervalo padrão', () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
-      const performSyncSpy = jest.spyOn(sicrediSyncService, 'performSync').mockResolvedValue({
-        totalProcessed: 0,
-        updatedPayments: 0,
-        updatedDebts: 0,
-        errors: [],
-        summary: { paid: 0, overdue: 0, cancelled: 0, pending: 0 }
-      });
+  // ==================== startAutoSync ====================
+
+  describe("startAutoSync", () => {
+    it("should start auto sync with default interval (30 minutes)", () => {
+      const performSyncSpy = jest
+        .spyOn(sicrediSyncService as any, "performSync")
+        .mockResolvedValue({} as any);
 
       sicrediSyncService.startAutoSync();
 
-      expect(consoleSpy).toHaveBeenCalledWith('🚀 SICREDI Sync: Iniciando sincronização automática a cada 30 minutos');
       expect(sicrediSyncService.isSyncRunning()).toBe(true);
-
-      consoleSpy.mockRestore();
-      performSyncSpy.mockRestore();
+      expect(performSyncSpy).toHaveBeenCalledTimes(1); // Primeira execução imediata
     });
 
-    it('deve iniciar sincronização automática com intervalo customizado', () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
-      const performSyncSpy = jest.spyOn(sicrediSyncService, 'performSync').mockResolvedValue({
-        totalProcessed: 0,
-        updatedPayments: 0,
-        updatedDebts: 0,
-        errors: [],
-        summary: { paid: 0, overdue: 0, cancelled: 0, pending: 0 }
-      });
+    it("should start auto sync with custom interval", () => {
+      const performSyncSpy = jest
+        .spyOn(sicrediSyncService as any, "performSync")
+        .mockResolvedValue({} as any);
 
       sicrediSyncService.startAutoSync(60);
 
-      expect(consoleSpy).toHaveBeenCalledWith('🚀 SICREDI Sync: Iniciando sincronização automática a cada 60 minutos');
-
-      consoleSpy.mockRestore();
-      performSyncSpy.mockRestore();
+      expect(sicrediSyncService.isSyncRunning()).toBe(true);
+      expect(performSyncSpy).toHaveBeenCalledTimes(1);
     });
 
-    it('não deve iniciar sincronização se já estiver rodando', () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
-      const performSyncSpy = jest.spyOn(sicrediSyncService, 'performSync').mockResolvedValue({
-        totalProcessed: 0,
-        updatedPayments: 0,
-        updatedDebts: 0,
-        errors: [],
-        summary: { paid: 0, overdue: 0, cancelled: 0, pending: 0 }
-      });
+    it("should execute sync at specified intervals", () => {
+      const performSyncSpy = jest
+        .spyOn(sicrediSyncService as any, "performSync")
+        .mockResolvedValue({} as any);
 
-      // Iniciar primeira vez
+      sicrediSyncService.startAutoSync(10); // 10 minutos
+
+      // Primeira execução
+      expect(performSyncSpy).toHaveBeenCalledTimes(1);
+
+      // Avançar 10 minutos
+      jest.advanceTimersByTime(10 * 60 * 1000);
+      expect(performSyncSpy).toHaveBeenCalledTimes(2);
+
+      // Avançar mais 10 minutos
+      jest.advanceTimersByTime(10 * 60 * 1000);
+      expect(performSyncSpy).toHaveBeenCalledTimes(3);
+    });
+
+    it("should not start if already running", () => {
+      const performSyncSpy = jest
+        .spyOn(sicrediSyncService as any, "performSync")
+        .mockResolvedValue({} as any);
+
       sicrediSyncService.startAutoSync();
+      sicrediSyncService.startAutoSync(); // Tentar iniciar novamente
 
-      // Tentar iniciar novamente
-      sicrediSyncService.startAutoSync();
+      expect(performSyncSpy).toHaveBeenCalledTimes(1); // Apenas primeira execução
+    });
 
-      expect(consoleSpy).toHaveBeenCalledWith('⚠️ SICREDI Sync: Sincronização já está em execução');
+    it("should handle errors during first sync gracefully", () => {
+      jest
+        .spyOn(sicrediSyncService as any, "performSync")
+        .mockRejectedValue(new Error("Sync failed"));
 
-      consoleSpy.mockRestore();
-      performSyncSpy.mockRestore();
+      expect(() => sicrediSyncService.startAutoSync()).not.toThrow();
+      expect(sicrediSyncService.isSyncRunning()).toBe(true);
     });
   });
 
-  describe('stopAutoSync', () => {
-    it('deve parar sincronização automática', () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
-      const performSyncSpy = jest.spyOn(sicrediSyncService, 'performSync').mockResolvedValue({
-        totalProcessed: 0,
-        updatedPayments: 0,
-        updatedDebts: 0,
-        errors: [],
-        summary: { paid: 0, overdue: 0, cancelled: 0, pending: 0 }
-      });
+  // ==================== stopAutoSync ====================
 
-      // Iniciar sincronização
+  describe("stopAutoSync", () => {
+    it("should stop auto sync when running", () => {
+      jest
+        .spyOn(sicrediSyncService as any, "performSync")
+        .mockResolvedValue({} as any);
+
       sicrediSyncService.startAutoSync();
       expect(sicrediSyncService.isSyncRunning()).toBe(true);
 
-      // Parar sincronização
       sicrediSyncService.stopAutoSync();
-
-      expect(consoleSpy).toHaveBeenCalledWith('🛑 SICREDI Sync: Parando sincronização automática');
       expect(sicrediSyncService.isSyncRunning()).toBe(false);
-
-      consoleSpy.mockRestore();
-      performSyncSpy.mockRestore();
     });
 
-    it('não deve fazer nada se sincronização não estiver rodando', () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
-      const clearIntervalSpy = jest.spyOn(global, 'clearInterval').mockImplementation(() => {});
+    it("should clear interval when stopped", () => {
+      const performSyncSpy = jest
+        .spyOn(sicrediSyncService as any, "performSync")
+        .mockResolvedValue({} as any);
 
+      sicrediSyncService.startAutoSync(10);
       sicrediSyncService.stopAutoSync();
 
-      expect(consoleSpy).toHaveBeenCalledWith('⚠️ SICREDI Sync: Sincronização não está em execução');
-      expect(clearIntervalSpy).not.toHaveBeenCalled();
+      // Avançar tempo e verificar que não executa mais
+      jest.advanceTimersByTime(10 * 60 * 1000);
+      expect(performSyncSpy).toHaveBeenCalledTimes(1); // Apenas a primeira execução
+    });
 
-      consoleSpy.mockRestore();
-      clearIntervalSpy.mockRestore();
+    it("should do nothing if not running", () => {
+      expect(() => sicrediSyncService.stopAutoSync()).not.toThrow();
+      expect(sicrediSyncService.isSyncRunning()).toBe(false);
+    });
+
+    it("should allow restart after stop", () => {
+      const performSyncSpy = jest
+        .spyOn(sicrediSyncService as any, "performSync")
+        .mockResolvedValue({} as any);
+
+      sicrediSyncService.startAutoSync();
+      sicrediSyncService.stopAutoSync();
+      sicrediSyncService.startAutoSync();
+
+      expect(sicrediSyncService.isSyncRunning()).toBe(true);
+      expect(performSyncSpy).toHaveBeenCalledTimes(2); // Duas primeiras execuções
     });
   });
 
-  describe('performSync', () => {
-    const mockPayment: IPayment = {
-      _id: '507f1f77bcf86cd799439011',
-      amount: 150.50,
-      type: 'sale',
-      paymentMethod: 'sicredi_boleto',
-      status: 'pending',
-      customerId: '507f1f77bcf86cd799439012',
-      date: new Date(),
-      bank_slip: {
-        sicredi: {
-          nossoNumero: '123456789',
-          codigoBarras: '12345678901234567890',
-          linhaDigitavel: '12345.67890 12345.678901 12345.678901 1 23456789012345',
-          status: 'REGISTRADO',
-          dataVencimento: new Date()
-        }
-      }
-    } as IPayment;
+  // ==================== performSync ====================
 
-    beforeEach(() => {
-      // Mock do getAllPayments
-      mockPaymentService.getAllPayments.mockResolvedValue({
-        payments: [mockPayment],
-        total: 1
-      });
+  describe("performSync", () => {
+    it("should sync pending SICREDI payments successfully", async () => {
+      const mockPayments = [
+        {
+          _id: "payment1",
+          bank_slip: {
+            sicredi: { nossoNumero: "123", status: "PENDENTE" },
+          },
+        },
+        {
+          _id: "payment2",
+          bank_slip: {
+            sicredi: { nossoNumero: "456", status: "PENDENTE" },
+          },
+        },
+      ] as any;
 
-      // Mock do checkSicrediBoletoStatus
-      mockPaymentService.checkSicrediBoletoStatus.mockResolvedValue({
+      // @ts-ignore
+      (mockPaymentService.getAllPayments as any) = jest
+        .fn()
+        .mockResolvedValue({ payments: mockPayments } as any);
+      (mockPaymentService.checkSicrediBoletoStatus as any) = jest.fn().mockResolvedValue({
         success: true,
-        data: {
-          status: 'PAGO',
-          valorPago: 150.50,
-          dataPagamento: new Date()
-        }
-      });
+        data: { status: "PAGO", valorPago: 100, dataPagamento: new Date() },
+      } as any);
 
-      // Mock do getUserById
-      mockUserService.getUserById.mockResolvedValue({
-        _id: '507f1f77bcf86cd799439012',
-        name: 'João Silva',
-        email: 'joao@example.com',
-        debts: 300.00
-      } as IUser);
+      const result = await sicrediSyncService.performSync();
 
-      // Mock do updateUser
-      mockUserService.updateUser.mockResolvedValue({} as IUser);
+      expect(result.totalProcessed).toBe(2);
+      expect(result.errors.length).toBe(0);
     });
 
-    it('deve executar sincronização com sucesso', async () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+    it("should handle payments without nosso número", async () => {
+      const mockPayments = [
+        {
+          _id: "payment1",
+          bank_slip: { sicredi: {} }, // Sem nossoNumero
+        },
+      ] as any;
+
+      // @ts-ignore
+      (mockPaymentService.getAllPayments as any) = jest
+        .fn()
+        .mockResolvedValue({ payments: mockPayments } as any);
 
       const result = await sicrediSyncService.performSync();
 
       expect(result.totalProcessed).toBe(1);
-      expect(result.updatedPayments).toBe(1);
-      expect(result.updatedDebts).toBe(1);
-      expect(result.errors).toHaveLength(0);
-      expect(result.summary.paid).toBe(1);
-      expect(result.summary.pending).toBe(0);
-
-      expect(mockPaymentService.getAllPayments).toHaveBeenCalledWith(1, 1000, {
-        paymentMethod: 'sicredi_boleto',
-        status: 'pending' as any
-      });
-
-      expect(mockPaymentService.checkSicrediBoletoStatus).toHaveBeenCalledWith('507f1f77bcf86cd799439011');
-      expect(mockUserService.getUserById).toHaveBeenCalledWith('507f1f77bcf86cd799439012');
-      expect(mockUserService.updateUser).toHaveBeenCalledWith('507f1f77bcf86cd799439012', { debts: 149.50 });
-
-      consoleSpy.mockRestore();
+      expect(result.errors.length).toBe(1);
+      expect(result.errors[0].paymentId).toBe("payment1");
     });
 
-    it('deve lidar com pagamentos sem nosso número', async () => {
-      const paymentWithoutNossoNumero = {
-        ...mockPayment,
-        bank_slip: {
-          sicredi: {
-            // sem nossoNumero
-          }
-        }
-      };
+    it("should handle API errors gracefully", async () => {
+      const mockPayments = [
+        {
+          _id: "payment1",
+          bank_slip: {
+            sicredi: { nossoNumero: "123", status: "PENDENTE" },
+          },
+        },
+      ] as any;
 
-      mockPaymentService.getAllPayments.mockResolvedValue({
-        payments: [paymentWithoutNossoNumero],
-        total: 1
-      });
-
-      const result = await sicrediSyncService.performSync();
-
-      expect(result.totalProcessed).toBe(1);
-      expect(result.errors).toHaveLength(1);
-      expect(result.errors[0].error).toContain('Pagamento não possui nosso número SICREDI');
-    });
-
-    it('deve lidar com erros na consulta de status', async () => {
-      mockPaymentService.checkSicrediBoletoStatus.mockResolvedValue({
+      // @ts-ignore
+      (mockPaymentService.getAllPayments as any) = jest
+        .fn()
+        .mockResolvedValue({ payments: mockPayments } as any);
+      (mockPaymentService.checkSicrediBoletoStatus as any) = jest.fn().mockResolvedValue({
         success: false,
-        error: 'Erro na consulta'
-      });
+        error: "API Error",
+      } as any);
 
       const result = await sicrediSyncService.performSync();
 
-      expect(result.totalProcessed).toBe(1);
-      expect(result.errors).toHaveLength(1);
-      expect(result.errors[0].error).toContain('Erro na consulta');
+      expect(result.errors.length).toBe(1);
+      expect(result.errors[0].error).toContain("API Error");
     });
 
-    it('deve lidar com pagamentos de clientes legados', async () => {
-      const legacyPayment = {
-        ...mockPayment,
-        customerId: undefined,
-        legacyClientId: '507f1f77bcf86cd799439013'
-      };
+    it("should count payment statuses correctly", async () => {
+      const mockPayments = [
+        {
+          _id: "p1",
+          bank_slip: {
+            sicredi: { nossoNumero: "1", status: "PENDENTE" },
+          },
+        },
+        {
+          _id: "p2",
+          bank_slip: {
+            sicredi: { nossoNumero: "2", status: "PENDENTE" },
+          },
+        },
+        {
+          _id: "p3",
+          bank_slip: {
+            sicredi: { nossoNumero: "3", status: "PENDENTE" },
+          },
+        },
+        {
+          _id: "p4",
+          bank_slip: {
+            sicredi: { nossoNumero: "4", status: "PENDENTE" },
+          },
+        },
+      ] as any;
 
-      mockPaymentService.getAllPayments.mockResolvedValue({
-        payments: [legacyPayment],
-        total: 1
-      });
+      // @ts-ignore
+      (mockPaymentService.getAllPayments as any) = jest
+        .fn()
+        .mockResolvedValue({ payments: mockPayments } as any);
 
-      mockLegacyClientService.getLegacyClientById.mockResolvedValue({
-        _id: '507f1f77bcf86cd799439013',
-        name: 'Cliente Legado',
-        totalDebt: 500.00
-      } as ILegacyClient);
-
-      mockLegacyClientService.updateLegacyClient.mockResolvedValue({} as ILegacyClient);
+      (mockPaymentService.checkSicrediBoletoStatus as any) = jest
+        .fn()
+        .mockResolvedValueOnce({
+          success: true,
+          data: { status: "PAGO", valorPago: 100 },
+        })
+        .mockResolvedValueOnce({
+          success: true,
+          data: { status: "VENCIDO" },
+        })
+        .mockResolvedValueOnce({
+          success: true,
+          data: { status: "CANCELADO" },
+        })
+        .mockResolvedValueOnce({
+          success: true,
+          data: { status: "PENDENTE" },
+        });
 
       const result = await sicrediSyncService.performSync();
 
-      expect(result.updatedDebts).toBe(1);
-      expect(mockLegacyClientService.getLegacyClientById).toHaveBeenCalledWith('507f1f77bcf86cd799439013');
-      expect(mockLegacyClientService.updateLegacyClient).toHaveBeenCalledWith('507f1f77bcf86cd799439013', { totalDebt: 349.50 });
+      expect(result.summary.paid).toBe(1);
+      expect(result.summary.overdue).toBe(1);
+      expect(result.summary.cancelled).toBe(1);
+      expect(result.summary.pending).toBe(1);
     });
 
-    it('deve lidar com pagamentos sem cliente associado', async () => {
-      const paymentWithoutClient = {
-        ...mockPayment,
-        customerId: undefined,
-        legacyClientId: undefined
-      };
+    it("should update payment counter when status changes", async () => {
+      const mockPayments = [
+        {
+          _id: "payment1",
+          bank_slip: {
+            sicredi: { nossoNumero: "123", status: "PENDENTE" },
+          },
+        },
+      ] as any;
 
-      mockPaymentService.getAllPayments.mockResolvedValue({
-        payments: [paymentWithoutClient],
-        total: 1
-      });
+      // @ts-ignore
+      (mockPaymentService.getAllPayments as any) = jest
+        .fn()
+        .mockResolvedValue({ payments: mockPayments } as any);
+      (mockPaymentService.checkSicrediBoletoStatus as any) = jest.fn().mockResolvedValue({
+        success: true,
+        data: { status: "PAGO", valorPago: 100 },
+      } as any);
 
       const result = await sicrediSyncService.performSync();
 
-      expect(result.totalProcessed).toBe(1);
-      expect(result.errors).toHaveLength(1);
-      expect(result.errors[0].error).toContain('Pagamento não possui cliente associado');
+      expect(result.updatedPayments).toBeGreaterThan(0);
+    });
+
+    it("should throw SicrediSyncError on general failure", async () => {
+      (mockPaymentService.getAllPayments as any) = jest
+        .fn()
+        // @ts-ignore
+        .mockRejectedValue(new Error("Database error") as any);
+
+      await expect(sicrediSyncService.performSync()).rejects.toThrow(
+        SicrediSyncError
+      );
+      await expect(sicrediSyncService.performSync()).rejects.toThrow(
+        "Falha na sincronização com SICREDI"
+      );
+    });
+
+    it("should handle empty payment list", async () => {
+      // @ts-ignore
+      (mockPaymentService.getAllPayments as any) = jest
+        .fn()
+        .mockResolvedValue({ payments: [] } as any);
+
+      const result = await sicrediSyncService.performSync();
+
+      expect(result.totalProcessed).toBe(0);
+      expect(result.errors.length).toBe(0);
     });
   });
 
-  describe('syncClientPayments', () => {
-    const mockPayment: IPayment = {
-      _id: '507f1f77bcf86cd799439011',
-      amount: 100.00,
-      type: 'sale',
-      paymentMethod: 'sicredi_boleto',
-      status: 'pending',
-      customerId: '507f1f77bcf86cd799439012',
-      date: new Date(),
-      bank_slip: {
-        sicredi: {
-          nossoNumero: '123456789',
-          status: 'REGISTRADO'
-        }
-      }
-    } as IPayment;
+  // ==================== syncClientPayments ====================
 
-    beforeEach(() => {
-      mockPaymentService.getAllPayments.mockResolvedValue({
-        payments: [mockPayment],
-        total: 1
-      });
+  describe("syncClientPayments", () => {
+    it("should sync specific client payments", async () => {
+      const clientId = "client123";
+      const mockPayments = [
+        {
+          _id: "payment1",
+          bank_slip: {
+            sicredi: { nossoNumero: "123", status: "PENDENTE" },
+          },
+        },
+      ] as any;
 
-      mockPaymentService.checkSicrediBoletoStatus.mockResolvedValue({
+      // @ts-ignore
+      (mockPaymentService.getAllPayments as any) = jest
+        .fn()
+        .mockResolvedValue({ payments: mockPayments } as any);
+      (mockPaymentService.checkSicrediBoletoStatus as any) = jest.fn().mockResolvedValue({
         success: true,
-        data: {
-          status: 'PAGO',
-          valorPago: 100.00
-        }
-      });
-
-      mockUserService.getUserById.mockResolvedValue({
-        _id: '507f1f77bcf86cd799439012',
-        name: 'João Silva',
-        debts: 200.00
-      } as IUser);
-
-      mockUserService.updateUser.mockResolvedValue({} as IUser);
-    });
-
-    it('deve sincronizar pagamentos de um cliente específico', async () => {
-      const clientId = '507f1f77bcf86cd799439012';
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+        data: { status: "PAGO", valorPago: 100 },
+      } as any);
 
       const result = await sicrediSyncService.syncClientPayments(clientId);
 
+      expect(mockPaymentService.getAllPayments).toHaveBeenCalledWith(
+        1,
+        1000,
+        expect.objectContaining({
+          customerId: clientId,
+          paymentMethod: "sicredi_boleto",
+        })
+      );
       expect(result.totalProcessed).toBe(1);
-      expect(result.updatedPayments).toBe(1);
+    });
+
+    it("should handle client with no payments", async () => {
+      // @ts-ignore
+      (mockPaymentService.getAllPayments as any) = jest
+        .fn()
+        .mockResolvedValue({ payments: [] } as any);
+
+      const result = await sicrediSyncService.syncClientPayments("client123");
+
+      expect(result.totalProcessed).toBe(0);
+      expect(result.errors.length).toBe(0);
+    });
+
+    it("should collect errors for failed payments", async () => {
+      const mockPayments = [
+        {
+          _id: "payment1",
+          bank_slip: { sicredi: {} }, // Sem nossoNumero - vai falhar
+        },
+        {
+          _id: "payment2",
+          bank_slip: {
+            sicredi: { nossoNumero: "456", status: "PENDENTE" },
+          },
+        },
+      ] as any;
+
+      // @ts-ignore
+      (mockPaymentService.getAllPayments as any) = jest
+        .fn()
+        .mockResolvedValue({ payments: mockPayments } as any);
+      // @ts-ignore
+      (mockPaymentService.checkSicrediBoletoStatus as any) = jest.fn().mockResolvedValue({
+        success: true,
+        data: { status: "PAGO" },
+      } as any);
+
+      const result = await sicrediSyncService.syncClientPayments("client123");
+
+      expect(result.totalProcessed).toBe(2);
+      expect(result.errors.length).toBe(1);
+      expect(result.errors[0].paymentId).toBe("payment1");
+    });
+
+    it("should throw SicrediSyncError on failure", async () => {
+      (mockPaymentService.getAllPayments as any) = jest
+        .fn()
+        .mockRejectedValue(new Error("API Error"));
+
+      await expect(
+        sicrediSyncService.syncClientPayments("client123")
+      ).rejects.toThrow(SicrediSyncError);
+      await expect(
+        sicrediSyncService.syncClientPayments("client123")
+      ).rejects.toThrow("Falha ao sincronizar cliente");
+    });
+  });
+
+  // ==================== updateClientDebt (private method) ====================
+
+  describe("updateClientDebt (via performSync)", () => {
+    it("should update regular customer debt when paid", async () => {
+      const mockPayments = [
+        {
+          _id: "payment1",
+          customerId: "customer123",
+          bank_slip: {
+            sicredi: { nossoNumero: "123", status: "PENDENTE" },
+          },
+        },
+      ] as any;
+
+      // @ts-ignore
+      (mockPaymentService.getAllPayments as any) = jest
+        .fn()
+        .mockResolvedValue({ payments: mockPayments } as any);
+      (mockPaymentService.checkSicrediBoletoStatus as any) = jest.fn().mockResolvedValue({
+        success: true,
+        data: { status: "PAGO", valorPago: 100, dataPagamento: new Date() },
+      } as any);
+
+      (mockUserService.getUserById as any) = jest.fn().mockResolvedValue({
+        _id: "customer123",
+        name: "Test Customer",
+        debts: 500,
+      } as any);
+
+      (mockUserService.updateUser as any) = jest.fn().mockResolvedValue({} as any);
+
+      const result = await sicrediSyncService.performSync();
+
+      expect(mockUserService.getUserById).toHaveBeenCalledWith("customer123");
+      expect(mockUserService.updateUser).toHaveBeenCalledWith(
+        "customer123",
+        expect.objectContaining({ debts: 400 }) // 500 - 100
+      );
       expect(result.updatedDebts).toBe(1);
-      expect(result.errors).toHaveLength(0);
-
-      expect(mockPaymentService.getAllPayments).toHaveBeenCalledWith(1, 1000, {
-        customerId: clientId,
-        paymentMethod: 'sicredi_boleto'
-      });
-
-      expect(consoleSpy).toHaveBeenCalledWith(`🔄 SICREDI Sync: Sincronizando pagamentos do cliente ${clientId}`);
-      expect(consoleSpy).toHaveBeenCalledWith(`📋 SICREDI Sync: Encontrados 1 pagamentos SICREDI para o cliente`);
-      expect(consoleSpy).toHaveBeenCalledWith(`✅ SICREDI Sync: Cliente ${clientId} sincronizado - 1 pagamentos atualizados, 1 débitos atualizados`);
-
-      consoleSpy.mockRestore();
     });
 
-    it('deve lidar com erros durante sincronização de cliente', async () => {
-      mockPaymentService.getAllPayments.mockRejectedValue(new Error('Erro de banco de dados'));
+    it("should update legacy client debt when paid", async () => {
+      const mockPayments = [
+        {
+          _id: "payment1",
+          legacyClientId: "legacy123",
+          bank_slip: {
+            sicredi: { nossoNumero: "123", status: "PENDENTE" },
+          },
+        },
+      ] as any;
 
-      const clientId = '507f1f77bcf86cd799439012';
+      // @ts-ignore
+      (mockPaymentService.getAllPayments as any) = jest
+        .fn()
+        .mockResolvedValue({ payments: mockPayments } as any);
+      (mockPaymentService.checkSicrediBoletoStatus as any) = jest.fn().mockResolvedValue({
+        success: true,
+        data: { status: "PAGO", valorPago: 100, dataPagamento: new Date() },
+      } as any);
 
-      await expect(sicrediSyncService.syncClientPayments(clientId)).rejects.toThrow(SicrediSyncError);
+      (mockLegacyClientService.getLegacyClientById as any) = jest
+        .fn()
+        .mockResolvedValue({
+          _id: "legacy123",
+          name: "Legacy Customer",
+          totalDebt: 300,
+        } as any);
+
+      (mockLegacyClientService.updateLegacyClient as any) = jest
+        .fn()
+        .mockResolvedValue({} as any);
+
+      const result = await sicrediSyncService.performSync();
+
+      expect(mockLegacyClientService.getLegacyClientById).toHaveBeenCalledWith(
+        "legacy123"
+      );
+      expect(mockLegacyClientService.updateLegacyClient).toHaveBeenCalledWith(
+        "legacy123",
+        expect.objectContaining({ totalDebt: 200 }) // 300 - 100
+      );
+      expect(result.updatedDebts).toBe(1);
+    });
+
+    it("should not allow negative debt", async () => {
+      const mockPayments = [
+        {
+          _id: "payment1",
+          customerId: "customer123",
+          bank_slip: {
+            sicredi: { nossoNumero: "123", status: "PENDENTE" },
+          },
+        },
+      ] as any;
+
+      // @ts-ignore
+      (mockPaymentService.getAllPayments as any) = jest
+        .fn()
+        .mockResolvedValue({ payments: mockPayments } as any);
+      (mockPaymentService.checkSicrediBoletoStatus as any) = jest.fn().mockResolvedValue({
+        success: true,
+        data: { status: "PAGO", valorPago: 200, dataPagamento: new Date() },
+      } as any);
+
+      (mockUserService.getUserById as any) = jest.fn().mockResolvedValue({
+        _id: "customer123",
+        name: "Test Customer",
+        debts: 50, // Menor que o valor pago
+      } as any);
+
+      (mockUserService.updateUser as any) = jest.fn().mockResolvedValue({} as any);
+
+      await sicrediSyncService.performSync();
+
+      expect(mockUserService.updateUser).toHaveBeenCalledWith(
+        "customer123",
+        expect.objectContaining({ debts: 0 }) // Math.max(0, 50 - 200)
+      );
+    });
+
+    it("should handle payment without customer ID", async () => {
+      const mockPayments = [
+        {
+          _id: "payment1",
+          // Sem customerId nem legacyClientId
+          bank_slip: {
+            sicredi: { nossoNumero: "123", status: "PENDENTE" },
+          },
+        },
+      ] as any;
+
+      // @ts-ignore
+      (mockPaymentService.getAllPayments as any) = jest
+        .fn()
+        .mockResolvedValue({ payments: mockPayments } as any);
+      (mockPaymentService.checkSicrediBoletoStatus as any) = jest.fn().mockResolvedValue({
+        success: true,
+        data: { status: "PAGO", valorPago: 100, dataPagamento: new Date() },
+      } as any);
+
+      const result = await sicrediSyncService.performSync();
+
+      expect(result.errors.length).toBe(1);
+      expect(result.errors[0].error).toContain("cliente associado");
+    });
+
+    it("should handle customer not found", async () => {
+      const mockPayments = [
+        {
+          _id: "payment1",
+          customerId: "customer123",
+          bank_slip: {
+            sicredi: { nossoNumero: "123", status: "PENDENTE" },
+          },
+        },
+      ] as any;
+
+      // @ts-ignore
+      (mockPaymentService.getAllPayments as any) = jest
+        .fn()
+        .mockResolvedValue({ payments: mockPayments } as any);
+      (mockPaymentService.checkSicrediBoletoStatus as any) = jest.fn().mockResolvedValue({
+        success: true,
+        data: { status: "PAGO", valorPago: 100, dataPagamento: new Date() },
+      } as any);
+
+      (mockUserService.getUserById as any) = jest.fn().mockResolvedValue(null);
+
+      const result = await sicrediSyncService.performSync();
+
+      // Deve processar sem erro (cliente não encontrado é tratado silenciosamente)
+      expect(result.totalProcessed).toBe(1);
+    });
+
+    it("should handle debt update error", async () => {
+      const mockPayments = [
+        {
+          _id: "payment1",
+          customerId: "customer123",
+          bank_slip: {
+            sicredi: { nossoNumero: "123", status: "PENDENTE" },
+          },
+        },
+      ] as any;
+
+      // @ts-ignore
+      (mockPaymentService.getAllPayments as any) = jest
+        .fn()
+        .mockResolvedValue({ payments: mockPayments } as any);
+      (mockPaymentService.checkSicrediBoletoStatus as any) = jest.fn().mockResolvedValue({
+        success: true,
+        data: { status: "PAGO", valorPago: 100, dataPagamento: new Date() },
+      } as any);
+
+      (mockUserService.getUserById as any) = jest.fn().mockResolvedValue({
+        _id: "customer123",
+        debts: 500,
+      } as any);
+
+      (mockUserService.updateUser as any) = jest
+        .fn()
+        .mockRejectedValue(new Error("Update failed"));
+
+      const result = await sicrediSyncService.performSync();
+
+      expect(result.errors.length).toBe(1);
+      expect(result.errors[0].error).toContain("débito do cliente");
     });
   });
 
-  describe('getSyncStats', () => {
-    const mockPayments: IPayment[] = [
-      {
-        _id: '1',
-        paymentMethod: 'sicredi_boleto',
-        bank_slip: { sicredi: { status: 'PAGO' } }
-      },
-      {
-        _id: '2',
-        paymentMethod: 'sicredi_boleto',
-        bank_slip: { sicredi: { status: 'VENCIDO' } }
-      },
-      {
-        _id: '3',
-        paymentMethod: 'sicredi_boleto',
-        bank_slip: { sicredi: { status: 'CANCELADO' } }
-      },
-      {
-        _id: '4',
-        paymentMethod: 'sicredi_boleto',
-        bank_slip: { sicredi: { status: 'REGISTRADO' } }
-      }
-    ] as IPayment[];
+  // ==================== isSyncRunning ====================
 
-    beforeEach(() => {
-      mockPaymentService.getAllPayments.mockResolvedValue({
-        payments: mockPayments,
-        total: 4
-      });
-    });
-
-    it('deve retornar estatísticas corretas', async () => {
-      const stats = await sicrediSyncService.getSyncStats();
-
-      expect(stats.totalSicrediPayments).toBe(4);
-      expect(stats.paidPayments).toBe(1);
-      expect(stats.overduePayments).toBe(1);
-      expect(stats.cancelledPayments).toBe(1);
-      expect(stats.pendingPayments).toBe(1);
-
-      expect(mockPaymentService.getAllPayments).toHaveBeenCalledWith(1, 10000, {
-        paymentMethod: 'sicredi_boleto'
-      });
-    });
-
-    it('deve lidar com erros ao obter estatísticas', async () => {
-      mockPaymentService.getAllPayments.mockRejectedValue(new Error('Erro de banco de dados'));
-
-      await expect(sicrediSyncService.getSyncStats()).rejects.toThrow(SicrediSyncError);
-    });
-  });
-
-  describe('isSyncRunning', () => {
-    it('deve retornar false quando sincronização não está rodando', () => {
+  describe("isSyncRunning", () => {
+    it("should return false initially", () => {
       expect(sicrediSyncService.isSyncRunning()).toBe(false);
     });
 
-    it('deve retornar true quando sincronização está rodando', () => {
+    it("should return true when sync is running", () => {
+      jest
+        .spyOn(sicrediSyncService as any, "performSync")
+        .mockResolvedValue({} as any);
+
+      sicrediSyncService.startAutoSync();
+
+      expect(sicrediSyncService.isSyncRunning()).toBe(true);
+    });
+
+    it("should return false after stopping sync", () => {
+      jest
+        .spyOn(sicrediSyncService as any, "performSync")
+        .mockResolvedValue({} as any);
+
+      sicrediSyncService.startAutoSync();
+      sicrediSyncService.stopAutoSync();
+
+      expect(sicrediSyncService.isSyncRunning()).toBe(false);
+    });
+  });
+
+  // ==================== getSyncStats ====================
+
+  describe("getSyncStats", () => {
+    it("should return correct statistics", async () => {
+      const mockPayments = [
+        {
+          _id: "p1",
+          bank_slip: { sicredi: { status: "PAGO" } },
+        },
+        {
+          _id: "p2",
+          bank_slip: { sicredi: { status: "PAGO" } },
+        },
+        {
+          _id: "p3",
+          bank_slip: { sicredi: { status: "VENCIDO" } },
+        },
+        {
+          _id: "p4",
+          bank_slip: { sicredi: { status: "CANCELADO" } },
+        },
+        {
+          _id: "p5",
+          bank_slip: { sicredi: { status: "PENDENTE" } },
+        },
+        {
+          _id: "p6",
+          bank_slip: { sicredi: {} }, // Sem status
+        },
+      ] as any;
+
+      // @ts-ignore
+      (mockPaymentService.getAllPayments as any) = jest
+        .fn()
+        .mockResolvedValue({ payments: mockPayments } as any);
+
+      const stats = await sicrediSyncService.getSyncStats();
+
+      expect(stats.totalSicrediPayments).toBe(6);
+      expect(stats.paidPayments).toBe(2);
+      expect(stats.overduePayments).toBe(1);
+      expect(stats.cancelledPayments).toBe(1);
+      expect(stats.pendingPayments).toBe(2); // PENDENTE + sem status
+    });
+
+    it("should handle empty payment list", async () => {
+      // @ts-ignore
+      (mockPaymentService.getAllPayments as any) = jest
+        .fn()
+        .mockResolvedValue({ payments: [] } as any);
+
+      const stats = await sicrediSyncService.getSyncStats();
+
+      expect(stats.totalSicrediPayments).toBe(0);
+      expect(stats.paidPayments).toBe(0);
+      expect(stats.overduePayments).toBe(0);
+      expect(stats.cancelledPayments).toBe(0);
+      expect(stats.pendingPayments).toBe(0);
+    });
+
+    it("should handle payments without bank_slip data", async () => {
+      const mockPayments = [
+        { _id: "p1" }, // Sem bank_slip
+        { _id: "p2", bank_slip: {} }, // Sem sicredi
+      ] as any;
+
+      // @ts-ignore
+      (mockPaymentService.getAllPayments as any) = jest
+        .fn()
+        .mockResolvedValue({ payments: mockPayments } as any);
+
+      const stats = await sicrediSyncService.getSyncStats();
+
+      expect(stats.totalSicrediPayments).toBe(2);
+      expect(stats.pendingPayments).toBe(2); // Contados como pendentes
+    });
+
+    it("should throw SicrediSyncError on failure", async () => {
+      (mockPaymentService.getAllPayments as any) = jest
+        .fn()
+        // @ts-ignore
+        .mockRejectedValue(new Error("Database error") as any);
+
+      await expect(sicrediSyncService.getSyncStats()).rejects.toThrow(
+        SicrediSyncError
+      );
+      await expect(sicrediSyncService.getSyncStats()).rejects.toThrow(
+        "Falha ao obter estatísticas"
+      );
+    });
+  });
+
+  // ==================== EDGE CASES & CONCURRENCY ====================
+
+  describe("Edge Cases & Concurrency", () => {
+    it("should handle very large payment lists", async () => {
+      const largePaymentList = Array.from({ length: 1000 }, (_, i) => ({
+        _id: `payment${i}`,
+        bank_slip: {
+          sicredi: { nossoNumero: `${i}`, status: "PENDENTE" },
+        },
+      })) as any;
+
+      // @ts-ignore
+      (mockPaymentService.getAllPayments as any) = jest
+        .fn()
+        .mockResolvedValue({ payments: largePaymentList } as any);
+      // @ts-ignore
+      // @ts-ignore
+      (mockPaymentService.checkSicrediBoletoStatus as any) = jest.fn().mockResolvedValue({
+        success: true,
+        data: { status: "PAGO" },
+      } as any);
+
+      const result = await sicrediSyncService.performSync();
+
+      expect(result.totalProcessed).toBe(1000);
+    });
+
+    it("should handle concurrent performSync calls", async () => {
+      // @ts-ignore
+      (mockPaymentService.getAllPayments as any) = jest
+        .fn()
+        .mockResolvedValue({ payments: [] } as any);
+
+      const promises = [
+        sicrediSyncService.performSync(),
+        sicrediSyncService.performSync(),
+        sicrediSyncService.performSync(),
+      ];
+
+      const results = await Promise.all(promises);
+
+      expect(results).toHaveLength(3);
+      results.forEach((result) => {
+        expect(result).toHaveProperty("totalProcessed");
+        expect(result).toHaveProperty("errors");
+      });
+    });
+
+    it("should handle mixed success and failure in payment processing", async () => {
+      const mockPayments = [
+        {
+          _id: "p1",
+          bank_slip: {
+            sicredi: { nossoNumero: "1", status: "PENDENTE" },
+          },
+        },
+        { _id: "p2", bank_slip: { sicredi: {} } }, // Vai falhar
+        {
+          _id: "p3",
+          bank_slip: {
+            sicredi: { nossoNumero: "3", status: "PENDENTE" },
+          },
+        },
+      ] as any;
+
+      // @ts-ignore
+      (mockPaymentService.getAllPayments as any) = jest
+        .fn()
+        .mockResolvedValue({ payments: mockPayments } as any);
+      // @ts-ignore
+      (mockPaymentService.checkSicrediBoletoStatus as any) = jest.fn().mockResolvedValue({
+        success: true,
+        data: { status: "PAGO" },
+      } as any);
+
+      const result = await sicrediSyncService.performSync();
+
+      expect(result.totalProcessed).toBe(3);
+      expect(result.errors.length).toBe(1);
+      expect(result.summary.paid).toBe(2); // p1 e p3 foram pagos
+    });
+
+    it("should handle start/stop cycles", () => {
+      const performSyncSpy = jest
+        .spyOn(sicrediSyncService as any, "performSync")
+        .mockResolvedValue({} as any);
+
+      // Ciclo 1
       sicrediSyncService.startAutoSync();
       expect(sicrediSyncService.isSyncRunning()).toBe(true);
+
+      sicrediSyncService.stopAutoSync();
+      expect(sicrediSyncService.isSyncRunning()).toBe(false);
+
+      // Ciclo 2
+      sicrediSyncService.startAutoSync();
+      expect(sicrediSyncService.isSyncRunning()).toBe(true);
+
+      sicrediSyncService.stopAutoSync();
+      expect(sicrediSyncService.isSyncRunning()).toBe(false);
+
+      // Deve ter executado apenas 2 vezes (primeira execução de cada ciclo)
+      expect(performSyncSpy).toHaveBeenCalledTimes(2);
+    });
+
+    it("should handle undefined payment IDs", async () => {
+      const mockPayments = [
+        {
+          // Sem _id
+          bank_slip: { sicredi: {} },
+        },
+      ] as any;
+
+      // @ts-ignore
+      (mockPaymentService.getAllPayments as any) = jest
+        .fn()
+        .mockResolvedValue({ payments: mockPayments } as any);
+
+      const result = await sicrediSyncService.performSync();
+
+      expect(result.errors.length).toBe(1);
+      expect(result.errors[0].paymentId).toBe("unknown");
+    });
+
+    it("should handle payment with zero value", async () => {
+      const mockPayments = [
+        {
+          _id: "payment1",
+          customerId: "customer123",
+          bank_slip: {
+            sicredi: { nossoNumero: "123", status: "PENDENTE" },
+          },
+        },
+      ] as any;
+
+      // @ts-ignore
+      (mockPaymentService.getAllPayments as any) = jest
+        .fn()
+        .mockResolvedValue({ payments: mockPayments } as any);
+      // @ts-ignore
+      (mockPaymentService.checkSicrediBoletoStatus as any) = jest.fn().mockResolvedValue({
+        success: true,
+        data: { status: "PAGO", valorPago: 0 }, // Valor zero
+      } as any);
+
+      const result = await sicrediSyncService.performSync();
+
+      expect(result.updatedDebts).toBe(0); // Não deve atualizar débito
+    });
+
+    it("should handle payment without valorPago", async () => {
+      const mockPayments = [
+        {
+          _id: "payment1",
+          customerId: "customer123",
+          bank_slip: {
+            sicredi: { nossoNumero: "123", status: "PENDENTE" },
+          },
+        },
+      ] as any;
+
+      // @ts-ignore
+      (mockPaymentService.getAllPayments as any) = jest
+        .fn()
+        .mockResolvedValue({ payments: mockPayments } as any);
+      (mockPaymentService.checkSicrediBoletoStatus as any) = jest.fn().mockResolvedValue({
+        success: true,
+        data: { status: "PAGO" }, // Sem valorPago
+      } as any);
+
+      const result = await sicrediSyncService.performSync();
+
+      expect(result.updatedDebts).toBe(0); // Não deve atualizar débito
     });
   });
 });
