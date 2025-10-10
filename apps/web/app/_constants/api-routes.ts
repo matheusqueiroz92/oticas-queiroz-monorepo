@@ -63,6 +63,8 @@ export const API_ROUTES = {
     CUSTOMERS: "/api/users?role=customer",
     EMPLOYEES: "/api/users?role=employee",
     INSTITUTIONS: "/api/users?role=institution",
+    CHANGE_PASSWORD: "/api/users/change-password",
+    RESET_PASSWORD: (id: string) => `/api/users/${id}/reset-password`,
   },
   REPORTS: {
     BASE: "/api/reports",

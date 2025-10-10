@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Image from "next/image";
-import LogoOticasQueiroz from "../../../public/logo-oticas-queiroz-branca.png";
+import LogoOticasQueiroz from "@/public/logo-oticas-queiroz-branca.png";
 import Link from "next/link";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,7 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Loader2, ArrowLeft, Mail } from "lucide-react";
-import { requestPasswordReset } from "../../_services/authService";
+import { requestPasswordReset } from "@/app/_services/authService";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 const forgotPasswordSchema = z.object({
