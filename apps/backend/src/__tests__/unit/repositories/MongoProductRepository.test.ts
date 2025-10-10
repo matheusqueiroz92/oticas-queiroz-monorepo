@@ -183,9 +183,9 @@ describe("MongoProductRepository", () => {
 
       const all = await repository.findAll();
 
-      expect(all).toHaveLength(2);
-      expect(all[0].name).toBeDefined();
-      expect(all[1].name).toBeDefined();
+      expect(all.items).toHaveLength(2);
+      expect(all.items[0].name).toBeDefined();
+      expect(all.items[1].name).toBeDefined();
     });
 
     it("should return empty array when no products", async () => {
@@ -433,9 +433,9 @@ describe("MongoProductRepository", () => {
     it("should find products by type", async () => {
       const lenses = await repository.findByType("lenses");
 
-      expect(lenses).toHaveLength(2);
-      expect(lenses[0].productType).toBe("lenses");
-      expect(lenses[1].productType).toBe("lenses");
+      expect(lenses.items).toHaveLength(2);
+      expect(lenses.items[0].productType).toBe("lenses");
+      expect(lenses.items[1].productType).toBe("lenses");
     });
 
     it("should return empty array for type with no products", async () => {

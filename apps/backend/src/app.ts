@@ -89,14 +89,14 @@ class App {
     });
 
     this.app.use("/api/auth", authRoutes);
-    this.app.use("/api", userRoutes);
-    this.app.use("/api", productRoutes);
-    this.app.use("/api", orderRoutes);
-    this.app.use("/api", laboratoryRoutes);
-    this.app.use("/api", paymentRoutes);
-    this.app.use("/api", cashRegisterRoutes);
-    this.app.use("/api", legacyClientRoutes);
-    this.app.use("/api", reportRoutes);
+    this.app.use("/api/users", userRoutes);
+    this.app.use("/api/products", productRoutes);
+    this.app.use("/api/orders", orderRoutes);
+    this.app.use("/api/laboratories", laboratoryRoutes);
+    this.app.use("/api/payments", paymentRoutes);
+    this.app.use("/api/cash-registers", cashRegisterRoutes);
+    this.app.use("/api/legacy-clients", legacyClientRoutes);
+    this.app.use("/api/reports", reportRoutes);
     this.app.use("/api/sicredi", sicrediRoutes);
     this.app.use("/api/sicredi-sync", sicrediSyncRoutes);
     

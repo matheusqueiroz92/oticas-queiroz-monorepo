@@ -256,3 +256,33 @@ export const getAllUsersForExport = async (filters: Record<string, any> = {}): P
     throw error;
   }
 };
+
+/**
+ * Altera a senha do próprio usuário autenticado
+ */
+export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
+  try {
+    await api.post(API_ROUTES.USERS.CHANGE_PASSWORD, {
+      currentPassword,
+      newPassword,
+    });
+  } catch (error) {
+    console.error('Erro ao alterar senha:', error);
+    throw error;
+  }
+}
+
+/**
+ * Reseta a senha de outro usuário (apenas Admin/Employee)
+ */
+export async function resetUserPassword(userId: string, newPassword: string): Promise<{ message: string; userName: string }> {
+  try {
+    const response = await api.post(`${API_ROUTES.USERS.BASE}/${userId}/reset-password`, {
+      newPassword,
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Erro ao resetar senha do usuário ${userId}:`, error);
+    throw error;
+  }
+}

@@ -165,7 +165,7 @@ const laboratoryController = new LaboratoryController();
  *         description: Erro interno do servidor
  */
 router.post(
-  "/laboratories",
+  "/",
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler(laboratoryController.createLaboratory.bind(laboratoryController))
@@ -237,7 +237,7 @@ router.post(
  *         description: Erro interno do servidor
  */
 router.get(
-  "/laboratories",
+  "/",
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler(
@@ -279,7 +279,7 @@ router.get(
  *         description: Erro interno do servidor
  */
 router.get(
-  "/laboratories/:id",
+  "/:id",
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler(
@@ -359,7 +359,7 @@ router.get(
  *         description: Erro interno do servidor
  */
 router.put(
-  "/laboratories/:id",
+  "/:id",
   authenticate,
   authorize(["admin"]),
   asyncHandler(laboratoryController.updateLaboratory.bind(laboratoryController))
@@ -395,7 +395,7 @@ router.put(
  *         description: Erro interno do servidor
  */
 router.delete(
-  "/laboratories/:id",
+  "/:id",
   authenticate,
   authorize(["admin"]),
   asyncHandler(laboratoryController.deleteLaboratory.bind(laboratoryController))
@@ -435,7 +435,7 @@ router.delete(
  *         description: Erro interno do servidor
  */
 router.patch(
-  "/laboratories/:id/toggle-status",
+  "/:id/toggle-status",
   authenticate,
   authorize(["admin"]),
   asyncHandler(

@@ -163,7 +163,7 @@ const legacyClientController = new LegacyClientController();
  *         description: Erro interno do servidor
  */
 router.post(
-  "/legacy-clients",
+  "/",
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler(
@@ -243,7 +243,7 @@ router.post(
  *         description: Erro interno do servidor
  */
 router.get(
-  "/legacy-clients",
+  "/",
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler(
@@ -285,7 +285,7 @@ router.get(
  *         description: Erro interno do servidor
  */
 router.get(
-  "/legacy-clients/search",
+  "/search",
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler(
@@ -362,7 +362,7 @@ router.get(
  *         description: Erro interno do servidor
  */
 router.get(
-  "/legacy-clients/debtors",
+  "/debtors",
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler(legacyClientController.getDebtors.bind(legacyClientController))
@@ -402,7 +402,7 @@ router.get(
  *         description: Erro interno do servidor
  */
 router.get(
-  "/legacy-clients/:id",
+  "/:id",
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler(
@@ -485,7 +485,7 @@ router.get(
  *         description: Erro interno do servidor
  */
 router.put(
-  "/legacy-clients/:id",
+  "/:id",
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler(
@@ -553,7 +553,7 @@ router.put(
  *         description: Erro interno do servidor
  */
 router.get(
-  "/legacy-clients/:id/payment-history",
+  "/:id/payment-history",
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler(
@@ -597,7 +597,7 @@ router.get(
  *         description: Erro interno do servidor
  */
 router.patch(
-  "/legacy-clients/:id/toggle-status",
+  "/:id/toggle-status",
   authenticate,
   authorize(["admin"]),
   asyncHandler(

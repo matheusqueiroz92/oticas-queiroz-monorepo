@@ -136,7 +136,7 @@ const passwordResetController = new PasswordResetController();
  *       500:
  *         description: Erro interno do servidor
  */
-router.post("/auth/login", asyncHandler(authController.login.bind(authController)));
+router.post("/login", asyncHandler(authController.login.bind(authController)));
 
 /**
  * @swagger
@@ -210,7 +210,7 @@ router.post("/auth/login", asyncHandler(authController.login.bind(authController
  *         description: Erro interno do servidor
  */
 router.post(
-  "/auth/register",
+  "/register",
   authenticate,
   authorize(["admin", "employee"]),
   uploadUserImage,
@@ -252,7 +252,7 @@ router.post(
  *         description: Erro interno do servidor
  */
 router.post(
-  "/auth/forgot-password",
+  "/forgot-password",
   asyncHandler(
     passwordResetController.requestReset.bind(passwordResetController)
   )
@@ -300,10 +300,37 @@ router.post(
  *         description: Erro interno do servidor
  */
 router.post(
-  "/auth/reset-password",
+  "/reset-password",
   asyncHandler(
     passwordResetController.resetPassword.bind(passwordResetController)
   )
+);
+
+/**
+ * @swagger
+ * /api/auth/validate-token:
+ *   post:
+ *     summary: Valida um token JWT
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     description: Verifica se o token JWT é válido e retorna os dados do usuário
+ *     responses:
+ *       200:
+ *         description: Token válido
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Token inválido ou não fornecido
+ *       500:
+ *         description: Erro interno do servidor
+ */
+router.post(
+  "/validate-token",
+  authenticate,
+  asyncHandler(authController.validateToken.bind(authController))
 );
 
 /**
@@ -337,35 +364,8 @@ router.post(
  *       500:
  *         description: Erro interno do servidor
  */
-/**
- * @swagger
- * /api/auth/validate-token:
- *   post:
- *     summary: Valida um token JWT
- *     tags: [Auth]
- *     security:
- *       - bearerAuth: []
- *     description: Verifica se o token JWT é válido e retorna os dados do usuário
- *     responses:
- *       200:
- *         description: Token válido
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/User'
- *       401:
- *         description: Token inválido ou não fornecido
- *       500:
- *         description: Erro interno do servidor
- */
-router.post(
-  "/auth/validate-token",
-  authenticate,
-  asyncHandler(authController.validateToken.bind(authController))
-);
-
 router.get(
-  "/auth/validate-reset-token/:token",
+  "/validate-reset-token/:token",
   asyncHandler(
     passwordResetController.validateToken.bind(passwordResetController)
   )

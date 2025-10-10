@@ -318,7 +318,7 @@ const orderController = new OrderController();
  *         description: Erro interno do servidor
  */
 router.post(
-  "/orders",
+  "/",
   authenticate,
   authorize(["admin", "employee"]),
   validateAndUpdateRelationships,
@@ -351,7 +351,7 @@ router.post(
  *         description: Erro interno do servidor
  */
 router.get(
-  "/orders/my-orders",
+  "/my-orders",
   authenticate,
   authorize(["admin", "employee", "customer"]),
   asyncHandler(orderController.getMyOrders.bind(orderController))
@@ -441,7 +441,7 @@ router.get(
  *         description: Erro interno do servidor
  */
 router.get(
-  "/orders",
+  "/",
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler(orderController.getAllOrders.bind(orderController))
@@ -514,7 +514,7 @@ router.get(
  *         description: Erro interno do servidor
  */
 router.get(
-  "/orders/deleted",
+  "/deleted",
   authenticate,
   authorize(["admin"]),
   asyncHandler(orderController.getDeletedOrders.bind(orderController))
@@ -553,7 +553,7 @@ router.get(
  *         description: Erro interno do servidor
  */
 router.get(
-  "/orders/client/:clientId",
+  "/client/:clientId",
   authenticate,
   authorize(["admin", "employee", "customer"]),
   asyncHandler(orderController.getOrdersByClient.bind(orderController))
@@ -594,7 +594,7 @@ router.get(
  *         description: Erro interno do servidor
  */
 router.get(
-  "/orders/daily",
+  "/daily",
   authenticate,
   
   authorize(["admin", "employee"]),
@@ -678,7 +678,7 @@ router.get(
  *         description: Erro interno do servidor
  */
 router.get(
-  "/orders/export",
+  "/export",
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler(orderController.exportOrders.bind(orderController))
@@ -735,7 +735,7 @@ router.get(
  *         description: Erro interno do servidor
  */
 router.get(
-  "/orders/export/daily",
+  "/export/daily",
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler(orderController.exportDailySummary.bind(orderController))
@@ -770,7 +770,7 @@ router.get(
  *         description: Erro interno do servidor
  */
 router.get(
-  "/orders/next-service-order",
+  "/next-service-order",
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler(orderController.getNextServiceOrder.bind(orderController))
@@ -811,7 +811,7 @@ router.get(
  *         description: Erro interno do servidor
  */
 router.get(
-  "/orders/:id",
+  "/:id",
   authenticate,
   authorize(["admin", "employee", "customer"]),
   asyncHandler(orderController.getOrderById.bind(orderController))
@@ -859,7 +859,7 @@ router.get(
  *         description: Erro interno do servidor
  */
 router.put(
-  "/orders/:id",
+  "/:id",
   authenticate,
   authorize(["admin", "employee"]),
   validateAndUpdateRelationships,
@@ -916,7 +916,7 @@ router.put(
  *         description: Erro interno do servidor
  */
 router.put(
-  "/orders/:id/status",
+  "/:id/status",
   authenticate,
   authorize(["admin", "employee"]),
   validateAndUpdateRelationships,
@@ -972,7 +972,7 @@ router.put(
  *         description: Erro interno do servidor
  */
 router.put(
-  "/orders/:id/laboratory",
+  "/:id/laboratory",
   authenticate,
   authorize(["admin", "employee"]),
   validateAndUpdateRelationships,
@@ -1013,7 +1013,7 @@ router.put(
  *         description: Erro interno do servidor
  */
 router.get(
-  "/orders/client/:clientId",
+  "/client/:clientId",
   authenticate,
   asyncHandler(orderController.getOrdersByClient.bind(orderController))
 );
@@ -1054,7 +1054,7 @@ router.get(
  *         description: Erro interno do servidor
  */
 router.post(
-  "/orders/:id/cancel",
+  "/:id/cancel",
   authenticate,
   asyncHandler(orderController.cancelOrder.bind(orderController))
 );
@@ -1095,7 +1095,7 @@ router.post(
  *         description: Erro interno do servidor
  */
 router.post(
-  "/orders/:id/delete",
+  "/:id/delete",
   authenticate,
   authorize(["admin", "employee"]),
   validateAndUpdateRelationships,
@@ -1155,7 +1155,7 @@ router.post(
  *         description: Erro interno do servidor
  */
 router.get(
-  "/orders/:id/export",
+  "/:id/export",
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler(orderController.exportOrderDetails.bind(orderController))
@@ -1188,7 +1188,7 @@ router.get(
  *         description: Erro interno do servidor
  */
 router.get(
-  "/orders/:id/payments",
+  "/:id/payments",
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler(orderController.getOrderPayments.bind(orderController))
@@ -1221,7 +1221,7 @@ router.get(
  *         description: Erro interno do servidor
  */
 router.get(
-  "/orders/:id/payment-status",
+  "/:id/payment-status",
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler(orderController.getPaymentStatusSummary.bind(orderController))

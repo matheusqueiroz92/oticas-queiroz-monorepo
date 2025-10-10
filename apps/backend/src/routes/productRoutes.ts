@@ -146,7 +146,7 @@ const productController = new ProductController();
  *         description: Erro interno do servidor
  */
 router.post(
-  "/products",
+  "/",
   authenticate,
   authorize(["admin", "employee"]),
   uploadProductImage,
@@ -239,7 +239,7 @@ router.post(
  *         description: Erro interno do servidor
  */
 router.get(
-  "/products",
+  "/",
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler(productController.getAllProducts.bind(productController))
@@ -279,7 +279,7 @@ router.get(
  *         description: Erro interno do servidor
  */
 router.get(
-  "/products/:id",
+  "/:id",
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler(productController.getProductById.bind(productController))
@@ -356,7 +356,7 @@ router.get(
  *         description: Erro interno do servidor
  */
 router.put(
-  "/products/:id",
+  "/:id",
   authenticate,
   authorize(["admin", "employee"]),
   uploadProductImage,
@@ -393,7 +393,7 @@ router.put(
  *         description: Erro interno do servidor
  */
 router.delete(
-  "/products/:id",
+  "/:id",
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler(productController.deleteProduct.bind(productController))
@@ -458,7 +458,7 @@ router.delete(
  *         description: Erro interno do servidor
  */
 router.get(
-  "/products/:id/stock-history",
+  "/:id/stock-history",
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler(productController.getProductStockHistory.bind(productController))
@@ -517,7 +517,7 @@ router.get(
  *         description: Erro interno do servidor
  */
 router.patch(
-  "/products/:id/stock",
+  "/:id/stock",
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler(productController.updateProductStock.bind(productController))

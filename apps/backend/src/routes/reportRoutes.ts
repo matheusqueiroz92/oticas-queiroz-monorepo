@@ -168,7 +168,7 @@ const reportController = new ReportController();
  *         description: Erro interno do servidor
  */
 router.post(
-  "/reports",
+  "/",
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler(reportController.createReport.bind(reportController))
@@ -240,7 +240,7 @@ router.post(
  *         description: Erro interno do servidor
  */
 router.get(
-  "/reports",
+  "/",
   authenticate,
   asyncHandler(reportController.getUserReports.bind(reportController))
 );
@@ -279,7 +279,7 @@ router.get(
  *         description: Erro interno do servidor
  */
 router.get(
-  "/reports/:id",
+  "/:id",
   authenticate,
   asyncHandler(reportController.getReport.bind(reportController))
 );

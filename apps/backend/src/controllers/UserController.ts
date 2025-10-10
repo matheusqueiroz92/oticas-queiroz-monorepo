@@ -296,6 +296,71 @@ export class UserController {
     res.status(200).json({ message: "Senha alterada com sucesso" });
   }
 
+  async resetUserPassword(req: AuthRequest, res: Response): Promise<void> {
+    if (!req.user?.id || !req.user?.role) {
+      throw new AuthError("Usuário não autenticado", ErrorCode.UNAUTHORIZED);
+    }
+
+    const { id: targetUserId } = req.params;
+    const { newPassword } = req.body;
+    const currentUserRole = req.user.role;
+
+    if (!newPassword) {
+      throw new ValidationError(
+        "Nova senha é obrigatória",
+        ErrorCode.VALIDATION_ERROR
+      );
+    }
+
+    if (newPassword.length < 6) {
+      throw new ValidationError(
+        "A nova senha deve ter pelo menos 6 caracteres",
+        ErrorCode.INVALID_PASSWORD
+      );
+    }
+
+    // Buscar usuário alvo
+    const targetUser = await this.userService.getUserById(targetUserId);
+
+    // Regras de permissão
+    // Admin pode alterar senha de employee e customer
+    // Employee pode alterar senha de customer
+    // Customer não pode alterar senha de outros
+
+    if (currentUserRole === "customer") {
+      throw new PermissionError(
+        "Clientes não podem alterar senha de outros usuários",
+        ErrorCode.INSUFFICIENT_PERMISSIONS
+      );
+    }
+
+    if (currentUserRole === "employee") {
+      if (targetUser.role !== "customer") {
+        throw new PermissionError(
+          "Funcionários só podem alterar senha de clientes",
+          ErrorCode.INSUFFICIENT_PERMISSIONS
+        );
+      }
+    }
+
+    if (currentUserRole === "admin") {
+      if (targetUser.role === "admin" && targetUser._id !== req.user.id) {
+        throw new PermissionError(
+          "Administradores não podem alterar senha de outros administradores",
+          ErrorCode.INSUFFICIENT_PERMISSIONS
+        );
+      }
+    }
+
+    // Atualizar senha
+    await this.userService.updatePassword(targetUserId, newPassword);
+
+    res.status(200).json({ 
+      message: "Senha alterada com sucesso",
+      userName: targetUser.name 
+    });
+  }
+
   async exportUsers(req: Request, res: Response): Promise<void> {
     try {
       const { format = "pdf", title } = req.query;

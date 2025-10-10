@@ -140,7 +140,7 @@ const userController = new UserController();
  *         description: Erro interno do servidor
  */
 router.get(
-  "/users",
+  "/",
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler((req, res) => userController.getAllUsers(req, res))
@@ -168,7 +168,7 @@ router.get(
  *         description: Erro interno do servidor
  */
 router.get(
-  "/users/profile",
+  "/profile",
   authenticate,
   asyncHandler((req, res) => userController.getProfile(req, res))
 );
@@ -228,7 +228,7 @@ router.get(
  *         description: Erro interno do servidor
  */
 router.put(
-  "/users/profile",
+  "/profile",
   authenticate,
   upload.single("userImage"),
   asyncHandler((req, res) => userController.updateProfile(req, res))
@@ -280,9 +280,77 @@ router.put(
  *         description: Erro interno do servidor
  */
 router.post(
-  "/users/change-password",
+  "/change-password",
   authenticate,
   asyncHandler((req, res) => userController.changePassword(req, res))
+);
+
+/**
+ * @swagger
+ * /api/users/{id}/reset-password:
+ *   post:
+ *     summary: Reseta a senha de outro usuário (Admin/Employee)
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Users]
+ *     description: |
+ *       Permite que administradores e funcionários resetem a senha de outros usuários.
+ *       
+ *       Regras de permissão:
+ *       - Admin pode alterar senha de employee e customer
+ *       - Employee pode alterar senha de customer
+ *       - Customer não pode alterar senha de outros
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID do usuário
+ *         example: "60d21b4667d0d8992e610c85"
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - newPassword
+ *             properties:
+ *               newPassword:
+ *                 type: string
+ *                 description: Nova senha do usuário
+ *                 example: "novaSenha456"
+ *     responses:
+ *       200:
+ *         description: Senha resetada com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Senha alterada com sucesso"
+ *                 userName:
+ *                   type: string
+ *                   example: "João Silva"
+ *       400:
+ *         description: Dados inválidos
+ *       401:
+ *         description: Não autorizado
+ *       403:
+ *         description: Permissão negada
+ *       404:
+ *         description: Usuário não encontrado
+ *       500:
+ *         description: Erro interno do servidor
+ */
+router.post(
+  "/:id/reset-password",
+  authenticate,
+  authorize(["admin", "employee"]),
+  asyncHandler((req, res) => userController.resetUserPassword(req, res))
 );
 
 /**
@@ -319,7 +387,7 @@ router.post(
  *         description: Erro interno do servidor
  */
 router.get(
-  "/users/:id",
+  "/:id",
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler((req, res) => userController.getUserById(req, res))
@@ -394,7 +462,7 @@ router.get(
  *         description: Erro interno do servidor
  */
 router.put(
-  "/users/:id",
+  "/:id",
   authenticate,
   upload.single("userImage"),
   authorize(["admin", "employee"]),
@@ -431,7 +499,7 @@ router.put(
  *         description: Erro interno do servidor
  */
 router.delete(
-  "/users/:id",
+  "/:id",
   authenticate,
   authorize(["admin"]),
   asyncHandler((req, res) => userController.deleteUser(req, res))
@@ -508,7 +576,7 @@ router.delete(
  *         description: Erro interno do servidor
  */
 router.get(
-  "/users/export",
+  "/export",
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler((req, res) => userController.exportUsers(req, res))

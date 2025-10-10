@@ -1,6 +1,6 @@
 "use client";
 
-import { Edit, Mail, Phone, MapPin, Calendar } from "lucide-react";
+import { Edit, Mail, Phone, MapPin, Calendar, KeyRound } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,9 +12,10 @@ interface ProfileCardProps {
   user: User;
   getUserImageUrl: (imagePath?: string) => string;
   onEditClick: () => void;
+  onChangePasswordClick: () => void;
 }
 
-export function ProfileCard({ user, getUserImageUrl, onEditClick }: ProfileCardProps) {
+export function ProfileCard({ user, getUserImageUrl, onEditClick, onChangePasswordClick }: ProfileCardProps) {
   const getInitials = (name: string) => {
     return name
       .split(" ")
@@ -136,6 +137,18 @@ export function ProfileCard({ user, getUserImageUrl, onEditClick }: ProfileCardP
                 <p className="text-sm">Janeiro 2024</p>
               </div>
             </div>
+          </div>
+
+          {/* Botão de alterar senha */}
+          <div className="mt-6">
+            <Button
+              onClick={onChangePasswordClick}
+              variant="outline"
+              className="w-full"
+            >
+              <KeyRound className="w-4 h-4 mr-2" />
+              Alterar Minha Senha
+            </Button>
           </div>
         </div>
       </CardContent>

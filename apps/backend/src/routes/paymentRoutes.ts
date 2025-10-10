@@ -177,7 +177,7 @@ const paymentController = new PaymentController();
  *         description: Erro interno do servidor
  */
 router.post(
-  "/payments",
+  "/",
   authenticate,
   authorize(["admin", "employee"]),
   validateAndUpdateRelationships,
@@ -256,7 +256,7 @@ router.post(
  *         description: Erro interno do servidor
  */
 router.get(
-  "/payments",
+  "/",
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler(paymentController.getAllPayments.bind(paymentController))
@@ -299,7 +299,7 @@ router.get(
  *         description: Erro interno do servidor
  */
 router.get(
-  "/payments/daily",
+  "/daily",
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler(paymentController.getDailyPayments.bind(paymentController))
@@ -353,7 +353,7 @@ router.get(
  *         description: Erro interno do servidor
  */
 router.get(
-  "/payments/report/daily",
+  "/report/daily",
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler(
@@ -438,7 +438,7 @@ router.get(
  *         description: Erro interno do servidor
  */
 router.get(
-  "/payments/export",
+  "/export",
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler(paymentController.exportPayments.bind(paymentController))
@@ -510,7 +510,7 @@ router.get(
  *         description: Erro interno do servidor
  */
 router.get(
-  "/payments/deleted",
+  "/deleted",
   authenticate,
   authorize(["admin"]),
   asyncHandler(paymentController.getDeletedPayments.bind(paymentController))
@@ -563,7 +563,7 @@ router.get(
  *         description: Erro interno do servidor
  */
 router.get(
-  '/api/payments/recalculate-debts',
+  '/recalculate-debts',
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler(paymentController.recalculateDebts.bind(paymentController)));
@@ -599,7 +599,7 @@ router.get(
  *         description: Erro interno do servidor
  */
 router.get(
-  "/payments/:id",
+  "/:id",
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler(paymentController.getPaymentById.bind(paymentController))
@@ -638,7 +638,7 @@ router.get(
  *         description: Erro interno do servidor
  */
 router.post(
-  "/payments/:id/cancel",
+  "/:id/cancel",
   authenticate,
   authorize(["admin", "employee"]),
   validateAndUpdateRelationships,
@@ -678,7 +678,7 @@ router.post(
  *         description: Erro interno do servidor
  */
 router.post(
-  "/payments/:id/delete",
+  "/:id/delete",
   authenticate,
   authorize(["admin"]),
   validateAndUpdateRelationships,
@@ -730,7 +730,7 @@ router.post(
  *         description: Erro interno do servidor
  */
 router.put(
-  "/payments/:id/check-status",
+  "/:id/check-status",
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler(paymentController.updateCheckStatus.bind(paymentController))
@@ -774,7 +774,7 @@ router.put(
  *         description: Erro interno do servidor
  */
 router.get(
-  "/payments/checks/:status",
+  "/checks/:status",
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler(paymentController.getChecksByStatus.bind(paymentController))
@@ -816,7 +816,7 @@ router.get(
  *         description: Erro interno do servidor
  */
 router.get(
-  "/payments/my-debts",
+  "/my-debts",
   authenticate,
   authorize(["customer"]),
   asyncHandler(paymentController.getMyDebts.bind(paymentController))
@@ -902,7 +902,7 @@ router.get(
  *         description: Erro interno do servidor
  */
 router.get(
-  "/payments/my-payments",
+  "/my-payments",
   authenticate,
   authorize(["customer"]),
   asyncHandler(paymentController.getMyPayments.bind(paymentController))
@@ -953,7 +953,7 @@ router.get(
  *         description: Erro interno do servidor
  */
 router.get(
-  "/payments/client/:clientId/debts",
+  "/client/:clientId/debts",
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler(paymentController.getClientDebts.bind(paymentController))

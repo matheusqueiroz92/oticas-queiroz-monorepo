@@ -1,6 +1,6 @@
 import { useMemo } from "react";
+import Cookies from "js-cookie";
 import type { Column, User } from "@/app/_types/user";
-import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -10,7 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PaginationItems } from "@/components/PaginationItems";
-import { Eye, Pencil } from "lucide-react";
+import { UserActionsDropdown } from "@/components/users/UserActionsDropdown";
 
 interface UserTableProps {
   data: User[];
@@ -39,6 +39,9 @@ export function UserTable({
   sortField = "name",
   sortDirection = "asc",
 }: UserTableProps) {
+  // Obter role do usuário logado
+  const currentUserRole = Cookies.get("role") || "";
+
   const sortedData = useMemo(() => {
     const dataToSort = [...data];
     
@@ -92,25 +95,13 @@ export function UserTable({
                 </TableCell>
               ))}
               <TableCell>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onDetailsClick(item._id)}
-                  >
-                    <Eye className="h-4 w-4 mr-1" />
-                  </Button>
-                  
-                  {onEditClick && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onEditClick(item)}
-                    >
-                      <Pencil className="h-4 w-4 mr-1" />
-                    </Button>
-                  )}
-                </div>
+                <UserActionsDropdown
+                  user={item}
+                  onView={(user) => onDetailsClick(user._id)}
+                  onEdit={onEditClick}
+                  showResetPassword={true}
+                  currentUserRole={currentUserRole}
+                />
               </TableCell>
             </TableRow>
           ))}

@@ -1,15 +1,19 @@
 "use client";
 
+import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { ProfileCard } from "@/components/profile/ProfileCard";
 import { ProfileStats } from "@/components/profile/ProfileStats";
 import { ProfileEditDialog } from "@/components/profile/ProfileEditDialog";
+import { ChangePasswordDialog } from "@/components/profile/ChangePasswordDialog";
 import { RecentOrdersCard } from "@/components/profile/RecentOrdersCard";
 import { PageContainer } from "@/components/ui/page-container";
 import { useProfileData } from "@/hooks/profile/useProfileData";
 import { ProfileErrorAlert } from "@/components/profile/ProfileErrorAlert";
 
 export default function ProfilePage() {
+  const [changePasswordDialogOpen, setChangePasswordDialogOpen] = useState(false);
+
   const {
     user,
     loading,
@@ -60,6 +64,7 @@ export default function ProfilePage() {
               user={user}
               getUserImageUrl={getUserImageUrl}
               onEditClick={handleEditClick}
+              onChangePasswordClick={() => setChangePasswordDialogOpen(true)}
             />
           </div>
 
@@ -83,6 +88,12 @@ export default function ProfilePage() {
           onSubmit={handleSubmit}
           isSubmitting={isUpdatingProfile}
           getUserImageUrl={getUserImageUrl}
+        />
+
+        {/* Dialog de alteração de senha */}
+        <ChangePasswordDialog
+          open={changePasswordDialogOpen}
+          onOpenChange={setChangePasswordDialogOpen}
         />
       </div>
     </PageContainer>

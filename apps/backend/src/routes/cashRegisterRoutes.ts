@@ -178,7 +178,7 @@ const cashRegisterController = new CashRegisterController();
  *         description: Acesso negado. Requer permissão de administrador ou funcionário.
  */
 router.get(
-  "/cash-registers",
+  "/",
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler(
@@ -227,7 +227,7 @@ router.get(
  *         description: Acesso negado. Requer permissão de administrador ou funcionário.
  */
 router.post(
-  "/cash-registers/open",
+  "/open",
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler(cashRegisterController.openRegister.bind(cashRegisterController))
@@ -274,7 +274,7 @@ router.post(
  *         description: Acesso negado. Requer permissão de administrador ou funcionário.
  */
 router.post(
-  "/cash-registers/close",
+  "/close",
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler(
@@ -304,7 +304,7 @@ router.post(
  *         description: Não autorizado
  */
 router.get(
-  "/cash-registers/current",
+  "/current",
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler(
@@ -364,7 +364,7 @@ router.get(
  *         description: Não autorizado
  */
 router.get(
-  "/cash-registers/summary/daily",
+  "/summary/daily",
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler(
@@ -426,7 +426,7 @@ router.get(
  *         description: Não autorizado
  */
 router.get(
-  "/cash-registers/export/daily",
+  "/export/daily",
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler(
@@ -488,7 +488,7 @@ router.get(
  *         description: Acesso negado. Requer permissão de administrador.
  */
 router.get(
-  "/cash-registers/deleted",
+  "/deleted",
   authenticate,
   authorize(["admin"]),
   asyncHandler(
