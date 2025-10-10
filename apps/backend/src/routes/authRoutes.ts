@@ -136,7 +136,7 @@ const passwordResetController = new PasswordResetController();
  *       500:
  *         description: Erro interno do servidor
  */
-router.post("/login", asyncHandler(authController.login.bind(authController)));
+router.post("/auth/login", asyncHandler(authController.login.bind(authController)));
 
 /**
  * @swagger
@@ -210,7 +210,7 @@ router.post("/login", asyncHandler(authController.login.bind(authController)));
  *         description: Erro interno do servidor
  */
 router.post(
-  "/register",
+  "/auth/register",
   authenticate,
   authorize(["admin", "employee"]),
   uploadUserImage,
@@ -252,7 +252,7 @@ router.post(
  *         description: Erro interno do servidor
  */
 router.post(
-  "/forgot-password",
+  "/auth/forgot-password",
   asyncHandler(
     passwordResetController.requestReset.bind(passwordResetController)
   )
@@ -300,7 +300,7 @@ router.post(
  *         description: Erro interno do servidor
  */
 router.post(
-  "/reset-password",
+  "/auth/reset-password",
   asyncHandler(
     passwordResetController.resetPassword.bind(passwordResetController)
   )
@@ -359,13 +359,13 @@ router.post(
  *         description: Erro interno do servidor
  */
 router.post(
-  "/validate-token",
+  "/auth/validate-token",
   authenticate,
   asyncHandler(authController.validateToken.bind(authController))
 );
 
 router.get(
-  "/validate-reset-token/:token",
+  "/auth/validate-reset-token/:token",
   asyncHandler(
     passwordResetController.validateToken.bind(passwordResetController)
   )
