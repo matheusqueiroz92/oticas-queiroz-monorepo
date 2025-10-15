@@ -9,6 +9,7 @@ import { formatCurrency } from "@/app/_utils/formatters";
 import { QUERY_KEYS } from "@/app/_constants/query-keys";
 import type { ICashRegister } from "@/app/_types/cash-register";
 import { useEffect } from "react";
+import { useAuth } from "@/contexts/authContext";
 
 interface CashRegisterStatusProps {
   showOpenButton?: boolean;
@@ -25,6 +26,10 @@ export function CashRegisterStatus({
   onStatusChange,
 }: CashRegisterStatusProps) {
   const router = useRouter();
+  const { user } = useAuth();
+
+  // Verificar se o usuário tem permissão para gerenciar caixa
+  const hasPermission = user?.role === "admin" || user?.role === "employee";
 
   const { data, isLoading, error } = useQuery({
     queryKey: QUERY_KEYS.CASH_REGISTERS.CURRENT,
@@ -88,7 +93,7 @@ export function CashRegisterStatus({
               </p>
             </div>
           </div>
-          {showOpenButton && (
+          {showOpenButton && hasPermission && (
             <Button 
               size="sm"
               onClick={() => router.push("/cash-register/open")}
@@ -137,7 +142,7 @@ export function CashRegisterStatus({
               Ver Detalhes
             </Button>
           )}
-          {cashRegister.status === "open" && (
+          {cashRegister.status === "open" && hasPermission && (
             <Button
               size="sm"
               variant="outline"

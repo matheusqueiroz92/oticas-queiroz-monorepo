@@ -14,7 +14,8 @@ export const authenticate = (
   next: NextFunction
 ): void => {
   try {
-    const token = req.header("Authorization")?.replace("Bearer ", "");
+    const authHeader = req.header("Authorization");
+    const token = authHeader?.replace("Bearer ", "");
 
     if (!token) {
       throw new AuthError("Token não fornecido", ErrorCode.UNAUTHORIZED);

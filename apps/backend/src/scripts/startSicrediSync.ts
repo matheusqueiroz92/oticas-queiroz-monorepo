@@ -11,7 +11,6 @@ import { SicrediSyncService } from '../services/SicrediSyncService';
  */
 export async function startSicrediSync(): Promise<void> {
   try {
-    console.log('🚀 Iniciando sincronização automática da SICREDI...');
     
     // Inicializar serviços (eles usam RepositoryFactory internamente)
 const paymentService = new PaymentService();
@@ -32,7 +31,6 @@ const orderService = new OrderService();
     const syncInterval = parseInt(process.env.SICREDI_SYNC_INTERVAL || '30');
 
     if (autoSyncEnabled) {
-      console.log(`✅ SICREDI: Sincronização automática habilitada (intervalo: ${syncInterval} minutos)`);
       
       // Iniciar sincronização automática
       sicrediSyncService.startAutoSync(syncInterval);
@@ -40,16 +38,13 @@ const orderService = new OrderService();
       // Executar primeira sincronização após 1 minuto
       setTimeout(async () => {
         try {
-          console.log('🔄 SICREDI: Executando primeira sincronização...');
-          const result = await sicrediSyncService.performSync();
-          console.log(`✅ SICREDI: Primeira sincronização concluída - ${result.totalProcessed} pagamentos processados`);
+          await sicrediSyncService.performSync();
         } catch (error) {
           console.error('❌ SICREDI: Erro na primeira sincronização:', error);
         }
       }, 60000); // 1 minuto
       
     } else {
-      console.log('⚠️ SICREDI: Sincronização automática desabilitada (SICREDI_AUTO_SYNC=false)');
     }
 
   } catch (error) {

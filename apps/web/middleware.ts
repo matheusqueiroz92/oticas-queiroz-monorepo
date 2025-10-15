@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 
 export function middleware(request: NextRequest) {
   const token = request.cookies.get("token");
+  const role = request.cookies.get("role");
   const { pathname } = request.nextUrl;
 
   // Verificar se é uma rota de redefinição de senha
@@ -53,6 +54,32 @@ export function middleware(request: NextRequest) {
       pathname
     );
     return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
+
+  // Rotas que requerem permissões específicas (admin ou employee)
+  const restrictedRoutes = [
+    "/cash-register/open",
+    "/cash-register/close",
+  ];
+
+  const isRestrictedRoute = restrictedRoutes.some((route) =>
+    pathname.startsWith(route)
+  );
+
+  // Se está tentando acessar uma rota restrita, verificar o role
+  if (isRestrictedRoute && token) {
+    const userRole = role?.value;
+    
+    // Se não for admin nem employee, redirecionar para dashboard
+    if (userRole !== "admin" && userRole !== "employee") {
+      console.log(
+        "Middleware: Redirecionando usuário sem permissão para dashboard:",
+        pathname,
+        "Role:",
+        userRole
+      );
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
   }
 
   return NextResponse.next();

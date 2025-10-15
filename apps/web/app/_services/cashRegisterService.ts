@@ -52,8 +52,12 @@ export async function checkOpenCashRegister(): Promise<CashRegisterCheckResult> 
 export async function openCashRegister(
   data: OpenCashRegisterDTO
 ): Promise<ICashRegister> {
-  const response = await api.post(API_ROUTES.CASH_REGISTERS.OPEN, data);
-  return response.data;
+  try {
+    const response = await api.post(API_ROUTES.CASH_REGISTERS.OPEN, data);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
 }
 
 /**

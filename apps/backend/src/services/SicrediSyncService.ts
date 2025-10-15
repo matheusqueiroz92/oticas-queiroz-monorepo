@@ -55,11 +55,8 @@ export class SicrediSyncService {
    */
   startAutoSync(intervalMinutes: number = 30): void {
     if (this.isRunning) {
-      console.log('⚠️ SICREDI Sync: Sincronização já está em execução');
       return;
     }
-
-    console.log(`🚀 SICREDI Sync: Iniciando sincronização automática a cada ${intervalMinutes} minutos`);
     
     this.isRunning = true;
     
@@ -95,7 +92,6 @@ export class SicrediSyncService {
    * Executa uma sincronização manual
    */
   async performSync(): Promise<SyncResult> {
-    console.log('🔄 SICREDI Sync: Iniciando sincronização...');
     
     const startTime = Date.now();
     const result: SyncResult = {
@@ -115,7 +111,6 @@ export class SicrediSyncService {
       // Buscar todos os pagamentos SICREDI pendentes
       const pendingPayments = await this.getPendingSicrediPayments();
       
-      console.log(`📋 SICREDI Sync: Encontrados ${pendingPayments.length} pagamentos para sincronizar`);
       
       result.totalProcessed = pendingPayments.length;
 
@@ -133,9 +128,6 @@ export class SicrediSyncService {
       }
 
       const duration = Date.now() - startTime;
-      console.log(`✅ SICREDI Sync: Sincronização concluída em ${duration}ms`);
-      console.log(`📊 SICREDI Sync: Resumo - Processados: ${result.totalProcessed}, Atualizados: ${result.updatedPayments}, Débitos: ${result.updatedDebts}`);
-      console.log(`📈 SICREDI Sync: Status - Pagos: ${result.summary.paid}, Vencidos: ${result.summary.overdue}, Cancelados: ${result.summary.cancelled}, Pendentes: ${result.summary.pending}`);
 
     } catch (error) {
       console.error('❌ SICREDI Sync: Erro geral na sincronização:', error);

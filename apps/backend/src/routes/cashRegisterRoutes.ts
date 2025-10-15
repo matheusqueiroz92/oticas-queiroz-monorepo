@@ -1,7 +1,14 @@
-import express from "express";
+import express, { Request, Response, NextFunction } from "express";
 import { CashRegisterController } from "../controllers/CashRegisterController";
 import { authenticate, authorize } from "../middlewares/authMiddleware";
 import { asyncHandler } from "../utils/asyncHandler";
+
+interface AuthRequest extends Request {
+  user?: {
+    id: string;
+    role: string;
+  };
+}
 
 const router = express.Router();
 const cashRegisterController = new CashRegisterController();
@@ -526,7 +533,7 @@ router.get(
  *         description: Não autorizado
  */
 router.get(
-  "/cash-registers/:id",
+  "/:id",
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler(
@@ -591,7 +598,7 @@ router.get(
  *         description: Não autorizado
  */
 router.get(
-  "/cash-registers/:id/summary",
+  "/:id/summary",
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler(
@@ -633,7 +640,7 @@ router.get(
  *         description: Acesso negado. Requer permissão de administrador.
  */
 router.post(
-  "/cash-registers/:id/delete",
+  "/:id/delete",
   authenticate,
   authorize(["admin"]),
   asyncHandler(
@@ -695,7 +702,7 @@ router.post(
  *         description: Não autorizado
  */
 router.get(
-  "/cash-registers/:id/export",
+  "/:id/export",
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler(

@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/sonner";
+import { AuthProvider } from "@/providers/AuthProvider";
 import type { ReactNode } from "react";
 
 // Configuração do cliente com opções globais
@@ -33,8 +34,10 @@ export default function Providers({ children }: { children: ReactNode }) {
         disableTransitionOnChange
         storageKey="oticas-queiroz-theme"
       >
-        {children}
-        <Toaster position="bottom-right" richColors />
+        <AuthProvider>
+          {children}
+          <Toaster position="bottom-right" richColors />
+        </AuthProvider>
       </ThemeProvider>
       {process.env.NODE_ENV === "development" && <ReactQueryDevtools />}
     </QueryClientProvider>

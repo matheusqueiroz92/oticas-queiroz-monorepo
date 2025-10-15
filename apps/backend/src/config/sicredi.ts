@@ -39,9 +39,6 @@ export const getSicrediConfig = (): SicrediConfig => {
       console.error(`   - SICREDI_${field.toUpperCase()}`);
     });
     console.error('A integração com SICREDI não funcionará sem estas configurações.');
-  } else {
-    console.log(`✅ Configuração SICREDI carregada para ambiente: ${environment}`);
-    console.log('🔑 SICREDI: Usando autenticação OAuth padrão');
   }
 
   return config;
@@ -56,8 +53,6 @@ export const initSicredi = (): void => {
       return;
     }
 
-    console.log(`🚀 SICREDI: Configurado para ambiente ${config.environment}`);
-    console.log(`📋 SICREDI: Cooperativa ${config.cooperativeCode}, Posto ${config.postCode}`);
   } catch (error) {
     console.error('❌ Erro ao inicializar SICREDI:', error);
   }

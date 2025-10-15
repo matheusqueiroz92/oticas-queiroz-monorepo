@@ -42,20 +42,9 @@ export function useCashRegister(enableQueries: boolean = true) {
     isLoading: isLoadingOpenCurrentRegister,
     refetch: refetchOpenCurrentCashRegister,
   } = useQuery({
-    queryKey: QUERY_KEYS.CASH_REGISTERS.OPEN,
+    queryKey: QUERY_KEYS.CASH_REGISTERS.CURRENT,
     queryFn: checkOpenCashRegister,
     refetchOnWindowFocus: false, // Desabilitado para evitar múltiplas chamadas
-    retry: false, // Não tentar novamente em caso de erro 404
-    enabled: enableQueries, // Desabilitar queries quando não necessário
-  });
-
-  const {
-    data: currentCashRegister,
-    isLoading: isLoadingCurrentCashRegister,
-    refetch: refetchCurrentCashRegister
-  } = useQuery({
-    queryKey: QUERY_KEYS.CASH_REGISTERS.CURRENT,
-    queryFn: getCurrentCashRegister,
     retry: false, // Não tentar novamente em caso de erro 404
     enabled: enableQueries, // Desabilitar queries quando não necessário
   });
@@ -278,6 +267,7 @@ export function useCashRegister(enableQueries: boolean = true) {
       refetchOnWindowFocus: false,
       enabled: enableQueries, // Desabilitar queries quando não necessário
     });
+
     
     useEffect(() => {
       const cashRegisterData = checkCashRegisterQuery.data;
@@ -457,9 +447,9 @@ export function useCashRegister(enableQueries: boolean = true) {
 
   return {
     cashRegisters,
-    currentCashRegister,
+    currentCashRegister: activeRegister,
     activeRegister,
-    isLoading: isLoading || isLoadingOpenCurrentRegister || isLoadingCurrentCashRegister,
+    isLoading: isLoading || isLoadingOpenCurrentRegister,
     error: error ? String(error) : null,
     currentPage,
     totalPages,
@@ -486,7 +476,7 @@ export function useCashRegister(enableQueries: boolean = true) {
     checkForOpenRegister,
     refetch,
     refetchOpenCurrentCashRegister,
-    refetchCurrentCashRegister,
+    refetchCurrentCashRegister: refetchOpenCurrentCashRegister,
     handlePrint
   };
 }

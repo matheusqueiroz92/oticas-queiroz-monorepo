@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext } from "react";
+import { createContext, useContext } from "react";
 
 export interface UserLogged {
   _id: string;
@@ -29,3 +29,14 @@ const initialContext: AuthContextData = {
 };
 
 export const AuthContext = createContext<AuthContextData>(initialContext);
+
+// Hook para usar o contexto de autenticação
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  
+  if (!context) {
+    throw new Error("useAuth deve ser usado dentro de um AuthProvider");
+  }
+  
+  return context;
+};

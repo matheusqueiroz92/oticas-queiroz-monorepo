@@ -35,15 +35,6 @@ export class UserController {
       const page = Number(req.query.page) || 1;
       const limit = Number(req.query.limit) || 10;
       
-      console.log("🔍 DEBUG - Backend recebeu:", {
-        role,
-        search,
-        cpf,
-        serviceOrder,
-        page,
-        limit,
-        allQuery: req.query
-      });
 
       // Validação de serviceOrder
       if (serviceOrder && typeof serviceOrder === 'string') {

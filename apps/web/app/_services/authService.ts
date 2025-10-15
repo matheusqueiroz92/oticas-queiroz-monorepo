@@ -47,58 +47,22 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Log detalhado do erro para diagnóstico
-    if (axios.isAxiosError(error)) {
-      const errorDetails = {
-        status: error.response?.status,
-        url: error.config?.url,
-        method: error.config?.method?.toUpperCase(),
-        data: error.response?.data,
-      };
+    // Tratamos erros 401 somente se não estivermos em páginas relacionadas à autenticação
+    if (axios.isAxiosError(error) && error.response?.status === 401 && typeof window !== "undefined") {
+      const currentPath = window.location.pathname;
+      const isAuthRelatedPage =
+        currentPath.includes("/auth/login") ||
+        currentPath.includes("/auth/forgot-password") ||
+        currentPath.includes("/auth/reset-password");
 
-      // Log específico para erros 404
-      if (error.response?.status === 404) {
-        // Não logar erros 404 esperados (como verificação de caixa aberto)
-        const url = error.config?.url || '';
-        const isExpected404 = url.includes('/cash-registers/current') || 
-                              url.includes('/api/cash-registers/current');
-        
-        if (!isExpected404) {
-          console.warn(`ERRO 404: URL não encontrada - ${url}`);
-          console.warn("Detalhes do erro 404:", errorDetails);
-        }
-      } else {
-        console.error(
-          `Erro ${error.response?.status || "de rede"} na API:`,
-          errorDetails
-        );
+      // Só redirecionamos em caso de 401 em páginas protegidas
+      if (!isAuthRelatedPage) {
+        // Limpar cookies de autenticação
+        clearAuthCookies();
+
+        // Redirecionar para página de login
+        window.location.href = "/auth/login";
       }
-
-      // Tratamos erros 401 somente se não estivermos em páginas relacionadas à autenticação
-      if (error.response?.status === 401 && typeof window !== "undefined") {
-        const currentPath = window.location.pathname;
-        const isAuthRelatedPage =
-          currentPath.includes("/auth/login") ||
-          currentPath.includes("/auth/forgot-password") ||
-          currentPath.includes("/auth/reset-password");
-
-        // Só redirecionamos em caso de 401 em páginas protegidas
-        if (!isAuthRelatedPage) {
-          console.log("Erro 401 detectado em página protegida, redirecionando");
-
-          // Limpar cookies de autenticação
-          clearAuthCookies();
-
-          // Redirecionar para página de login
-          window.location.href = "/auth/login";
-        } else {
-          console.log(
-            "Erro 401 em página de autenticação, sem redirecionamento"
-          );
-        }
-      }
-    } else {
-      console.error("Erro não-Axios na resposta:", error);
     }
 
     return Promise.reject(error);

@@ -48,30 +48,16 @@ class App {
 
     this.app.use(express.json());
 
-    // Log do caminho das imagens para depuração
+    // Configurar diretório de imagens
     const imagesPath = path.join(__dirname, "../../public/images");
-    console.log("Configuração de servidor: Diretório de imagens =", imagesPath);
     
     // Verificar se o diretório existe
     const fs = require('fs');
-    if (fs.existsSync(imagesPath)) {
-      console.log("✅ Diretório de imagens encontrado com sucesso");
-      // Listar os subdiretórios para confirmar a estrutura
-      try {
-        const subdirs = fs.readdirSync(imagesPath)
-          .filter((item: string) => fs.statSync(path.join(imagesPath, item)).isDirectory());
-        console.log("📁 Subdiretórios de imagens:", subdirs);
-      } catch (err) {
-        console.error("❌ Erro ao listar subdiretórios:", err);
-      }
-    } else {
-      console.error("❌ AVISO: Diretório de imagens não encontrado:", imagesPath);
-      // Tentar criar o diretório se não existir
+    if (!fs.existsSync(imagesPath)) {
       try {
         fs.mkdirSync(imagesPath, { recursive: true });
-        console.log("✅ Diretório de imagens criado com sucesso");
       } catch (err) {
-        console.error("❌ Erro ao criar diretório de imagens:", err);
+        console.error("Erro ao criar diretório de imagens:", err);
       }
     }
 

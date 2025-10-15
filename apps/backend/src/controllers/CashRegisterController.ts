@@ -28,6 +28,46 @@ export class CashRegisterController {
     this.cashRegisterService = new CashRegisterService();
   }
 
+  async openRegister(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      if (!req.user?.id) {
+        res.status(401).json({ message: "Usuário não autenticado" });
+        return;
+      }
+
+      if (!["admin", "employee"].includes(req.user.role || "")) {
+        res.status(403).json({ message: "Acesso não autorizado" });
+        return;
+      }
+
+      const validatedData = openRegisterSchema.parse({
+        openingBalance: req.body.openingBalance,
+        observations: req.body.observations,
+        openingDate: req.body.openingDate ? new Date(req.body.openingDate) : new Date(),
+      });
+
+      const register = await this.cashRegisterService.openRegister({
+        ...validatedData,
+        openedBy: req.user.id,
+      });
+
+      res.status(201).json(register);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({
+          message: "Dados inválidos",
+          errors: error.errors,
+        });
+        return;
+      }
+      if (error instanceof CashRegisterError) {
+        res.status(400).json({ message: error.message });
+        return;
+      }
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  }
+
   async getAllRegisters(req: Request, res: Response): Promise<void> {
     try {
       const page = Number(req.query.page) || 1;
@@ -59,46 +99,6 @@ export class CashRegisterController {
     }
   }
 
-  async openRegister(req: AuthRequest, res: Response): Promise<void> {
-    try {
-      if (!req.user?.id) {
-        res.status(401).json({ message: "Usuário não autenticado" });
-        return;
-      }
-
-      if (req.user.role !== "admin") {
-        res.status(403).json({ message: "Acesso não autorizado" });
-        return;
-      }
-
-      const validatedData = openRegisterSchema.parse({
-        ...req.body,
-        openingDate: req.body.openingDate
-          ? new Date(req.body.openingDate)
-          : new Date(),
-      });
-
-      const register = await this.cashRegisterService.openRegister({
-        ...validatedData,
-        openedBy: req.user.id,
-      });
-
-      res.status(201).json(register);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({
-          message: "Dados inválidos",
-          errors: error.errors,
-        });
-        return;
-      }
-      if (error instanceof CashRegisterError) {
-        res.status(400).json({ message: error.message });
-        return;
-      }
-      res.status(500).json({ message: "Erro interno do servidor" });
-    }
-  }
 
   async closeRegister(req: AuthRequest, res: Response): Promise<void> {
     try {
@@ -107,7 +107,7 @@ export class CashRegisterController {
         return;
       }
 
-      if (req.user.role !== "admin") {
+      if (!["admin", "employee"].includes(req.user.role || "")) {
         res.status(403).json({ message: "Acesso não autorizado" });
         return;
       }
@@ -220,7 +220,7 @@ export class CashRegisterController {
         return;
       }
 
-      if (req.user.role !== "admin") {
+      if (!["admin", "employee"].includes(req.user.role || "")) {
         res.status(403).json({ message: "Acesso não autorizado" });
         return;
       }
@@ -247,7 +247,7 @@ export class CashRegisterController {
         return;
       }
 
-      if (req.user.role !== "admin") {
+      if (!["admin", "employee"].includes(req.user.role || "")) {
         res.status(403).json({ message: "Acesso não autorizado" });
         return;
       }

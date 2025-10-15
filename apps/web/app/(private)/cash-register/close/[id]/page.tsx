@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/useToast";
 import { useCashRegister } from "@/hooks/cash-register/useCashRegister";
 import { CashRegisterCloseForm } from "@/components/cash-register/CashRegisterCloseForm";
@@ -12,6 +12,8 @@ import { createCloseCashRegisterForm } from "@/schemas/cash-register-schema";
 import { BackButton } from "@/components/ui/back-button";
 import { CloseCashRegisterMessageCard } from "@/components/cash-register/CloseCashRegisterMessageCard";
 import { ErrorCashRegisterCard } from "@/components/cash-register/ErrorCashRegisterCard";
+import { useAuth } from "@/contexts/authContext";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function CloseCashRegisterPage() {
   const { id } = useParams<{ id: string }>();
@@ -21,6 +23,17 @@ export default function CloseCashRegisterPage() {
   const [isClosingSuccessful, setIsClosingSuccessful] = useState(false);
 
   const { toast } = useToast();
+  const { user, isLoading: isLoadingAuth } = useAuth();
+
+  // Verificar se o usuário tem permissão
+  const hasPermission = user?.role === "admin" || user?.role === "employee";
+
+  // Redirecionar se não tiver permissão
+  useEffect(() => {
+    if (!isLoadingAuth && user && !hasPermission) {
+      router.push("/dashboard");
+    }
+  }, [isLoadingAuth, user, hasPermission, router]);
 
   const { navigateToCashRegister } = useCashRegister();
   
@@ -113,6 +126,31 @@ export default function CloseCashRegisterPage() {
       });
     }
   };
+
+  // Mostrar loading enquanto verifica permissões
+  if (isLoadingAuth) {
+    return (
+      <div className="flex flex-col justify-center items-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin mb-4" />
+        <p className="text-muted-foreground">Carregando...</p>
+      </div>
+    );
+  }
+
+  // Mostrar mensagem de erro se não tiver permissão
+  if (!hasPermission) {
+    return (
+      <div className="max-w-3xl mx-auto p-4 space-y-6">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Acesso Negado</AlertTitle>
+          <AlertDescription>
+            Você não tem permissão para fechar o caixa. Esta funcionalidade está disponível apenas para administradores e funcionários.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
   // Se está redirecionando após fechamento bem-sucedido, mostrar loading
   if (isClosingSuccessful) {

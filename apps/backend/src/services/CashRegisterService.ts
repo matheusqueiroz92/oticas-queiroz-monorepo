@@ -97,32 +97,36 @@ export class CashRegisterService {
   }
 
   async openRegister(data: OpenRegisterInput): Promise<ICashRegister> {
-    await this.validateNoOpenRegister();
-    this.validateBalance(data.openingBalance);
+    try {
+      await this.validateNoOpenRegister();
+      this.validateBalance(data.openingBalance);
 
-    const registerData: Omit<ICashRegister, "_id" | "createdAt" | "updatedAt"> = {
-      openingDate: new Date(),
-      openingBalance: data.openingBalance,
-      currentBalance: data.openingBalance,
-      status: "open",
-      sales: {
-        total: 0,
-        cash: 0,
-        credit: 0,
-        debit: 0,
-        pix: 0,
-        check: 0,
-      },
-      payments: {
-        received: 0,
-        made: 0,
-      },
-      openedBy: data.openedBy,
-      observations: data.observations,
-    };
+      const registerData: Omit<ICashRegister, "_id" | "createdAt" | "updatedAt"> = {
+        openingDate: new Date(),
+        openingBalance: data.openingBalance,
+        currentBalance: data.openingBalance,
+        status: "open",
+        sales: {
+          total: 0,
+          cash: 0,
+          credit: 0,
+          debit: 0,
+          pix: 0,
+          check: 0,
+        },
+        payments: {
+          received: 0,
+          made: 0,
+        },
+        openedBy: data.openedBy,
+        observations: data.observations,
+      };
 
-    const register = await this.cashRegisterRepository.create(registerData);
-    return register;
+      const register = await this.cashRegisterRepository.create(registerData);
+      return register;
+    } catch (error) {
+      throw error;
+    }
   }
 
   async closeRegister(data: CloseRegisterInput): Promise<ICashRegister> {

@@ -119,6 +119,18 @@ export function usePageTitle() {
             description: isClient ? "Visualize os detalhes do pagamento" : undefined
           };
         }
+        if (pathname.includes("/cash-register/open")) {
+          return { 
+            title: "Abrir Caixa",
+            description: isClient ? "Abra um novo caixa para operações" : undefined
+          };
+        }
+        if (pathname.includes("/cash-register/close/")) {
+          return { 
+            title: "Fechar Caixa",
+            description: isClient ? "Feche o caixa atual" : undefined
+          };
+        }
         if (pathname.includes("/cash-register/")) {
           return { 
             title: "Detalhes do caixa",

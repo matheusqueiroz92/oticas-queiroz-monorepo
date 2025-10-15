@@ -16,9 +16,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Carregar dados do usuário da API ou do cookie no carregamento inicial
   useEffect(() => {
+    
     const loadUserFromCookies = () => {
       try {
-        console.log("=== CARREGANDO USUÁRIO DOS COOKIES ===");
         
         // Tentar várias formas de obter os cookies
         const getCookieValue = (name: string) => {
@@ -45,12 +45,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const email = getCookieValue("email");
         const cpf = getCookieValue("cpf");
 
-        console.log("Cookies extraídos:");
-        console.log("- Role:", role);
-        console.log("- Name:", name);
-        console.log("- UserId:", userId);
-        console.log("- Email:", email);
-        console.log("- CPF:", cpf);
 
         // Verificar se temos pelo menos role e userId (mínimo necessário)
         if (role && userId) {
@@ -62,12 +56,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             cpf: cpf || "",
           };
           
-          console.log("✅ Usuário carregado dos cookies:", userData);
           setUser(userData);
           setIsLoading(false);
           return true;
         } else {
-          console.log("❌ Cookies insuficientes - role:", role, "userId:", userId);
+        
           setIsLoading(false);
           return false;
         }
@@ -81,22 +74,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const token = Cookies.get("token");
     
     if (token) {
-      console.log("Token encontrado, tentando carregar da API...");
-      // Tentar carregar o usuário da API
+      // Tentar carregar o usuário da API com timeout
+      const timeoutId = setTimeout(() => {
+        loadUserFromCookies();
+      }, 3000); // 3 segundos de timeout
+      
       api
         .get("/api/users/profile")
         .then((response) => {
-          console.log("✅ Usuário carregado da API:", response.data);
+          clearTimeout(timeoutId);
           setUser(response.data);
           setIsLoading(false);
         })
         .catch((error) => {
+          clearTimeout(timeoutId);
           console.error("❌ Erro ao carregar perfil da API:", error);
           // Se falhar, tenta carregar do cookie
           loadUserFromCookies();
         });
     } else {
-      console.log("Sem token, carregando dos cookies...");
       loadUserFromCookies();
     }
   }, []);
@@ -104,9 +100,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = useCallback(
     async (login: string, password: string): Promise<void> => {
       // Não implementamos aqui porque vamos usar a função direta no Login
-      console.log(
-        "AuthProvider.signIn não implementado - use loginWithCredentials diretamente"
-      );
     },
     []
   );

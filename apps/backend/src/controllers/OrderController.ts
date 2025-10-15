@@ -45,7 +45,6 @@ export class OrderController {
         delete requestBody.serviceNumber;
       }
       
-      console.log("Dados recebidos processados (sem serviceOrder):", requestBody);
 
       const validatedData = createOrderSchema.parse(requestBody);
 
@@ -96,7 +95,6 @@ export class OrderController {
         isDeleted: validatedData.isDeleted,
       };
 
-      console.log("Dados finais para criação (sem serviceOrder):", orderData);
 
       const order = await this.orderService.createOrder(orderData);
       res.status(201).json(order);
@@ -296,7 +294,6 @@ export class OrderController {
         delete requestBody.serviceOrder;
       }
 
-      console.log("Dados recebidos para atualização (processados):", requestBody);
   
       const validatedData = updateOrderSchema.parse(requestBody);
       
@@ -358,7 +355,6 @@ export class OrderController {
         ...(typeof validatedData.serviceOrder === 'string' ? { serviceOrder: validatedData.serviceOrder } : {}),
       };
 
-      console.log("Dados finais para atualização:", updateData);
       
       const order = await this.orderService.updateOrder(
         req.params.id, 
