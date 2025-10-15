@@ -447,6 +447,27 @@ npm run format            # Prettier
 - 📧 **Email**: matheus.queiroz@oticasqueiroz.com.br
 - 🏢 **Empresa**: Óticas Queiroz
 
+## 📚 Documentação
+
+### 📖 Para Usuários e Funcionários
+
+Documentação completa em linguagem simples, com exemplos práticos e ilustrações didáticas:
+
+- **[📖 Manual do Usuário](./docs/MANUAL_USUARIO.md)** - Guia completo do sistema
+- **[📦 Manual de Pedidos](./docs/MANUAL_PEDIDOS.md)** - Tudo sobre vendas e pedidos
+- **[💰 Manual de Caixa](./docs/MANUAL_CAIXA.md)** - Gestão do caixa diário
+- **[⚡ Guia Rápido](./docs/GUIA_RAPIDO.md)** - Referência rápida para consultas
+- **[❓ FAQ](./docs/FAQ.md)** - Perguntas frequentes
+- **[👣 Tutorial Passo a Passo](./docs/TUTORIAL_PASSO_A_PASSO.md)** - Aprenda com exemplos visuais
+
+### 🔧 Para Desenvolvedores
+
+- **[🚀 Guia de Desenvolvimento](./DESENVOLVIMENTO.md)** - Como iniciar o desenvolvimento
+- **[📊 README Backend](./apps/backend/README.md)** - Documentação técnica da API
+- **[📁 Documentação Técnica](./info/)** - Notas técnicas e correções
+
+---
+
 ## 📄 Licença e Propriedade
 
 Este software é **propriedade exclusiva da Óticas Queiroz** e seu uso é restrito aos termos estabelecidos em contrato. Todos os direitos reservados.
