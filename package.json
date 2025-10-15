@@ -2,7 +2,9 @@
   "name": "oticas-queiroz-monorepo",
   "private": true,
   "scripts": {
-    "dev": "turbo run dev",
+    "dev": "turbo run dev --filter=backend --filter=web",
+    "dev:backend": "turbo run dev --filter=backend",
+    "dev:web": "turbo run dev --filter=web",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "test": "turbo run test"
