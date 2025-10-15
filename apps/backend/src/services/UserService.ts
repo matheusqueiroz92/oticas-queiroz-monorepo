@@ -9,6 +9,7 @@ import {
 import { ErrorCode } from "../utils/errorCodes";
 import { ExportUtils } from "../utils/exportUtils";
 import type { ExportOptions } from "../utils/exportUtils";
+import bcrypt from "bcrypt";
 
 type CreateUserInput = Omit<IUser, "comparePassword">;
 type UpdateUserInput = Partial<CreateUserInput>;
@@ -348,7 +349,11 @@ export class UserService {
       );
     }
 
-    await this.updateUser(userId, { password: newPassword });
+    // Hashear a senha antes de atualizar
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Usar o método específico do repository que atualiza a senha hasheada
+    await this.userRepository.updatePassword(userId, hashedPassword);
   }
 
   // Métodos específicos do repository
