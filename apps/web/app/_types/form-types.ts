@@ -71,62 +71,7 @@ export const orderFormSchema = z.object({
     rim: z.number().default(0),
     vh: z.number().default(0),
     sh: z.number().default(0),
-  }),
-})
-.refine((data) => {
-  // Verificar se há lentes nos produtos
-  const hasLenses = data.products?.some((product: any) => 
-    product.productType === "lenses" || 
-    (product.name && product.name.toLowerCase().includes('lente'))
-  );
-  
-  // Se há lentes, a data de entrega é obrigatória e deve ser futura
-  if (hasLenses) {
-    if (!data.deliveryDate) {
-      return false;
-    }
-    
-    const deliveryDate = new Date(data.deliveryDate);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    deliveryDate.setHours(0, 0, 0, 0);
-    
-    return deliveryDate >= today;
-  }
-  
-  return true;
-}, {
-  message: "Pedidos com lentes exigem data de entrega futura",
-  path: ["deliveryDate"],
-})
-.refine((data) => {
-  // Verificar se há lentes nos produtos
-  const hasLenses = data.products?.some((product: any) => 
-    product.productType === "lenses" || 
-    (product.name && product.name.toLowerCase().includes('lente'))
-  );
-  
-  // Se há lentes, os dados de prescrição são obrigatórios
-  if (hasLenses) {
-    const { doctorName, clinicName, appointmentDate } = data.prescriptionData;
-    
-    if (!doctorName || doctorName.trim().length === 0) {
-      return false;
-    }
-    
-    if (!clinicName || clinicName.trim().length === 0) {
-      return false;
-    }
-    
-    if (!appointmentDate || appointmentDate.trim().length === 0) {
-      return false;
-    }
-  }
-  
-  return true;
-}, {
-  message: "Pedidos com lentes exigem dados de prescrição (médico, clínica e data da consulta)",
-  path: ["prescriptionData.doctorName"],
+  }).optional(),
 });
 
 export interface OrderFormValues {
@@ -150,29 +95,29 @@ export interface OrderFormValues {
   totalPrice: number;
   discount: number;
   finalPrice: number;
-  prescriptionData: {
+  prescriptionData?: {
     doctorName?: string;
     clinicName?: string;
     appointmentDate?: string;
-    rightEye: {
-      sph: string;
-      cyl: string;
-      axis: number;
-      pd: number;
+    rightEye?: {
+      sph?: string;
+      cyl?: string;
+      axis?: number;
+      pd?: number;
     };
-    leftEye: {
-      sph: string;
-      cyl: string;
-      axis: number;
-      pd: number;
+    leftEye?: {
+      sph?: string;
+      cyl?: string;
+      axis?: number;
+      pd?: number;
     };
-    nd: number;
-    oc: number;
-    addition: string;
-    bridge: number;
-    rim: number;
-    vh: number;
-    sh: number;
+    nd?: number;
+    oc?: number;
+    addition?: string;
+    bridge?: number;
+    rim?: number;
+    vh?: number;
+    sh?: number;
   };
   [key: string]: unknown;
 }

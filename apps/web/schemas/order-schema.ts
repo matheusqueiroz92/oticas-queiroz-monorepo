@@ -74,58 +74,7 @@ const orderFormSchema = z
       path: ["responsibleClientId"],
     }
   )
-  .refine(
-    (data) => {
-      // Verificar se há lentes nos produtos
-      const hasLenses = data.products?.some((product: any) => 
-        product.productType === "lenses" || 
-        (product.name && product.name.toLowerCase().includes('lente'))
-      );
-      
-      // Se há lentes, a data de entrega é obrigatória
-      if (hasLenses && !data.deliveryDate) {
-        return false;
-      }
-      
-      return true;
-    },
-    {
-      message: "Pedidos com lentes exigem data de entrega",
-      path: ["deliveryDate"],
-    }
-  )
-  .refine(
-    (data) => {
-      // Verificar se há lentes nos produtos
-      const hasLenses = data.products?.some((product: any) => 
-        product.productType === "lenses" || 
-        (product.name && product.name.toLowerCase().includes('lente'))
-      );
-      
-      // Se há lentes, os dados de prescrição são obrigatórios
-      if (hasLenses) {
-        const { doctorName, clinicName, appointmentDate } = data.prescriptionData;
-        
-        if (!doctorName || doctorName.trim().length === 0) {
-          return false;
-        }
-        
-        if (!clinicName || clinicName.trim().length === 0) {
-          return false;
-        }
-        
-        if (!appointmentDate || appointmentDate.trim().length === 0) {
-          return false;
-        }
-      }
-      
-      return true;
-    },
-    {
-      message: "Pedidos com lentes exigem dados de prescrição (médico, clínica e data da consulta)",
-      path: ["prescriptionData.doctorName"],
-    }
-  );
+;
 
 export type OrderFormData = z.infer<typeof orderFormSchema>;
 

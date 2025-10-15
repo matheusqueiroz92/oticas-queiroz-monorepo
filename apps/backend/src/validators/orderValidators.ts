@@ -148,56 +148,13 @@ export const createOrderSchema = baseOrderSchema
   )
   .refine(
     (data) => {
-      // Verificar se há lentes nos produtos
-      const hasLenses = data.products?.some((product: any) => 
-        product.productType === "lenses"
-      );
-      
-      // Se há lentes, data de entrega é obrigatória
-      if (hasLenses && !data.deliveryDate) {
-        return false;
-      }
-      
+      // Validação de data de entrega - apenas um aviso, não mais obrigatória
+      // A data de entrega é recomendada mas não obrigatória
       return true;
     },
     {
-      message: "Pedidos com lentes exigem data de entrega",
+      message: "Data de entrega recomendada",
       path: ["deliveryDate"],
-    }
-  )
-  .refine(
-    (data) => {
-      // Verificar se há lentes nos produtos
-      const hasLenses = data.products?.some((product: any) => 
-        product.productType === "lenses"
-      );
-      
-      // Se há lentes, dados de prescrição são obrigatórios
-      if (hasLenses) {
-        if (!data.prescriptionData) {
-          return false;
-        }
-        
-        const { doctorName, clinicName, appointmentDate } = data.prescriptionData;
-        
-        if (!doctorName || doctorName.trim().length < 2) {
-          return false;
-        }
-        
-        if (!clinicName || clinicName.trim().length < 2) {
-          return false;
-        }
-        
-        if (!appointmentDate) {
-          return false;
-        }
-      }
-      
-      return true;
-    },
-    {
-      message: "Pedidos com lentes exigem dados de prescrição (médico, clínica e data da consulta)",
-      path: ["prescriptionData"],
     }
   );
 
@@ -235,66 +192,13 @@ export const updateOrderSchema = baseOrderSchema
   )
   .refine(
     (data) => {
-      // Verificar se há produtos para validação
-      if (!data.products || data.products.length === 0) {
-        return true; // Não valida se não há produtos
-      }
-      
-      // Verificar se há lentes nos produtos
-      const hasLenses = data.products?.some((product: any) => 
-        product.productType === "lenses"
-      );
-      
-      // Se há lentes, data de entrega é obrigatória
-      if (hasLenses && !data.deliveryDate) {
-        return false;
-      }
-      
+      // Validação de data de entrega - apenas um aviso, não mais obrigatória
+      // A data de entrega é recomendada mas não obrigatória
       return true;
     },
     {
-      message: "Pedidos com lentes exigem data de entrega",
+      message: "Data de entrega recomendada",
       path: ["deliveryDate"],
-    }
-  )
-  .refine(
-    (data) => {
-      // Verificar se há produtos para validação
-      if (!data.products || data.products.length === 0) {
-        return true; // Não valida se não há produtos
-      }
-      
-      // Verificar se há lentes nos produtos
-      const hasLenses = data.products?.some((product: any) => 
-        product.productType === "lenses"
-      );
-      
-      // Se há lentes, dados de prescrição são obrigatórios
-      if (hasLenses) {
-        if (!data.prescriptionData) {
-          return false;
-        }
-        
-        const { doctorName, clinicName, appointmentDate } = data.prescriptionData;
-        
-        if (!doctorName || doctorName.trim().length < 2) {
-          return false;
-        }
-        
-        if (!clinicName || clinicName.trim().length < 2) {
-          return false;
-        }
-        
-        if (!appointmentDate) {
-          return false;
-        }
-      }
-      
-      return true;
-    },
-    {
-      message: "Pedidos com lentes exigem dados de prescrição (médico, clínica e data da consulta)",
-      path: ["prescriptionData"],
     }
   );
 
