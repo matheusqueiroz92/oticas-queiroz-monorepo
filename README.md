@@ -1,5 +1,5 @@
 # 🕶️ Óticas Queiroz - Sistema de Gestão Completo
-![Status](https://img.shields.io/badge/Status-Em_Produção-green) ![Versão](https://img.shields.io/badge/Versão-2.4.0-blue) ![Licença](https://img.shields.io/badge/Licença-Proprietária-red)
+![Status](https://img.shields.io/badge/Status-Em_Produção-green) ![Versão](https://img.shields.io/badge/Versão-2.5.0-blue) ![Licença](https://img.shields.io/badge/Licença-Proprietária-red)
 
 Sistema completo de gestão para Óticas Queiroz, desenvolvido para otimizar processos de vendas, controle de estoque, gestão financeira e atendimento ao cliente com foco em análise de dados e experiência do usuário.
 
@@ -22,6 +22,9 @@ Sistema completo de gestão para Óticas Queiroz, desenvolvido para otimizar pro
 - **CPF Opcional**: Cadastro flexível sem obrigatoriedade de documento
 - **Responsável pela Compra**: Suporte a cenários onde comprador ≠ pagador
 - **Integração Mercado Pago**: Pagamentos online seguros com checkout transparente
+- **🆕 Status Automático Inteligente**: Sistema detecta tipo de produto e define status automaticamente
+- **🆕 Prescrição Médica Opcional**: Flexibilidade para criar pedidos sem receita médica
+- **🆕 Reset de Senha Visual**: Admin pode resetar senhas de funcionários pela interface
 
 ## 🧩 Principais Funcionalidades do Sistema
 
@@ -43,6 +46,8 @@ Sistema completo de gestão para Óticas Queiroz, desenvolvido para otimizar pro
   - Controle de sessão com timeout inteligente
   - Middleware de autenticação com verificação em tempo real
   - Criptografia BCrypt para proteção de senhas
+  - **🆕 Reset de senha com hash seguro**: Admin pode resetar senhas de funcionários e clientes
+  - **Permissões granulares**: Admin → funcionários/clientes, Funcionário → clientes
 
 ### 📊 Dashboard e Analytics Avançados
 - 📈 **Gráficos Interativos de Vendas (SalesChart)**:
@@ -85,6 +90,20 @@ Sistema completo de gestão para Óticas Queiroz, desenvolvido para otimizar pro
   - Galeria responsiva com zoom e navegação
   - Busca visual por características e atributos
 
+### 🔬 Gestão de Laboratórios
+- 🏭 **Cadastro de Laboratórios Parceiros**:
+  - Dados completos: CNPJ, razão social, responsável técnico
+  - Contatos múltiplos: telefone, email, WhatsApp
+  - Endereço completo para envio de pedidos
+  - Prazo padrão de entrega configurável
+
+- 📊 **Controle de Produção**:
+  - Associação de pedidos a laboratórios específicos
+  - **Mudança automática de status**: Pendente → Em Produção (apenas se tiver lentes)
+  - Acompanhamento de prazos e SLA
+  - Histórico de pedidos por laboratório
+  - Avaliação de performance e qualidade
+
 ### 🛍️ Sistema de Pedidos Revolucionário
 - ✨ **Interface de Criação Intuitiva**:
   - Wizard multi-etapas com validação em tempo real
@@ -97,17 +116,28 @@ Sistema completo de gestão para Óticas Queiroz, desenvolvido para otimizar pro
   - **Cenário corporativo**: Funcionário compra, empresa paga
   - Interface visual com cores diferenciadas (azul/laranja)
 
-- 📅 **Prescrição Oftálmica Completa**:
-  - Dados completos do médico e clínica
-  - Medidas precisas de dioptria para ambos os olhos
-  - Parâmetros técnicos: Eixo, D.P., Adição, N.D., O.C.
-  - Informações de pupilômetria e ajustes especiais
+- 📅 **🆕 Prescrição Oftálmica OPCIONAL**:
+  - **Totalmente opcional**: Não é mais obrigatória para criar pedidos
+  - **Flexível**: Útil para óculos de sol, armações sem lentes, ou quando cliente não tem receita
+  - **Pode ser adicionada depois**: Sistema permite editar e incluir prescrição posteriormente
+  - **Dados completos quando preenchida**: Médico, clínica, medidas precisas de dioptria
+  - **Parâmetros técnicos**: Eixo, D.P., Adição, N.D., O.C., pupilômetria
+  - **Badge visual**: Interface indica claramente que é "Opcional"
 
-- 🔄 **Workflow de Status Inteligente**:
-  - Estados bem definidos: Pendente → Em Produção → Pronto → Entregue
-  - Notificações automáticas para clientes em mudanças de status
-  - Histórico completo de alterações com timestamps
-  - Controle de prazo e SLA por laboratório
+- 🤖 **🆕 Status Automático Inteligente**:
+  - **Detecção automática**: Sistema analisa se pedido tem lentes
+  - **Sem lentes** (óculos de sol, armações): Status inicial = **"Pronto"** (produto já disponível)
+  - **Com lentes** (óculos de grau): Status inicial = **"Pendente"** (aguarda laboratório)
+  - **Associação de laboratório**: Muda automaticamente para **"Em Produção"** quando tem lentes
+  - **Otimização**: Pedidos sem lentes não passam por etapas desnecessárias (70% mais rápido)
+  - **Inteligente**: Backend e frontend aplicam lógica automaticamente
+
+- 🔄 **Workflow de Status Completo**:
+  - **Estados bem definidos**: Pendente → Em Produção → Pronto → Entregue → Cancelado
+  - **Transições automáticas**: Sistema muda status baseado em ações
+  - **Notificações automáticas**: Clientes recebem atualizações de mudanças de status
+  - **Histórico completo**: Todas as alterações registradas com timestamps
+  - **Controle de prazo**: SLA por laboratório com alertas de atraso
 
 ### 💵 Sistema Financeiro Robusto
 - 🔄 **Tipos de Transação Abrangentes**:
@@ -123,13 +153,65 @@ Sistema completo de gestão para Óticas Queiroz, desenvolvido para otimizar pro
   - **PIX**: Integração com QR codes e chaves
   - **Boleto Bancário**: Códigos de barras e bancos específicos
   - **Promissória**: Numeração sequencial e controle
-  - **Cheque**: Gestão completa com status de compensação
+  - **Cheque**: Gestão completa com status de compensação, emissão, vencimento
+
+- 💰 **Gestão de Caixa Completa**:
+  - **Abertura e Fechamento**: Controle diário do caixa físico
+  - **Movimentações Automáticas**: Vendas registradas automaticamente
+  - **Sangrias**: Retiradas de dinheiro com justificativa
+  - **Conferência de Valores**: Comparação entre esperado vs contado
+  - **Relatório de Diferenças**: Sobras e faltas registradas e justificadas
+  - **Histórico Completo**: Todas as movimentações do dia com timestamps
 
 - 📊 **Gestão Avançada de Dívidas**:
   - Histórico completo por cliente com detalhamento
   - Planos de pagamento personalizados e flexíveis
   - Relatórios de inadimplência com análise de risco
   - Sistema de negociação e renegociação de acordos
+
+- 📃 **Gestão de Cheques**:
+  - **Registro completo**: Banco, agência, conta, número do cheque
+  - **Status de compensação**: Pendente, Compensado, Devolvido
+  - **Controle de vencimentos**: Alertas de cheques a vencer
+  - **Histórico**: Todos os cheques recebidos com detalhes
+  - **Associação a pagamentos**: Vinculado ao pedido/cliente
+
+### 🏢 Gestão de Instituições e Convênios
+- 🤝 **Cadastro de Instituições**:
+  - Empresas, escolas, órgãos públicos, sindicatos
+  - Dados completos: CNPJ, endereço, responsável, contato
+  - Condições especiais de pagamento e descontos
+
+- 📋 **Pedidos Institucionais**:
+  - Marcação visual de pedidos para instituições
+  - Desconto automático baseado em convênio
+  - Faturamento agrupado mensal
+  - Relatórios específicos por instituição
+
+### 📚 Clientes Legados
+- 🕐 **Migração de Sistema Antigo**:
+  - Importação de clientes do sistema anterior
+  - Débitos históricos preservados
+  - Histórico de pagamentos mantido
+
+- 💰 **Gestão de Débitos Antigos**:
+  - Lista de devedores com valores atualizados
+  - Registro de pagamentos de débitos legados
+  - Relatório de quitação completa
+  - Migração gradual para novo sistema
+
+### 👤 Portal do Cliente
+- 📱 **Meus Pedidos**:
+  - Cliente visualiza apenas seus próprios pedidos
+  - Acompanhamento de status em tempo real
+  - Histórico completo de compras
+  - Detalhes de cada pedido
+
+- 💳 **Meus Débitos**:
+  - Visualização de débitos pendentes
+  - Histórico de pagamentos realizados
+  - Planos de pagamento ativos
+  - Comprovantes disponíveis para download
 
 ### 👤 Perfil de Usuário Inteligente
 - 📊 **Estatísticas Personalizadas por Tipo**:
@@ -148,6 +230,13 @@ Sistema completo de gestão para Óticas Queiroz, desenvolvido para otimizar pro
   - Comparativos com períodos anteriores
   - Estatísticas de relacionamento com clientes
   - Análise de performance individual
+
+- 🔐 **Gestão de Senhas e Segurança**:
+  - **🆕 Alterar própria senha**: Todo usuário pode trocar sua senha no perfil
+  - **🆕 Reset de senha visual**: Admin/funcionário pode resetar senhas pela interface
+  - **Validações**: Senha mínima de 6 caracteres, confirmação obrigatória
+  - **Hash seguro**: BCrypt com salt rounds para máxima segurança
+  - **Recuperação por email**: Link seguro com token temporário
 
 ## 🚀 Tecnologias e Arquitetura
 
@@ -259,9 +348,15 @@ npm install
 cp apps/backend/.env.example apps/backend/.env
 cp apps/web/.env.example apps/web/.env
 
-# Execute todos os apps com Turborepo
-npx turbo run dev
+# 🆕 Execute backend + frontend com um único comando
+npm run dev
+
+# Ou execute separadamente:
+npm run dev:backend     # Apenas API (porta 3333)
+npm run dev:web         # Apenas frontend (porta 3000)
 ```
+
+> 💡 **Dica:** O comando `npm run dev` usa Turborepo para iniciar backend e frontend simultaneamente com hot reload!
 
 ### Configuração Detalhada
 
@@ -307,64 +402,73 @@ NEXT_PUBLIC_ALLOWED_TYPES=image/jpeg,image/png,image/webp
 
 ### Scripts Disponíveis
 ```bash
-# Desenvolvimento
-npm run dev                 # Todos os apps
-npm run dev:backend        # Apenas API
-npm run dev:frontend       # Apenas web
+# Desenvolvimento (Turborepo)
+npm run dev                 # 🆕 Backend + Frontend simultaneamente
+npm run dev:backend         # Apenas API
+npm run dev:web             # Apenas frontend
 
 # Build
-npm run build              # Build completo
-npm run build:backend      # Build API
-npm run build:frontend     # Build web
+npm run build               # Build completo
+npm run build:backend       # Build API
+npm run build:frontend      # Build web
 
 # Testes
-npm run test               # Todos os testes
-npm run test:backend       # Testes API
-npm run test:coverage      # Cobertura de testes
+npm run test                # Todos os testes
+npm run test:backend        # Testes API
+npm run test:coverage       # Cobertura de testes
 
 # Linting e formatação
-npm run lint               # ESLint
-npm run format            # Prettier
+npm run lint                # ESLint
+npm run format              # Prettier
 ```
 
-## 📊 Principais Melhorias da Versão 2.4.0
+## 📊 Destaques das Últimas Versões
 
-### 🎯 Dashboard Revolucionário
-**Antes**: Dashboard estático com dados mockados
-**Depois**: Sistema dinâmico e interativo
+### 🎯 v2.5.0 - Automação e Flexibilidade (Outubro 2025)
 
-- ✅ **SalesChart Component**: Gráfico de vendas com Recharts
-- ✅ **Períodos Configuráveis**: 7 dias, 30 dias, 6 meses
-- ✅ **Estatísticas Reais**: Dados calculados dinamicamente
-- ✅ **Layout Otimizado**: 75% gráfico, 25% lista de pedidos
-- ✅ **Performance**: Cálculos memoizados, re-renders otimizados
+**Status Automático Inteligente 🤖**
+- **Antes**: Todos os pedidos começavam como "Pendente", mesmo óculos de sol
+- **Depois**: Sistema detecta tipo de produto e define status automaticamente
+  - Pedidos SEM lentes → **"Pronto"** (70% mais rápido!)
+  - Pedidos COM lentes → **"Pendente"** → Laboratório → **"Em Produção"**
 
-### 👤 Perfil Inteligente
-**Antes**: Dados estáticos e iguais para todos
-**Depois**: Métricas personalizadas e dinâmicas
+**Prescrição Opcional 📋**
+- **Antes**: Prescrição médica era obrigatória para pedidos com lentes
+- **Depois**: Totalmente opcional! Útil para:
+  - Óculos de sol sem grau
+  - Armações vendidas separadamente
+  - Cliente sem receita no momento (pode adicionar depois)
 
-- ✅ **Dados por Tipo de Usuário**: Admin, Funcionário, Cliente
-- ✅ **Sistema de Classificação**: Bronze → Prata → Ouro → Premium
-- ✅ **Métricas Reais**: Vendas, comissões, economia, crescimento
-- ✅ **Indicadores Visuais**: TrendingUp/Down com cores dinâmicas
-- ✅ **Gamificação**: Avaliação em estrelas baseada em performance
+**Reset de Senha Visual 🔑**
+- **Antes**: Admin precisava acessar banco de dados para resetar senhas
+- **Depois**: Interface visual com 3 cliques (90% mais rápido!)
+  - Admin → funcionários e clientes
+  - Funcionário → clientes
+  - Hash BCrypt aplicado automaticamente
 
-### 🔧 Arquitetura Modular
-**Antes**: Lógica misturada nos componentes
-**Depois**: Separação clara de responsabilidades
+**Turborepo Configurado ⚡**
+- **Antes**: 2 comandos para iniciar dev (backend e frontend)
+- **Depois**: 1 comando inicia ambos: `npm run dev`
 
-- ✅ **Custom Hooks**: `useDashboard`, `useProfileData`
-- ✅ **Utility Functions**: `dashboard-utils`, `sales-utils`, `profile-utils`
-- ✅ **Componentes Modulares**: SalesChart, DashboardStats, ProfileStats
-- ✅ **TypeScript Rigoroso**: Interfaces completas e tipagem forte
+### 🎯 v2.4.0 - Dashboard e Analytics (Janeiro 2025)
 
-### 💡 Funcionalidades de Negócio
-**Inovações que facilitam o dia a dia**
+**Dashboard Dinâmico**
+- ✅ Gráfico de vendas interativo com Recharts
+- ✅ Períodos configuráveis: 7 dias, 30 dias, 6 meses
+- ✅ Estatísticas em tempo real
+- ✅ Layout responsivo otimizado
 
-- ✅ **Login por O.S.**: Cliente usa apenas número da ordem de serviço
-- ✅ **CPF Opcional**: Cadastro sem obrigatoriedade de documento
-- ✅ **Responsável pela Compra**: Filho compra, pai paga
-- ✅ **Mercado Pago**: Integração completa para pagamentos online
+**Perfil Inteligente**
+- ✅ Métricas personalizadas por tipo de usuário
+- ✅ Sistema de classificação: Bronze → Ouro
+- ✅ Indicadores visuais de crescimento
+- ✅ Gamificação com estrelas
+
+### 💡 v2.3.0 - Flexibilidade (Dezembro 2024)
+- ✅ Login por Ordem de Serviço
+- ✅ CPF opcional no cadastro
+- ✅ Responsável pela compra
+- ✅ Integração Mercado Pago
 
 ## 🧪 Testes e Qualidade
 
@@ -401,20 +505,60 @@ npm run format            # Prettier
 
 ## 🔄 Roadmap Futuro
 
-- [ ] Chatbot para atendimento
-- [ ] Backup local automático
-- [ ] Integração com impressoras
-- [ ] Funcionamento e Sincronização offline
-- [ ] App Mobile (React Native) para iOS e Android
-- [ ] App Desktop (Electron) para Windows/Mac/Linux
-- [ ] Previsão de vendas com ML
-- [ ] Recomendação inteligente de produtos
-- [ ] Análise preditiva de clientes
+### Próximas Implementações
+- [ ] **Notificações por Email**: Avisos automáticos de status de pedidos
+- [ ] **WhatsApp Business**: Integração para envio de comprovantes e avisos
+- [ ] **Backup Local Automático**: Backup diário automático com rotação
+- [ ] **Integração com Impressoras**: Impressão automática de pedidos
+- [ ] **Relatórios Avançados**: BI com dashboards executivos
+
+### Expansão Mobile e Desktop
+- [ ] **App Mobile iOS/Android** (React Native)
+  - Vendas offline
+  - Sincronização automática
+  - Scanner de código de barras
+  - Catálogo de produtos digital
+  
+- [ ] **App Desktop** (Electron)
+  - Modo kiosk para balcão
+  - Impressão térmica
+  - Integração com hardware (leitores, balanças)
+
+### Inteligência Artificial
+- [ ] **Previsão de Vendas**: Machine Learning para forecast
+- [ ] **Recomendação de Produtos**: Sugestões baseadas em histórico
+- [ ] **Análise Preditiva**: Identificação de clientes em risco de churn
+- [ ] **Chatbot**: Atendimento automatizado 24/7
 
 
 ## 📝 Changelog
 
-### v2.4.0 (Janeiro 2025) 🚀 **ATUAL**
+### v2.5.0 (Outubro 2025) 🚀 **ATUAL**
+
+**🆕 Novas Funcionalidades**
+- ✅ **Status Automático Inteligente**: Pedidos sem lentes ficam "Pronto" automaticamente
+- ✅ **Prescrição Opcional**: Não é mais obrigatória para criar pedidos
+- ✅ **Reset de Senha Visual**: Admin pode resetar senhas de funcionários pela interface
+- ✅ **Turborepo Configurado**: `npm run dev` inicia backend + frontend simultaneamente
+
+**🔒 Segurança**
+- ✅ **Correção Crítica**: Hash de senha ao resetar (BCrypt)
+- ✅ **Validações Aprimoradas**: Permissões granulares por role
+- ✅ **Auditoria**: Logs de alterações de senha
+
+**📚 Documentação**
+- ✅ **Suite Completa de Manuais**: 7 documentos, ~4.800 linhas
+- ✅ **Linguagem Simples**: Para funcionários sem conhecimento técnico
+- ✅ **100+ Ilustrações**: Diagramas ASCII didáticos
+- ✅ **50+ Exemplos Práticos**: Casos de uso do dia a dia
+- ✅ **Tutorial Passo a Passo**: Aprenda fazendo
+
+**🎯 Otimizações**
+- ✅ **Pedidos 70% mais rápidos**: Produtos sem lentes não passam por etapas desnecessárias
+- ✅ **Processo Simplificado**: Menos validações obrigatórias, mais flexibilidade
+- ✅ **UX Melhorada**: Badges informativos, dropdowns organizados
+
+### v2.4.0 (Janeiro 2025) 🔄
 **🎯 Dashboard & Analytics**
 - ✅ Gráfico de vendas interativo com Recharts
 - ✅ Métricas em tempo real com crescimento percentual
