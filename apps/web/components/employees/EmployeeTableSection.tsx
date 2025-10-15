@@ -1,18 +1,10 @@
 import { Button } from "@/components/ui/button";
-import { CardContent } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { PaginationItems } from "@/components/PaginationItems";
+import { UserTable } from "@/components/profile/UserTable";
 import { ErrorAlert } from "@/components/ErrorAlert";
-import { Loader2, UserX, Eye, Edit, Plus } from "lucide-react";
+import { ListPageContent } from "@/components/ui/list-page-header";
+import { Loader2, UserX, Plus } from "lucide-react";
+import { getEmployeeTableColumns } from "@/app/_utils/employee-table-config";
 import type { User } from "@/app/_types/user";
-import type { Column } from "@/app/_types/user";
 
 interface EmployeeTableSectionProps {
   employees: User[];
@@ -47,56 +39,11 @@ export function EmployeeTableSection({
   totalItems,
   limit,
 }: EmployeeTableSectionProps) {
-  const employeeColumns: Column[] = [
-    { key: "name", header: "Nome" },
-    { key: "email", header: "Email" },
-    {
-      key: "role",
-      header: "Função",
-      render: (employee) => employee.role === "admin" ? "Administrador" : "Funcionário",
-    },
-    {
-      key: "sales",
-      header: "Total de Vendas",
-      render: (employee) => employee.sales?.length || 0,
-    },
-    {
-      key: "totalSales",
-      header: "Valor Total",
-      render: (employee) => {
-        const salesCount = employee.sales?.length || 0;
-        const totalValue = salesCount * 450; // Valor médio simulado
-        return `R$ ${totalValue.toFixed(2)}`;
-      },
-    },
-    {
-      key: "actions",
-      header: "Ações",
-      render: (employee) => (
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onDetailsClick(employee._id)}
-          >
-            <Eye className="w-4 h-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onEditClick(employee)}
-          >
-            <Edit className="w-4 h-4" />
-          </Button>
-        </div>
-      ),
-    },
-  ];
-
   const showEmptyState = !isLoading && !error && employees.length === 0;
+  const columns = getEmployeeTableColumns();
 
   return (
-    <CardContent className="p-0">
+    <ListPageContent>
       {isLoading && (
         <div className="flex justify-center items-center py-12">
           <Loader2 className="h-8 w-8 animate-spin" />
@@ -119,14 +66,14 @@ export function EmployeeTableSection({
               : "Clique em 'Novo Funcionário' para adicionar um funcionário ao sistema."
             }
           </p>
-          {!search && activeFiltersCount === 0 && (
+          {(!search && activeFiltersCount === 0) && (
             <Button onClick={onNewEmployee}>
               <Plus className="w-4 h-4 mr-2" />
               Novo Funcionário
             </Button>
           )}
           {(search || activeFiltersCount > 0) && (
-            <Button variant="outline" onClick={onClearFilters}>
+            <Button onClick={onClearFilters} variant="outline">
               Limpar Filtros
             </Button>
           )}
@@ -135,42 +82,19 @@ export function EmployeeTableSection({
 
       {!isLoading && !error && employees.length > 0 && (
         <div className="overflow-hidden">
-          <Table>
-            <TableHeader className="bg-gray-100 dark:bg-slate-800/50">
-              <TableRow>
-                {employeeColumns.map((column) => (
-                  <TableHead key={column.key}>{column.header}</TableHead>
-                ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {employees.map((employee) => (
-                <TableRow key={employee._id}>
-                  {employeeColumns.map((column) => (
-                    <TableCell key={column.key}>
-                      {column.render
-                        ? column.render(employee)
-                        : String(employee[column.key as keyof typeof employee] || "")}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          
-          <div className="bg-gray-100 dark:bg-slate-800/50 w-full p-1">
-            {(totalItems ?? 0) > 10 && (
-              <PaginationItems
-                currentPage={currentPage}
-                totalPages={totalPages}
-                setCurrentPage={setCurrentPage}
-                totalItems={totalItems}
-                pageSize={limit}
-              />
-            )}
-          </div>
+          <UserTable
+            data={employees}
+            columns={columns}
+            onDetailsClick={onDetailsClick}
+            onEditClick={onEditClick}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            setCurrentPage={setCurrentPage}
+            totalItems={totalItems}
+            pageSize={limit}
+          />
         </div>
       )}
-    </CardContent>
+    </ListPageContent>
   );
 } 

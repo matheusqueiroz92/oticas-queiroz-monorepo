@@ -1,7 +1,5 @@
 ---
-description: 
-globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 Regras válidas para o frontend (pasta apps/web):
 - Considere sempre os componentes, bibliotecas e frameworks em suas versões mais atuais. Exemplo: React 19, Next.js 15, etc.
