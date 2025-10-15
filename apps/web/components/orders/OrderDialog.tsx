@@ -113,6 +113,25 @@ export const OrderDialog: React.FC<OrderDialogProps> = ({ open, onOpenChange, or
   
   const initialFormData = mode === "edit" ? transformOrderToFormData(order) : undefined;
   
+  // Função helper para verificar se há lentes nos produtos
+  const hasLensesInProducts = (products: any[]): boolean => {
+    return products?.some((product: any) => {
+      // Se for objeto com productType
+      if (product && typeof product === 'object' && 'productType' in product) {
+        return product.productType === 'lenses';
+      }
+      // Se for string ou ID, não podemos determinar aqui
+      return false;
+    }) || false;
+  };
+
+  // Função para determinar status inicial baseado nos produtos
+  const determineInitialStatus = (products: any[]): "pending" | "ready" => {
+    // Se há lentes, status inicial é "pending"
+    // Se não há lentes, status inicial é "ready"
+    return hasLensesInProducts(products) ? "pending" : "ready";
+  };
+  
   // Debug: Log dos dados transformados
   if (mode === "edit" && initialFormData) {
     console.log("=== DEBUG: Dados transformados para edição ===");
@@ -194,6 +213,17 @@ export const OrderDialog: React.FC<OrderDialogProps> = ({ open, onOpenChange, or
         throw new Error("Forma de pagamento é obrigatória");
       }
       
+      // Determinar status inicial baseado nos produtos (apenas para criação)
+      let orderStatus = data.status;
+      if (mode === "create" && (!orderStatus || orderStatus === "pending")) {
+        // Para produtos completos (com productType), usar a função
+        const fullProducts = productsData?.filter((p: any) => 
+          data.products?.includes(p._id)
+        ) || [];
+        orderStatus = determineInitialStatus(fullProducts);
+        console.log("Status determinado baseado em produtos:", orderStatus, "Há lentes:", hasLensesInProducts(fullProducts));
+      }
+      
       // Preparar dados para criação/edição do pedido
       const orderData = {
         ...data,
@@ -204,7 +234,7 @@ export const OrderDialog: React.FC<OrderDialogProps> = ({ open, onOpenChange, or
         totalPrice: Number(data.totalPrice) || 0,
         discount: Number(data.discount) || 0,
         finalPrice: Number(data.finalPrice) || Number(data.totalPrice) - Number(data.discount),
-        status: data.status || "pending",
+        status: orderStatus || "pending",
         paymentStatus: data.paymentStatus || "pending",
       };
       

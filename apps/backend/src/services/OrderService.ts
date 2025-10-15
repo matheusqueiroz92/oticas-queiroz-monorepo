@@ -54,6 +54,38 @@ export class OrderService {
   }
 
   /**
+   * Verifica se há lentes no pedido
+   * @param products Array de produtos
+   * @returns true se há lentes no pedido
+   */
+  private hasLenses(products: any[]): boolean {
+    return products.some(product => {
+      // Se for string ou ObjectId, não podemos verificar o tipo
+      if (typeof product === 'string' || product instanceof mongoose.Types.ObjectId) {
+        return false;
+      }
+      
+      // Se for objeto com productType
+      if (product && typeof product === 'object' && 'productType' in product) {
+        return product.productType === 'lenses';
+      }
+      
+      return false;
+    });
+  }
+
+  /**
+   * Determina o status inicial do pedido baseado nos produtos
+   * @param products Array de produtos
+   * @returns Status inicial do pedido
+   */
+  private determineInitialStatus(products: any[]): "pending" | "ready" {
+    // Se há lentes, status inicial é "pending"
+    // Se não há lentes, status inicial é "ready"
+    return this.hasLenses(products) ? "pending" : "ready";
+  }
+
+  /**
    * Cria um novo pedido
    * @param orderData Dados do pedido
    * @returns Pedido criado
@@ -62,6 +94,12 @@ export class OrderService {
     try {
       // Validar pedido
       await this.validationService.validateOrder(orderData);
+
+      // Determinar status inicial baseado nos produtos
+      // Se não houver status definido ou se for "pending", aplicar lógica
+      if (!orderData.status || orderData.status === "pending") {
+        orderData.status = this.determineInitialStatus(orderData.products);
+      }
 
       // Criar pedido
       const order = await this.orderRepository.create(orderData);
@@ -230,7 +268,15 @@ export class OrderService {
     // Validar permissões
     this.validationService.validateUpdatePermissions(userRole, order.status);
 
-    const updatedOrder = await this.orderRepository.update(id, { laboratoryId });
+    // Preparar dados de atualização
+    const updateData: Partial<IOrder> = { laboratoryId };
+
+    // Se estiver associando um laboratório E houver lentes no pedido, mudar status para "in_production"
+    if (laboratoryId && this.hasLenses(order.products)) {
+      updateData.status = "in_production";
+    }
+
+    const updatedOrder = await this.orderRepository.update(id, updateData);
     if (!updatedOrder) {
       throw new OrderError("Erro ao atualizar laboratório do pedido");
     }
