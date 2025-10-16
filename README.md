@@ -493,7 +493,7 @@ npm run format              # Prettier
 - **Servidor**: VPS Hostinger (AlmaLinux)
 - **Web Server**: NGINX
 - **Process Manager**: PM2
-- **Database**: MongoDB Atlas
+- **Database**: MongoDB
 - **Domain**: app.oticasqueiroz.com.br
 - **SSL**: Let's Encrypt
 
@@ -526,7 +526,6 @@ npm run format              # Prettier
 
 ### Inteligência Artificial
 - [ ] **Previsão de Vendas**: Machine Learning para forecast
-- [ ] **Recomendação de Produtos**: Sugestões baseadas em histórico
 - [ ] **Análise Preditiva**: Identificação de clientes em risco de churn
 - [ ] **Chatbot**: Atendimento automatizado 24/7
 
@@ -587,9 +586,9 @@ npm run format              # Prettier
 
 **Matheus Queiroz**
 - 🚀 **GitHub**: [@matheusqueiroz92](https://github.com/matheusqueiroz92)
-- 🔗 **LinkedIn**: [linkedin.com/in/matheusqueiroz92](https://linkedin.com/in/matheusqueiroz92)
-- 📧 **Email**: matheus.queiroz@oticasqueiroz.com.br
-- 🏢 **Empresa**: Óticas Queiroz
+- 🔗 **LinkedIn**: [linkedin.com/in/matheus-queiroz-dev-web](https://linkedin.com/in/matheus-queiroz-dev-web)
+- 📧 **Email**: [matheus_giga@hotmail.com](mailto:matheus_giga@hotmail.com)
+- 🌐 **Site**: [matheusqueiroz.dev.br](https://matheusqueiroz.dev.br)
 
 ## 📚 Documentação
 
