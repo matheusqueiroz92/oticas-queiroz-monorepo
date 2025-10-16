@@ -479,8 +479,10 @@ export class ReportService {
 
     const report = await this.reportModel.create(reportData);
 
-    // Executar geração de dados de forma assíncrona
-    setTimeout(() => this.generateReportData(report._id!), 100);
+    // Executar geração de dados de forma assíncrona (apenas fora de testes)
+    if (process.env.NODE_ENV !== 'test') {
+      setTimeout(() => this.generateReportData(report._id!), 100);
+    }
 
     return report;
   }
