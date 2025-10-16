@@ -136,14 +136,16 @@ class App {
     try {
       initSicredi();
       
-      // Iniciar sincronização automática após 5 segundos
-      setTimeout(async () => {
-        try {
-          await startSicrediSync();
-        } catch (error) {
-          console.warn("⚠️  SICREDI Sync: Não foi possível iniciar a sincronização:", error);
-        }
-      }, 5000);
+      // Iniciar sincronização automática após 5 segundos (apenas em produção)
+      if (process.env.NODE_ENV !== 'test') {
+        setTimeout(async () => {
+          try {
+            await startSicrediSync();
+          } catch (error) {
+            console.warn("⚠️  SICREDI Sync: Não foi possível iniciar a sincronização:", error);
+          }
+        }, 5000);
+      }
       
     } catch (error) {
       console.warn("⚠️  SICREDI: Não foi possível inicializar a integração:", error);
