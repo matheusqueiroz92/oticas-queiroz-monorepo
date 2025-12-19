@@ -6,7 +6,7 @@ import {
 import { Loader2, ChevronRight } from "lucide-react";
 import type { Customer } from "@/app/_types/customer";
 import type { Product } from "@/app/_types/product";
-import { OrderFormValues, orderFormSchema } from "@/app/_types/form-types";
+import { OrderFormValues, OrderFormSchemaValues, OrderFormReturn, orderFormSchema } from "@/app/_types/form-types";
 import OrderStepProgress from "@/components/orders/OrderStepProgress";
 import OrderClientProducts from "@/components/orders/OrderClientProducts";
 import OrderPrescription from "@/components/orders/OrderPrescription";
@@ -90,7 +90,7 @@ export function OrderForm({
 
   useEffect(() => setMounted(true), []);
 
-  const form = useForm<OrderFormValues>({
+  const form = useForm<OrderFormSchemaValues>({
     resolver: zodResolver(orderFormSchema),
     defaultValues: {
       employeeId: initialData?.employeeId || "",
@@ -328,6 +328,15 @@ export function OrderForm({
     return remainingAmount / installments;
   };
 
+  // Função para converter OrderFormSchemaValues para OrderFormValues
+  // Apenas ajusta a tipagem - os dados permanecem os mesmos
+  const convertToOrderFormValues = (data: OrderFormSchemaValues): OrderFormValues => {
+    // O spread operator preserva todos os dados
+    // A única diferença é que OrderFormValues permite rightEye/leftEye opcionais,
+    // mas no schema eles são obrigatórios quando prescriptionData existe
+    return data as unknown as OrderFormValues;
+  };
+
   const checkCanContinue = () => {
     let canContinue = true;
     
@@ -366,7 +375,7 @@ export function OrderForm({
       formElement.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
     } else {
       console.error("Form element not found");
-      onSubmit(form.getValues() as OrderFormValues);
+      onSubmit(convertToOrderFormValues(form.getValues()));
     }
   };
 
@@ -406,7 +415,7 @@ export function OrderForm({
       case 1:
         return (
           <OrderPrescription
-            form={form}
+            form={form as unknown as OrderFormReturn}
             selectedProducts={selectedProducts}
           />
         );
@@ -450,7 +459,7 @@ export function OrderForm({
               id="orderForm"
               onSubmit={(e) => {
                 e.preventDefault();
-                onSubmit(form.getValues() as OrderFormValues);
+                onSubmit(convertToOrderFormValues(form.getValues()));
               }}
               className="space-y-6"
             >
