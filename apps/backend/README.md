@@ -238,9 +238,16 @@ npm run test:auth -- --coverage
 
 ## 🔄 Changelog
 
-### [2025-02-22] - Melhorias de Segurança
+### [2025-02-22] - Melhorias de Segurança e Média Prioridade
 
-#### ✨ Novas Implementações
+#### ✨ Novas Implementações (Média Prioridade)
+- **Validação de variáveis de ambiente**: Schema Zod em `src/config/env.ts` valida MONGODB_URI, JWT_SECRET e PORT no bootstrap; falha rápida se inválidas
+- **Limite de paginação**: Parâmetro `limit` limitado a máximo 100 em user e order validators
+- **express.json limit**: Corpo das requisições limitado a 1MB
+- **ReportService testes**: Correção do contexto `this` com `.bind(reportService)` e guard para `reportModel`
+- **Índices MongoDB**: Novos índices em Order (clientId, employeeId, status, orderDate, createdAt), Payment (orderId, customerId, date, cashRegisterId) e Product (name, productType, stock)
+
+#### ✨ Implementações Anteriores (Alta Prioridade)
 - **Rate Limiting**: Proteção contra brute force em login e enumeração de emails
   - Login: 10 tentativas por 15 min por IP
   - Forgot-password, reset-password: 5 tentativas por 15 min por IP
@@ -253,12 +260,21 @@ npm run test:auth -- --coverage
 
 #### 📝 Arquivos Modificados/Criados
 - `src/config/rateLimit.ts` - Configuração dos limitadores
-- `src/app.ts` - Helmet, proteção condicional da rota debug
+- `src/config/env.ts` - Validação de variáveis de ambiente
+- `src/app.ts` - Helmet, express.json limit, proteção rota debug
+- `src/server.ts` - Import da validação env
 - `src/routes/authRoutes.ts` - Aplicação dos limitadores
+- `src/validators/userValidators.ts` - Limite max paginação
+- `src/validators/orderValidators.ts` - Limite max paginação
 - `src/repositories/implementations/BaseRepository.ts` - Whitelist de sort
-- `src/repositories/implementations/MongoOrderRepository.ts` - Whitelist de sort para pedidos
+- `src/repositories/implementations/MongoOrderRepository.ts` - Whitelist de sort
+- `src/services/ReportService.ts` - Guard reportModel
+- `src/__tests__/unit/services/ReportService.test.ts` - Bind contexto
+- `src/schemas/OrderSchema.ts` - Índices MongoDB
+- `src/schemas/PaymentSchema.ts` - Índices MongoDB
+- `src/schemas/ProductSchema.ts` - Índices MongoDB
 - `ecosystem.config.js` - PM2 com npm start
-- `package.json` - Dependências express-rate-limit, helmet
+- `package.json` - Dependências express-rate-limit, helmet, script build
 
 ### [2024-12-19] - Mudanças de CPF Opcional e Login por O.S.
 
@@ -340,6 +356,28 @@ pm2 start ecosystem.config.js
 - **MercadoPago**: Integração temporariamente desabilitada
 - **Testes de integração**: Alguns falhando por dados inválidos
 - **Cobertura**: Meta de 80% branches não atingida
+
+## ✅ Checklist de Melhorias Implementadas
+
+| Área | Status | Observação |
+|------|--------|------------|
+| Helmet | ✅ | Headers de segurança HTTP |
+| Rate limiting | ✅ | Rotas auth sensíveis |
+| Rota debug | ✅ | Protegida em produção |
+| Sort whitelist | ✅ | BaseRepository e MongoOrderRepository |
+| BCrypt | ✅ | Hash de senhas |
+| JWT | ✅ | Tokens com expiração |
+| CORS | ✅ | Origens configuradas |
+| Validação Zod | ✅ | Schemas validados |
+| PM2 | ✅ | npm start em produção |
+| Validação env | ✅ | Schema Zod no bootstrap |
+| express.json limit | ✅ | 1MB |
+| Paginação limit max | ✅ | Máximo 100 |
+| Índices MongoDB | ✅ | Order, Payment, Product |
+| ReportService testes | ✅ | Correção de contexto |
+| Swagger em prod | 🟡 | Disponível; considerar proteção futura |
+| bcrypt vs bcryptjs | 🟡 | Duplicidade; padronizar futuramente |
+| Refresh token | ⏳ | Pendente |
 
 ---
 

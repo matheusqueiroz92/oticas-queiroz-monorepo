@@ -72,7 +72,7 @@ export const userQuerySchema = z.object({
     .default(1),
   limit: z
     .union([z.string(), z.number()])
-    .transform(val => Number(val))
+    .transform((val) => Math.min(100, Math.max(1, Number(val) || 10)))
     .default(10),
   role: z.enum(["admin", "employee", "customer", "institution"]).optional(),
   search: z.string().optional(),

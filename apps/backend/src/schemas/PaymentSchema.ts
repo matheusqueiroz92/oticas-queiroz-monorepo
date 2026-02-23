@@ -215,7 +215,11 @@ paymentSchema.pre("validate", function (next) {
   next();
 });
 
-// Adicionar índice para consultas mais rápidas, excluindo documentos excluídos por padrão
+// Índices para otimizar consultas frequentes
 paymentSchema.index({ isDeleted: 1 });
+paymentSchema.index({ orderId: 1 });
+paymentSchema.index({ customerId: 1, date: -1 });
+paymentSchema.index({ date: -1, isDeleted: 1 });
+paymentSchema.index({ cashRegisterId: 1, date: -1 });
 
 export const Payment = model("Payment", paymentSchema);

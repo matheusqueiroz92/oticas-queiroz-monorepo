@@ -1,7 +1,5 @@
+import "./config/env"; // Valida variáveis de ambiente no bootstrap
 import app from "./app";
-import dotenv from "dotenv";
-
-dotenv.config();
 
 const PORT = process.env.PORT || 3333;
 const NODE_ENV = process.env.NODE_ENV || "development";

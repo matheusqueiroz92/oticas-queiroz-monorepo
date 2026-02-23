@@ -44,16 +44,21 @@ const productSchema = new Schema(
   {
     ...baseProductSchema,
     productType: {
-      type: String, 
+      type: String,
       required: true,
       enum: ["lenses", "clean_lenses", "prescription_frame", "sunglasses_frame"],
-    }
+    },
   },
-  { 
+  {
     timestamps: true,
-    discriminatorKey: 'productType' 
+    discriminatorKey: "productType",
   }
 );
+
+// Índices para otimizar consultas frequentes
+productSchema.index({ name: 1 });
+productSchema.index({ productType: 1 });
+productSchema.index({ stock: 1, productType: 1 });
 
 const ProductBase = model<ProductDocument, ProductModel>("Product", productSchema);
 

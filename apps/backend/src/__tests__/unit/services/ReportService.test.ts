@@ -728,8 +728,8 @@ describe("ReportService", () => {
       });
       mockReportModel.updateStatus.mockResolvedValue(true);
 
-      // Simular chamada do método privado
-      await (reportService as any).generateReportData("report123");
+      // Simular chamada do método privado (bind preserva contexto this)
+      await (reportService as any).generateReportData.bind(reportService)("report123");
 
       expect(Order.aggregate).toHaveBeenCalledTimes(2);
       expect(mockReportModel.updateStatus).toHaveBeenCalledWith("report123", "processing");
@@ -784,7 +784,7 @@ describe("ReportService", () => {
       });
       mockReportModel.updateStatus.mockResolvedValue(true);
 
-      const generateReportData = (reportService as any).generateReportData;
+      const generateReportData = (reportService as any).generateReportData.bind(reportService);
       await generateReportData("report123");
 
       expect(Product.aggregate).toHaveBeenCalled();
@@ -820,7 +820,7 @@ describe("ReportService", () => {
       });
       mockReportModel.updateStatus.mockResolvedValue(true);
 
-      const generateReportData = (reportService as any).generateReportData;
+      const generateReportData = (reportService as any).generateReportData.bind(reportService);
       await generateReportData("report123");
 
       expect(mockReportModel.updateStatus).toHaveBeenCalledWith(
@@ -841,7 +841,7 @@ describe("ReportService", () => {
       });
       mockReportModel.updateStatus.mockResolvedValue(true);
 
-      const generateReportData = (reportService as any).generateReportData;
+      const generateReportData = (reportService as any).generateReportData.bind(reportService);
       await generateReportData("report123");
 
       expect(mockReportModel.updateStatus).toHaveBeenCalledWith(
@@ -855,7 +855,7 @@ describe("ReportService", () => {
     it("deve ignorar se relatório não existir", async () => {
       mockReportModel.findById.mockResolvedValue(null);
 
-      const generateReportData = (reportService as any).generateReportData;
+      const generateReportData = (reportService as any).generateReportData.bind(reportService);
       await generateReportData("nonexistent");
 
       expect(mockReportModel.updateStatus).not.toHaveBeenCalled();
@@ -877,7 +877,7 @@ describe("ReportService", () => {
       const cacheKey = `sales_${JSON.stringify(mockReport.filters)}`;
       cache.set(cacheKey, cachedData);
 
-      const generateReportData = (reportService as any).generateReportData;
+      const generateReportData = (reportService as any).generateReportData.bind(reportService);
       await generateReportData("report123");
 
       expect(mockReportModel.updateStatus).toHaveBeenCalledWith(
@@ -906,7 +906,7 @@ describe("ReportService", () => {
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([]);
 
-      const generateReportData = (reportService as any).generateReportData;
+      const generateReportData = (reportService as any).generateReportData.bind(reportService);
       await generateReportData("report123");
 
       expect(cache.size).toBeLessThanOrEqual(100);
@@ -931,7 +931,7 @@ describe("ReportService", () => {
         status: "pending",
       });
 
-      const generateReportData = (reportService as any).generateReportData;
+      const generateReportData = (reportService as any).generateReportData.bind(reportService);
       await generateReportData("report123");
 
       expect(mockReportModel.updateStatus).toHaveBeenCalledWith(
