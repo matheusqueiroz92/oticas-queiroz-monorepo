@@ -1,4 +1,5 @@
 import express from "express";
+import helmet from "helmet";
 import { setupSwagger } from "./config/swagger";
 import { errorMiddleware } from "./middlewares/errorMiddleware";
 import authRoutes from "./routes/authRoutes";
@@ -35,7 +36,14 @@ class App {
   }
 
   private config(): void {
-    const allowedOrigins = process.env.NODE_ENV === "production" 
+    // Headers de segurança (CSP desabilitado para compatibilidade com Swagger UI)
+    this.app.use(
+      helmet({
+        contentSecurityPolicy: false,
+      })
+    );
+
+    const allowedOrigins = process.env.NODE_ENV === "production"
       ? ["https://app.oticasqueiroz.com.br", "https://app.oticasqueiroz.com.br/api/api-docs"]
       : ["http://localhost:3000"];
 

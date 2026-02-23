@@ -4,7 +4,7 @@ module.exports = {
       name: "oticas-queiroz-backend",
       cwd: "/var/www/app.oticasqueiroz.com.br/oticas-queiroz-monorepo/apps/backend",
       script: "npm",
-      args: "run dev",
+      args: "start",
       instances: 1,
       autorestart: true,
       watch: false,
