@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node dist/server.js",
+    "build": "tsc",
     "dev": "nodemon src/server.ts",
     "test": "jest",
     "test:auth-user": "jest \"(User|Auth)\" --detectOpenHandles --forceExit",
@@ -78,6 +79,7 @@
     "exceljs": "^4.4.0",
     "express": "^4.21.2",
     "express-rate-limit": "^8.2.1",
+    "helmet": "^8.1.0",
     "jest": "^29.7.0",
     "json2csv": "^6.0.0-alpha.2",
     "jsonwebtoken": "^9.0.2",

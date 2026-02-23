@@ -80,18 +80,22 @@ export abstract class BaseRepository<T, CreateDTO = Omit<T, '_id'>>
       query.isDeleted = { $ne: true };
     }
 
-    // Adicionar opções de ordenação se fornecidas
+    // Adicionar opções de ordenação se fornecidas (com whitelist para evitar NoSQL injection)
     if (sortOptions) {
       // sortOptions já está no formato correto para o Mongoose
-    } else if (filters.sort) {
-      // Manter compatibilidade com sistema de ordenação existente
-      const sortField = filters.sort.startsWith('-') 
-        ? filters.sort.substring(1) 
+    } else if (filters.sort && typeof filters.sort === "string") {
+      const sortField = filters.sort.startsWith("-")
+        ? filters.sort.substring(1)
         : filters.sort;
-      const sortOrder = filters.sort.startsWith('-') ? -1 : 1;
-      sortOptions = { [sortField]: sortOrder };
+      const sortOrder = filters.sort.startsWith("-") ? -1 : 1;
+      const allowedFields = this.getAllowedSortFields();
+      const safeField =
+        /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(sortField) &&
+        allowedFields.includes(sortField)
+          ? sortField
+          : "createdAt";
+      sortOptions = { [safeField]: sortOrder };
     } else {
-      // Ordenação padrão
       sortOptions = { createdAt: -1 };
     }
 
@@ -219,6 +223,14 @@ export abstract class BaseRepository<T, CreateDTO = Omit<T, '_id'>>
       console.error('Erro ao contar documentos:', error);
       throw error;
     }
+  }
+
+  /**
+   * Campos permitidos para ordenação (whitelist - evita NoSQL injection).
+   * Sobrescreva em classes filhas para campos específicos do modelo.
+   */
+  protected getAllowedSortFields(): string[] {
+    return ["createdAt", "updatedAt", "_id", "name"];
   }
 
   /**

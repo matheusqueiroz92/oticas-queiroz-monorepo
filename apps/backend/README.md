@@ -13,7 +13,7 @@ Sistema de gestão completo para ótica, desenvolvido com Node.js, Express.js, T
 - **Banco de Dados**: MongoDB com Mongoose
 - **Autenticação**: JWT + BCrypt
 - **Validação**: Zod
-- **Segurança**: express-rate-limit (proteção contra brute force)
+- **Segurança**: Helmet (headers HTTP), express-rate-limit (proteção contra brute force)
 - **Testes**: Jest + Supertest
 - **Documentação**: Swagger
 - **Upload**: Multer
@@ -143,6 +143,13 @@ npm test
 - **Middleware de autenticação**: Proteção de rotas
 - **Roles**: Admin, employee, client
 
+### Helmet (Headers de Segurança)
+- X-Content-Type-Options: nosniff
+- X-Frame-Options: SAMEORIGIN
+- X-XSS-Protection
+- HSTS (em produção via proxy)
+- Content-Security-Policy desabilitada para compatibilidade com Swagger UI
+
 ### Validação
 - **Zod**: Validação de schemas
 - **Sanitização**: Limpeza de dados de entrada
@@ -238,12 +245,20 @@ npm run test:auth -- --coverage
   - Login: 10 tentativas por 15 min por IP
   - Forgot-password, reset-password: 5 tentativas por 15 min por IP
 - **Rota de Debug Protegida**: `/api/debug/images-path` disponível apenas em dev/test; em produção retorna 404
+- **Helmet**: Headers de segurança HTTP (X-Content-Type-Options, X-Frame-Options, etc.)
+- **Sort Whitelist**: Validação do parâmetro `sort` em queries para evitar NoSQL injection
+  - BaseRepository: whitelist padrão (createdAt, updatedAt, _id, name)
+  - MongoOrderRepository: campos específicos de pedidos
+- **PM2 Produção**: Corrigido para usar `npm start` em vez de `npm run dev` no ecosystem.config.js
 
 #### 📝 Arquivos Modificados/Criados
 - `src/config/rateLimit.ts` - Configuração dos limitadores
-- `src/app.ts` - Proteção condicional da rota debug
+- `src/app.ts` - Helmet, proteção condicional da rota debug
 - `src/routes/authRoutes.ts` - Aplicação dos limitadores
-- `package.json` - Dependência express-rate-limit
+- `src/repositories/implementations/BaseRepository.ts` - Whitelist de sort
+- `src/repositories/implementations/MongoOrderRepository.ts` - Whitelist de sort para pedidos
+- `ecosystem.config.js` - PM2 com npm start
+- `package.json` - Dependências express-rate-limit, helmet
 
 ### [2024-12-19] - Mudanças de CPF Opcional e Login por O.S.
 
@@ -276,13 +291,13 @@ npm run test:auth -- --coverage
 
 ### Configuração
 ```bash
-# Build para produção
+# Build para produção (executado pelo deploy via npx turbo run build)
 npm run build
 
-# Iniciar servidor
+# Iniciar servidor (usado pelo PM2 em produção)
 npm start
 
-# PM2 (recomendado)
+# PM2 (recomendado) - usa npm start para rodar node dist/server.js
 pm2 start ecosystem.config.js
 ```
 
