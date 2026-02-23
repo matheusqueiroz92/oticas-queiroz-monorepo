@@ -4,6 +4,11 @@ import { authenticate, authorize } from "../middlewares/authMiddleware";
 import { asyncHandler } from "../utils/asyncHandler";
 import { uploadUserImage } from "../config/multerConfig";
 import { PasswordResetController } from "../controllers/PasswordResetController";
+import {
+  authLoginLimiter,
+  authForgotPasswordLimiter,
+  authResetPasswordLimiter,
+} from "../config/rateLimit";
 
 const router = express.Router();
 
@@ -136,7 +141,11 @@ const passwordResetController = new PasswordResetController();
  *       500:
  *         description: Erro interno do servidor
  */
-router.post("/login", asyncHandler(authController.login.bind(authController)));
+router.post(
+  "/login",
+  authLoginLimiter,
+  asyncHandler(authController.login.bind(authController))
+);
 
 /**
  * @swagger
@@ -253,6 +262,7 @@ router.post(
  */
 router.post(
   "/forgot-password",
+  authForgotPasswordLimiter,
   asyncHandler(
     passwordResetController.requestReset.bind(passwordResetController)
   )
@@ -301,6 +311,7 @@ router.post(
  */
 router.post(
   "/reset-password",
+  authResetPasswordLimiter,
   asyncHandler(
     passwordResetController.resetPassword.bind(passwordResetController)
   )
@@ -366,6 +377,7 @@ router.post(
  */
 router.get(
   "/validate-reset-token/:token",
+  authResetPasswordLimiter,
   asyncHandler(
     passwordResetController.validateToken.bind(passwordResetController)
   )

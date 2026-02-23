@@ -85,46 +85,45 @@ class App {
     this.app.use("/api/reports", reportRoutes);
     this.app.use("/api/sicredi", sicrediRoutes);
     this.app.use("/api/sicredi-sync", sicrediSyncRoutes);
-    
-    // Adicione a rota de diagnóstico aqui
-    this.app.get("/api/debug/images-path", (_req, res) => {
-      const fs = require('fs');
-      const imagesPath = path.join(__dirname, "../../public/images");
-      
-      try {
-        // Verificar se o diretório existe
-        const exists = fs.existsSync(imagesPath);
-        
-        // Se existir, listar arquivos e subdiretórios
-        let files = [];
-        let subdirectories = [];
-        
-        if (exists) {
-          files = fs.readdirSync(imagesPath)
-            .filter((item: string) => !fs.statSync(path.join(imagesPath, item)).isDirectory())
-            .slice(0, 10); // Limitamos a 10 arquivos para não sobrecarregar
-            
-          subdirectories = fs.readdirSync(imagesPath)
-            .filter((item: string) => fs.statSync(path.join(imagesPath, item)).isDirectory());
+
+    // Rota de diagnóstico: disponível apenas em desenvolvimento/teste (segurança)
+    if (process.env.NODE_ENV !== "production") {
+      this.app.get("/api/debug/images-path", (req, res) => {
+        const fs = require("fs");
+        const imagesPath = path.join(__dirname, "../../public/images");
+
+        try {
+          const exists = fs.existsSync(imagesPath);
+          let files: string[] = [];
+          let subdirectories: string[] = [];
+
+          if (exists) {
+            files = fs
+              .readdirSync(imagesPath)
+              .filter((item: string) => !fs.statSync(path.join(imagesPath, item)).isDirectory())
+              .slice(0, 10);
+            subdirectories = fs
+              .readdirSync(imagesPath)
+              .filter((item: string) => fs.statSync(path.join(imagesPath, item)).isDirectory());
+          }
+
+          res.status(200).json({
+            path: imagesPath,
+            exists,
+            files,
+            subdirectories,
+            env: process.env.NODE_ENV,
+            serverBaseUrl: process.env.API_URL || "não definido",
+          });
+        } catch (error) {
+          res.status(500).json({
+            path: imagesPath,
+            exists: false,
+            error: error instanceof Error ? error.message : "Unknown error",
+          });
         }
-        
-        res.status(200).json({
-          path: imagesPath,
-          exists,
-          files,
-          subdirectories,
-          env: process.env.NODE_ENV,
-          serverBaseUrl: process.env.API_URL || 'não definido',
-        });
-      } catch (error) {
-        res.status(500).json({
-          path: imagesPath,
-          exists: false,
-          error: error instanceof Error ? error.message : "Unknown error",
-          stack: error instanceof Error ? error.stack : "Stack not available"
-        });
-      }
-    });
+      });
+    }
   }
 
   private database(): void {

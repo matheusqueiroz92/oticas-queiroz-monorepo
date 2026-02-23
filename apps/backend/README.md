@@ -13,6 +13,7 @@ Sistema de gestão completo para ótica, desenvolvido com Node.js, Express.js, T
 - **Banco de Dados**: MongoDB com Mongoose
 - **Autenticação**: JWT + BCrypt
 - **Validação**: Zod
+- **Segurança**: express-rate-limit (proteção contra brute force)
 - **Testes**: Jest + Supertest
 - **Documentação**: Swagger
 - **Upload**: Multer
@@ -145,8 +146,24 @@ npm test
 ### Validação
 - **Zod**: Validação de schemas
 - **Sanitização**: Limpeza de dados de entrada
-- **Rate limiting**: Proteção contra ataques
 - **CORS**: Configuração de origens permitidas
+
+### Rate Limiting (express-rate-limit)
+Proteção contra brute force e abuso em rotas sensíveis:
+
+| Rota | Limite | Janela |
+|------|--------|--------|
+| `POST /api/auth/login` | 10 req | 15 min |
+| `POST /api/auth/forgot-password` | 5 req | 15 min |
+| `POST /api/auth/reset-password` | 5 req | 15 min |
+| `GET /api/auth/validate-reset-token/:token` | 5 req | 15 min |
+
+- Desativado automaticamente em ambiente de teste
+- Resposta 429 com formato padronizado da API
+- Configuração em `src/config/rateLimit.ts`
+
+### Rotas de Diagnóstico
+- **`GET /api/debug/images-path`**: Disponível apenas em `development` e `test`. Em produção retorna 404 para evitar exposição de informações do servidor
 
 ## 📝 API Endpoints
 
@@ -213,6 +230,20 @@ npm run test:auth -- --coverage
 - **Cobertura**: Meta de 80%+ em branches
 
 ## 🔄 Changelog
+
+### [2025-02-22] - Melhorias de Segurança
+
+#### ✨ Novas Implementações
+- **Rate Limiting**: Proteção contra brute force em login e enumeração de emails
+  - Login: 10 tentativas por 15 min por IP
+  - Forgot-password, reset-password: 5 tentativas por 15 min por IP
+- **Rota de Debug Protegida**: `/api/debug/images-path` disponível apenas em dev/test; em produção retorna 404
+
+#### 📝 Arquivos Modificados/Criados
+- `src/config/rateLimit.ts` - Configuração dos limitadores
+- `src/app.ts` - Proteção condicional da rota debug
+- `src/routes/authRoutes.ts` - Aplicação dos limitadores
+- `package.json` - Dependência express-rate-limit
 
 ### [2024-12-19] - Mudanças de CPF Opcional e Login por O.S.
 
