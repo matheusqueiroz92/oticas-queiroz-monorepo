@@ -2,6 +2,7 @@ import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 import { getRepositories } from "../repositories/RepositoryFactory";
 import type { IUserRepository } from "../repositories/interfaces/IUserRepository";
+import { logger } from "../config/logger";
 
 dotenv.config();
 
@@ -14,8 +15,7 @@ export class EmailService {
     const pass = process.env.EMAIL_PASSWORD;
 
     if (!user || !pass) {
-      console.error("ERRO: Credenciais de email não configuradas!");
-      console.error("Defina EMAIL_USER e EMAIL_PASSWORD no arquivo .env");
+      logger.error("Credenciais de email não configuradas - defina EMAIL_USER e EMAIL_PASSWORD");
     }
 
     this.transporter = nodemailer.createTransport({
@@ -26,7 +26,7 @@ export class EmailService {
         user,
         pass,
       },
-      debug: true,
+      debug: process.env.NODE_ENV !== "production",
     });
 
     const { userRepository } = getRepositories();
@@ -98,7 +98,7 @@ export class EmailService {
         `,
       });
     } catch (error) {
-      console.error("Erro ao enviar email:", error);
+      logger.error("Erro ao enviar email", { error });
       throw error;
     }
   }
@@ -155,7 +155,7 @@ export class EmailService {
         `,
       });
     } catch (error) {
-      console.error("Erro ao enviar email de boas-vindas:", error);
+      logger.error("Erro ao enviar email de boas-vindas", { error });
       throw error;
     }
   }
@@ -215,7 +215,7 @@ export class EmailService {
         `,
       });
     } catch (error) {
-      console.error("Erro ao enviar email de status do pedido:", error);
+      logger.error("Erro ao enviar email de status do pedido", { error });
       throw error;
     }
   }
@@ -267,7 +267,7 @@ export class EmailService {
         `,
       });
     } catch (error) {
-      console.error("Erro ao enviar lembrete de pagamento:", error);
+      logger.error("Erro ao enviar lembrete de pagamento", { error });
       throw error;
     }
   }
@@ -278,7 +278,7 @@ export class EmailService {
       await this.transporter.verify();
       return true;
     } catch (error) {
-      console.error("Erro na conexão de email:", error);
+      logger.error("Erro na conexão de email", { error });
       return false;
     }
   }

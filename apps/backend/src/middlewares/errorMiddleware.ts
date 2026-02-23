@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import { AppError } from "../utils/AppError";
+import { logger } from "../config/logger";
 import { ErrorCode } from "../utils/errorCodes";
 import { ZodError } from "zod";
 import type { MongoServerError } from "mongodb";
@@ -18,7 +19,7 @@ export const errorMiddleware = (
   res: Response,
   _next: NextFunction
 ): void => {
-  console.error(`[Error] ${error.name}: ${error.message}`);
+  logger.error(`${error.name}: ${error.message}`, { stack: error.stack });
 
   if (error instanceof AppError) {
     const responseObj: ErrorResponse = {

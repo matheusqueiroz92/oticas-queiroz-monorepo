@@ -3,6 +3,7 @@ import { UserService } from './UserService';
 import { LegacyClientService } from './LegacyClientService';
 import { OrderService } from './OrderService';
 import { IPayment } from '../interfaces/IPayment';
+import { logger } from '../config/logger';
 import { IUser } from '../interfaces/IUser';
 import { ILegacyClient } from '../interfaces/ILegacyClient';
 
@@ -60,12 +61,17 @@ export class SicrediSyncService {
     
     this.isRunning = true;
     
-    // Executar primeira sincronização imediatamente
-    this.performSync();
+    // NÃO executar primeira sincronização imediatamente aqui
+    // A primeira sincronização será executada pelo startSicrediSync.ts após delay
+    // Isso evita tentar fazer queries antes da conexão MongoDB estar pronta
     
     // Configurar intervalo para próximas sincronizações
     this.syncInterval = setInterval(() => {
-      this.performSync();
+      // Capturar erros para não crashar a aplicação
+      this.performSync().catch((error) => {
+        logger.error('SICREDI Sync: Erro na sincronização agendada', { error });
+        // Continuar tentando mesmo em caso de erro
+      });
     }, intervalMinutes * 60 * 1000);
   }
 
@@ -74,11 +80,11 @@ export class SicrediSyncService {
    */
   stopAutoSync(): void {
     if (!this.isRunning) {
-      console.log('⚠️ SICREDI Sync: Sincronização não está em execução');
+      logger.warn('SICREDI Sync: Sincronização não está em execução');
       return;
     }
 
-    console.log('🛑 SICREDI Sync: Parando sincronização automática');
+    logger.info('SICREDI Sync: Parando sincronização automática');
     
     this.isRunning = false;
     
@@ -119,7 +125,7 @@ export class SicrediSyncService {
         try {
           await this.processPaymentSync(payment, result);
         } catch (error) {
-          console.error(`❌ SICREDI Sync: Erro ao processar pagamento ${payment._id}:`, error);
+          logger.error(`SICREDI Sync: Erro ao processar pagamento ${payment._id}`, { error });
           result.errors.push({
             paymentId: payment._id?.toString() || 'unknown',
             error: error instanceof Error ? error.message : 'Erro desconhecido'
@@ -130,12 +136,21 @@ export class SicrediSyncService {
       const duration = Date.now() - startTime;
 
     } catch (error) {
-      console.error('❌ SICREDI Sync: Erro geral na sincronização:', error);
-      throw new SicrediSyncError(
-        'Falha na sincronização com SICREDI',
-        'SYNC_ERROR',
-        error
-      );
+      logger.error('SICREDI Sync: Erro geral na sincronização', { error });
+
+      // Se for erro de conexão MongoDB (buffering timeout), não lançar exceção
+      // Isso evita crash da aplicação quando MongoDB ainda não está conectado
+      if (error instanceof Error &&
+          (error.message.includes('buffering timed out') ||
+           error.message.includes('MongoDB') ||
+           error.name === 'MongooseError')) {
+        logger.warn('SICREDI Sync: Erro de conexão MongoDB, retornando resultado vazio. Tentará novamente na próxima execução.');
+        return result; // Retornar resultado vazio em vez de lançar exceção
+      }
+
+      // Para outros erros, também não lançar exceção para não crashar a aplicação
+      logger.error('SICREDI Sync: Erro na sincronização (não crítico)', { error });
+      return result;
     }
 
     return result;
@@ -215,7 +230,7 @@ export class SicrediSyncService {
       throw new SicrediSyncError('Pagamento não possui cliente associado');
     }
 
-    console.log(`💰 SICREDI Sync: Atualizando débito - Cliente: ${clientId || legacyClientId}, Valor: R$ ${valorPago}`);
+    logger.info(`SICREDI Sync: Atualizando débito - Cliente: ${clientId || legacyClientId}, Valor: R$ ${valorPago}`);
 
     try {
       if (clientId) {
@@ -227,7 +242,7 @@ export class SicrediSyncService {
           
           await this.userService.updateUser(clientId, { debts: newDebt });
           
-          console.log(`✅ SICREDI Sync: Débito do cliente ${client.name} atualizado de R$ ${currentDebt} para R$ ${newDebt}`);
+          logger.info(`SICREDI Sync: Débito do cliente ${client.name} atualizado de R$ ${currentDebt} para R$ ${newDebt}`);
         }
       } else if (legacyClientId) {
         // Cliente legado
@@ -238,11 +253,11 @@ export class SicrediSyncService {
           
           await this.legacyClientService.updateLegacyClient(legacyClientId, { totalDebt: newDebt });
           
-          console.log(`✅ SICREDI Sync: Débito do cliente legado ${legacyClient.name} atualizado de R$ ${currentDebt} para R$ ${newDebt}`);
+          logger.info(`SICREDI Sync: Débito do cliente legado ${legacyClient.name} atualizado de R$ ${currentDebt} para R$ ${newDebt}`);
         }
       }
     } catch (error) {
-      console.error(`❌ SICREDI Sync: Erro ao atualizar débito do cliente:`, error);
+      logger.error('SICREDI Sync: Erro ao atualizar débito do cliente', { error });
       throw new SicrediSyncError(
         'Falha ao atualizar débito do cliente',
         'DEBT_UPDATE_ERROR',
@@ -255,7 +270,7 @@ export class SicrediSyncService {
    * Sincroniza um cliente específico
    */
   async syncClientPayments(clientId: string): Promise<SyncResult> {
-    console.log(`🔄 SICREDI Sync: Sincronizando pagamentos do cliente ${clientId}`);
+    logger.info(`SICREDI Sync: Sincronizando pagamentos do cliente ${clientId}`);
     
     const result: SyncResult = {
       totalProcessed: 0,
@@ -280,14 +295,14 @@ export class SicrediSyncService {
       const payments = clientPayments.payments || [];
       result.totalProcessed = payments.length;
 
-      console.log(`📋 SICREDI Sync: Encontrados ${payments.length} pagamentos SICREDI para o cliente`);
+      logger.info(`SICREDI Sync: Encontrados ${payments.length} pagamentos SICREDI para o cliente`);
 
       // Processar cada pagamento
       for (const payment of payments) {
         try {
           await this.processPaymentSync(payment, result);
         } catch (error) {
-          console.error(`❌ SICREDI Sync: Erro ao processar pagamento ${payment._id}:`, error);
+          logger.error(`SICREDI Sync: Erro ao processar pagamento ${payment._id}`, { error });
           result.errors.push({
             paymentId: payment._id?.toString() || 'unknown',
             error: error instanceof Error ? error.message : 'Erro desconhecido'
@@ -295,10 +310,10 @@ export class SicrediSyncService {
         }
       }
 
-      console.log(`✅ SICREDI Sync: Cliente ${clientId} sincronizado - ${result.updatedPayments} pagamentos atualizados, ${result.updatedDebts} débitos atualizados`);
+      logger.info(`SICREDI Sync: Cliente ${clientId} sincronizado - ${result.updatedPayments} pagamentos atualizados, ${result.updatedDebts} débitos atualizados`);
 
     } catch (error) {
-      console.error(`❌ SICREDI Sync: Erro ao sincronizar cliente ${clientId}:`, error);
+      logger.error(`SICREDI Sync: Erro ao sincronizar cliente ${clientId}`, { error });
       throw new SicrediSyncError(
         `Falha ao sincronizar cliente ${clientId}`,
         'CLIENT_SYNC_ERROR',
@@ -360,7 +375,7 @@ export class SicrediSyncService {
 
       return stats;
     } catch (error) {
-      console.error('❌ SICREDI Sync: Erro ao obter estatísticas:', error);
+      logger.error('SICREDI Sync: Erro ao obter estatísticas', { error });
       throw new SicrediSyncError(
         'Falha ao obter estatísticas de sincronização',
         'STATS_ERROR',
