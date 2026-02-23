@@ -1,5 +1,10 @@
 import { getRepositories } from "../repositories/RepositoryFactory";
-import { generateToken } from "../utils/jwt";
+import {
+  generateToken,
+  generateRefreshTokenValue,
+  getRefreshTokenExpiry,
+} from "../utils/jwt";
+import { RefreshToken } from "../schemas/RefreshTokenSchema";
 import type { IUser } from "../interfaces/IUser";
 import type { IUserRepository } from "../repositories/interfaces/IUserRepository";
 import { AuthError } from "../utils/AppError";
@@ -7,7 +12,15 @@ import { ErrorCode } from "../utils/errorCodes";
 
 interface LoginResponse {
   token: string;
+  refreshToken?: string;
+  expiresIn?: string;
   user: Omit<IUser, "password" | "comparePassword">;
+}
+
+interface RefreshResponse {
+  token: string;
+  refreshToken?: string;
+  expiresIn?: string;
 }
 
 export class AuthService {
@@ -59,19 +72,8 @@ export class AuthService {
         );
       }
       
-      // Se encontrou o usuário e as credenciais são válidas (O.S. = senha)
       if (user && login === password) {
-        const token = generateToken(user._id!.toString(), user.role);
-        const {
-          password: _,
-          comparePassword: __,
-          ...userWithoutSensitiveData
-        } = user;
-      
-        return {
-          token,
-          user: userWithoutSensitiveData,
-        };
+        return this.buildLoginResponse(user);
       }
     } else {
       // Buscar por email
@@ -94,8 +96,19 @@ export class AuthService {
       );
     }
   
-        const token = generateToken(user._id!.toString(), user.role);
-    
+    return this.buildLoginResponse(user);
+  }
+
+  private async buildLoginResponse(
+    user: IUser
+  ): Promise<LoginResponse> {
+    const token = generateToken(user._id!.toString(), user.role);
+    const refreshTokenValue = generateRefreshTokenValue();
+    await RefreshToken.create({
+      userId: user._id,
+      token: refreshTokenValue,
+      expiresAt: getRefreshTokenExpiry(),
+    });
     const {
       password: _,
       comparePassword: __,
@@ -104,8 +117,59 @@ export class AuthService {
 
     return {
       token,
+      refreshToken: refreshTokenValue,
+      expiresIn: process.env.JWT_EXPIRES_IN || "24h",
       user: userWithoutSensitiveData,
     };
+  }
+
+  async refreshToken(refreshTokenValue: string): Promise<RefreshResponse> {
+    if (!refreshTokenValue?.trim()) {
+      throw new AuthError(
+        "Refresh token é obrigatório",
+        ErrorCode.VALIDATION_ERROR
+      );
+    }
+
+    const stored = await RefreshToken.findOne({
+      token: refreshTokenValue,
+      expiresAt: { $gt: new Date() },
+    }).exec();
+
+    if (!stored) {
+      throw new AuthError(
+        "Refresh token inválido ou expirado",
+        ErrorCode.INVALID_TOKEN
+      );
+    }
+
+    const user = await this.userRepository.findById(stored.userId.toString());
+    if (!user) {
+      await RefreshToken.deleteOne({ _id: stored._id }).exec();
+      throw new AuthError("Usuário não encontrado", ErrorCode.INVALID_TOKEN);
+    }
+
+    const token = generateToken(user._id!.toString(), user.role);
+    const newRefreshValue = generateRefreshTokenValue();
+    await RefreshToken.deleteOne({ _id: stored._id }).exec();
+    await RefreshToken.create({
+      userId: user._id,
+      token: newRefreshValue,
+      expiresAt: getRefreshTokenExpiry(),
+    });
+
+    return {
+      token,
+      refreshToken: newRefreshValue,
+      expiresIn: process.env.JWT_EXPIRES_IN || "24h",
+    };
+  }
+
+  async revokeRefreshToken(refreshTokenValue: string): Promise<void> {
+    if (!refreshTokenValue?.trim()) {
+      return; // Idempotente: logout sem token não é erro
+    }
+    await RefreshToken.deleteOne({ token: refreshTokenValue }).exec();
   }
 
   async validateToken(userId: string): Promise<IUser> {

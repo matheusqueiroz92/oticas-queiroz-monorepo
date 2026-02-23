@@ -1,5 +1,6 @@
 import mongoose, { Model, Document, Types } from "mongoose";
 import { IBaseRepository } from "../interfaces/IBaseRepository";
+import { logger } from "../../config/logger";
 
 /**
  * Classe base abstrata para implementações de repositories
@@ -34,7 +35,7 @@ export abstract class BaseRepository<T, CreateDTO = Omit<T, '_id'>>
       const doc = await this.model.create(data);
       return this.convertToInterface(doc);
     } catch (error) {
-      console.error('Erro ao criar documento:', error);
+      logger.error('Erro ao criar documento', { error });
       throw error;
     }
   }
@@ -55,7 +56,7 @@ export abstract class BaseRepository<T, CreateDTO = Omit<T, '_id'>>
 
       return this.convertToInterface(doc);
     } catch (error) {
-      console.error(`Erro ao buscar documento por ID ${id}:`, error);
+      logger.error(`Erro ao buscar documento por ID ${id}`, { error });
       return null;
     }
   }
@@ -137,7 +138,7 @@ export abstract class BaseRepository<T, CreateDTO = Omit<T, '_id'>>
 
       return this.convertToInterface(doc);
     } catch (error) {
-      console.error(`Erro ao atualizar documento ${id}:`, error);
+      logger.error(`Erro ao atualizar documento ${id}`, { error });
       throw error;
     }
   }
@@ -158,7 +159,7 @@ export abstract class BaseRepository<T, CreateDTO = Omit<T, '_id'>>
 
       return this.convertToInterface(doc);
     } catch (error) {
-      console.error(`Erro ao deletar documento ${id}:`, error);
+      logger.error(`Erro ao deletar documento ${id}`, { error });
       throw error;
     }
   }
@@ -190,7 +191,7 @@ export abstract class BaseRepository<T, CreateDTO = Omit<T, '_id'>>
 
       return this.convertToInterface(doc);
     } catch (error) {
-      console.error(`Erro ao fazer soft delete do documento ${id}:`, error);
+      logger.error(`Erro ao fazer soft delete do documento ${id}`, { error });
       throw error;
     }
   }
@@ -207,7 +208,7 @@ export abstract class BaseRepository<T, CreateDTO = Omit<T, '_id'>>
       const doc = await this.model.findById(id).select('_id').exec();
       return !!doc;
     } catch (error) {
-      console.error(`Erro ao verificar existência do documento ${id}:`, error);
+      logger.error(`Erro ao verificar existência do documento ${id}`, { error });
       return false;
     }
   }
@@ -220,7 +221,7 @@ export abstract class BaseRepository<T, CreateDTO = Omit<T, '_id'>>
       const query = this.buildFilterQuery(filters);
       return await this.model.countDocuments(query).exec();
     } catch (error) {
-      console.error('Erro ao contar documentos:', error);
+      logger.error('Erro ao contar documentos', { error });
       throw error;
     }
   }
@@ -266,7 +267,7 @@ export abstract class BaseRepository<T, CreateDTO = Omit<T, '_id'>>
 
       return docs.map(doc => this.convertToInterface(doc));
     } catch (error) {
-      console.error('Erro ao buscar documentos com session:', error);
+      logger.error('Erro ao buscar documentos com session', { error });
       throw error;
     }
   }
@@ -286,7 +287,7 @@ export abstract class BaseRepository<T, CreateDTO = Omit<T, '_id'>>
       const doc = Array.isArray(docs) ? docs[0] : docs;
       return this.convertToInterface(doc);
     } catch (error) {
-      console.error('Erro ao criar documento com session:', error);
+      logger.error('Erro ao criar documento com session', { error });
       throw error;
     }
   }

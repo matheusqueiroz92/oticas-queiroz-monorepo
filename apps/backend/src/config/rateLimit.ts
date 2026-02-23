@@ -53,3 +53,30 @@ export const authResetPasswordLimiter = rateLimit({
   handler: rateLimitResponse,
   skip: () => process.env.NODE_ENV === "test",
 });
+
+/**
+ * Rate limiter global - proteção contra abuso da API
+ * 100 requisições por 15 minutos por IP
+ */
+export const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: rateLimitResponse,
+  skip: (req) =>
+    process.env.NODE_ENV === "test" || req.path === "/health",
+});
+
+/**
+ * Rate limiter para refresh token - evita abuso de renovação
+ * 20 requisições por 15 minutos por IP
+ */
+export const authRefreshLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: rateLimitResponse,
+  skip: () => process.env.NODE_ENV === "test",
+});

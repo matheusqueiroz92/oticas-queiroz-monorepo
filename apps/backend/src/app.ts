@@ -15,10 +15,12 @@ import sicrediRoutes from "./routes/sicrediRoutes";
 import sicrediSyncRoutes from "./routes/sicrediSyncRoutes";
 import connectDB from "./config/db";
 import cors from "cors";
+import { globalLimiter } from "./config/rateLimit";
 import path from "node:path";
 import dotenv from "dotenv";
 import { initSicredi } from "./config/sicredi";
 import { startSicrediSync } from "./scripts/startSicrediSync";
+import { logger } from "./config/logger";
 
 dotenv.config();
 
@@ -56,6 +58,9 @@ class App {
 
     this.app.use(express.json({ limit: "1mb" }));
 
+    // Rate limit global
+    this.app.use("/api", globalLimiter);
+
     // Configurar diretório de imagens
     const imagesPath = path.join(__dirname, "../../public/images");
     
@@ -65,7 +70,7 @@ class App {
       try {
         fs.mkdirSync(imagesPath, { recursive: true });
       } catch (err) {
-        console.error("Erro ao criar diretório de imagens:", err);
+        logger.error("Erro ao criar diretório de imagens", { error: err });
       }
     }
 
@@ -149,13 +154,13 @@ class App {
           try {
             await startSicrediSync();
           } catch (error) {
-            console.warn("⚠️  SICREDI Sync: Não foi possível iniciar a sincronização:", error);
+            logger.warn("SICREDI Sync: Não foi possível iniciar a sincronização", { error });
           }
         }, 5000);
       }
       
     } catch (error) {
-      console.warn("⚠️  SICREDI: Não foi possível inicializar a integração:", error);
+      logger.warn("SICREDI: Não foi possível inicializar a integração", { error });
     }
   }
 

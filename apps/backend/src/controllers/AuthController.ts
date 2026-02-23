@@ -140,6 +140,26 @@ export class AuthController {
     res.status(201).json(userWithoutPassword);
   }
 
+  async refresh(req: Request, res: Response): Promise<void> {
+    const refreshSchema = z.object({
+      refreshToken: z.string().min(1, "Refresh token é obrigatório"),
+    });
+    const { refreshToken } = refreshSchema.parse(req.body);
+    const result = await this.authService.refreshToken(refreshToken);
+    res.status(200).json(result);
+  }
+
+  async logout(req: Request, res: Response): Promise<void> {
+    const logoutSchema = z.object({
+      refreshToken: z.string().optional(),
+    });
+    const { refreshToken } = logoutSchema.parse(req.body || {});
+    if (refreshToken) {
+      await this.authService.revokeRefreshToken(refreshToken);
+    }
+    res.status(200).json({ message: "Logout realizado com sucesso" });
+  }
+
   async validateToken(req: AuthRequest, res: Response): Promise<void> {
     if (!req.user?.id) {
       throw new AuthError("Token não fornecido", ErrorCode.UNAUTHORIZED);
