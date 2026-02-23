@@ -34,6 +34,7 @@ export class ReportService {
   }
 
   private async generateReportData(reportId: string): Promise<void> {
+    if (!this.reportModel) return;
     const report = await this.reportModel.findById(reportId);
     if (!report) return;
   

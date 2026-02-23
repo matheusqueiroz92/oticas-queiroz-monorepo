@@ -54,7 +54,7 @@ class App {
       })
     );
 
-    this.app.use(express.json());
+    this.app.use(express.json({ limit: "1mb" }));
 
     // Configurar diretório de imagens
     const imagesPath = path.join(__dirname, "../../public/images");
