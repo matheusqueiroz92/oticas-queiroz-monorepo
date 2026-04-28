@@ -5,7 +5,6 @@
   },
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
-    "project": "./tsconfig.json",
     "ecmaVersion": 2021,
     "sourceType": "module"
   },
@@ -13,6 +12,10 @@
   "extends": ["plugin:@typescript-eslint/recommended"],
   "rules": {
     "@typescript-eslint/no-explicit-any": "warn",
-    "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }]
+    "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
+    "@typescript-eslint/no-require-imports": "off",
+    "@typescript-eslint/ban-ts-comment": "off",
+    "@typescript-eslint/no-empty-object-type": "off",
+    "prefer-const": "warn"
   }
 }
