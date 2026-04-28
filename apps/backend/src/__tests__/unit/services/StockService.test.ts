@@ -29,7 +29,14 @@ mockObjectId.isValid = jest.fn((id: string) => true); // Por padrão, considerar
 
 const mockMongoose = {
   connection: {
-    startSession: jest.fn().mockResolvedValue(mockSession)
+    startSession: jest.fn().mockResolvedValue(mockSession),
+    db: {
+      admin: jest.fn().mockReturnValue({
+        serverStatus: jest.fn().mockResolvedValue({
+          repl: { ismaster: true }
+        })
+      })
+    }
   },
   Types: {
     ObjectId: mockObjectId
@@ -84,6 +91,9 @@ describe("StockService", () => {
 
     // Reset mongoose mocks
     mockMongoose.connection.startSession.mockResolvedValue(mockSession);
+    mockMongoose.connection.db.admin.mockReturnValue({
+      serverStatus: jest.fn().mockResolvedValue({ repl: { ismaster: true } })
+    });
     mockObjectId.isValid.mockImplementation((id: string) => true); // Por padrão, IDs válidos
     mockObjectId.mockImplementation((id: string) => ({ toString: () => id, _id: id }));
 

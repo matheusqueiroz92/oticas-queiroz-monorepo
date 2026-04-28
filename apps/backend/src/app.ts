@@ -140,7 +140,9 @@ class App {
   }
 
   private database(): void {
-    connectDB();
+    if (process.env.NODE_ENV !== "test") {
+      connectDB();
+    }
   }
 
   private initPaymentGateways(): void {
