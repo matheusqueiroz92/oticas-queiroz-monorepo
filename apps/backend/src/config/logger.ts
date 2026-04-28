@@ -18,7 +18,8 @@ const format = isProduction
     );
 
 export const logger = winston.createLogger({
-  level: isTest ? "silent" : process.env.LOG_LEVEL || (isProduction ? "info" : "debug"),
+  silent: isTest,
+  level: process.env.LOG_LEVEL || (isProduction ? "info" : "debug"),
   format,
   transports: [new winston.transports.Console()],
 });

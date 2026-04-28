@@ -115,7 +115,8 @@ export class PaymentStatusService {
     paymentId: string,
     amount: number,
     method: string,
-    session: mongoose.ClientSession | null
+    session: mongoose.ClientSession | null,
+    newPaymentStatus: IPayment["status"] = "completed"
   ): Promise<void> {
     const order = await this.orderRepository.findById(orderId);
     if (!order) throw new Error("Pedido não encontrado");
@@ -123,9 +124,16 @@ export class PaymentStatusService {
     const finalPrice = order.finalPrice || (order.totalPrice - (order.discount || 0));
     const { items: payments } = await this.paymentRepository.findAll(1, 1000, { orderId });
 
-    const totalPaid = payments
-      .filter((p) => p.status === "completed")
-      .reduce((sum, p) => sum + p.amount, 0) + amount;
+    // Exclui o novo pagamento pelo ID (pode já estar no DB em standalone)
+    // e soma apenas pagamentos completados anteriores
+    const previousPaid = payments
+      .filter((p) => p.status === "completed" && p._id?.toString() !== paymentId)
+      .reduce((sum, p) => sum + p.amount, 0);
+
+    // Adiciona o novo pagamento apenas se o status for "completed"
+    const totalPaid = newPaymentStatus === "completed"
+      ? previousPaid + amount
+      : previousPaid;
 
     let paymentStatus: IOrder["paymentStatus"] = "pending";
     if (totalPaid >= finalPrice) {

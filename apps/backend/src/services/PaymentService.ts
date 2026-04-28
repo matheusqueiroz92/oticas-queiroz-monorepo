@@ -96,7 +96,8 @@ export class PaymentService {
             created._id.toString(),
             created.amount,
             created.paymentMethod,
-            session
+            session,
+            created.status
           );
         }
 

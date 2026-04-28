@@ -1,16 +1,24 @@
 import mongoose from "mongoose";
 import { logger } from "../config/logger";
 
+// Cached após a primeira detecção: evita tentar transação novamente em standalone
+let standaloneMode = false;
+
 /**
  * Executa uma operação dentro de uma transação MongoDB.
  *
  * Requer que o MongoDB esteja configurado com replica set (ex: Atlas).
- * Em ambientes sem replica set (standalone dev), loga um aviso e executa sem transação —
- * configure um replica set local ou use Atlas em produção para garantir atomicidade.
+ * Em ambientes sem replica set (standalone), detecta na primeira tentativa e
+ * executa sem sessão em todas as chamadas subsequentes, evitando re-tentativas
+ * que poderiam causar double-writes.
  */
 export async function withTransaction<T>(
   operation: (session: mongoose.ClientSession) => Promise<T>
 ): Promise<T> {
+  if (standaloneMode) {
+    return operation(null as unknown as mongoose.ClientSession);
+  }
+
   let session: mongoose.ClientSession | null = null;
 
   try {
@@ -28,22 +36,28 @@ export async function withTransaction<T>(
       });
     }
 
-    // MongoDB standalone não suporta transações (códigos 51 e 20)
-    // Executa sem transação com aviso — apenas aceitável em ambiente de desenvolvimento
+    // MongoDB standalone não suporta transações (códigos 51 e 20).
+    // Na primeira detecção, marca standaloneMode para evitar novas tentativas.
     if (isTransactionUnsupportedError(error)) {
+      standaloneMode = true;
       logger.warn(
-        "MongoDB não suporta transações (replica set não configurado). " +
+        "MongoDB standalone detectado — transações desabilitadas. " +
         "Configure um replica set em produção para garantir atomicidade financeira."
       );
-      return operation(createNoOpSession());
+      return operation(null as unknown as mongoose.ClientSession);
     }
 
     throw error;
   } finally {
     if (session) {
-      await session.endSession().catch(() => { /* ignorar erro de cleanup */ });
+      await session.endSession().catch(() => {});
     }
   }
+}
+
+/** Exposta apenas para reset em testes de unidade. */
+export function resetTransactionMode(): void {
+  standaloneMode = false;
 }
 
 function isTransactionUnsupportedError(error: unknown): boolean {
