@@ -430,7 +430,7 @@ export class MongoOrderRepository extends BaseRepository<IOrder, CreateOrderDTO>
     page: number = 1,
     limit: number = 10
   ): Promise<{ items: IOrder[]; total: number; page: number; limit: number }> {
-    return this.findAll(page, limit, { includeDeleted: true, isDeleted: true });
+    return this.findAll(page, limit, { isDeleted: true }, true);
   }
 
   /**
