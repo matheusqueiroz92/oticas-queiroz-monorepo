@@ -104,5 +104,12 @@ jobs:
 
       - name: Deploy via SSH
         run: |
-          ssh -o StrictHostKeyChecking=no root@147.79.107.246 \
-            "cd /var/www/app.oticasqueiroz.com.br/oticas-queiroz-monorepo && ./deploy.sh"
+          ssh -o StrictHostKeyChecking=no root@147.79.107.246 "
+            set -e
+            cd /var/www/oticas-queiroz-monorepo
+            git pull origin main
+            cd /opt/apps/oticas-queiroz
+            docker compose pull --quiet 2>/dev/null || true
+            docker compose up --build -d
+            docker compose ps
+          "

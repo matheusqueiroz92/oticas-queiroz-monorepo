@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# DEPRECIADO: este script usava PM2 + nginx e não é mais utilizado.
+# O deploy agora é feito via Docker Compose + Traefik.
+# Consulte /opt/apps/oticas-queiroz/docker-compose.yml no servidor.
+
 # Script de deploy para Óticas Queiroz Monorepo
 # Este script deve ser executado na raiz do projeto
 
