@@ -1,12 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  output: 'standalone', // Melhora a compatibilidade em produção
+  output: 'standalone',
   images: {
-    domains: ['app.oticasqueiroz.com.br'], // Se você estiver usando o componente Next Image
-    unoptimized: true, // Pode ajudar com problemas de otimização
+    domains: ['app.oticasqueiroz.com.br', 'api.app.oticasqueiroz.com.br'],
+    unoptimized: true,
   },
-  // Configuração que explicita o caminho base para os arquivos públicos
   assetPrefix: '',
   basePath: '',
 }
