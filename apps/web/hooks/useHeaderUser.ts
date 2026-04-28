@@ -1,36 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Cookies from "js-cookie";
 import { useUsers } from "@/hooks/useUsers";
 import { useProfile } from "@/hooks/profile/useProfile";
 
 export function useHeaderUser() {
-  const [cookieUserName, setCookieUserName] = useState("");
-  const [cookieUserRole, setCookieUserRole] = useState("");
-  const [cookieUserEmail, setCookieUserEmail] = useState("");
-  const [cookieUserId, setCookieUserId] = useState("");
-
   const { getUserImageUrl } = useUsers();
   const { profile, isLoadingProfile } = useProfile();
 
-  useEffect(() => {
-    const name = Cookies.get("name") || "";
-    const role = Cookies.get("role") || "";
-    const email = Cookies.get("email") || "";
-    const userId = Cookies.get("userId") || "";
-
-    setCookieUserName(name);
-    setCookieUserRole(role);
-    setCookieUserEmail(email);
-    setCookieUserId(userId);
-  }, []);
-
-  // Priorizar dados do profile sobre cookies, mas usar cookies como fallback
-  const userName = profile?.name || cookieUserName || "Usuário";
-  const userRole = profile?.role || cookieUserRole || "";
-  const userEmail = profile?.email || cookieUserEmail || "";
-  const userId = profile?._id || cookieUserId || "";
+  const userName = profile?.name || "Usuário";
+  const userRole = profile?.role || "";
+  const userEmail = profile?.email || "";
+  const userId = profile?._id || "";
   const userImage = profile?.image ? getUserImageUrl(profile.image) : "";
 
   const getInitials = (name: string) => {

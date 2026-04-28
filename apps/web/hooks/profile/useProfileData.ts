@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Cookies from "js-cookie";
+import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/profile/useProfile";
 import { useOrders } from "@/hooks/orders/useOrders";
 import { useQuery } from "@tanstack/react-query";
@@ -23,6 +23,7 @@ import {
 export function useProfileData() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const router = useRouter();
+  const { user: authUser } = useAuth();
 
   const {
     profile: user,
@@ -33,18 +34,8 @@ export function useProfileData() {
     getUserImageUrl,
   } = useProfile();
 
-  // Obter dados do usuário logado via cookies (igual à página "Meus Pedidos")
-  const [loggedUserId, setLoggedUserId] = useState<string>("");
-  const [loggedUserRole, setLoggedUserRole] = useState<string>("");
-
-  // Carregar dados do usuário logado dos cookies
-  useEffect(() => {
-    const userId = Cookies.get("userId");
-    const userRole = Cookies.get("role");
-    
-    if (userId) setLoggedUserId(userId);
-    if (userRole) setLoggedUserRole(userRole);
-  }, []);
+  const loggedUserId = authUser?._id || "";
+  const loggedUserRole = authUser?.role || "";
 
   // Usar useOrders normalmente (como funcionava antes)
   const {
@@ -245,10 +236,6 @@ export function useProfileData() {
       }
 
       const updatedUser = await handleUpdateProfile(formData);
-
-      if (updatedUser && updatedUser.name !== Cookies.get("name")) {
-        Cookies.set("name", updatedUser.name, { expires: 1 });
-      }
 
       refetchProfile();
       setEditDialogOpen(false);

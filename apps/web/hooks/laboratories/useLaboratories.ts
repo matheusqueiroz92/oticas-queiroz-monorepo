@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/useToast";
 import { useCallback, useState, useEffect } from "react";
+import { useAuth } from "@/hooks/useAuth";
 import {
   getAllLaboratories,
   getLaboratoryById,
@@ -17,7 +18,6 @@ import type { Laboratory, LaboratoryFilters, ApiError, LoggedEmployee } from "@/
 import { createLaboratoryForm, LaboratoryFormData } from "@/schemas/laboratory-schema";
 import { api } from "@/app/_services/authService";
 import type { AxiosError } from "axios";
-import Cookies from "js-cookie";
 
 export function useLaboratories() {
   const [filters, setFilters] = useState<LaboratoryFilters>({});
@@ -244,8 +244,8 @@ export function useLaboratories() {
   const useCreateLaboratory = () => {
   const router = useRouter();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
-  const [loggedEmployee, setLoggedEmployee] = useState<LoggedEmployee | null>(null);
   
   const [streetValue, setStreetValue] = useState("");
   const [numberValue, setNumberValue] = useState("");
@@ -256,25 +256,11 @@ export function useLaboratories() {
   const [zipCodeValue, setZipCodeValue] = useState("");
   
   const form = createLaboratoryForm();
-  
-  useEffect(() => {
-    const userId = Cookies.get("userId");
-    const name = Cookies.get("name");
-    const email = Cookies.get("email");
-    const role = Cookies.get("role");
 
-    if (userId && name && role) {
-      const userData = {
-        id: userId,
-        name,
-        email: email || "",
-        role,
-      };
+  const loggedEmployee: LoggedEmployee | null = user
+    ? { id: user._id, name: user.name, email: user.email, role: user.role }
+    : null;
 
-      setLoggedEmployee(userData);
-    }
-  }, []);
-  
   useEffect(() => {
     if (currentStep === 1) {
       setStreetValue(form.getValues("address.street") || "");
@@ -453,9 +439,9 @@ export function useLaboratories() {
   const useEditLaboratory = (id: string | null, onSuccess?: () => void) => {
     const router = useRouter();
     const { toast } = useToast();
+    const { user } = useAuth();
     const [currentStep, setCurrentStep] = useState(0);
     const [isUpdating, setIsUpdating] = useState(false);
-    const [loggedEmployee, setLoggedEmployee] = useState<LoggedEmployee | null>(null);
     
     const [streetValue, setStreetValue] = useState("");
     const [numberValue, setNumberValue] = useState("");
@@ -499,24 +485,9 @@ export function useLaboratories() {
       }
     }, [laboratoryQuery.data, form]);
     
-    // Set logged employee data from cookies on component mount
-    useEffect(() => {
-      const userId = Cookies.get("userId");
-      const name = Cookies.get("name");
-      const email = Cookies.get("email");
-      const role = Cookies.get("role");
-
-      if (userId && name && role) {
-        const userData = {
-          id: userId,
-          name,
-          email: email || "",
-          role,
-        };
-
-        setLoggedEmployee(userData);
-      }
-    }, []);
+    const loggedEmployee: LoggedEmployee | null = user
+      ? { id: user._id, name: user.name, email: user.email, role: user.role }
+      : null;
     
     const updateLaboratoryMut = useMutation({
       mutationFn: async ({ id, data }: { id: string; data: Partial<Laboratory> }) => {
