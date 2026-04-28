@@ -30,6 +30,7 @@ const mockPaymentRepository = {
   findPendingByClientId: jest.fn(),
   cancel: jest.fn(),
   getRevenueSummary: jest.fn(),
+  createInSession: jest.fn(),
 } as jest.Mocked<IPaymentRepository>;
 
 // Mock do PaymentValidationService  

@@ -1,3 +1,4 @@
+import type { ClientSession } from "mongoose";
 import { IBaseRepository } from "./IBaseRepository";
 import type { IPayment } from "../../interfaces/IPayment";
 
@@ -178,4 +179,6 @@ export interface IPaymentRepository extends IBaseRepository<IPayment> {
     dailyBalance: number;
     paymentsByMethod: Record<IPayment["paymentMethod"], number>;
   }>;
-} 
+
+  createInSession(data: Omit<IPayment, "_id">, session: ClientSession | null): Promise<IPayment>;
+}

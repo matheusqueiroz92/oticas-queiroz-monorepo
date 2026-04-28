@@ -1,3 +1,4 @@
+import type { ClientSession } from "mongoose";
 import { IBaseRepository } from "./IBaseRepository";
 import type { IOrder, CreateOrderDTO } from "../../interfaces/IOrder";
 
@@ -175,4 +176,6 @@ export interface IOrderRepository extends IBaseRepository<IOrder, CreateOrderDTO
     finalRevenue: number;
     orderCount: number;
   }>;
+
+  updateInSession(id: string, data: Partial<IOrder>, session: ClientSession | null): Promise<IOrder | null>;
 } 

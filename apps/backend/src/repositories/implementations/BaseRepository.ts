@@ -254,6 +254,46 @@ export abstract class BaseRepository<T, CreateDTO = Omit<T, '_id'>>
   }
 
   /**
+   * Cria documento dentro de uma session MongoDB (suporte a transações).
+   * session=null executa sem transação (fallback para standalone).
+   */
+  async createInSession(data: CreateDTO, session: mongoose.ClientSession | null): Promise<T> {
+    try {
+      const docs = session
+        ? await this.model.create([data], { session })
+        : await this.model.create(data);
+      const doc = Array.isArray(docs) ? docs[0] : docs;
+      return this.convertToInterface(doc);
+    } catch (error) {
+      logger.error("Erro ao criar documento com session", { error });
+      throw error;
+    }
+  }
+
+  /**
+   * Atualiza documento dentro de uma session MongoDB (suporte a transações).
+   * session=null executa sem transação (fallback para standalone).
+   */
+  async updateInSession(
+    id: string,
+    data: Partial<T>,
+    session: mongoose.ClientSession | null
+  ): Promise<T | null> {
+    try {
+      if (!this.isValidId(id)) return null;
+
+      const doc = await this.model
+        .findByIdAndUpdate(id, { $set: data }, { new: true, runValidators: true, session: session ?? undefined })
+        .exec();
+
+      return doc ? this.convertToInterface(doc) : null;
+    } catch (error) {
+      logger.error(`Erro ao atualizar documento ${id} com session`, { error });
+      throw error;
+    }
+  }
+
+  /**
    * Busca documentos com session do MongoDB (para transações)
    */
   protected async findWithSession(
