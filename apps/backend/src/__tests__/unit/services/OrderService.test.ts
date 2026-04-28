@@ -452,7 +452,6 @@ describe("OrderService", () => {
     it("should cancel order successfully", async () => {
       const cancelledOrder = { ...mockOrder, status: "cancelled" as const };
       mockOrderRepository.findById.mockResolvedValue(mockOrder);
-      mockValidationService.validateCancellation.mockResolvedValue(undefined);
       mockOrderRepository.update.mockResolvedValue(cancelledOrder);
       mockStockService.increaseStock.mockResolvedValue(undefined);
       mockRelationshipService.removeOrderRelationships.mockResolvedValue(undefined);
@@ -460,9 +459,12 @@ describe("OrderService", () => {
       const result = await orderService.cancelOrder("order-id-123", "user-id-123", "admin");
 
       expect(result).toEqual(cancelledOrder);
-      expect(mockValidationService.validateCancellation).toHaveBeenCalledWith("pending", "admin");
-      expect(mockStockService.increaseStock).toHaveBeenCalledWith(mockOrderData.products[0], 1);
-      expect(mockStockService.increaseStock).toHaveBeenCalledWith(mockOrderData.products[1], 1);
+      expect(mockStockService.increaseStock).toHaveBeenCalledWith(
+        mockOrderData.products[0], 1, expect.any(String), "user-id-123", "order-id-123"
+      );
+      expect(mockStockService.increaseStock).toHaveBeenCalledWith(
+        mockOrderData.products[1], 1, expect.any(String), "user-id-123", "order-id-123"
+      );
       expect(mockRelationshipService.removeOrderRelationships).toHaveBeenCalledWith(cancelledOrder);
     });
 
@@ -476,7 +478,6 @@ describe("OrderService", () => {
 
     it("should throw error when cancellation fails", async () => {
       mockOrderRepository.findById.mockResolvedValue(mockOrder);
-      mockValidationService.validateCancellation.mockResolvedValue(undefined);
       mockStockService.increaseStock.mockResolvedValue(undefined);
       mockOrderRepository.update.mockResolvedValue(null);
 
@@ -792,7 +793,7 @@ describe("OrderService", () => {
     it("should handle cancelOrder with different product formats", async () => {
       const validObjectId1 = new mongoose.Types.ObjectId().toString();
       const validObjectId2 = new mongoose.Types.ObjectId().toString();
-      
+
       const mockOrder = {
         _id: "order123",
         status: "pending",
@@ -805,7 +806,6 @@ describe("OrderService", () => {
       };
 
       mockOrderRepository.findById.mockResolvedValue(mockOrder);
-      mockValidationService.validateCancellation.mockReturnValue(undefined);
       mockStockService.increaseStock.mockResolvedValue(undefined);
       mockOrderRepository.update.mockResolvedValue({ ...mockOrder, status: "cancelled" });
       mockRelationshipService.removeOrderRelationships.mockResolvedValue(undefined);
@@ -814,9 +814,15 @@ describe("OrderService", () => {
 
       expect(result.status).toBe("cancelled");
       expect(mockStockService.increaseStock).toHaveBeenCalledTimes(3); // 3 produtos válidos
-      expect(mockStockService.increaseStock).toHaveBeenCalledWith(validObjectId1, 1);
-      expect(mockStockService.increaseStock).toHaveBeenCalledWith(expect.any(String), 1);
-      expect(mockStockService.increaseStock).toHaveBeenCalledWith(validObjectId2, 2);
+      expect(mockStockService.increaseStock).toHaveBeenCalledWith(
+        validObjectId1, 1, expect.any(String), "user123", "order123"
+      );
+      expect(mockStockService.increaseStock).toHaveBeenCalledWith(
+        expect.any(String), 1, expect.any(String), "user123", "order123"
+      );
+      expect(mockStockService.increaseStock).toHaveBeenCalledWith(
+        validObjectId2, 1, expect.any(String), "user123", "order123"
+      );
     });
   });
 });

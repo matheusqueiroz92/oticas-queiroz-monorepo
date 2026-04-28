@@ -1,4 +1,5 @@
 import { Order } from "../../schemas/OrderSchema";
+import { User } from "../../schemas/UserSchema";
 import { BaseRepository } from "./BaseRepository";
 import { IOrderRepository } from "../interfaces/IOrderRepository";
 import type { IOrder, CreateOrderDTO, IPaymentHistoryEntry } from "../../interfaces/IOrder";
@@ -139,11 +140,7 @@ export class MongoOrderRepository extends BaseRepository<IOrder, CreateOrderDTO>
    */
   private async findClientIdsBySearchTerm(searchTerm: string): Promise<string[]> {
     try {
-      // Importar dinamicamente para evitar dependência circular
-      const mongoose = require('mongoose');
-      const UserModel = mongoose.model('User');
-
-      const matchingClients = await UserModel.find({
+      const matchingClients = await User.find({
         $or: [
           { name: { $regex: searchTerm, $options: 'i' } },
           { cpf: { $regex: searchTerm, $options: 'i' } },
@@ -151,7 +148,7 @@ export class MongoOrderRepository extends BaseRepository<IOrder, CreateOrderDTO>
         ],
         role: 'customer'
       }).select('_id name role');
-      
+
       return matchingClients.map((client: any) => client._id.toString());
     } catch (error) {
       console.error('Erro ao buscar clientes por termo:', error);

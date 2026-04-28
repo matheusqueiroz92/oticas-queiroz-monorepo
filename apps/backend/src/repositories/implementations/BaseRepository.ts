@@ -49,7 +49,7 @@ export abstract class BaseRepository<T, CreateDTO = Omit<T, '_id'>>
         return null;
       }
 
-      const doc = await this.model.findById(id).exec();
+      const doc = await this.model.findOne({ _id: id, isDeleted: { $ne: true } }).exec();
       if (!doc) {
         return null;
       }

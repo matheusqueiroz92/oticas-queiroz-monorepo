@@ -323,7 +323,7 @@ export class OrderService {
       }
 
       // Atualizar status para cancelado
-      const updateData: Partial<IOrder> = { 
+      const updateData: Partial<IOrder> = {
         status: "cancelled",
         updatedAt: new Date()
       };
@@ -333,10 +333,15 @@ export class OrderService {
         throw new OrderError("Erro ao cancelar pedido");
       }
 
+      await this.relationshipService.removeOrderRelationships(cancelledOrder);
+
       console.log(`[OrderService] Pedido ${id} cancelado com sucesso pelo usuário ${userId}`);
       return cancelledOrder;
 
     } catch (error) {
+      if (error instanceof OrderError) {
+        throw error;
+      }
       console.error(`[OrderService] Erro ao cancelar pedido ${id}:`, error);
       throw new OrderError("Erro interno ao cancelar pedido");
     }

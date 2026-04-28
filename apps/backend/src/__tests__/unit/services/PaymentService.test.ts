@@ -64,8 +64,25 @@ jest.mock("../../../repositories/RepositoryFactory", () => ({
   RepositoryFactory: {
     getInstance: () => ({
       getPaymentRepository: () => mockPaymentRepository,
+      getCashRegisterRepository: () => ({
+        findById: jest.fn(),
+        updateSales: jest.fn(),
+        updatePayments: jest.fn(),
+      }),
+      getOrderRepository: () => ({
+        findById: jest.fn(),
+        update: jest.fn(),
+        findAll: jest.fn().mockResolvedValue({ items: [], total: 0 }),
+        updateInSession: jest.fn(),
+      }),
     }),
   },
+}));
+
+// Mock do withTransaction para executar operação sem sessão real
+jest.mock("../../../utils/withTransaction", () => ({
+  withTransaction: (operation: any) => operation(null),
+  resetTransactionMode: jest.fn(),
 }));
 
 // Mock dos serviços
@@ -149,20 +166,23 @@ describe("PaymentService", () => {
     it("should create a payment successfully", async () => {
       mockPaymentValidationService.validatePayment.mockResolvedValue(mockCashRegisterId);
       mockPaymentValidationService.normalizePaymentMethod.mockReturnValue("credit");
-      mockPaymentRepository.create.mockResolvedValue(mockCreatedPayment);
+      mockPaymentRepository.createInSession.mockResolvedValue(mockCreatedPayment);
 
       const result = await paymentService.createPayment(mockPaymentData);
 
       expect(result).toEqual(mockCreatedPayment);
       expect(mockPaymentValidationService.validatePayment).toHaveBeenCalledWith(mockPaymentData);
       expect(mockPaymentValidationService.normalizePaymentMethod).toHaveBeenCalledWith("credit");
-      expect(mockPaymentRepository.create).toHaveBeenCalledWith({
-        ...mockPaymentData,
-        paymentMethod: "credit",
-        cashRegisterId: mockCashRegisterId,
-        date: mockPaymentData.date,
-        status: "completed" // O service define status como completed por padrão
-      });
+      expect(mockPaymentRepository.createInSession).toHaveBeenCalledWith(
+        {
+          ...mockPaymentData,
+          paymentMethod: "credit",
+          cashRegisterId: mockCashRegisterId,
+          date: mockPaymentData.date,
+          status: "completed"
+        },
+        null
+      );
       expect(mockCache.flushAll).toHaveBeenCalled();
     });
 
@@ -200,18 +220,19 @@ describe("PaymentService", () => {
 
       mockPaymentValidationService.validatePayment.mockResolvedValue(mockCashRegisterId);
       mockPaymentValidationService.normalizePaymentMethod.mockReturnValue("credit");
-      mockPaymentRepository.create.mockResolvedValue(mockCreatedPayment);
+      mockPaymentRepository.createInSession.mockResolvedValue(mockCreatedPayment);
 
       await paymentService.createPayment(paymentWithoutDate as Omit<IPayment, "_id">);
 
-      expect(mockPaymentRepository.create).toHaveBeenCalledWith(
+      expect(mockPaymentRepository.createInSession).toHaveBeenCalledWith(
         expect.objectContaining({
           ...paymentWithoutDate,
           paymentMethod: "credit",
           cashRegisterId: mockCashRegisterId,
           date: expect.any(Date),
-          status: "completed" // O service define status como completed por padrão
-        })
+          status: "completed"
+        }),
+        null
       );
     });
 
@@ -220,7 +241,7 @@ describe("PaymentService", () => {
 
       mockPaymentValidationService.validatePayment.mockResolvedValue(mockCashRegisterId);
       mockPaymentValidationService.normalizePaymentMethod.mockReturnValue("pix");
-      mockPaymentRepository.create.mockResolvedValue({ ...mockCreatedPayment, paymentMethod: "pix" });
+      mockPaymentRepository.createInSession.mockResolvedValue({ ...mockCreatedPayment, paymentMethod: "pix" });
 
       const result = await paymentService.createPayment(pixPayment);
 
