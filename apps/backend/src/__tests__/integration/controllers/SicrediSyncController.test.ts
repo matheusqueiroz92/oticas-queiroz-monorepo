@@ -21,21 +21,21 @@ jest.mock("../../../services/SicrediSyncService", () => ({
     this.startAutoSync = jest.fn();
     this.stopAutoSync = jest.fn();
     this.isSyncRunning = jest.fn().mockReturnValue(false);
-    this.getSyncStats = (jest.fn() as jest.Mock).mockResolvedValue({
+    this.getSyncStats = (jest.fn() as any).mockResolvedValue({
       totalSicrediPayments: 0,
       pendingPayments: 0,
       paidPayments: 0,
       overduePayments: 0,
       cancelledPayments: 0,
     });
-    this.performSync = (jest.fn() as jest.Mock).mockResolvedValue({
+    this.performSync = (jest.fn() as any).mockResolvedValue({
       totalProcessed: 0,
       updatedPayments: 0,
       updatedDebts: 0,
       errors: [],
       summary: { paid: 0, overdue: 0, cancelled: 0, pending: 0 },
     });
-    this.syncClientPayments = (jest.fn() as jest.Mock).mockResolvedValue({
+    this.syncClientPayments = (jest.fn() as any).mockResolvedValue({
       totalProcessed: 0,
       updatedPayments: 0,
       updatedDebts: 0,

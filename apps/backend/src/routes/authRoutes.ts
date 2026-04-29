@@ -375,6 +375,14 @@ router.post(
   )
 );
 
+// Alias: GET /api/auth/reset-password/:token → valida um token de redefinição
+router.get(
+  "/reset-password/:token",
+  asyncHandler(
+    passwordResetController.validateToken.bind(passwordResetController)
+  )
+);
+
 /**
  * @swagger
  * /api/auth/validate-token:
