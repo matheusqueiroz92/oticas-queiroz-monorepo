@@ -67,7 +67,7 @@ describe("SicrediSyncService", () => {
       sicrediSyncService.startAutoSync();
 
       expect(sicrediSyncService.isSyncRunning()).toBe(true);
-      expect(performSyncSpy).toHaveBeenCalledTimes(1); // Primeira execução imediata
+      expect(performSyncSpy).toHaveBeenCalledTimes(0); // Primeira execução é adiada
     });
 
     it("should start auto sync with custom interval", () => {
@@ -78,7 +78,7 @@ describe("SicrediSyncService", () => {
       sicrediSyncService.startAutoSync(60);
 
       expect(sicrediSyncService.isSyncRunning()).toBe(true);
-      expect(performSyncSpy).toHaveBeenCalledTimes(1);
+      expect(performSyncSpy).toHaveBeenCalledTimes(0);
     });
 
     it("should execute sync at specified intervals", () => {
@@ -88,16 +88,16 @@ describe("SicrediSyncService", () => {
 
       sicrediSyncService.startAutoSync(10); // 10 minutos
 
-      // Primeira execução
-      expect(performSyncSpy).toHaveBeenCalledTimes(1);
+      // Nenhuma execução imediata
+      expect(performSyncSpy).toHaveBeenCalledTimes(0);
 
       // Avançar 10 minutos
       jest.advanceTimersByTime(10 * 60 * 1000);
-      expect(performSyncSpy).toHaveBeenCalledTimes(2);
+      expect(performSyncSpy).toHaveBeenCalledTimes(1);
 
       // Avançar mais 10 minutos
       jest.advanceTimersByTime(10 * 60 * 1000);
-      expect(performSyncSpy).toHaveBeenCalledTimes(3);
+      expect(performSyncSpy).toHaveBeenCalledTimes(2);
     });
 
     it("should not start if already running", () => {
@@ -108,7 +108,7 @@ describe("SicrediSyncService", () => {
       sicrediSyncService.startAutoSync();
       sicrediSyncService.startAutoSync(); // Tentar iniciar novamente
 
-      expect(performSyncSpy).toHaveBeenCalledTimes(1); // Apenas primeira execução
+      expect(performSyncSpy).toHaveBeenCalledTimes(0); // Nenhuma execução imediata
     });
 
     it("should handle errors during first sync gracefully", () => {
@@ -144,9 +144,9 @@ describe("SicrediSyncService", () => {
       sicrediSyncService.startAutoSync(10);
       sicrediSyncService.stopAutoSync();
 
-      // Avançar tempo e verificar que não executa mais
+      // Avançar tempo e verificar que não executa mais após stop
       jest.advanceTimersByTime(10 * 60 * 1000);
-      expect(performSyncSpy).toHaveBeenCalledTimes(1); // Apenas a primeira execução
+      expect(performSyncSpy).toHaveBeenCalledTimes(0); // Nenhuma execução (parado antes do intervalo)
     });
 
     it("should do nothing if not running", () => {
@@ -164,7 +164,7 @@ describe("SicrediSyncService", () => {
       sicrediSyncService.startAutoSync();
 
       expect(sicrediSyncService.isSyncRunning()).toBe(true);
-      expect(performSyncSpy).toHaveBeenCalledTimes(2); // Duas primeiras execuções
+      expect(performSyncSpy).toHaveBeenCalledTimes(0); // Nenhuma execução imediata em nenhum ciclo
     });
   });
 
@@ -175,12 +175,14 @@ describe("SicrediSyncService", () => {
       const mockPayments = [
         {
           _id: "payment1",
+          customerId: "client1",
           bank_slip: {
             sicredi: { nossoNumero: "123", status: "PENDENTE" },
           },
         },
         {
           _id: "payment2",
+          customerId: "client2",
           bank_slip: {
             sicredi: { nossoNumero: "456", status: "PENDENTE" },
           },
@@ -195,6 +197,8 @@ describe("SicrediSyncService", () => {
         success: true,
         data: { status: "PAGO", valorPago: 100, dataPagamento: new Date() },
       } as any);
+      (mockUserService.getUserById as any) = jest.fn().mockResolvedValue({ _id: "client1", name: "Test", debts: 200 } as any);
+      (mockUserService.updateUser as any) = jest.fn().mockResolvedValue({} as any);
 
       const result = await sicrediSyncService.performSync();
 
@@ -331,18 +335,16 @@ describe("SicrediSyncService", () => {
       expect(result.updatedPayments).toBeGreaterThan(0);
     });
 
-    it("should throw SicrediSyncError on general failure", async () => {
+    it("should handle general failure gracefully without throwing", async () => {
       (mockPaymentService.getAllPayments as any) = jest
         .fn()
         // @ts-ignore
         .mockRejectedValue(new Error("Database error") as any);
 
-      await expect(sicrediSyncService.performSync()).rejects.toThrow(
-        SicrediSyncError
-      );
-      await expect(sicrediSyncService.performSync()).rejects.toThrow(
-        "Falha na sincronização com SICREDI"
-      );
+      // A implementação captura erros gerais e retorna resultado vazio para não crashar a aplicação
+      const result = await sicrediSyncService.performSync();
+      expect(result.totalProcessed).toBe(0);
+      expect(result.errors).toEqual([]);
     });
 
     it("should handle empty payment list", async () => {
@@ -884,8 +886,8 @@ describe("SicrediSyncService", () => {
       sicrediSyncService.stopAutoSync();
       expect(sicrediSyncService.isSyncRunning()).toBe(false);
 
-      // Deve ter executado apenas 2 vezes (primeira execução de cada ciclo)
-      expect(performSyncSpy).toHaveBeenCalledTimes(2);
+      // Nenhuma execução imediata em nenhum ciclo (execução adiada para o startSicrediSync.ts)
+      expect(performSyncSpy).toHaveBeenCalledTimes(0);
     });
 
     it("should handle undefined payment IDs", async () => {

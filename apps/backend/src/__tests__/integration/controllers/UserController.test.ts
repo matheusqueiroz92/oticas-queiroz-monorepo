@@ -315,7 +315,7 @@ describe("UserController", () => {
       expect(res.status).toBe(204);
 
       const deletedUser = await User.findById(customerId);
-      expect(deletedUser).toBeNull();
+      expect(deletedUser?.isDeleted).toBe(true);
     });
 
     it("should not allow employee to delete users", async () => {

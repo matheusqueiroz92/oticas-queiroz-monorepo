@@ -72,7 +72,7 @@ jest.mock("../../../repositories/RepositoryFactory", () => ({
       getOrderRepository: () => ({
         findById: jest.fn(),
         update: jest.fn(),
-        findAll: jest.fn().mockResolvedValue({ items: [], total: 0 }),
+        findAll: (jest.fn() as any).mockResolvedValue({ items: [], total: 0 }),
         updateInSession: jest.fn(),
       }),
     }),
