@@ -42,7 +42,7 @@ jest.mock("../../../services/SicrediSyncService", () => ({
       errors: [],
       summary: { paid: 0, overdue: 0, cancelled: 0, pending: 0 },
     });
-    // eslint-disable-next-line no-undef
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     capturedSicrediService = this;
   }),
   SicrediSyncError: class SicrediSyncError extends Error {
