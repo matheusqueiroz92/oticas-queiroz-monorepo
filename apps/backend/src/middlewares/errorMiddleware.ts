@@ -102,6 +102,20 @@ export const errorMiddleware = (
   }
 
   if (
+    error instanceof SyntaxError &&
+    "status" in error &&
+    (error as SyntaxError & { status: number }).status === 400
+  ) {
+    const responseObj: ErrorResponse = {
+      status: "error",
+      code: ErrorCode.VALIDATION_ERROR,
+      message: "JSON inválido no corpo da requisição",
+    };
+    res.status(400).json(responseObj);
+    return;
+  }
+
+  if (
     error.name === "JsonWebTokenError" ||
     error.name === "TokenExpiredError"
   ) {

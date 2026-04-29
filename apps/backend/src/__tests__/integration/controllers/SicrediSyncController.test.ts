@@ -13,8 +13,45 @@ import {
   jest,
 } from "@jest/globals";
 
-// Mock do SicrediSyncService para evitar chamadas reais à API
-jest.mock("../../../services/SicrediSyncService");
+// eslint-disable-next-line no-var
+var capturedSicrediService: any;
+
+jest.mock("../../../services/SicrediSyncService", () => ({
+  SicrediSyncService: jest.fn().mockImplementation(function (this: any) {
+    this.startAutoSync = jest.fn();
+    this.stopAutoSync = jest.fn();
+    this.isSyncRunning = jest.fn().mockReturnValue(false);
+    this.getSyncStats = jest.fn().mockResolvedValue({
+      totalSicrediPayments: 0,
+      pendingPayments: 0,
+      paidPayments: 0,
+      overduePayments: 0,
+      cancelledPayments: 0,
+    });
+    this.performSync = jest.fn().mockResolvedValue({
+      totalProcessed: 0,
+      updatedPayments: 0,
+      updatedDebts: 0,
+      errors: [],
+      summary: { paid: 0, overdue: 0, cancelled: 0, pending: 0 },
+    });
+    this.syncClientPayments = jest.fn().mockResolvedValue({
+      totalProcessed: 0,
+      updatedPayments: 0,
+      updatedDebts: 0,
+      errors: [],
+      summary: { paid: 0, overdue: 0, cancelled: 0, pending: 0 },
+    });
+    // eslint-disable-next-line no-undef
+    capturedSicrediService = this;
+  }),
+  SicrediSyncError: class SicrediSyncError extends Error {
+    constructor(message: string) {
+      super(message);
+      this.name = "SicrediSyncError";
+    }
+  },
+}));
 
 describe("SicrediSyncController", () => {
   let adminToken: string;
@@ -27,6 +64,32 @@ describe("SicrediSyncController", () => {
   });
 
   beforeEach(async () => {
+    // Re-apply mock implementations (resetMocks: true clears them before each test)
+    if (capturedSicrediService) {
+      capturedSicrediService.isSyncRunning.mockReturnValue(false);
+      capturedSicrediService.getSyncStats.mockResolvedValue({
+        totalSicrediPayments: 0,
+        pendingPayments: 0,
+        paidPayments: 0,
+        overduePayments: 0,
+        cancelledPayments: 0,
+      });
+      capturedSicrediService.performSync.mockResolvedValue({
+        totalProcessed: 0,
+        updatedPayments: 0,
+        updatedDebts: 0,
+        errors: [],
+        summary: { paid: 0, overdue: 0, cancelled: 0, pending: 0 },
+      });
+      capturedSicrediService.syncClientPayments.mockResolvedValue({
+        totalProcessed: 0,
+        updatedPayments: 0,
+        updatedDebts: 0,
+        errors: [],
+        summary: { paid: 0, overdue: 0, cancelled: 0, pending: 0 },
+      });
+    }
+
     // Limpar collections
     await User.deleteMany({});
 
