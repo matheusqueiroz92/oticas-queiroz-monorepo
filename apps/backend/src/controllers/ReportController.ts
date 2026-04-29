@@ -195,11 +195,16 @@ export class ReportController {
         return;
       }
 
-      // Usar o ExportUtils para gerar o arquivo no formato solicitado
       const format =
         (req.query.format as "excel" | "pdf" | "csv" | "json") || report.format;
 
-      // Determinar o tipo de relatório e usar o exportador adequado
+      // JSON sempre retorna os dados diretamente
+      if (format === "json") {
+        res.status(200).json(report.data);
+        return;
+      }
+
+      // Para outros formatos, usar ExportUtils
       let buffer: Buffer;
       let contentType: string;
       let filename: string;
@@ -224,24 +229,17 @@ export class ReportController {
               exportOptions
             ));
           break;
-        // ... outros casos para os diferentes tipos de relatório
         default:
-          if (format === "json") {
-            res.status(200).json(report.data);
-            return;
-          }
           res.status(400).json({
             message: "Formato não suportado para este tipo de relatório",
           });
           return;
       }
 
-      // Verificar se o contentType foi definido
       if (!contentType) {
         throw new Error("Tipo de conteúdo não definido para o relatório.");
       }
 
-      // Enviar o arquivo
       res.setHeader("Content-Type", contentType);
       res.setHeader(
         "Content-Disposition",
