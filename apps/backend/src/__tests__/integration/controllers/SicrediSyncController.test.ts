@@ -36,7 +36,7 @@ describe("SicrediSyncController", () => {
       email: "admin@test.com",
       password: await bcrypt.hash("admin123", 10),
       role: "admin",
-      cpf: "11111111111",
+      cpf: "52998224725",
       rg: "111111111",
       birthDate: new Date("1990-01-01"),
     });
@@ -46,7 +46,7 @@ describe("SicrediSyncController", () => {
       email: "employee@test.com",
       password: await bcrypt.hash("employee123", 10),
       role: "employee",
-      cpf: "22222222222",
+      cpf: "11144477735",
       rg: "222222222",
       birthDate: new Date("1990-01-01"),
     });
@@ -56,7 +56,7 @@ describe("SicrediSyncController", () => {
       email: "customer@test.com",
       password: await bcrypt.hash("customer123", 10),
       role: "customer",
-      cpf: "33333333333",
+      cpf: "45678901249",
       rg: "333333333",
       birthDate: new Date("1990-01-01"),
     });
