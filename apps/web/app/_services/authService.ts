@@ -173,6 +173,10 @@ export const isAuthenticated = (): boolean => {
   return !!Cookies.get("token");
 };
 
+export const getUserRole = (): string | undefined => {
+  return Cookies.get("role");
+};
+
 export const redirectAfterLogout = () => {
   if (typeof window !== "undefined") {
     window.location.href = "/auth/login";
