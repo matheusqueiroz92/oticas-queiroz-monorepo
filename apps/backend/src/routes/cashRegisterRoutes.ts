@@ -236,7 +236,7 @@ router.get(
 router.post(
   "/open",
   authenticate,
-  authorize(["admin", "employee"]),
+  authorize(["admin"]),
   asyncHandler(cashRegisterController.openRegister.bind(cashRegisterController))
 );
 
@@ -283,7 +283,7 @@ router.post(
 router.post(
   "/close",
   authenticate,
-  authorize(["admin", "employee"]),
+  authorize(["admin"]),
   asyncHandler(
     cashRegisterController.closeRegister.bind(cashRegisterController)
   )

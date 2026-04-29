@@ -15,6 +15,8 @@ export class EmailService {
     const pass = process.env.EMAIL_PASSWORD;
 
     if (!user || !pass) {
+      console.error("ERRO: Credenciais de email não configuradas!");
+      console.error("Defina EMAIL_USER e EMAIL_PASSWORD no arquivo .env");
       logger.error("Credenciais de email não configuradas - defina EMAIL_USER e EMAIL_PASSWORD");
     }
 

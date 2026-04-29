@@ -41,7 +41,7 @@ describe("PasswordResetController", () => {
       email: "test@example.com",
       password: await bcrypt.hash("oldPassword123", 10),
       role: "customer",
-      cpf: "12345678901",
+      cpf: "52998224725",
       rg: "123456789",
       birthDate: new Date("1990-01-01"),
     });
