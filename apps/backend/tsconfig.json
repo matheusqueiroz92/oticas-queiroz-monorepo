@@ -6,9 +6,8 @@
     "baseUrl": ".",
     "paths": {
       "@oticas-queiroz/config": ["../../packages/config"]
-    },
-    "typeRoots": ["./src/types", "./node_modules/@types"]
+    }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "src/__tests__/**"]
 }
