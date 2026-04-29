@@ -84,7 +84,7 @@ export class LegacyClientModel {
 
   async findByDocument(documentId: string): Promise<ILegacyClient | null> {
     const client = (await LegacyClient.findOne({
-      documentId: documentId.replace(/\D/g, ""),
+      cpf: documentId.replace(/\D/g, ""),
     })) as LegacyClientDocument | null;
     return client ? this.convertToILegacyClient(client) : null;
   }

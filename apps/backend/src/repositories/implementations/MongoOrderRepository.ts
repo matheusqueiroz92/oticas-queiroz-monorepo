@@ -25,7 +25,7 @@ export class MongoOrderRepository extends BaseRepository<IOrder, CreateOrderDTO>
 
     return {
       _id: order._id?.toString(),
-      clientId: order.clientId || "",
+      clientId: order.clientId?._id?.toString() || order.clientId?.toString() || "",
       employeeId: order.employeeId || "",
       institutionId: order.institutionId?.toString() || null,
       isInstitutionalOrder: order.isInstitutionalOrder || false,

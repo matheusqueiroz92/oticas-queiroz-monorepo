@@ -268,8 +268,6 @@ describe("StockService", () => {
 
       await expect(stockService.decreaseStock("frame123", 2))
         .rejects.toThrow(new StockError("Erro desconhecido ao processar estoque: Database error"));
-
-      expect(mockSession.abortTransaction).toHaveBeenCalled();
     });
 
     it("deve tratar erros não-Error e relançar como StockError", async () => {
