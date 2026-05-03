@@ -106,7 +106,7 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no root@147.79.107.246 "
             set -e
-            cd /var/www/oticas-queiroz-monorepo
+            cd /var/www/oticas-queiroz
             git pull origin main
             cd /opt/apps/oticas-queiroz
             docker compose pull --quiet 2>/dev/null || true
