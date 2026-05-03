@@ -5,8 +5,8 @@
     "rootDir": "./src",
     "baseUrl": ".",
     "typeRoots": [
-      "../../node_modules/@types",
-      "./node_modules/@types"
+      "${configDir}/../../node_modules/@types",
+      "${configDir}/node_modules/@types"
     ],
     "paths": {
       "@oticas-queiroz/config": ["../../packages/config"]
