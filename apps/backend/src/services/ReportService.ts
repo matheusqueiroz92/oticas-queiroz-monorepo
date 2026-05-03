@@ -34,6 +34,7 @@ export class ReportService {
   }
 
   private async generateReportData(reportId: string): Promise<void> {
+    if (!this.reportModel) return;
     const report = await this.reportModel.findById(reportId);
     if (!report) return;
   
@@ -67,11 +68,13 @@ export class ReportService {
       }
   
       this.reportCache.set(cacheKey, data);
-      
-      if (this.reportCache.size > 100) {
+
+      while (this.reportCache.size > 100) {
         const oldestKey = this.reportCache.keys().next().value;
-        if (oldestKey) {
+        if (oldestKey !== undefined) {
           this.reportCache.delete(oldestKey);
+        } else {
+          break;
         }
       }
   

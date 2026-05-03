@@ -244,6 +244,14 @@ orderSchema.pre('save', function(next) {
   next();
 });
 
+// Índices para otimizar consultas frequentes
+orderSchema.index({ clientId: 1, isDeleted: 1 });
+orderSchema.index({ employeeId: 1, isDeleted: 1 });
+orderSchema.index({ status: 1, isDeleted: 1 });
+orderSchema.index({ orderDate: -1 });
+orderSchema.index({ createdAt: -1 });
+orderSchema.index({ laboratoryId: 1, isDeleted: 1 });
+
 const Order = mongoose.model<IOrder>('Order', orderSchema);
 
 export { Order };

@@ -7,6 +7,9 @@ const createJestConfig = nextJest({
 
 // Add any custom config to be passed to Jest
 const customJestConfig = {
+  // Custom resolver: maps services/authService → _services/authService (same physical
+  // file so mocks intercept component imports) and handles Next.js route groups.
+  resolver: '<rootDir>/jest.resolver.js',
   // Adicione os módulos e arquivos a serem ignorados ou mockados
   moduleNameMapper: {
     // Handle module aliases (this will be automatically configured for you soon)

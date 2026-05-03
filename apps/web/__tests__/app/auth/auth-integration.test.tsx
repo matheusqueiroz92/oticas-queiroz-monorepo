@@ -65,8 +65,10 @@ jest.mock('@/contexts/authContext', () => {
 
 // Mock do provider de autenticação
 jest.mock('@/providers/AuthProvider', () => {
+  const React = require('react');
   const { AuthContext } = require('@/contexts/authContext');
-  
+  const Cookies = require('js-cookie');
+
   return {
     AuthProvider: ({ children }: { children: React.ReactNode }) => {
       interface User {
@@ -79,12 +81,11 @@ jest.mock('@/providers/AuthProvider', () => {
 
       const [user, setUser] = React.useState<User | null>(null);
       const [isLoading, setIsLoading] = React.useState(false);
-      
-      // Funções mockadas
-      const signIn = jest.fn(async (login, password) => {
+
+      // Funções (sem jest.fn() para evitar interferência do clearAllMocks)
+      const signIn = async (login: string, _password: string) => {
         setIsLoading(true);
         try {
-          // Simular login bem-sucedido
           const mockUser = {
             _id: 'user-id',
             name: 'Test User',
@@ -92,26 +93,25 @@ jest.mock('@/providers/AuthProvider', () => {
             email: login,
             cpf: '12345678901',
           };
-          
+
           setUser(mockUser);
-          
-          // Simular definição de cookies (SEM o terceiro parâmetro)
+
           Cookies.set('token', 'fake-token');
           Cookies.set('userId', mockUser._id);
           Cookies.set('name', mockUser.name);
           Cookies.set('role', mockUser.role);
           Cookies.set('email', mockUser.email);
           Cookies.set('cpf', mockUser.cpf);
-          
+
           return { success: true, user: mockUser };
         } catch (error) {
           return { success: false, error };
         } finally {
           setIsLoading(false);
         }
-      });
-      
-      const signOut = jest.fn(() => {
+      };
+
+      const signOut = () => {
         setUser(null);
         Cookies.remove('token');
         Cookies.remove('userId');
@@ -119,36 +119,29 @@ jest.mock('@/providers/AuthProvider', () => {
         Cookies.remove('role');
         Cookies.remove('email');
         Cookies.remove('cpf');
-      });
-      
-      const hasPermission = jest.fn((requiredRoles) => {
+      };
+
+      const hasPermission = (requiredRoles: string[]) => {
         if (!user) return false;
         return requiredRoles.includes(user.role);
-      });
-      
-      // Efeito para carregar dados iniciais
+      };
+
+      // Efeito para carregar dados iniciais — sem setTimeout para evitar race conditions nos testes
       React.useEffect(() => {
         const token = Cookies.get('token');
         if (token) {
-          setIsLoading(true);
-          
-          // Simular carregamento do perfil
           const userFromCookies = {
             _id: Cookies.get('userId') || 'default-id',
             name: Cookies.get('name') || 'Default User',
             role: Cookies.get('role') || 'customer',
-            email: Cookies.get('email') || 'default@example.com', 
+            email: Cookies.get('email') || 'default@example.com',
             cpf: Cookies.get('cpf') || '12345678901',
           };
-          
-          // Simular delay
-          setTimeout(() => {
-            setUser(userFromCookies);
-            setIsLoading(false);
-          }, 10);
+
+          setUser(userFromCookies);
         }
       }, []);
-      
+
       // Valor do contexto
       const authValue = {
         user,
@@ -158,7 +151,7 @@ jest.mock('@/providers/AuthProvider', () => {
         signOut,
         hasPermission,
       };
-      
+
       return (
         <AuthContext.Provider value={authValue}>
           {children}

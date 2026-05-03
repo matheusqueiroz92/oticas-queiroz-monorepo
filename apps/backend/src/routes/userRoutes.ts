@@ -1,7 +1,7 @@
 import express from "express";
 import { UserController } from "../controllers/UserController";
 import { authenticate, authorize } from "../middlewares/authMiddleware";
-import upload from "../config/multerConfig";
+import upload, { validateFileMagicBytes } from "../config/multerConfig";
 import { asyncHandler } from "../utils/asyncHandler";
 
 const router = express.Router();
@@ -231,6 +231,7 @@ router.put(
   "/profile",
   authenticate,
   upload.single("userImage"),
+  validateFileMagicBytes,
   asyncHandler((req, res) => userController.updateProfile(req, res))
 );
 
@@ -465,6 +466,7 @@ router.put(
   "/:id",
   authenticate,
   upload.single("userImage"),
+  validateFileMagicBytes,
   authorize(["admin", "employee"]),
   asyncHandler((req, res) => userController.updateUser(req, res))
 );

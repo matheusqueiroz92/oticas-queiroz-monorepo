@@ -5,12 +5,13 @@ node_modules
 .pnp
 .pnp.js
 
-# Local env files
+# Local env files — .env.example é rastreado intencionalmente
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+!.env.example
 
 # Testing
 coverage
@@ -27,7 +28,6 @@ out/
 build
 dist
 
-
 # Debug
 npm-debug.log*
 yarn-debug.log*
@@ -40,3 +40,10 @@ yarn-error.log*
 deploy.log
 
 .cursor/
+
+# Uploads de usuário — arquivos de imagem não devem entrar no repositório
+apps/public/images/users/*
+apps/public/images/products/*
+# Garante que os diretórios existam no clone (via .gitkeep)
+!apps/public/images/users/.gitkeep
+!apps/public/images/products/.gitkeep

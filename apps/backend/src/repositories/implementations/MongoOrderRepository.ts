@@ -1,4 +1,5 @@
 import { Order } from "../../schemas/OrderSchema";
+import { User } from "../../schemas/UserSchema";
 import { BaseRepository } from "./BaseRepository";
 import { IOrderRepository } from "../interfaces/IOrderRepository";
 import type { IOrder, CreateOrderDTO, IPaymentHistoryEntry } from "../../interfaces/IOrder";
@@ -24,7 +25,7 @@ export class MongoOrderRepository extends BaseRepository<IOrder, CreateOrderDTO>
 
     return {
       _id: order._id?.toString(),
-      clientId: order.clientId || "",
+      clientId: order.clientId?._id?.toString() || order.clientId?.toString() || "",
       employeeId: order.employeeId || "",
       institutionId: order.institutionId?.toString() || null,
       isInstitutionalOrder: order.isInstitutionalOrder || false,
@@ -59,6 +60,23 @@ export class MongoOrderRepository extends BaseRepository<IOrder, CreateOrderDTO>
       createdAt: order.createdAt,
       updatedAt: order.updatedAt
     };
+  }
+
+  /**
+   * Campos permitidos para ordenação em pedidos (whitelist - evita NoSQL injection)
+   */
+  protected getAllowedSortFields(): string[] {
+    return [
+      "createdAt",
+      "updatedAt",
+      "orderDate",
+      "deliveryDate",
+      "status",
+      "totalPrice",
+      "finalPrice",
+      "serviceOrder",
+      "paymentStatus",
+    ];
   }
 
   /**
@@ -122,11 +140,7 @@ export class MongoOrderRepository extends BaseRepository<IOrder, CreateOrderDTO>
    */
   private async findClientIdsBySearchTerm(searchTerm: string): Promise<string[]> {
     try {
-      // Importar dinamicamente para evitar dependência circular
-      const mongoose = require('mongoose');
-      const UserModel = mongoose.model('User');
-
-      const matchingClients = await UserModel.find({
+      const matchingClients = await User.find({
         $or: [
           { name: { $regex: searchTerm, $options: 'i' } },
           { cpf: { $regex: searchTerm, $options: 'i' } },
@@ -134,7 +148,7 @@ export class MongoOrderRepository extends BaseRepository<IOrder, CreateOrderDTO>
         ],
         role: 'customer'
       }).select('_id name role');
-      
+
       return matchingClients.map((client: any) => client._id.toString());
     } catch (error) {
       console.error('Erro ao buscar clientes por termo:', error);
@@ -182,18 +196,22 @@ export class MongoOrderRepository extends BaseRepository<IOrder, CreateOrderDTO>
       query.isDeleted = { $ne: true };
     }
 
-    // Adicionar opções de ordenação se fornecidas
+    // Adicionar opções de ordenação (com whitelist para evitar NoSQL injection)
     if (sortOptions) {
       // sortOptions já está no formato correto para o Mongoose
-    } else if (filters.sort) {
-      // Manter compatibilidade com sistema de ordenação existente
-      const sortField = filters.sort.startsWith('-') 
-        ? filters.sort.substring(1) 
+    } else if (filters.sort && typeof filters.sort === "string") {
+      const sortField = filters.sort.startsWith("-")
+        ? filters.sort.substring(1)
         : filters.sort;
-      const sortOrder = filters.sort.startsWith('-') ? -1 : 1;
-      sortOptions = { [sortField]: sortOrder };
+      const sortOrder = filters.sort.startsWith("-") ? -1 : 1;
+      const allowedFields = this.getAllowedSortFields();
+      const safeField =
+        /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(sortField) &&
+        allowedFields.includes(sortField)
+          ? sortField
+          : "createdAt";
+      sortOptions = { [safeField]: sortOrder };
     } else {
-      // Ordenação padrão
       sortOptions = { createdAt: -1 };
     }
 
@@ -409,7 +427,7 @@ export class MongoOrderRepository extends BaseRepository<IOrder, CreateOrderDTO>
     page: number = 1,
     limit: number = 10
   ): Promise<{ items: IOrder[]; total: number; page: number; limit: number }> {
-    return this.findAll(page, limit, { includeDeleted: true, isDeleted: true });
+    return this.findAll(page, limit, { isDeleted: true }, true);
   }
 
   /**

@@ -1,4 +1,3 @@
-import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import { jsPDF } from 'jspdf';
 import type { Order } from '@/app/_types/order';
@@ -51,34 +50,8 @@ export const exportOrdersToExcel = (
     'Data de Entrega': order.deliveryDate ? new Date(order.deliveryDate).toLocaleDateString() : 'N/A'
   }));
 
-  // Criar planilha
-  const worksheet = XLSX.utils.json_to_sheet(data);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Pedidos');
-
-  // Adicionar título
-  XLSX.utils.sheet_add_aoa(worksheet, [[title]], { origin: 'A1' });
-  
-  // Ajustar largura das colunas
-  const colWidths = [{ wch: 25 }, { wch: 15 }, { wch: 25 }, { wch: 25 }, { wch: 10 }, { wch: 15 }, 
-    { wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }];
-worksheet['!cols'] = colWidths;
-
-  // Formatar valores monetários
-  // const formatCurrency = (value: number) => `R$ ${value.toFixed(2)}`;
-  
-  // Buscar células monetárias e aplicar formato
-  for (let i = 0; i < data.length; i++) {
-    const row = i + 2; // +2 por causa do título e cabeçalho
-    worksheet[`G${row}`] = { v: data[i]['Valor Total'], w: formatCurrency(data[i]['Valor Total']) };
-    worksheet[`H${row}`] = { v: data[i]['Desconto'], w: formatCurrency(data[i]['Desconto']) };
-    worksheet[`I${row}`] = { v: data[i]['Valor Final'], w: formatCurrency(data[i]['Valor Final']) };
-  }
-
-  // Exportar arquivo
-  const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-  const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-  saveAs(blob, `pedidos-${new Date().toISOString().split('T')[0]}.xlsx`);
+  const blob = buildCsvBlob(data);
+  saveAs(blob, `pedidos-${new Date().toISOString().split('T')[0]}.csv`);
 };
 
 /**
@@ -265,52 +238,25 @@ export const exportCustomers = async (options: ExportCustomerOptions): Promise<B
 /**
  * Exporta para Excel
  */
-const exportToExcel = (data: any[]): Blob => {
-  const ws = XLSX.utils.json_to_sheet(data);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Clientes');
-  
-  // Ajustar largura das colunas
-  const wscols = [
-    { wch: 25 }, // Nome
-    { wch: 30 }, // Email
-    { wch: 15 }, // Telefone
-    { wch: 15 }, // CPF
-    { wch: 15 }, // Data de Nascimento
-    { wch: 30 }, // Endereço
-    { wch: 15 }, // Cidade
-    { wch: 10 }, // Estado
-    { wch: 10 }, // CEP
-    { wch: 15 }, // Tipo de Cliente
-    { wch: 10 }, // Status
-    { wch: 15 }, // Total de Compras
-    { wch: 15 }, // Débitos
-    { wch: 15 }, // Data de Cadastro
-    { wch: 15 }, // Última Atualização
-  ];
-  ws['!cols'] = wscols;
+const exportToExcel = (data: any[]): Blob => buildCsvBlob(data);
 
-  const buffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-  return new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-};
-
-/**
- * Exporta para CSV
- */
-const exportToCSV = (data: any[]): Blob => {
+function buildCsvBlob(data: any[]): Blob {
   const headers = Object.keys(data[0] || {});
   const csvContent = [
     headers.join(','),
-    ...data.map(row => headers.map(header => {
-      const value = row[header] || '';
-      // Escapar aspas duplas e envolver em aspas se contém vírgula
-      const escaped = String(value).replace(/"/g, '""');
-      return escaped.includes(',') ? `"${escaped}"` : escaped;
-    }).join(','))
+    ...data.map(row =>
+      headers
+        .map(header => {
+          const escaped = String(row[header] ?? '').replace(/"/g, '""');
+          return escaped.includes(',') || escaped.includes('\n') ? `"${escaped}"` : escaped;
+        })
+        .join(',')
+    ),
   ].join('\n');
-
   return new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-};
+}
+
+const exportToCSV = (data: any[]): Blob => buildCsvBlob(data);
 
 /**
  * Exporta para PDF

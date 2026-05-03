@@ -1,7 +1,7 @@
 import express from "express";
 import { ProductController } from "../controllers/ProductController";
 import { authenticate, authorize } from "../middlewares/authMiddleware";
-import { uploadProductImage } from "../config/multerConfig";
+import { uploadProductImage, validateFileMagicBytes } from "../config/multerConfig";
 import { asyncHandler } from "../utils/asyncHandler";
 
 const router = express.Router();
@@ -150,6 +150,7 @@ router.post(
   authenticate,
   authorize(["admin", "employee"]),
   uploadProductImage,
+  validateFileMagicBytes,
   asyncHandler(productController.createProduct.bind(productController))
 );
 
@@ -360,6 +361,7 @@ router.put(
   authenticate,
   authorize(["admin", "employee"]),
   uploadProductImage,
+  validateFileMagicBytes,
   asyncHandler(productController.updateProduct.bind(productController))
 );
 

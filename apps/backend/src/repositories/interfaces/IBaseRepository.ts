@@ -66,4 +66,5 @@ export interface IBaseRepository<T, CreateDTO = Omit<T, '_id'>> {
    * @returns Número de documentos
    */
   count(filters?: Record<string, any>): Promise<number>;
-} 
+
+}

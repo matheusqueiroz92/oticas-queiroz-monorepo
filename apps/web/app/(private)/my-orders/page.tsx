@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import Cookies from "js-cookie";
+import { useAuth } from "@/hooks/useAuth";
 import { useOrders } from "@/hooks/orders/useOrders";
 import { OrderDialog } from "@/components/orders/OrderDialog";
 import { OrdersStatsCards } from "@/components/orders/OrdersStatsCards";
@@ -15,6 +15,7 @@ import { getMyOrdersTableColumns } from "@/app/_utils/my-orders-table-config";
 import { customBadgeStyles } from "@/app/_utils/custom-badge-styles";
 
 export default function MyOrdersPage() {
+  const { user } = useAuth();
   const { state, actions } = useMyOrdersPageState();
   
   const {
@@ -84,20 +85,10 @@ export default function MyOrdersPage() {
 
   // Carregar dados do usuário logado
   useEffect(() => {
-    const userId = Cookies.get("userId");
-    const userName = Cookies.get("name");
-    const userRole = Cookies.get("role");
-    
-    if (userId) {
-      actions.setLoggedUserId(userId);
-    }
-    if (userName) {
-      actions.setLoggedUserName(userName);
-    }
-    if (userRole) {
-      actions.setLoggedUserRole(userRole);
-    }
-  }, [actions]);
+    if (user?._id) actions.setLoggedUserId(user._id);
+    if (user?.name) actions.setLoggedUserName(user.name);
+    if (user?.role) actions.setLoggedUserRole(user.role);
+  }, [user, actions]);
 
   // Para funcionários/admins: aplicar filtros automáticos
   useEffect(() => {

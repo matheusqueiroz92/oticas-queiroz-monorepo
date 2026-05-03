@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { RepositoryFactory } from "../repositories/RepositoryFactory";
 import type { ICashRegisterRepository } from "../repositories/interfaces/ICashRegisterRepository";
 import type { IOrderRepository } from "../repositories/interfaces/IOrderRepository";
@@ -75,37 +76,16 @@ export class PaymentStatusService {
     method?: string,
     action: 'add' | 'remove' | 'recalculate' = 'recalculate'
   ): Promise<void> {
-    console.log(`[PaymentStatusService] Iniciando atualização para pedido ${orderId}`);
-    
     const order = await this.orderRepository.findById(orderId);
-    if (!order) {
-      console.error(`[PaymentStatusService] Pedido ${orderId} não encontrado`);
-      throw new Error("Pedido não encontrado");
-    }
+    if (!order) throw new Error("Pedido não encontrado");
 
-    // Calcular o valor final considerando desconto
     const finalPrice = order.finalPrice || (order.totalPrice - (order.discount || 0));
-    
-    console.log(`[PaymentStatusService] Pedido encontrado: ${order._id}`);
-    console.log(`[PaymentStatusService] Valores: totalPrice=${order.totalPrice}, discount=${order.discount || 0}, finalPrice=${finalPrice}`);
+    const { items: payments } = await this.paymentRepository.findAll(1, 1000, { orderId });
 
-    // Buscar todos os pagamentos do pedido
-    // Garantir que o orderId seja comparado corretamente (como string ou ObjectId)
-    const { items: payments } = await this.paymentRepository.findAll(1, 1000, { orderId: orderId });
-    
-    console.log(`[PaymentStatusService] Encontrados ${payments.length} pagamentos para o pedido ${orderId}`);
-    payments.forEach((p, index) => {
-      console.log(`[PaymentStatusService] Pagamento ${index + 1}: ID=${p._id}, status=${p.status}, valor=${p.amount}`);
-    });
-    
-    // Calcular totais
     const totalPaid = payments
-      .filter(p => p.status === "completed")
+      .filter((p) => p.status === "completed")
       .reduce((sum, p) => sum + p.amount, 0);
 
-    console.log(`[PaymentStatusService] Total pago (apenas completed): ${totalPaid} de ${finalPrice} (valor final)`);
-
-    // Determinar status do pagamento - CORRIGIDO: usar finalPrice ao invés de totalPrice
     let paymentStatus: IOrder["paymentStatus"] = "pending";
     if (totalPaid >= finalPrice) {
       paymentStatus = "paid";
@@ -113,27 +93,65 @@ export class PaymentStatusService {
       paymentStatus = "partially_paid";
     }
 
-    console.log(`[PaymentStatusService] Novo status calculado: ${paymentStatus}`);
-
-    // Atualizar o pedido com o novo status de pagamento
     const updates: Partial<IOrder> = { paymentStatus };
 
-    // Adicionar histórico de pagamento se há um novo pagamento
     if (paymentId && amount && method) {
       const currentHistory = order.paymentHistory || [];
-      const newEntry = {
-        paymentId,
-        amount,
-        date: new Date(),
-        method,
-      };
-      updates.paymentHistory = [...currentHistory, newEntry];
-      console.log(`[PaymentStatusService] Adicionado ao histórico: pagamento ${paymentId}, valor ${amount}`);
+      updates.paymentHistory = [
+        ...currentHistory,
+        { paymentId, amount, date: new Date(), method },
+      ];
     }
 
-    console.log(`[PaymentStatusService] Atualizando pedido com:`, updates);
     await this.orderRepository.update(orderId, updates);
-    console.log(`[PaymentStatusService] Pedido ${orderId} atualizado com sucesso`);
+  }
+
+  /**
+   * Versão session-aware de updateOrderPaymentStatus para uso em transações MongoDB.
+   * Atualiza o pedido com `updateInSession` para garantir atomicidade com a criação do pagamento.
+   */
+  async updateOrderPaymentStatusInSession(
+    orderId: string,
+    paymentId: string,
+    amount: number,
+    method: string,
+    session: mongoose.ClientSession | null,
+    newPaymentStatus: IPayment["status"] = "completed"
+  ): Promise<void> {
+    const order = await this.orderRepository.findById(orderId);
+    if (!order) throw new Error("Pedido não encontrado");
+
+    const finalPrice = order.finalPrice || (order.totalPrice - (order.discount || 0));
+    const { items: payments } = await this.paymentRepository.findAll(1, 1000, { orderId });
+
+    // Exclui o novo pagamento pelo ID (pode já estar no DB em standalone)
+    // e soma apenas pagamentos completados anteriores
+    const previousPaid = payments
+      .filter((p) => p.status === "completed" && p._id?.toString() !== paymentId)
+      .reduce((sum, p) => sum + p.amount, 0);
+
+    // Adiciona o novo pagamento apenas se o status for "completed"
+    const totalPaid = newPaymentStatus === "completed"
+      ? previousPaid + amount
+      : previousPaid;
+
+    let paymentStatus: IOrder["paymentStatus"] = "pending";
+    if (totalPaid >= finalPrice) {
+      paymentStatus = "paid";
+    } else if (totalPaid > 0) {
+      paymentStatus = "partially_paid";
+    }
+
+    const currentHistory = order.paymentHistory || [];
+    const updates: Partial<IOrder> = {
+      paymentStatus,
+      paymentHistory: [
+        ...currentHistory,
+        { paymentId, amount, date: new Date(), method },
+      ],
+    };
+
+    await this.orderRepository.updateInSession(orderId, updates, session);
   }
 
   /**

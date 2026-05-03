@@ -13,6 +13,7 @@ Sistema de gestão completo para ótica, desenvolvido com Node.js, Express.js, T
 - **Banco de Dados**: MongoDB com Mongoose
 - **Autenticação**: JWT + BCrypt
 - **Validação**: Zod
+- **Segurança**: Helmet (headers HTTP), express-rate-limit (proteção contra brute force)
 - **Testes**: Jest + Supertest
 - **Documentação**: Swagger
 - **Upload**: Multer
@@ -142,11 +143,34 @@ npm test
 - **Middleware de autenticação**: Proteção de rotas
 - **Roles**: Admin, employee, client
 
+### Helmet (Headers de Segurança)
+- X-Content-Type-Options: nosniff
+- X-Frame-Options: SAMEORIGIN
+- X-XSS-Protection
+- HSTS (em produção via proxy)
+- Content-Security-Policy desabilitada para compatibilidade com Swagger UI
+
 ### Validação
 - **Zod**: Validação de schemas
 - **Sanitização**: Limpeza de dados de entrada
-- **Rate limiting**: Proteção contra ataques
 - **CORS**: Configuração de origens permitidas
+
+### Rate Limiting (express-rate-limit)
+Proteção contra brute force e abuso em rotas sensíveis:
+
+| Rota | Limite | Janela |
+|------|--------|--------|
+| `POST /api/auth/login` | 10 req | 15 min |
+| `POST /api/auth/forgot-password` | 5 req | 15 min |
+| `POST /api/auth/reset-password` | 5 req | 15 min |
+| `GET /api/auth/validate-reset-token/:token` | 5 req | 15 min |
+
+- Desativado automaticamente em ambiente de teste
+- Resposta 429 com formato padronizado da API
+- Configuração em `src/config/rateLimit.ts`
+
+### Rotas de Diagnóstico
+- **`GET /api/debug/images-path`**: Disponível apenas em `development` e `test`. Em produção retorna 404 para evitar exposição de informações do servidor
 
 ## 📝 API Endpoints
 
@@ -214,6 +238,44 @@ npm run test:auth -- --coverage
 
 ## 🔄 Changelog
 
+### [2025-02-22] - Melhorias de Segurança e Média Prioridade
+
+#### ✨ Novas Implementações (Média Prioridade)
+- **Validação de variáveis de ambiente**: Schema Zod em `src/config/env.ts` valida MONGODB_URI, JWT_SECRET e PORT no bootstrap; falha rápida se inválidas
+- **Limite de paginação**: Parâmetro `limit` limitado a máximo 100 em user e order validators
+- **express.json limit**: Corpo das requisições limitado a 1MB
+- **ReportService testes**: Correção do contexto `this` com `.bind(reportService)` e guard para `reportModel`
+- **Índices MongoDB**: Novos índices em Order (clientId, employeeId, status, orderDate, createdAt), Payment (orderId, customerId, date, cashRegisterId) e Product (name, productType, stock)
+
+#### ✨ Implementações Anteriores (Alta Prioridade)
+- **Rate Limiting**: Proteção contra brute force em login e enumeração de emails
+  - Login: 10 tentativas por 15 min por IP
+  - Forgot-password, reset-password: 5 tentativas por 15 min por IP
+- **Rota de Debug Protegida**: `/api/debug/images-path` disponível apenas em dev/test; em produção retorna 404
+- **Helmet**: Headers de segurança HTTP (X-Content-Type-Options, X-Frame-Options, etc.)
+- **Sort Whitelist**: Validação do parâmetro `sort` em queries para evitar NoSQL injection
+  - BaseRepository: whitelist padrão (createdAt, updatedAt, _id, name)
+  - MongoOrderRepository: campos específicos de pedidos
+- **PM2 Produção**: Corrigido para usar `npm start` em vez de `npm run dev` no ecosystem.config.js
+
+#### 📝 Arquivos Modificados/Criados
+- `src/config/rateLimit.ts` - Configuração dos limitadores
+- `src/config/env.ts` - Validação de variáveis de ambiente
+- `src/app.ts` - Helmet, express.json limit, proteção rota debug
+- `src/server.ts` - Import da validação env
+- `src/routes/authRoutes.ts` - Aplicação dos limitadores
+- `src/validators/userValidators.ts` - Limite max paginação
+- `src/validators/orderValidators.ts` - Limite max paginação
+- `src/repositories/implementations/BaseRepository.ts` - Whitelist de sort
+- `src/repositories/implementations/MongoOrderRepository.ts` - Whitelist de sort
+- `src/services/ReportService.ts` - Guard reportModel
+- `src/__tests__/unit/services/ReportService.test.ts` - Bind contexto
+- `src/schemas/OrderSchema.ts` - Índices MongoDB
+- `src/schemas/PaymentSchema.ts` - Índices MongoDB
+- `src/schemas/ProductSchema.ts` - Índices MongoDB
+- `ecosystem.config.js` - PM2 com npm start
+- `package.json` - Dependências express-rate-limit, helmet, script build
+
 ### [2024-12-19] - Mudanças de CPF Opcional e Login por O.S.
 
 #### ✨ Novas Funcionalidades
@@ -245,13 +307,13 @@ npm run test:auth -- --coverage
 
 ### Configuração
 ```bash
-# Build para produção
+# Build para produção (executado pelo deploy via npx turbo run build)
 npm run build
 
-# Iniciar servidor
+# Iniciar servidor (usado pelo PM2 em produção)
 npm start
 
-# PM2 (recomendado)
+# PM2 (recomendado) - usa npm start para rodar node dist/server.js
 pm2 start ecosystem.config.js
 ```
 
@@ -294,6 +356,28 @@ pm2 start ecosystem.config.js
 - **MercadoPago**: Integração temporariamente desabilitada
 - **Testes de integração**: Alguns falhando por dados inválidos
 - **Cobertura**: Meta de 80% branches não atingida
+
+## ✅ Checklist de Melhorias Implementadas
+
+| Área | Status | Observação |
+|------|--------|------------|
+| Helmet | ✅ | Headers de segurança HTTP |
+| Rate limiting | ✅ | Rotas auth sensíveis |
+| Rota debug | ✅ | Protegida em produção |
+| Sort whitelist | ✅ | BaseRepository e MongoOrderRepository |
+| BCrypt | ✅ | Hash de senhas |
+| JWT | ✅ | Tokens com expiração |
+| CORS | ✅ | Origens configuradas |
+| Validação Zod | ✅ | Schemas validados |
+| PM2 | ✅ | npm start em produção |
+| Validação env | ✅ | Schema Zod no bootstrap |
+| express.json limit | ✅ | 1MB |
+| Paginação limit max | ✅ | Máximo 100 |
+| Índices MongoDB | ✅ | Order, Payment, Product |
+| ReportService testes | ✅ | Correção de contexto |
+| Swagger em prod | 🟡 | Disponível; considerar proteção futura |
+| bcrypt vs bcryptjs | 🟡 | Duplicidade; padronizar futuramente |
+| Refresh token | ⏳ | Pendente |
 
 ---
 

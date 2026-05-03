@@ -1,5 +1,6 @@
 import mongoose, { Model, Document, Types } from "mongoose";
 import { IBaseRepository } from "../interfaces/IBaseRepository";
+import { logger } from "../../config/logger";
 
 /**
  * Classe base abstrata para implementações de repositories
@@ -34,7 +35,7 @@ export abstract class BaseRepository<T, CreateDTO = Omit<T, '_id'>>
       const doc = await this.model.create(data);
       return this.convertToInterface(doc);
     } catch (error) {
-      console.error('Erro ao criar documento:', error);
+      logger.error('Erro ao criar documento', { error });
       throw error;
     }
   }
@@ -48,14 +49,14 @@ export abstract class BaseRepository<T, CreateDTO = Omit<T, '_id'>>
         return null;
       }
 
-      const doc = await this.model.findById(id).exec();
+      const doc = await this.model.findOne({ _id: id, isDeleted: { $ne: true } }).exec();
       if (!doc) {
         return null;
       }
 
       return this.convertToInterface(doc);
     } catch (error) {
-      console.error(`Erro ao buscar documento por ID ${id}:`, error);
+      logger.error(`Erro ao buscar documento por ID ${id}`, { error });
       return null;
     }
   }
@@ -80,18 +81,22 @@ export abstract class BaseRepository<T, CreateDTO = Omit<T, '_id'>>
       query.isDeleted = { $ne: true };
     }
 
-    // Adicionar opções de ordenação se fornecidas
+    // Adicionar opções de ordenação se fornecidas (com whitelist para evitar NoSQL injection)
     if (sortOptions) {
       // sortOptions já está no formato correto para o Mongoose
-    } else if (filters.sort) {
-      // Manter compatibilidade com sistema de ordenação existente
-      const sortField = filters.sort.startsWith('-') 
-        ? filters.sort.substring(1) 
+    } else if (filters.sort && typeof filters.sort === "string") {
+      const sortField = filters.sort.startsWith("-")
+        ? filters.sort.substring(1)
         : filters.sort;
-      const sortOrder = filters.sort.startsWith('-') ? -1 : 1;
-      sortOptions = { [sortField]: sortOrder };
+      const sortOrder = filters.sort.startsWith("-") ? -1 : 1;
+      const allowedFields = this.getAllowedSortFields();
+      const safeField =
+        /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(sortField) &&
+        allowedFields.includes(sortField)
+          ? sortField
+          : "createdAt";
+      sortOptions = { [safeField]: sortOrder };
     } else {
-      // Ordenação padrão
       sortOptions = { createdAt: -1 };
     }
 
@@ -133,7 +138,7 @@ export abstract class BaseRepository<T, CreateDTO = Omit<T, '_id'>>
 
       return this.convertToInterface(doc);
     } catch (error) {
-      console.error(`Erro ao atualizar documento ${id}:`, error);
+      logger.error(`Erro ao atualizar documento ${id}`, { error });
       throw error;
     }
   }
@@ -154,7 +159,7 @@ export abstract class BaseRepository<T, CreateDTO = Omit<T, '_id'>>
 
       return this.convertToInterface(doc);
     } catch (error) {
-      console.error(`Erro ao deletar documento ${id}:`, error);
+      logger.error(`Erro ao deletar documento ${id}`, { error });
       throw error;
     }
   }
@@ -186,7 +191,7 @@ export abstract class BaseRepository<T, CreateDTO = Omit<T, '_id'>>
 
       return this.convertToInterface(doc);
     } catch (error) {
-      console.error(`Erro ao fazer soft delete do documento ${id}:`, error);
+      logger.error(`Erro ao fazer soft delete do documento ${id}`, { error });
       throw error;
     }
   }
@@ -203,7 +208,7 @@ export abstract class BaseRepository<T, CreateDTO = Omit<T, '_id'>>
       const doc = await this.model.findById(id).select('_id').exec();
       return !!doc;
     } catch (error) {
-      console.error(`Erro ao verificar existência do documento ${id}:`, error);
+      logger.error(`Erro ao verificar existência do documento ${id}`, { error });
       return false;
     }
   }
@@ -216,9 +221,17 @@ export abstract class BaseRepository<T, CreateDTO = Omit<T, '_id'>>
       const query = this.buildFilterQuery(filters);
       return await this.model.countDocuments(query).exec();
     } catch (error) {
-      console.error('Erro ao contar documentos:', error);
+      logger.error('Erro ao contar documentos', { error });
       throw error;
     }
+  }
+
+  /**
+   * Campos permitidos para ordenação (whitelist - evita NoSQL injection).
+   * Sobrescreva em classes filhas para campos específicos do modelo.
+   */
+  protected getAllowedSortFields(): string[] {
+    return ["createdAt", "updatedAt", "_id", "name"];
   }
 
   /**
@@ -241,6 +254,46 @@ export abstract class BaseRepository<T, CreateDTO = Omit<T, '_id'>>
   }
 
   /**
+   * Cria documento dentro de uma session MongoDB (suporte a transações).
+   * session=null executa sem transação (fallback para standalone).
+   */
+  async createInSession(data: CreateDTO, session: mongoose.ClientSession | null): Promise<T> {
+    try {
+      const docs = session
+        ? await this.model.create([data], { session })
+        : await this.model.create(data);
+      const doc = Array.isArray(docs) ? docs[0] : docs;
+      return this.convertToInterface(doc);
+    } catch (error) {
+      logger.error("Erro ao criar documento com session", { error });
+      throw error;
+    }
+  }
+
+  /**
+   * Atualiza documento dentro de uma session MongoDB (suporte a transações).
+   * session=null executa sem transação (fallback para standalone).
+   */
+  async updateInSession(
+    id: string,
+    data: Partial<T>,
+    session: mongoose.ClientSession | null
+  ): Promise<T | null> {
+    try {
+      if (!this.isValidId(id)) return null;
+
+      const doc = await this.model
+        .findByIdAndUpdate(id, { $set: data }, { new: true, runValidators: true, session: session ?? undefined })
+        .exec();
+
+      return doc ? this.convertToInterface(doc) : null;
+    } catch (error) {
+      logger.error(`Erro ao atualizar documento ${id} com session`, { error });
+      throw error;
+    }
+  }
+
+  /**
    * Busca documentos com session do MongoDB (para transações)
    */
   protected async findWithSession(
@@ -254,7 +307,7 @@ export abstract class BaseRepository<T, CreateDTO = Omit<T, '_id'>>
 
       return docs.map(doc => this.convertToInterface(doc));
     } catch (error) {
-      console.error('Erro ao buscar documentos com session:', error);
+      logger.error('Erro ao buscar documentos com session', { error });
       throw error;
     }
   }
@@ -274,7 +327,7 @@ export abstract class BaseRepository<T, CreateDTO = Omit<T, '_id'>>
       const doc = Array.isArray(docs) ? docs[0] : docs;
       return this.convertToInterface(doc);
     } catch (error) {
-      console.error('Erro ao criar documento com session:', error);
+      logger.error('Erro ao criar documento com session', { error });
       throw error;
     }
   }

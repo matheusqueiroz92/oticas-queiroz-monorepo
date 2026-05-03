@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import Cookies from "js-cookie";
+import { useState, useMemo } from "react";
+import { useAuth } from "@/hooks/useAuth";
 import { useOrders } from "@/hooks/orders/useOrders";
 import { usePayments } from "@/hooks/payments/usePayments";
 import { useCashRegister } from "@/hooks/cash-register/useCashRegister";
-import { useLegacyClients } from "@/hooks/legacy-clients/useLegacyClients";
 import { useSearchLegacyClient } from "@/hooks/legacy-clients/useSearchLegacyClient";
 import { useCustomers } from "@/hooks/customers/useCustomers";
 import { 
@@ -29,10 +28,11 @@ interface DialogStates {
 }
 
 export function useDashboard() {
-  // Estados do usuário
-  const [userName, setUserName] = useState("");
-  const [userRole, setUserRole] = useState("");
-  const [userId, setUserId] = useState("");
+  const { user } = useAuth();
+
+  const userName = user?.name || "";
+  const userRole = user?.role || "";
+  const userId = user?._id || "";
 
   // Estados dos diálogos
   const [dialogStates, setDialogStates] = useState<DialogStates>({
@@ -41,17 +41,6 @@ export function useDashboard() {
     productDialogOpen: false,
     paymentDialogOpen: false,
   });
-
-  // Inicializar dados do usuário
-  useEffect(() => {
-    const name = Cookies.get("name") || "";
-    const role = Cookies.get("role") || "";
-    const id = Cookies.get("userId") || "";
-
-    setUserName(name);
-    setUserRole(role);
-    setUserId(id);
-  }, []);
 
   const isCustomer = userRole === "customer";
 
@@ -69,7 +58,7 @@ export function useDashboard() {
   const { isLoading: isLoadingCashRegister, currentCashRegister } = useCashRegister(false);
   
   // Buscar cliente legado por CPF/CNPJ do usuário logado
-  const userCpf = Cookies.get("cpf") || "";
+  const userCpf = user?.cpf || "";
   const {
     data: legacyClient,
     isLoading: isLoadingLegacyClient

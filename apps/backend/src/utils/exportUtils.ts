@@ -1,7 +1,33 @@
 import Excel from "exceljs";
 import PDFDocument from "pdfkit";
-import { Parser } from "json2csv";
 import type { IPayment } from "../interfaces/IPayment";
+
+interface CsvField<T> {
+  label: string;
+  value: string | ((row: T) => unknown);
+}
+
+function toCsv<T extends Record<string, unknown>>(rows: T[], fields: CsvField<T>[]): Buffer {
+  const escapeCsvCell = (value: unknown): string => {
+    const str = value == null ? "" : String(value);
+    const escaped = str.replace(/"/g, '""');
+    return escaped.includes(",") || escaped.includes("\n") || escaped.includes('"')
+      ? `"${escaped}"`
+      : escaped;
+  };
+
+  const header = fields.map((f) => escapeCsvCell(f.label)).join(",");
+  const bodyLines = rows.map((row) =>
+    fields
+      .map((f) => {
+        const raw = typeof f.value === "function" ? f.value(row) : row[f.value];
+        return escapeCsvCell(raw);
+      })
+      .join(",")
+  );
+
+  return Buffer.from([header, ...bodyLines].join("\n"), "utf-8");
+}
 import type { ICashRegister } from "../interfaces/ICashRegister";
 import type { IOrder } from "../interfaces/IOrder";
 import type { IUser } from "../interfaces/IUser";
@@ -1624,9 +1650,7 @@ export class ExportUtils {
       { label: "Método de Pagamento", value: "paymentMethod" },
     ];
   
-    const parser = new Parser({ fields });
-    const csv = parser.parse(orders);
-    const buffer = Buffer.from(csv);
+    const buffer = toCsv(orders as any[], fields as any);
   
     return {
       buffer,
@@ -2691,9 +2715,7 @@ export class ExportUtils {
       { label: "Descrição", value: "description" },
     ];
 
-    const parser = new Parser({ fields });
-    const csv = parser.parse(payments);
-    const buffer = Buffer.from(csv);
+    const buffer = toCsv(payments as any[], fields as any);
 
     return {
       buffer,
@@ -3328,9 +3350,7 @@ export class ExportUtils {
       },
     ];
 
-    const parser = new Parser({ fields });
-    const csv = parser.parse(users);
-    const buffer = Buffer.from(csv);
+    const buffer = toCsv(users as any[], fields as any);
 
     return {
       buffer,

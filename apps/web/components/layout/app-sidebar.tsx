@@ -26,7 +26,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import Cookies from "js-cookie";
 
 import { cn } from "@/lib/utils";
 import {
@@ -162,15 +161,9 @@ const menuItems: MenuItem[] = [
 ];
 
 export function AppSidebar() {
-  const { isAdmin, isEmployee } = usePermissions();
+  const { isAdmin, isEmployee, isCustomer } = usePermissions();
   const pathname = usePathname();
-  const [userRole, setUserRole] = useState("");
   const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set());
-
-  useEffect(() => {
-    const role = Cookies.get("role") || "";
-    setUserRole(role);
-  }, []);
 
   // Expandir automaticamente o menu se o usuário estiver em uma sub-rota
   useEffect(() => {
@@ -180,14 +173,6 @@ export function AppSidebar() {
       }
     });
   }, [pathname]);
-
-  const isAdminByRole = userRole === "admin";
-  const isEmployeeByRole = userRole === "employee";
-
-  const canAccessAdmin = isAdmin || isAdminByRole;
-  const canAccessEmployee = isEmployee || isEmployeeByRole;
-  const isCustomer =
-    userRole === "customer" || (!canAccessAdmin && !canAccessEmployee);
 
   const isActiveLink = (href: string): boolean => pathname === href;
   const isActiveGroup = (item: MenuItem): boolean =>
@@ -201,8 +186,8 @@ export function AppSidebar() {
   };
 
   const shouldShowMenuItem = (itemRoles: string[]): boolean => {
-    if (canAccessAdmin && itemRoles.includes("admin")) return true;
-    if (canAccessEmployee && itemRoles.includes("employee")) return true;
+    if (isAdmin && itemRoles.includes("admin")) return true;
+    if (isEmployee && itemRoles.includes("employee")) return true;
     if (isCustomer && itemRoles.includes("customer")) return true;
     return false;
   };

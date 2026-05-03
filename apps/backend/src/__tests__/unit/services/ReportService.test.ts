@@ -452,15 +452,34 @@ describe("ReportService", () => {
       const startDate = new Date("2023-01-01");
       const endDate = new Date("2023-12-31");
 
-      // Reset mocks
-      jest.clearAllMocks();
-      
-      // Mock para recurringCustomersData
+      // Reset implementations (clearAllMocks only clears calls, not queued values)
+      User.aggregate.mockReset();
+      Order.aggregate.mockReset();
+
+      mockUserRepository.findByRole.mockResolvedValue({
+        items: [
+          { _id: "user1", name: "Cliente 1", createdAt: new Date("2023-01-15") },
+          { _id: "user2", name: "Cliente 2", createdAt: new Date("2023-02-20") },
+        ],
+      });
+
+      // periodData
+      User.aggregate
+        .mockResolvedValueOnce([
+          { _id: { month: 1, year: 2023 }, count: 5 },
+          { _id: { month: 2, year: 2023 }, count: 3 },
+        ])
+        // locationData — only user1 within filtered date range
+        .mockResolvedValueOnce([
+          { _id: "user1", count: 2 },
+        ]);
+
+      // recurringCustomersData
       Order.aggregate
         .mockResolvedValueOnce([
           { _id: "user1", orderCount: 2, totalSpent: 300 },
         ])
-        // Mock para averagePurchaseData
+        // averagePurchaseData
         .mockResolvedValueOnce([
           { _id: null, averagePurchase: 150 },
         ]);
@@ -479,12 +498,12 @@ describe("ReportService", () => {
     });
 
     it("deve retornar zero clientes ativos quando não há dados", async () => {
-      // Reset mocks
-      jest.clearAllMocks();
-      
+      // Reset implementations so beforeEach queued values don't leak in
+      User.aggregate.mockReset();
+      Order.aggregate.mockReset();
+
       mockUserRepository.findByRole.mockResolvedValue({ items: [] });
       User.aggregate
-        .mockResolvedValueOnce([])
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([]);
       Order.aggregate
@@ -728,8 +747,8 @@ describe("ReportService", () => {
       });
       mockReportModel.updateStatus.mockResolvedValue(true);
 
-      // Simular chamada do método privado
-      await (reportService as any).generateReportData("report123");
+      // Simular chamada do método privado (bind preserva contexto this)
+      await (reportService as any).generateReportData.bind(reportService)("report123");
 
       expect(Order.aggregate).toHaveBeenCalledTimes(2);
       expect(mockReportModel.updateStatus).toHaveBeenCalledWith("report123", "processing");
@@ -784,7 +803,7 @@ describe("ReportService", () => {
       });
       mockReportModel.updateStatus.mockResolvedValue(true);
 
-      const generateReportData = (reportService as any).generateReportData;
+      const generateReportData = (reportService as any).generateReportData.bind(reportService);
       await generateReportData("report123");
 
       expect(Product.aggregate).toHaveBeenCalled();
@@ -820,7 +839,7 @@ describe("ReportService", () => {
       });
       mockReportModel.updateStatus.mockResolvedValue(true);
 
-      const generateReportData = (reportService as any).generateReportData;
+      const generateReportData = (reportService as any).generateReportData.bind(reportService);
       await generateReportData("report123");
 
       expect(mockReportModel.updateStatus).toHaveBeenCalledWith(
@@ -841,7 +860,7 @@ describe("ReportService", () => {
       });
       mockReportModel.updateStatus.mockResolvedValue(true);
 
-      const generateReportData = (reportService as any).generateReportData;
+      const generateReportData = (reportService as any).generateReportData.bind(reportService);
       await generateReportData("report123");
 
       expect(mockReportModel.updateStatus).toHaveBeenCalledWith(
@@ -855,7 +874,7 @@ describe("ReportService", () => {
     it("deve ignorar se relatório não existir", async () => {
       mockReportModel.findById.mockResolvedValue(null);
 
-      const generateReportData = (reportService as any).generateReportData;
+      const generateReportData = (reportService as any).generateReportData.bind(reportService);
       await generateReportData("nonexistent");
 
       expect(mockReportModel.updateStatus).not.toHaveBeenCalled();
@@ -877,7 +896,7 @@ describe("ReportService", () => {
       const cacheKey = `sales_${JSON.stringify(mockReport.filters)}`;
       cache.set(cacheKey, cachedData);
 
-      const generateReportData = (reportService as any).generateReportData;
+      const generateReportData = (reportService as any).generateReportData.bind(reportService);
       await generateReportData("report123");
 
       expect(mockReportModel.updateStatus).toHaveBeenCalledWith(
@@ -906,7 +925,7 @@ describe("ReportService", () => {
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([]);
 
-      const generateReportData = (reportService as any).generateReportData;
+      const generateReportData = (reportService as any).generateReportData.bind(reportService);
       await generateReportData("report123");
 
       expect(cache.size).toBeLessThanOrEqual(100);
@@ -931,7 +950,7 @@ describe("ReportService", () => {
         status: "pending",
       });
 
-      const generateReportData = (reportService as any).generateReportData;
+      const generateReportData = (reportService as any).generateReportData.bind(reportService);
       await generateReportData("report123");
 
       expect(mockReportModel.updateStatus).toHaveBeenCalledWith(

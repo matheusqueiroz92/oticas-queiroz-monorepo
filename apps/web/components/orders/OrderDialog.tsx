@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/useToast";
 import { handleError, showSuccess } from "@/app/_utils/error-handler";
 import { useQueryClient } from "@tanstack/react-query";
 import { QUERY_KEYS } from "@/app/_constants/query-keys";
-import Cookies from "js-cookie";
+import { useAuth } from "@/hooks/useAuth";
 import { FilePlus } from "lucide-react";
 
 interface OrderDialogProps {
@@ -132,17 +132,6 @@ export const OrderDialog: React.FC<OrderDialogProps> = ({ open, onOpenChange, or
     return hasLensesInProducts(products) ? "pending" : "ready";
   };
   
-  // Debug: Log dos dados transformados
-  if (mode === "edit" && initialFormData) {
-    console.log("=== DEBUG: Dados transformados para edição ===");
-    console.log("Order original:", order);
-    console.log("Order.clientId:", order?.clientId);
-    console.log("Order.clientId type:", typeof order?.clientId);
-    console.log("InitialFormData:", initialFormData);
-    console.log("ClientId no initialFormData:", initialFormData.clientId);
-    console.log("ClientId type:", typeof initialFormData.clientId);
-  }
-  
   // Hooks
   const { customers: customers, isLoading: isLoadingCustomers } = useCustomers({
     pageSize: 100,
@@ -153,53 +142,32 @@ export const OrderDialog: React.FC<OrderDialogProps> = ({ open, onOpenChange, or
   const { handleCreateOrder, handleUpdateOrder } = useOrders();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
-  // Obter dados do usuário logado
+  const { user } = useAuth();
+
   const loggedEmployee = {
-    id: Cookies.get("userId") || "",
-    name: Cookies.get("userName") || "",
-    email: Cookies.get("userEmail") || "",
-    role: Cookies.get("userRole") || "",
+    id: user?._id || "",
+    name: user?.name || "",
+    email: user?.email || "",
+    role: user?.role || "",
   };
   
   // Effect para configurar o cliente selecionado quando estiver em modo de edição
   useEffect(() => {
     if (mode === "edit" && initialFormData?.clientId && customers && customers.length > 0) {
-      console.log("=== DEBUG: Tentando configurar cliente selecionado ===");
-      console.log("initialFormData.clientId:", initialFormData.clientId);
-      console.log("customers disponíveis:", customers.length);
-      console.log("Primeiros 3 clientes:", customers.slice(0, 3).map(c => ({ _id: c._id, name: c.name })));
-      
       const customer = customers.find(c => c._id === initialFormData.clientId);
-      console.log("Cliente encontrado:", customer);
-      
       if (customer && (!selectedCustomer || selectedCustomer._id !== customer._id)) {
-        console.log("=== DEBUG: Configurando cliente selecionado ===");
-        console.log("Cliente encontrado:", customer);
         setSelectedCustomer(customer);
-      } else {
-        console.log("=== DEBUG: Cliente não encontrado ou já selecionado ===");
-        console.log("selectedCustomer atual:", selectedCustomer);
       }
     }
   }, [mode, initialFormData?.clientId, customers, selectedCustomer]);
   
   // Função para processar o submit do formulário
   const handleSubmit = async (data: OrderFormValues) => {
-    // Proteção contra múltiplas submissões
-    if (isSubmitting) {
-      console.log("⚠️ Submit já em andamento, ignorando nova submissão");
-      return;
-    }
-    
+    if (isSubmitting) return;
+
     setIsSubmitting(true);
-    
+
     try {
-      console.log("=== INÍCIO DO SUBMIT ===");
-      console.log("Modo:", mode);
-      console.log("Dados do formulário recebidos:", data);
-      console.log("🔍 DEBUG: Verificando se é modo de edição...");
-      
       // Validações básicas
       if (!data.clientId) {
         throw new Error("Cliente é obrigatório");
@@ -216,15 +184,12 @@ export const OrderDialog: React.FC<OrderDialogProps> = ({ open, onOpenChange, or
       // Determinar status inicial baseado nos produtos (apenas para criação)
       let orderStatus = data.status;
       if (mode === "create" && (!orderStatus || orderStatus === "pending")) {
-        // Para produtos completos (com productType), usar a função
-        const fullProducts = productsData?.filter((p: any) => 
+        const fullProducts = productsData?.filter((p: any) =>
           data.products?.includes(p._id)
         ) || [];
         orderStatus = determineInitialStatus(fullProducts);
-        console.log("Status determinado baseado em produtos:", orderStatus, "Há lentes:", hasLensesInProducts(fullProducts));
       }
       
-      // Preparar dados para criação/edição do pedido
       const orderData = {
         ...data,
         employeeId: loggedEmployee.id,
@@ -237,29 +202,14 @@ export const OrderDialog: React.FC<OrderDialogProps> = ({ open, onOpenChange, or
         status: orderStatus || "pending",
         paymentStatus: data.paymentStatus || "pending",
       };
-      
-      console.log("Dados preparados:", orderData);
-      
+
       if (mode === "edit") {
-        console.log("=== MODO EDIÇÃO - ATUALIZANDO PEDIDO ===");
-        console.log("Order ID:", order?._id);
-        console.log("Order data:", order);
-        console.log("OrderData to update:", orderData);
-        
         if (!order?._id) {
           throw new Error("ID do pedido não encontrado");
         }
         
-        // Atualizar o pedido
         const updatedOrder = await handleUpdateOrder(order._id, orderData as any);
-        
-        console.log("=== PEDIDO ATUALIZADO COM SUCESSO ===");
-        console.log("Dados do pedido atualizado:", updatedOrder);
-        
-        // Invalidar queries dos produtos para atualizar estoque
-        console.log("=== INVALIDANDO QUERIES DOS PRODUTOS ===");
         queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.PRODUCTS.ALL] });
-        console.log("=== QUERIES INVALIDADAS COM SUCESSO ===");
         
         // Buscar dados do cliente para exibir na tela de sucesso
         const clientData = customers?.find((customer: any) => customer._id === data.clientId);
@@ -277,21 +227,8 @@ export const OrderDialog: React.FC<OrderDialogProps> = ({ open, onOpenChange, or
           `Pedido #${order.serviceOrder} foi atualizado no sistema`
         );
       } else {
-        console.log("=== CHAMANDO handleCreateOrder ===");
-        
-        // Criar o pedido e capturar os dados retornados
         const newOrder = await handleCreateOrder(orderData as any);
-        
-        console.log("=== PEDIDO CRIADO COM SUCESSO ===");
-        console.log("Dados do pedido criado:", newOrder);
-        
-        // Invalidar queries dos produtos para atualizar estoque
-        console.log("=== INVALIDANDO QUERIES DOS PRODUTOS ===");
-        
-        // Invalidar apenas as queries de produtos (não todas as queries)
         queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.PRODUCTS.ALL] });
-        
-        console.log("=== QUERIES INVALIDADAS COM SUCESSO ===");
         
         // Buscar dados do cliente para exibir na tela de sucesso
         const clientData = customers?.find((customer: any) => customer._id === data.clientId);
@@ -311,13 +248,7 @@ export const OrderDialog: React.FC<OrderDialogProps> = ({ open, onOpenChange, or
       }
       
     } catch (error) {
-      console.error("=== ERRO AO PROCESSAR PEDIDO ===");
-      console.error("Erro:", error);
-      handleError(
-        error,
-        "Erro ao criar pedido",
-        true // Mostrar detalhes do erro
-      );
+      handleError(error, "Erro ao criar pedido", true);
     } finally {
       setIsSubmitting(false);
     }

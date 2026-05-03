@@ -3,10 +3,13 @@ import { PaymentValidationService, PaymentValidationError } from "./PaymentValid
 import { PaymentCalculationService } from "./PaymentCalculationService";
 import { PaymentExportService } from "./PaymentExportService";
 import { SicrediService } from "./SicrediService";
+import { PaymentStatusService } from "./PaymentStatusService";
 import type { IPayment, CreatePaymentDTO } from "../interfaces/IPayment";
 import type { IPaymentRepository } from "../repositories/interfaces/IPaymentRepository";
 import NodeCache from "node-cache";
 import { ExportUtils, type ExportOptions } from "../utils/exportUtils";
+import { withTransaction } from "../utils/withTransaction";
+import { logger } from "../config/logger";
 
 export class PaymentError extends Error {
   constructor(message: string) {
@@ -41,6 +44,8 @@ export class PaymentService {
   private sicrediService: SicrediService;
   private cache: NodeCache;
 
+  private paymentStatusService: PaymentStatusService;
+
   constructor() {
     const repositories = RepositoryFactory.getInstance();
     this.paymentRepository = repositories.getPaymentRepository();
@@ -48,6 +53,7 @@ export class PaymentService {
     this.calculationService = new PaymentCalculationService();
     this.exportService = new PaymentExportService();
     this.sicrediService = new SicrediService();
+    this.paymentStatusService = new PaymentStatusService();
     this.cache = new NodeCache({ stdTTL: 300 });
   }
 
@@ -65,67 +71,40 @@ export class PaymentService {
     }
   }
 
-  /**
-   * Cria um novo pagamento
-   * @param paymentData Dados do pagamento
-   * @returns Pagamento criado
-   */
   async createPayment(paymentData: Omit<IPayment, "_id">): Promise<IPayment> {
     try {
-      // Validar pagamento
       const cashRegisterId = await this.validationService.validatePayment(paymentData as CreatePaymentDTO);
-
-      // Normalizar método de pagamento
       const normalizedMethod = this.validationService.normalizePaymentMethod(paymentData.paymentMethod);
 
-      // Determinar status do pagamento:
-      // - Para vendas com métodos instantâneos (cash, pix, debit, credit) = "completed"
-      // - Para métodos que precisam validação (check, bank_slip, promissory_note) = "pending"
-      let paymentStatus = paymentData.status || "pending";
-      
-      if (paymentData.type === "sale" && 
-          ["cash", "pix", "debit", "credit", "mercado_pago"].includes(paymentData.paymentMethod)) {
-        paymentStatus = "completed";
-      }
+      const paymentStatus = this.resolveInitialPaymentStatus(paymentData);
 
-      // Criar pagamento
-      const payment = await this.paymentRepository.create({
+      const normalizedData = {
         ...paymentData,
-        paymentMethod: normalizedMethod as any,
+        paymentMethod: normalizedMethod as IPayment["paymentMethod"],
         cashRegisterId,
         date: paymentData.date || new Date(),
-        status: paymentStatus
+        status: paymentStatus,
+      };
+
+      // Executa criação do pagamento + atualização do pedido atomicamente
+      const payment = await withTransaction(async (session) => {
+        const created = await this.paymentRepository.createInSession(normalizedData, session);
+
+        if (created.orderId && created._id) {
+          await this.paymentStatusService.updateOrderPaymentStatusInSession(
+            created.orderId.toString(),
+            created._id.toString(),
+            created.amount,
+            created.paymentMethod,
+            session,
+            created.status
+          );
+        }
+
+        return created;
       });
 
-      // Se há um pedido associado, atualizar o status de pagamento do pedido
-      if (payment.orderId && payment._id) {
-        try {
-          console.log(`[PaymentService] Atualizando status do pedido ${payment.orderId} com pagamento ${payment._id}`);
-          console.log(`[PaymentService] Pagamento criado com status: ${payment.status}`);
-          console.log(`[PaymentService] Valor do pagamento: ${payment.amount}`);
-          
-          const { PaymentStatusService } = await import('./PaymentStatusService');
-          const paymentStatusService = new PaymentStatusService();
-          
-          await paymentStatusService.updateOrderPaymentStatus(
-            payment.orderId.toString(),
-            payment._id.toString(),
-            payment.amount,
-            payment.paymentMethod,
-            'add'
-          );
-          
-          console.log(`[PaymentService] Status do pedido ${payment.orderId} atualizado com sucesso`);
-        } catch (error) {
-          console.error('Erro ao atualizar status do pedido:', error);
-          // Não vamos falhar o pagamento por causa disso, apenas logar o erro
-        }
-      }
-
-      // Invalidar cache completamente
-      this.cache.flushAll(); // Limpar todo o cache para garantir dados frescos
-      
-      console.log(`[PaymentService] Cache invalidado após criação do pagamento ${payment._id}`);
+      this.cache.flushAll();
 
       return payment;
     } catch (error) {
@@ -134,6 +113,14 @@ export class PaymentService {
       }
       throw error;
     }
+  }
+
+  private resolveInitialPaymentStatus(paymentData: Omit<IPayment, "_id">): IPayment["status"] {
+    const instantMethods: IPayment["paymentMethod"][] = ["cash", "pix", "debit", "credit", "mercado_pago"];
+    if (paymentData.type === "sale" && instantMethods.includes(paymentData.paymentMethod)) {
+      return "completed";
+    }
+    return paymentData.status || "pending";
   }
 
   /**

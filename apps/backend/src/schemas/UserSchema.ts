@@ -68,6 +68,8 @@ const userSchema = new Schema<IUser>(
     purchases: [{ type: Schema.Types.ObjectId, ref: "Order" }],
     debts: { type: Number, default: 0 },
     sales: [{ type: Schema.Types.ObjectId, ref: "Order" }],
+    isDeleted: { type: Boolean, default: false },
+    deletedAt: { type: Date },
   },
   { timestamps: true }
 );

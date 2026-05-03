@@ -160,23 +160,29 @@ export class StockService {
       throw new StockError(`ID do produto inválido: ${productId}`);
     }
 
-    const product = await this.productRepository.findById(productId);
-    
+    let product: IProduct | null;
+    try {
+      product = await this.productRepository.findById(productId);
+    } catch (error) {
+      if (error instanceof StockError) throw error;
+      throw new StockError(`Erro desconhecido ao processar estoque: ${error instanceof Error ? error.message : String(error)}`);
+    }
+
     if (!product) {
       throw new StockError(`Produto com ID ${productId} não encontrado`);
     }
-    
+
     // Se não for um produto de armação, não mexer no estoque
     if (!this.isFrameProduct(product)) {
       return product;
     }
-    
+
     const currentStock = product.stock || 0;
-    
+
     if (currentStock < quantity) {
       throw new StockError(`Estoque insuficiente para o produto ${product.name}. Disponível: ${currentStock}, Necessário: ${quantity}`);
     }
-    
+
     const newStock = currentStock - quantity;
 
     // Verificar se o MongoDB suporta transações
@@ -282,17 +288,23 @@ export class StockService {
       throw new StockError(`ID do produto inválido: ${productId}`);
     }
 
-    const product = await this.productRepository.findById(productId);
-    
+    let product: IProduct | null;
+    try {
+      product = await this.productRepository.findById(productId);
+    } catch (error) {
+      if (error instanceof StockError) throw error;
+      throw new StockError(`Erro desconhecido ao processar estoque: ${error instanceof Error ? error.message : String(error)}`);
+    }
+
     if (!product) {
       throw new StockError(`Produto com ID ${productId} não encontrado`);
     }
-    
+
     // Se não for um produto de armação, não mexer no estoque
     if (!this.isFrameProduct(product)) {
       return product;
     }
-    
+
     const currentStock = product.stock || 0;
     const newStock = currentStock + quantity;
     

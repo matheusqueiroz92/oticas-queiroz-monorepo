@@ -69,7 +69,7 @@ export const orderQuerySchema = z.object({
     .default(1),
   limit: z
     .union([z.string(), z.number()])
-    .transform(val => Number(val))
+    .transform((val) => Math.min(100, Math.max(1, Number(val) || 10)))
     .default(10),
   status: z.string().optional(),
   employeeId: z.string().optional(),

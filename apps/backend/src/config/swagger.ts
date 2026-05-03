@@ -27,6 +27,35 @@ const options: swaggerJsdoc.Options = {
 
 const swaggerSpec = swaggerJsdoc(options);
 
+/**
+ * Configura Swagger UI.
+ * Em produção: disponível apenas se SWAGGER_ENABLED=true (com opção de usar ?key=SWAGGER_SECRET para proteção)
+ * Em desenvolvimento: sempre disponível
+ */
 export const setupSwagger = (app: Application) => {
-  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+  const isProduction = process.env.NODE_ENV === "production";
+  const swaggerEnabled =
+    !isProduction || process.env.SWAGGER_ENABLED === "true";
+
+  if (!swaggerEnabled) {
+    return;
+  }
+
+  const swaggerSecret = process.env.SWAGGER_SECRET;
+
+  const swaggerMiddleware = (req: any, res: any, next: any) => {
+    if (!isProduction) {
+      return swaggerUi.setup(swaggerSpec)(req, res, next);
+    }
+    const key = req.query.key;
+    if (swaggerSecret && key !== swaggerSecret) {
+      return res.status(401).json({
+        status: "error",
+        message: "Acesso negado. Forneça o parâmetro key correto.",
+      });
+    }
+    return swaggerUi.setup(swaggerSpec)(req, res, next);
+  };
+
+  app.use("/api-docs", swaggerUi.serve, swaggerMiddleware);
 };

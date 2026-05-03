@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add *)",
+      "Bash(git commit -m 'ci: adiciona lint, test e build antes do deploy *)",
+      "Bash(git commit -m 'security\\(backend\\): habilita Content Security Policy via Helmet *)",
+      "Bash(git commit -m 'security\\(web\\): remove dados sensíveis de cookies e extrai role do JWT *)",
+      "Bash(git commit -m 'docs: adiciona .env.example para backend e frontend *)",
+      "Bash(git commit -m 'chore: atualiza .gitignore e adiciona .env.example *)",
+      "Bash(npx tsc *)",
+      "Bash(awk -F'\\(' '{print $1}')",
+      "Bash(git commit -m ' *)",
+      "Bash(git rebase *)",
+      "Bash(git push *)",
+      "Bash(gh pr create --title 'fix: segurança, qualidade e correção crítica de cookies no frontend' --body ' *)",
+      "Bash(node -e \"const p = require\\('./apps/backend/node_modules/eslint/package.json'\\); console.log\\(p.version\\)\")",
+      "Bash(npm install *)",
+      "Bash(git commit -m 'fix\\(backend\\): disable blocking ESLint rules from pre-existing code *)",
+      "Bash(npx jest *)",
+      "Bash(NODE_ENV=test JWT_SECRET=\"ci-test-jwt-secret-32-chars-long!!\" MONGODB_URI=\"\" npx jest --ci --forceExit --testPathPattern=\"PaymentService\")",
+      "Bash(NODE_ENV=test JWT_SECRET=\"ci-test-jwt-secret-32-chars-long!!\" MONGODB_URI=\"\" npx jest --ci --forceExit)",
+      "Bash(NODE_ENV=test JWT_SECRET=\"ci-test-jwt-secret-32-chars-long!!\" MONGODB_URI=\"\" npx jest --ci --forceExit --passWithNoTests)",
+      "Bash(NODE_ENV=test JWT_SECRET=\"ci-test-jwt-secret-32-chars-long!!\" npx jest --ci --forceExit --testPathPattern=\"MongoOrderRepository\")",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('main:', d.get\\('main'\\)\\); print\\('types:', d.get\\('types'\\)\\); print\\('exports keys:', list\\(d.get\\('exports', {}\\).keys\\(\\)\\)[:5]\\)\")",
+      "Bash(node -e \"const d = require\\('C:/Users/mathe/Desktop/oticas-queiroz-monorepo/apps/backend/node_modules/dotenv/package.json'\\); console.log\\('main:', d.main\\); console.log\\('types:', d.types\\); console.log\\('version:', d.version\\); console.log\\('exports:', JSON.stringify\\(Object.keys\\(d.exports || {}\\)\\)\\)\")",
+      "Bash(NODE_ENV=test JWT_SECRET=\"ci-test-jwt-secret-32-chars-long!!\" MONGODB_URI=\"\" npx jest --ci --forceExit --testPathPattern=\"\\(UserService|StockService|EmailService\\)\")",
+      "Bash(NODE_ENV=test JWT_SECRET=\"ci-test-jwt-secret-32-chars-long!!\" MONGODB_URI=\"\" npx jest --ci --forceExit --testPathPattern=\"UserController\")",
+      "Bash(NODE_ENV=test JWT_SECRET=\"ci-test-jwt-secret-32-chars-long!!\" MONGODB_URI=\"\" npx jest --ci --forceExit --testPathPattern=\"AuthController\")",
+      "Bash(NODE_ENV=test JWT_SECRET=\"ci-test-jwt-secret-32-chars-long!!\" npx jest --ci --forceExit --testPathPattern=\"\\(UserService|StockService|OrderService|ReportService|EmailService|SicrediSync|LegacyClientModel|MongoOrderRepository|MongoUserRepository|MongoProductRepository\\)\")",
+      "Bash(NODE_ENV=test JWT_SECRET=\"ci-test-jwt-secret-32-chars-long!!\" npx jest --ci --forceExit --testPathPattern=\"\\(UserService|StockService\\)\")",
+      "Bash(NODE_ENV=test JWT_SECRET=\"ci-test-jwt-secret-32-chars-long!!\" npx jest --ci --forceExit --testPathPattern=\"StockService\")",
+      "Bash(NODE_ENV=test JWT_SECRET=\"ci-test-jwt-secret-32-chars-long!!\" npx jest --ci --forceExit --testPathPattern=\"UserService\")",
+      "Bash(git commit -m 'fix\\(tests\\): corrige falhas de testes pré-existentes *)",
+      "Bash(git commit -m 'fix\\(tests\\): corrige falhas em MongoOrderRepository e UserController *)",
+      "Bash(npm test *)"
+    ]
+  }
+}

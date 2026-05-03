@@ -2,8 +2,14 @@ import express from "express";
 import { AuthController } from "../controllers/AuthController";
 import { authenticate, authorize } from "../middlewares/authMiddleware";
 import { asyncHandler } from "../utils/asyncHandler";
-import { uploadUserImage } from "../config/multerConfig";
+import { uploadUserImage, validateFileMagicBytes } from "../config/multerConfig";
 import { PasswordResetController } from "../controllers/PasswordResetController";
+import {
+  authLoginLimiter,
+  authForgotPasswordLimiter,
+  authResetPasswordLimiter,
+  authRefreshLimiter,
+} from "../config/rateLimit";
 
 const router = express.Router();
 
@@ -136,7 +142,67 @@ const passwordResetController = new PasswordResetController();
  *       500:
  *         description: Erro interno do servidor
  */
-router.post("/login", asyncHandler(authController.login.bind(authController)));
+router.post(
+  "/login",
+  authLoginLimiter,
+  asyncHandler(authController.login.bind(authController))
+);
+
+/**
+ * @swagger
+ * /api/auth/refresh:
+ *   post:
+ *     summary: Renova o access token usando refresh token
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - refreshToken
+ *             properties:
+ *               refreshToken:
+ *                 type: string
+ *                 description: Refresh token recebido no login
+ *     responses:
+ *       200:
+ *         description: Novos tokens gerados
+ *       401:
+ *         description: Refresh token inválido ou expirado
+ */
+router.post(
+  "/refresh",
+  authRefreshLimiter,
+  asyncHandler(authController.refresh.bind(authController))
+);
+
+/**
+ * @swagger
+ * /api/auth/logout:
+ *   post:
+ *     summary: Encerra a sessão e revoga o refresh token
+ *     tags: [Auth]
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               refreshToken:
+ *                 type: string
+ *                 description: Refresh token a ser revogado (opcional)
+ *     responses:
+ *       200:
+ *         description: Logout realizado com sucesso
+ *       500:
+ *         description: Erro interno do servidor
+ */
+router.post(
+  "/logout",
+  asyncHandler(authController.logout.bind(authController))
+);
 
 /**
  * @swagger
@@ -214,6 +280,7 @@ router.post(
   authenticate,
   authorize(["admin", "employee"]),
   uploadUserImage,
+  validateFileMagicBytes,
   asyncHandler(authController.register.bind(authController))
 );
 
@@ -253,6 +320,7 @@ router.post(
  */
 router.post(
   "/forgot-password",
+  authForgotPasswordLimiter,
   asyncHandler(
     passwordResetController.requestReset.bind(passwordResetController)
   )
@@ -301,8 +369,17 @@ router.post(
  */
 router.post(
   "/reset-password",
+  authResetPasswordLimiter,
   asyncHandler(
     passwordResetController.resetPassword.bind(passwordResetController)
+  )
+);
+
+// Alias: GET /api/auth/reset-password/:token → valida um token de redefinição
+router.get(
+  "/reset-password/:token",
+  asyncHandler(
+    passwordResetController.validateToken.bind(passwordResetController)
   )
 );
 
@@ -366,6 +443,7 @@ router.post(
  */
 router.get(
   "/validate-reset-token/:token",
+  authResetPasswordLimiter,
   asyncHandler(
     passwordResetController.validateToken.bind(passwordResetController)
   )

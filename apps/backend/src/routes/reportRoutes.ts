@@ -284,4 +284,10 @@ router.get(
   asyncHandler(reportController.getReport.bind(reportController))
 );
 
+router.get(
+  "/:id/download",
+  authenticate,
+  asyncHandler(reportController.downloadReport.bind(reportController))
+);
+
 export default router;

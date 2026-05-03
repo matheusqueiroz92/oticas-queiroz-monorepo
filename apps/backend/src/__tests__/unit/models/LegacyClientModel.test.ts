@@ -82,8 +82,8 @@ describe("LegacyClientModel", () => {
       await legacyClientModel.create(mockLegacyClient);
 
       const found = await legacyClientModel.findByDocument("12345678900");
-      // findByDocument busca por documentId, não cpf
-      expect(found).toBeNull(); // Não deve encontrar pois não há documentId igual a CPF
+      expect(found?.cpf).toBe("12345678900");
+      expect(found?.name).toBe(mockLegacyClient.name);
     });
   });
 

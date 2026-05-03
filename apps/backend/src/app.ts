@@ -1,5 +1,7 @@
 import express from "express";
+import helmet from "helmet";
 import { setupSwagger } from "./config/swagger";
+import { baseHelmetOptions, swaggerCspDirectives } from "./config/helmetConfig";
 import { errorMiddleware } from "./middlewares/errorMiddleware";
 import authRoutes from "./routes/authRoutes";
 import userRoutes from "./routes/userRoutes";
@@ -14,10 +16,12 @@ import sicrediRoutes from "./routes/sicrediRoutes";
 import sicrediSyncRoutes from "./routes/sicrediSyncRoutes";
 import connectDB from "./config/db";
 import cors from "cors";
+import { globalLimiter } from "./config/rateLimit";
 import path from "node:path";
 import dotenv from "dotenv";
 import { initSicredi } from "./config/sicredi";
 import { startSicrediSync } from "./scripts/startSicrediSync";
+import { logger } from "./config/logger";
 
 dotenv.config();
 
@@ -35,8 +39,14 @@ class App {
   }
 
   private config(): void {
-    const allowedOrigins = process.env.NODE_ENV === "production" 
-      ? ["https://app.oticasqueiroz.com.br", "https://app.oticasqueiroz.com.br/api/api-docs"]
+    // CSP restritiva por padrão para todas as rotas da API
+    this.app.use(helmet(baseHelmetOptions));
+
+    // CSP mais permissiva somente para o Swagger UI
+    this.app.use("/api-docs", helmet({ contentSecurityPolicy: swaggerCspDirectives }));
+
+    const allowedOrigins = process.env.NODE_ENV === "production"
+      ? ["https://app.oticasqueiroz.com.br"]
       : ["http://localhost:3000"];
 
     this.app.use(
@@ -46,7 +56,10 @@ class App {
       })
     );
 
-    this.app.use(express.json());
+    this.app.use(express.json({ limit: "1mb" }));
+
+    // Rate limit global
+    this.app.use("/api", globalLimiter);
 
     // Configurar diretório de imagens
     const imagesPath = path.join(__dirname, "../../public/images");
@@ -57,7 +70,7 @@ class App {
       try {
         fs.mkdirSync(imagesPath, { recursive: true });
       } catch (err) {
-        console.error("Erro ao criar diretório de imagens:", err);
+        logger.error("Erro ao criar diretório de imagens", { error: err });
       }
     }
 
@@ -85,50 +98,51 @@ class App {
     this.app.use("/api/reports", reportRoutes);
     this.app.use("/api/sicredi", sicrediRoutes);
     this.app.use("/api/sicredi-sync", sicrediSyncRoutes);
-    
-    // Adicione a rota de diagnóstico aqui
-    this.app.get("/api/debug/images-path", (_req, res) => {
-      const fs = require('fs');
-      const imagesPath = path.join(__dirname, "../../public/images");
-      
-      try {
-        // Verificar se o diretório existe
-        const exists = fs.existsSync(imagesPath);
-        
-        // Se existir, listar arquivos e subdiretórios
-        let files = [];
-        let subdirectories = [];
-        
-        if (exists) {
-          files = fs.readdirSync(imagesPath)
-            .filter((item: string) => !fs.statSync(path.join(imagesPath, item)).isDirectory())
-            .slice(0, 10); // Limitamos a 10 arquivos para não sobrecarregar
-            
-          subdirectories = fs.readdirSync(imagesPath)
-            .filter((item: string) => fs.statSync(path.join(imagesPath, item)).isDirectory());
+
+    // Rota de diagnóstico: disponível apenas em desenvolvimento/teste (segurança)
+    if (process.env.NODE_ENV !== "production") {
+      this.app.get("/api/debug/images-path", (req, res) => {
+        const fs = require("fs");
+        const imagesPath = path.join(__dirname, "../../public/images");
+
+        try {
+          const exists = fs.existsSync(imagesPath);
+          let files: string[] = [];
+          let subdirectories: string[] = [];
+
+          if (exists) {
+            files = fs
+              .readdirSync(imagesPath)
+              .filter((item: string) => !fs.statSync(path.join(imagesPath, item)).isDirectory())
+              .slice(0, 10);
+            subdirectories = fs
+              .readdirSync(imagesPath)
+              .filter((item: string) => fs.statSync(path.join(imagesPath, item)).isDirectory());
+          }
+
+          res.status(200).json({
+            path: imagesPath,
+            exists,
+            files,
+            subdirectories,
+            env: process.env.NODE_ENV,
+            serverBaseUrl: process.env.API_URL || "não definido",
+          });
+        } catch (error) {
+          res.status(500).json({
+            path: imagesPath,
+            exists: false,
+            error: error instanceof Error ? error.message : "Unknown error",
+          });
         }
-        
-        res.status(200).json({
-          path: imagesPath,
-          exists,
-          files,
-          subdirectories,
-          env: process.env.NODE_ENV,
-          serverBaseUrl: process.env.API_URL || 'não definido',
-        });
-      } catch (error) {
-        res.status(500).json({
-          path: imagesPath,
-          exists: false,
-          error: error instanceof Error ? error.message : "Unknown error",
-          stack: error instanceof Error ? error.stack : "Stack not available"
-        });
-      }
-    });
+      });
+    }
   }
 
   private database(): void {
-    connectDB();
+    if (process.env.NODE_ENV !== "test") {
+      connectDB();
+    }
   }
 
   private initPaymentGateways(): void {
@@ -142,13 +156,13 @@ class App {
           try {
             await startSicrediSync();
           } catch (error) {
-            console.warn("⚠️  SICREDI Sync: Não foi possível iniciar a sincronização:", error);
+            logger.warn("SICREDI Sync: Não foi possível iniciar a sincronização", { error });
           }
         }, 5000);
       }
       
     } catch (error) {
-      console.warn("⚠️  SICREDI: Não foi possível inicializar a integração:", error);
+      logger.warn("SICREDI: Não foi possível inicializar a integração", { error });
     }
   }
 

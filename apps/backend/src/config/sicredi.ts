@@ -1,4 +1,5 @@
 import dotenv from 'dotenv';
+import { logger } from './logger';
 
 dotenv.config();
 
@@ -34,11 +35,9 @@ export const getSicrediConfig = (): SicrediConfig => {
   const missingFields = requiredFields.filter(field => !config[field as keyof SicrediConfig]);
 
   if (missingFields.length > 0) {
-    console.error('❌ Configurações obrigatórias da SICREDI não encontradas:');
-    missingFields.forEach(field => {
-      console.error(`   - SICREDI_${field.toUpperCase()}`);
+    logger.error('Configurações obrigatórias da SICREDI não encontradas', {
+      missingFields: missingFields.map(f => `SICREDI_${f.toUpperCase()}`),
     });
-    console.error('A integração com SICREDI não funcionará sem estas configurações.');
   }
 
   return config;
@@ -49,11 +48,11 @@ export const initSicredi = (): void => {
     const config = getSicrediConfig();
     
     if (!config.clientId || !config.clientSecret) {
-      console.warn('⚠️  SICREDI: Credenciais não configuradas. A integração de boletos não estará disponível.');
+      logger.warn('SICREDI: Credenciais não configuradas. A integração de boletos não estará disponível.');
       return;
     }
 
   } catch (error) {
-    console.error('❌ Erro ao inicializar SICREDI:', error);
+    logger.error('Erro ao inicializar SICREDI', { error });
   }
 };

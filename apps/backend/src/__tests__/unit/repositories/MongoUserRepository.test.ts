@@ -13,6 +13,14 @@ import {
   beforeEach,
 } from "@jest/globals";
 
+// Pre-computed valid CPFs for testing
+const VALID_CPFS = [
+  "12345678909", "98765432100", "52998224725", "11144477735",
+  "45678901249", "23456789092", "34567890175", "56789012303",
+  "67890123469", "78901234505", "89012345642", "90123456770",
+  "01234567890", "22100452908", "13579246828",
+];
+
 describe("MongoUserRepository", () => {
   let mongoServer: MongoMemoryServer;
   let repository: MongoUserRepository;
@@ -20,6 +28,9 @@ describe("MongoUserRepository", () => {
   beforeAll(async () => {
     mongoServer = await MongoMemoryServer.create();
     const mongoUri = mongoServer.getUri();
+    if (mongoose.connection.readyState !== 0) {
+      await mongoose.disconnect();
+    }
     await mongoose.connect(mongoUri);
   });
 
@@ -41,7 +52,7 @@ describe("MongoUserRepository", () => {
         name: "John Doe",
         email: "john@test.com",
         password: await bcrypt.hash("password123", 10),
-        cpf: "12345678901",
+        cpf: "12345678909",
         rg: "123456789",
         role: "customer" as const,
         birthDate: new Date("1990-01-01"),
@@ -66,20 +77,14 @@ describe("MongoUserRepository", () => {
         role: "employee" as const,
         birthDate: new Date("1995-05-15"),
         phone: "11999999999",
-        address: {
-          street: "Main St",
-          number: "123",
-          city: "São Paulo",
-          state: "SP",
-          zipCode: "01234-567",
-        },
+        address: "Main St 123, São Paulo SP",
         debts: 500.0,
       };
 
       const user = await repository.create(userData);
 
       expect(user.phone).toBe("11999999999");
-      expect(user.address).toEqual(userData.address);
+      expect(user.address).toBe("Main St 123, São Paulo SP");
       expect(user.debts).toBe(500.0);
     });
 
@@ -88,7 +93,7 @@ describe("MongoUserRepository", () => {
         name: "Company XYZ",
         email: "company@test.com",
         password: await bcrypt.hash("password123", 10),
-        cnpj: "12345678000190",
+        cnpj: "12345678000195",
         rg: "INST-123",
         role: "institution" as const,
         birthDate: new Date("2010-01-01"),
@@ -96,7 +101,7 @@ describe("MongoUserRepository", () => {
 
       const user = await repository.create(userData);
 
-      expect(user.cnpj).toBe("12345678000190");
+      expect(user.cnpj).toBe("12345678000195");
       expect(user.role).toBe("institution");
     });
   });
@@ -107,7 +112,7 @@ describe("MongoUserRepository", () => {
         name: "Test User",
         email: "test@test.com",
         password: await bcrypt.hash("pass", 10),
-        cpf: "11111111111",
+        cpf: "11144477735",
         rg: "111111111",
         role: "customer",
         birthDate: new Date(),
@@ -142,7 +147,7 @@ describe("MongoUserRepository", () => {
           name: `User ${i}`,
           email: `user${i}@test.com`,
           password: await bcrypt.hash("pass", 10),
-          cpf: `${i.toString().padStart(11, "0")}`,
+          cpf: VALID_CPFS[i - 1],
           rg: `${i}`,
           role: i % 2 === 0 ? "employee" : "customer",
           birthDate: new Date(),
@@ -181,7 +186,7 @@ describe("MongoUserRepository", () => {
         name: "Admin User",
         email: "admin@test.com",
         password: await bcrypt.hash("pass", 10),
-        cpf: "99999999999",
+        cpf: "69235792444",
         rg: "999",
         role: "admin",
         birthDate: new Date(),
@@ -214,11 +219,11 @@ describe("MongoUserRepository", () => {
 
     it("should search by CPF (numeric search)", async () => {
       const result = await repository.findAll(1, 20, {
-        searchTerm: "00000000005",
+        searchTerm: VALID_CPFS[2], // 3rd user: 52998224725
       });
 
       expect(result.items.length).toBe(1);
-      expect(result.items[0].cpf).toBe("00000000005");
+      expect(result.items[0].cpf).toBe(VALID_CPFS[2]);
     });
 
     it("should exclude deleted users by default", async () => {
@@ -226,7 +231,7 @@ describe("MongoUserRepository", () => {
         name: "To Delete",
         email: "delete@test.com",
         password: await bcrypt.hash("pass", 10),
-        cpf: "88888888888",
+        cpf: "35792468109",
         rg: "888",
         role: "customer",
         birthDate: new Date(),
@@ -242,10 +247,10 @@ describe("MongoUserRepository", () => {
     it("should include deleted users when requested", async () => {
       const user = await repository.create({
         name: "To Delete",
-        email: "delete@test.com",
+        email: "delete2@test.com",
         password: await bcrypt.hash("pass", 10),
-        cpf: "88888888888",
-        rg: "888",
+        cpf: "15350946803",
+        rg: "889",
         role: "customer",
         birthDate: new Date(),
       });
@@ -279,7 +284,7 @@ describe("MongoUserRepository", () => {
         name: "Original Name",
         email: "original@test.com",
         password: await bcrypt.hash("pass", 10),
-        cpf: "12312312312",
+        cpf: "56789012303",
         rg: "123",
         role: "customer",
         birthDate: new Date(),
@@ -309,7 +314,7 @@ describe("MongoUserRepository", () => {
         name: "To Delete",
         email: "delete@test.com",
         password: await bcrypt.hash("pass", 10),
-        cpf: "11122233344",
+        cpf: "01234567890",
         rg: "111",
         role: "customer",
         birthDate: new Date(),
@@ -335,7 +340,7 @@ describe("MongoUserRepository", () => {
         name: "Email User",
         email: "email@test.com",
         password: await bcrypt.hash("pass", 10),
-        cpf: "22222222222",
+        cpf: "23456789092",
         rg: "222",
         role: "customer",
         birthDate: new Date(),
@@ -352,7 +357,7 @@ describe("MongoUserRepository", () => {
         name: "Case Test",
         email: "CaseTest@Test.COM",
         password: await bcrypt.hash("pass", 10),
-        cpf: "33333333333",
+        cpf: "34567890175",
         rg: "333",
         role: "customer",
         birthDate: new Date(),
@@ -369,7 +374,7 @@ describe("MongoUserRepository", () => {
         name: "Trim Test",
         email: "trim@test.com",
         password: await bcrypt.hash("pass", 10),
-        cpf: "44444444444",
+        cpf: "45678901249",
         rg: "444",
         role: "customer",
         birthDate: new Date(),
@@ -391,7 +396,7 @@ describe("MongoUserRepository", () => {
         name: "Deleted",
         email: "deleted@test.com",
         password: await bcrypt.hash("pass", 10),
-        cpf: "55555555555",
+        cpf: "52998224725",
         rg: "555",
         role: "customer",
         birthDate: new Date(),
@@ -410,16 +415,16 @@ describe("MongoUserRepository", () => {
         name: "CPF User",
         email: "cpf@test.com",
         password: await bcrypt.hash("pass", 10),
-        cpf: "12345678901",
+        cpf: "12345678909",
         rg: "123",
         role: "customer",
         birthDate: new Date(),
       });
 
-      const found = await repository.findByCpf("12345678901");
+      const found = await repository.findByCpf("12345678909");
 
       expect(found).toBeDefined();
-      expect(found?.cpf).toBe("12345678901");
+      expect(found?.cpf).toBe("12345678909");
     });
 
     it("should sanitize CPF (remove non-numeric chars)", async () => {
@@ -452,16 +457,16 @@ describe("MongoUserRepository", () => {
         name: "CNPJ Company",
         email: "cnpj@test.com",
         password: await bcrypt.hash("pass", 10),
-        cnpj: "12345678000190",
+        cnpj: "12345678000195",
         rg: "CNPJ-123",
         role: "institution",
         birthDate: new Date(),
       });
 
-      const found = await repository.findByCnpj("12345678000190");
+      const found = await repository.findByCnpj("12345678000195");
 
       expect(found).toBeDefined();
-      expect(found?.cnpj).toBe("12345678000190");
+      expect(found?.cnpj).toBe("12345678000195");
     });
 
     it("should sanitize CNPJ", async () => {
@@ -469,16 +474,16 @@ describe("MongoUserRepository", () => {
         name: "Sanitize CNPJ",
         email: "sanitizecnpj@test.com",
         password: await bcrypt.hash("pass", 10),
-        cnpj: "98765432000199",
+        cnpj: "98765432000198",
         rg: "CNPJ-987",
         role: "institution",
         birthDate: new Date(),
       });
 
-      const found = await repository.findByCnpj("98.765.432/0001-99");
+      const found = await repository.findByCnpj("98.765.432/0001-98");
 
       expect(found).toBeDefined();
-      expect(found?.cnpj).toBe("98765432000199");
+      expect(found?.cnpj).toBe("98765432000198");
     });
 
     it("should return null for non-existent CNPJ", async () => {
@@ -494,7 +499,7 @@ describe("MongoUserRepository", () => {
         name: "Admin 1",
         email: "admin1@test.com",
         password: await bcrypt.hash("pass", 10),
-        cpf: "11111111111",
+        cpf: "11144477735",
         rg: "111",
         role: "admin",
         birthDate: new Date(),
@@ -504,7 +509,7 @@ describe("MongoUserRepository", () => {
         name: "Admin 2",
         email: "admin2@test.com",
         password: await bcrypt.hash("pass", 10),
-        cpf: "22222222222",
+        cpf: "23456789092",
         rg: "222",
         role: "admin",
         birthDate: new Date(),
@@ -514,7 +519,7 @@ describe("MongoUserRepository", () => {
         name: "Customer",
         email: "customer@test.com",
         password: await bcrypt.hash("pass", 10),
-        cpf: "33333333333",
+        cpf: "34567890175",
         rg: "333",
         role: "customer",
         birthDate: new Date(),
@@ -535,7 +540,7 @@ describe("MongoUserRepository", () => {
         name: "Existing Email",
         email: "exists@test.com",
         password: await bcrypt.hash("pass", 10),
-        cpf: "12312312312",
+        cpf: "56789012303",
         rg: "123",
         role: "customer",
         birthDate: new Date(),
@@ -557,7 +562,7 @@ describe("MongoUserRepository", () => {
         name: "Exclude Test",
         email: "exclude@test.com",
         password: await bcrypt.hash("pass", 10),
-        cpf: "98798798798",
+        cpf: "22100452908",
         rg: "987",
         role: "customer",
         birthDate: new Date(),
@@ -576,7 +581,7 @@ describe("MongoUserRepository", () => {
         name: "Case Test",
         email: "CaseTest@Test.COM",
         password: await bcrypt.hash("pass", 10),
-        cpf: "45645645645",
+        cpf: "46913579209",
         rg: "456",
         role: "customer",
         birthDate: new Date(),
@@ -594,13 +599,13 @@ describe("MongoUserRepository", () => {
         name: "CPF Exists",
         email: "cpfexists@test.com",
         password: await bcrypt.hash("pass", 10),
-        cpf: "11122233344",
+        cpf: "01234567890",
         rg: "111",
         role: "customer",
         birthDate: new Date(),
       });
 
-      const exists = await repository.cpfExists("11122233344");
+      const exists = await repository.cpfExists("01234567890");
 
       expect(exists).toBe(true);
     });
@@ -616,13 +621,13 @@ describe("MongoUserRepository", () => {
         name: "Exclude CPF",
         email: "excludecpf@test.com",
         password: await bcrypt.hash("pass", 10),
-        cpf: "12312312312",
+        cpf: "56789012303",
         rg: "123",
         role: "customer",
         birthDate: new Date(),
       });
 
-      const exists = await repository.cpfExists("12312312312", user._id!);
+      const exists = await repository.cpfExists("56789012303", user._id!);
 
       expect(exists).toBe(false);
     });
@@ -632,13 +637,13 @@ describe("MongoUserRepository", () => {
         name: "Sanitize CPF Check",
         email: "sanitizecheck@test.com",
         password: await bcrypt.hash("pass", 10),
-        cpf: "55566677788",
+        cpf: "58124681333",
         rg: "555",
         role: "customer",
         birthDate: new Date(),
       });
 
-      const exists = await repository.cpfExists("555.666.777-88");
+      const exists = await repository.cpfExists("581.246.813-33");
 
       expect(exists).toBe(true);
     });
@@ -650,13 +655,13 @@ describe("MongoUserRepository", () => {
         name: "CNPJ Exists",
         email: "cnpjexists@test.com",
         password: await bcrypt.hash("pass", 10),
-        cnpj: "12345678000190",
+        cnpj: "12345678000195",
         rg: "CNPJ-123",
         role: "institution",
         birthDate: new Date(),
       });
 
-      const exists = await repository.cnpjExists("12345678000190");
+      const exists = await repository.cnpjExists("12345678000195");
 
       expect(exists).toBe(true);
     });
@@ -672,13 +677,13 @@ describe("MongoUserRepository", () => {
         name: "Exclude CNPJ",
         email: "excludecnpj@test.com",
         password: await bcrypt.hash("pass", 10),
-        cnpj: "98765432000199",
+        cnpj: "98765432000198",
         rg: "CNPJ-987",
         role: "institution",
         birthDate: new Date(),
       });
 
-      const exists = await repository.cnpjExists("98765432000199", user._id!);
+      const exists = await repository.cnpjExists("98765432000198", user._id!);
 
       expect(exists).toBe(false);
     });
@@ -690,7 +695,7 @@ describe("MongoUserRepository", () => {
         name: "Alice Smith",
         email: "alice@test.com",
         password: await bcrypt.hash("pass", 10),
-        cpf: "11111111111",
+        cpf: "11144477735",
         rg: "111",
         role: "customer",
         birthDate: new Date(),
@@ -700,7 +705,7 @@ describe("MongoUserRepository", () => {
         name: "Bob Jones",
         email: "bob@test.com",
         password: await bcrypt.hash("pass", 10),
-        cpf: "22222222222",
+        cpf: "23456789092",
         rg: "222",
         role: "employee",
         birthDate: new Date(),
@@ -722,10 +727,10 @@ describe("MongoUserRepository", () => {
     });
 
     it("should search by CPF", async () => {
-      const result = await repository.search("11111111111", 1, 10);
+      const result = await repository.search("11144477735", 1, 10);
 
       expect(result.items.length).toBe(1);
-      expect(result.items[0].cpf).toBe("11111111111");
+      expect(result.items[0].cpf).toBe("11144477735");
     });
 
     it("should return empty for no matches", async () => {
@@ -741,7 +746,7 @@ describe("MongoUserRepository", () => {
         name: "Password User",
         email: "password@test.com",
         password: await bcrypt.hash("oldpassword", 10),
-        cpf: "12312312312",
+        cpf: "56789012303",
         rg: "123",
         role: "customer",
         birthDate: new Date(),
@@ -777,7 +782,7 @@ describe("MongoUserRepository", () => {
         name: "Active",
         email: "active@test.com",
         password: await bcrypt.hash("pass", 10),
-        cpf: "11111111111",
+        cpf: "11144477735",
         rg: "111",
         role: "customer",
         birthDate: new Date(),
@@ -787,7 +792,7 @@ describe("MongoUserRepository", () => {
         name: "Deleted",
         email: "deleted@test.com",
         password: await bcrypt.hash("pass", 10),
-        cpf: "22222222222",
+        cpf: "23456789092",
         rg: "222",
         role: "customer",
         birthDate: new Date(),
@@ -810,7 +815,7 @@ describe("MongoUserRepository", () => {
         name: "New Customer",
         email: "new@test.com",
         password: await bcrypt.hash("pass", 10),
-        cpf: "11111111111",
+        cpf: "11144477735",
         rg: "111",
         role: "customer",
         birthDate: new Date(),
@@ -826,7 +831,7 @@ describe("MongoUserRepository", () => {
         name: "Regular Customer",
         email: "regular@test.com",
         password: await bcrypt.hash("pass", 10),
-        cpf: "22222222222",
+        cpf: "23456789092",
         rg: "222",
         role: "customer",
         birthDate: new Date(),
@@ -847,7 +852,7 @@ describe("MongoUserRepository", () => {
         name: "VIP Customer",
         email: "vip@test.com",
         password: await bcrypt.hash("pass", 10),
-        cpf: "33333333333",
+        cpf: "34567890175",
         rg: "333",
         role: "customer",
         birthDate: new Date(),
@@ -875,7 +880,7 @@ describe("MongoUserRepository", () => {
         name: "User With Debts",
         email: "debts@test.com",
         password: await bcrypt.hash("pass", 10),
-        cpf: "11111111111",
+        cpf: "11144477735",
         rg: "111",
         role: "customer",
         birthDate: new Date(),
@@ -886,7 +891,7 @@ describe("MongoUserRepository", () => {
         name: "User Without Debts",
         email: "nodebts@test.com",
         password: await bcrypt.hash("pass", 10),
-        cpf: "22222222222",
+        cpf: "23456789092",
         rg: "222",
         role: "customer",
         birthDate: new Date(),
@@ -930,7 +935,7 @@ describe("MongoUserRepository", () => {
         name: longName,
         email: "longname@test.com",
         password: await bcrypt.hash("pass", 10),
-        cpf: "12312312312",
+        cpf: "56789012303",
         rg: "123",
         role: "customer",
         birthDate: new Date(),
@@ -946,7 +951,7 @@ describe("MongoUserRepository", () => {
         name: specialName,
         email: "special@test.com",
         password: await bcrypt.hash("pass", 10),
-        cpf: "45645645645",
+        cpf: "46913579209",
         rg: "456",
         role: "customer",
         birthDate: new Date(),
@@ -966,7 +971,7 @@ describe("MongoUserRepository", () => {
         name: "Test",
         email: "test@test.com",
         password: await bcrypt.hash("pass", 10),
-        cpf: "12312312312",
+        cpf: "56789012303",
         rg: "123",
         role: "customer",
         birthDate: new Date(),

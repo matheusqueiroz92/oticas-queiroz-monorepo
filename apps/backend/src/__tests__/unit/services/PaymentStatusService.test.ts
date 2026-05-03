@@ -62,6 +62,7 @@ describe("PaymentStatusService", () => {
       getOrderStatistics: jest.fn(),
       findByLaboratory: jest.fn(),
       getRevenueSummary: jest.fn(),
+      updateInSession: jest.fn(),
     } as any;
 
     mockPaymentRepository = {
@@ -88,6 +89,7 @@ describe("PaymentStatusService", () => {
       findPendingByClientId: jest.fn(),
       cancel: jest.fn(),
       getRevenueSummary: jest.fn(),
+      createInSession: jest.fn(),
     };
 
     mockRepositoryFactory = {

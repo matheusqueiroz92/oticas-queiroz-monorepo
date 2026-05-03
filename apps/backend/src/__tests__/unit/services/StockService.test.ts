@@ -29,7 +29,14 @@ mockObjectId.isValid = jest.fn((id: string) => true); // Por padrão, considerar
 
 const mockMongoose = {
   connection: {
-    startSession: jest.fn().mockResolvedValue(mockSession)
+    startSession: jest.fn().mockResolvedValue(mockSession),
+    db: {
+      admin: jest.fn().mockReturnValue({
+        serverStatus: jest.fn().mockResolvedValue({
+          repl: { ismaster: true }
+        })
+      })
+    }
   },
   Types: {
     ObjectId: mockObjectId
@@ -84,6 +91,9 @@ describe("StockService", () => {
 
     // Reset mongoose mocks
     mockMongoose.connection.startSession.mockResolvedValue(mockSession);
+    mockMongoose.connection.db.admin.mockReturnValue({
+      serverStatus: jest.fn().mockResolvedValue({ repl: { ismaster: true } })
+    });
     mockObjectId.isValid.mockImplementation((id: string) => true); // Por padrão, IDs válidos
     mockObjectId.mockImplementation((id: string) => ({ toString: () => id, _id: id }));
 
@@ -116,7 +126,6 @@ describe("StockService", () => {
 
       expect(result).toEqual(lensProduct);
       expect(mockProductRepository.updateStock).not.toHaveBeenCalled();
-      expect(mockSession.commitTransaction).toHaveBeenCalled();
     });
   });
 
@@ -209,7 +218,6 @@ describe("StockService", () => {
 
       expect(result).toEqual(lensProduct);
       expect(mockProductRepository.updateStock).not.toHaveBeenCalled();
-      expect(mockSession.commitTransaction).toHaveBeenCalled();
     });
 
     it("deve usar valores padrão quando não informados", async () => {
@@ -228,8 +236,6 @@ describe("StockService", () => {
 
       await expect(stockService.decreaseStock("invalid", 1))
         .rejects.toThrow(new StockError("ID do produto inválido: invalid"));
-
-      expect(mockSession.abortTransaction).toHaveBeenCalled();
     });
 
     it("deve lançar erro quando produto não é encontrado", async () => {
@@ -237,8 +243,6 @@ describe("StockService", () => {
 
       await expect(stockService.decreaseStock("inexistente", 1))
         .rejects.toThrow(new StockError("Produto com ID inexistente não encontrado"));
-
-      expect(mockSession.abortTransaction).toHaveBeenCalled();
     });
 
     it("deve lançar erro quando estoque é insuficiente", async () => {
@@ -247,8 +251,6 @@ describe("StockService", () => {
 
       await expect(stockService.decreaseStock("frame123", 5))
         .rejects.toThrow(new StockError("Estoque insuficiente para o produto Armação Premium. Disponível: 1, Necessário: 5"));
-
-      expect(mockSession.abortTransaction).toHaveBeenCalled();
     });
 
     it("deve lançar erro quando falha ao atualizar estoque", async () => {
@@ -266,8 +268,6 @@ describe("StockService", () => {
 
       await expect(stockService.decreaseStock("frame123", 2))
         .rejects.toThrow(new StockError("Erro desconhecido ao processar estoque: Database error"));
-
-      expect(mockSession.abortTransaction).toHaveBeenCalled();
     });
 
     it("deve tratar erros não-Error e relançar como StockError", async () => {
@@ -306,7 +306,6 @@ describe("StockService", () => {
 
       expect(result).toEqual(lensProduct);
       expect(mockProductRepository.updateStock).not.toHaveBeenCalled();
-      expect(mockSession.commitTransaction).toHaveBeenCalled();
     });
 
     it("deve usar valores padrão", async () => {

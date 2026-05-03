@@ -1,83 +1,71 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+/**
+ * Extrai o role do payload do JWT sem verificar assinatura.
+ * Seguro para uso em redirects de UX — a verificação real ocorre no backend.
+ */
+function extractRoleFromToken(token: string): string | null {
+  try {
+    const [, payloadB64] = token.split(".");
+    if (!payloadB64) return null;
+    const payload = JSON.parse(
+      Buffer.from(payloadB64, "base64url").toString("utf-8")
+    );
+    return typeof payload.role === "string" ? payload.role : null;
+  } catch {
+    return null;
+  }
+}
+
+const PUBLIC_ROUTES = [
+  "/auth/login",
+  "/auth/register",
+  "/auth/forgot-password",
+  "/public",
+];
+
+const ADMIN_EMPLOYEE_ROUTES = [
+  "/cash-register/open",
+  "/cash-register/close",
+];
+
 export function middleware(request: NextRequest) {
-  const token = request.cookies.get("token");
-  const role = request.cookies.get("role");
   const { pathname } = request.nextUrl;
 
-  // Verificar se é uma rota de redefinição de senha
-  const isResetPasswordRoute = pathname.startsWith("/auth/reset-password/");
-
-  // Se for uma rota de redefinição de senha, sempre permitir o acesso
-  if (isResetPasswordRoute) {
-    console.log(
-      "Middleware: Permitindo acesso à rota de redefinição de senha:",
-      pathname
-    );
+  // Rotas de redefinição de senha são sempre públicas
+  if (pathname.startsWith("/auth/reset-password/")) {
     return NextResponse.next();
   }
 
-  // Se estiver na rota raiz, redireciona baseado na autenticação
+  const token = request.cookies.get("token")?.value;
+  const isPublicRoute = PUBLIC_ROUTES.some((route) => pathname.startsWith(route));
+
+  // Redireciona raiz baseado na autenticação
   if (pathname === "/") {
-    if (token) {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
-    }
-    return NextResponse.redirect(new URL("/auth/login", request.url));
+    return token
+      ? NextResponse.redirect(new URL("/dashboard", request.url))
+      : NextResponse.redirect(new URL("/auth/login", request.url));
   }
 
-  // Rotas públicas que não precisam de autenticação
-  const publicRoutes = [
-    "/auth/login",
-    "/auth/register",
-    "/auth/forgot-password",
-    "/public", // Nova pasta para conteúdos públicos
-  ];
-  const isPublicRoute = publicRoutes.some((route) =>
-    pathname.startsWith(route)
-  );
-
-  // Se o usuário não está logado e tenta acessar uma rota protegida
+  // Rota protegida sem token
   if (!token && !isPublicRoute) {
-    console.log(
-      "Middleware: Redirecionando para login, rota protegida:",
-      pathname
-    );
     return NextResponse.redirect(new URL("/auth/login", request.url));
   }
 
-  // Se o usuário está logado e tenta acessar uma rota pública de autenticação
-  // IMPORTANTE: não redirecionamos para rotas públicas que não são de autenticação
+  // Usuário autenticado tentando acessar rota de auth
   if (token && isPublicRoute && !pathname.startsWith("/public")) {
-    console.log(
-      "Middleware: Redirecionando usuário autenticado para dashboard:",
-      pathname
-    );
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  // Rotas que requerem permissões específicas (admin ou employee)
-  const restrictedRoutes = [
-    "/cash-register/open",
-    "/cash-register/close",
-  ];
-
-  const isRestrictedRoute = restrictedRoutes.some((route) =>
+  // Rotas restritas a admin/employee — extrai role do token JWT
+  const isRestrictedRoute = ADMIN_EMPLOYEE_ROUTES.some((route) =>
     pathname.startsWith(route)
   );
 
-  // Se está tentando acessar uma rota restrita, verificar o role
   if (isRestrictedRoute && token) {
-    const userRole = role?.value;
-    
-    // Se não for admin nem employee, redirecionar para dashboard
-    if (userRole !== "admin" && userRole !== "employee") {
-      console.log(
-        "Middleware: Redirecionando usuário sem permissão para dashboard:",
-        pathname,
-        "Role:",
-        userRole
-      );
+    const role = extractRoleFromToken(token);
+    if (role !== "admin" && role !== "employee") {
       return NextResponse.redirect(new URL("/dashboard", request.url));
     }
   }

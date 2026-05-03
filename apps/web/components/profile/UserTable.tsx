@@ -1,5 +1,7 @@
+"use client";
+
 import { useMemo } from "react";
-import Cookies from "js-cookie";
+import { useAuth } from "@/hooks/useAuth";
 import type { Column, User } from "@/app/_types/user";
 import {
   Table,
@@ -39,8 +41,8 @@ export function UserTable({
   sortField = "name",
   sortDirection = "asc",
 }: UserTableProps) {
-  // Obter role do usuário logado
-  const currentUserRole = Cookies.get("role") || "";
+  const { user } = useAuth();
+  const currentUserRole = user?.role || "";
 
   const sortedData = useMemo(() => {
     const dataToSort = [...data];

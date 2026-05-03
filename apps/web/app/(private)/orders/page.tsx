@@ -1,7 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
-import Cookies from "js-cookie";
 import { useOrders } from "@/hooks/orders/useOrders";
 import { OrderDialog } from "@/components/orders/OrderDialog";
 import { OrdersStatsCards } from "@/components/orders/OrdersStatsCards";
@@ -53,11 +51,6 @@ export default function OrdersPage() {
     getStatusBadge,
     getPaymentStatusBadge,
   });
-
-  useEffect(() => {
-    const id = Cookies.get("userId") || "";
-    actions.setUserId(id);
-  }, [actions]);
 
   return (
     <>

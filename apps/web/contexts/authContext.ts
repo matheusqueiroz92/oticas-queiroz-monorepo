@@ -5,7 +5,7 @@ import { createContext, useContext } from "react";
 export interface UserLogged {
   _id: string;
   name: string;
-  cpf: string;
+  cpf?: string;
   email: string;
   role: string;
 }

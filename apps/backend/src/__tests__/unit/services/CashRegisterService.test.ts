@@ -72,6 +72,7 @@ describe("CashRegisterService", () => {
       findPendingByClientId: jest.fn(),
       cancel: jest.fn(),
       getRevenueSummary: jest.fn(),
+      createInSession: jest.fn(),
     };
 
     mockExportUtils = {

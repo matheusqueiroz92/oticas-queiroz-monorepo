@@ -63,6 +63,11 @@ jest.mock('@/app/services/authService', () => ({
   loginWithCredentials: jest.fn(),
 }));
 
+// ThemeToggle usa next-themes e lucide-react (Sun/Moon) que não estão disponíveis em JSDOM
+jest.mock('@/components/ui/theme-toggle', () => ({
+  ThemeToggle: () => null,
+}));
+
 describe('LoginPage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
