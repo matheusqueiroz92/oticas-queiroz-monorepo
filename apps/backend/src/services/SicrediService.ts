@@ -275,7 +275,7 @@ export class SicrediService {
 
   async testConnection(): Promise<boolean> {
     try {
-      await this.authenticate();
+      await this.getValidToken();
       return true;
     } catch (error) {
       logger.error('SICREDI: Falha no teste de conexão', { error });
