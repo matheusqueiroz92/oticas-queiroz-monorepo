@@ -1,44 +1,64 @@
-// Interfaces para integração com API da SICREDI
+// Interfaces para integração com API da Cobrança SICREDI v3.8
 
 export interface SicrediBoletoRequest {
-  // Dados do pagador
+  // Header params (sent as HTTP headers, not body)
+  // cooperativa and posto come from config — not in this interface
+
+  // Required body fields
+  tipoCobranca: 'NORMAL' | 'HIBRIDO';
+  codigoBeneficiario: string;   // 5 chars
+  especieDocumento:
+    | 'DUPLICATA_MERCANTIL_INDICACAO'
+    | 'DUPLICATA_RURAL'
+    | 'NOTA_PROMISSORIA'
+    | 'NOTA_PROMISSORIA_RURAL'
+    | 'NOTA_SEGUROS'
+    | 'RECIBO'
+    | 'LETRA_CAMBIO'
+    | 'NOTA_DEBITO'
+    | 'DUPLICATA_SERVICO_INDICACAO'
+    | 'OUTROS'
+    | 'BOLETO_PROPOSTA'
+    | 'CARTAO_CREDITO'
+    | 'BOLETO_DEPOSITO';
+  seuNumero: string;            // max 10 chars — internal control number
+  dataVencimento: string;       // YYYY-MM-DD
+  valor: number;
+
   pagador: {
-    cpfCnpj: string;
-    nome: string;
-    endereco: {
-      logradouro: string;
-      numero: string;
-      complemento?: string;
-      bairro: string;
-      cidade: string;
-      uf: string;
-      cep: string;
-    };
+    tipoPessoa: 'PESSOA_FISICA' | 'PESSOA_JURIDICA';
+    documento: string;          // CPF (11 digits) or CNPJ (14 digits), no formatting
+    nome: string;               // max 200 chars (truncated at 40 on output)
+    endereco: string;           // max 40 chars
+    cidade: string;             // max 40 chars
+    uf: string;                 // 2-char state abbreviation
+    cep?: string;               // 8 digits, no formatting
+    telefone?: string;          // max 11 digits
+    email?: string;             // max 40 chars
   };
-  
-  // Dados do boleto
-  boleto: {
-    seuNumero: string; // Número de controle interno
-    valor: number;
-    dataVencimento: string; // formato: YYYY-MM-DD
-    dataEmissao: string; // formato: YYYY-MM-DD
-    dataLimite: string; // formato: YYYY-MM-DD
-    valorAbatimento?: number;
-    valorDesconto?: number;
-    valorMora?: number;
-    valorMulta?: number;
-    mensagem?: string;
-    nossoNumero?: string;
-  };
-  
-  // Dados da cobrança
-  cobranca: {
-    codigoBeneficiario: string;
-    codigoPosto: string;
-    especieDocumento: string; // "01" = Duplicata, "02" = Nota Promissória, etc.
-    numeroParcela?: number;
-    totalParcelas?: number;
-  };
+
+  // Optional body fields
+  nossoNumero?: string;         // 9 chars — Sicredi generates automatically if omitted
+  idTituloEmpresa?: string;     // max 25 chars
+  diasProtestoAuto?: number;    // 3–99 days; mutually exclusive with diasNegativacaoAuto
+  diasNegativacaoAuto?: number; // mutually exclusive with diasProtestoAuto
+  validadeAposVencimento?: number; // days QR Code stays valid past due date (HIBRIDO only)
+
+  tipoDesconto?: 'VALOR' | 'PERCENTUAL';
+  valorDesconto1?: number;
+  dataDesconto1?: string;       // YYYY-MM-DD
+  valorDesconto2?: number;
+  dataDesconto2?: string;
+  valorDesconto3?: number;
+  dataDesconto3?: string;
+  descontoAntecipado?: number;  // mutually exclusive with valorDesconto1/2/3
+
+  tipoJuros?: 'VALOR' | 'PERCENTUAL';
+  juros?: number;               // daily interest amount/rate
+  multa?: number;               // late fee percentage (max 5,2)
+
+  informativo?: string[];       // up to 5 items, 80 chars each
+  mensagem?: string[];          // up to 4 items, 80 chars each
 }
 
 export interface SicrediBoletoResponse {
@@ -47,32 +67,43 @@ export interface SicrediBoletoResponse {
     nossoNumero: string;
     codigoBarras: string;
     linhaDigitavel: string;
-    pdfUrl?: string;
     qrCode?: string;
+    txid?: string;              // Pix transaction ID (HIBRIDO only)
+    cooperativa?: string;
+    posto?: string;
   };
   error?: {
     code: string;
     message: string;
-    details?: any;
+    details?: unknown;
   };
 }
 
 export interface SicrediTokenResponse {
   access_token: string;
+  refresh_token: string;
   token_type: string;
-  expires_in: number;
+  expires_in: number;           // 300 seconds
   scope: string;
 }
 
 export interface SicrediBoletoStatus {
-  nossoNumero: string;
+  linhaDigitavel: string;
+  codigoBarras: string;
+  carteira: string;
   seuNumero: string;
-  status: 'REGISTRADO' | 'BAIXADO' | 'PAGO' | 'VENCIDO' | 'PROTESTADO' | 'CANCELADO';
-  valor: number;
+  nossoNumero: string;
+  // Status returned by API — 'BAIXADO' means settled/cancelled
+  situacao?: string;
+  valor?: number;
   valorPago?: number;
-  dataVencimento: string;
-  dataPagamento?: string;
+  dataVencimento?: string;      // YYYY-MM-DD
+  dataPagamento?: string;       // YYYY-MM-DD
   dataBaixa?: string;
+  pagador?: {
+    documento: string;
+    nome: string;
+  };
 }
 
 export interface SicrediBoletoStatusResponse {
@@ -81,25 +112,15 @@ export interface SicrediBoletoStatusResponse {
   error?: {
     code: string;
     message: string;
-    details?: any;
+    details?: unknown;
   };
-}
-
-export interface SicrediCancelBoletoRequest {
-  nossoNumero: string;
-  motivo: 'ACERTOS' | 'APEDIDODOCLIENTE' | 'PAGODIRETOAOCLIENTE' | 'SUBSTITUICAO' | 'FALTADESOLUCAO' | 'APEDIDODOBENEFICIARIO';
 }
 
 export interface SicrediCancelBoletoResponse {
   status: 'success' | 'error';
-  data?: {
-    nossoNumero: string;
-    status: 'CANCELADO';
-    dataCancelamento: string;
-  };
   error?: {
     code: string;
     message: string;
-    details?: any;
+    details?: unknown;
   };
 }

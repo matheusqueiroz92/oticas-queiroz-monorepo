@@ -505,49 +505,64 @@ export class PaymentService {
       nossoNumero: string;
       codigoBarras: string;
       linhaDigitavel: string;
-      pdfUrl?: string;
       qrCode?: string;
     };
     error?: string;
   }> {
     try {
-      // Buscar o pagamento
       const payment = await this.paymentRepository.findById(paymentId);
       if (!payment) {
         throw new PaymentError("Pagamento não encontrado");
       }
 
-      if (payment.paymentMethod !== "bank_slip") {
-        throw new PaymentError("Pagamento não é do tipo boleto");
+      if (payment.paymentMethod !== "sicredi_boleto" && payment.paymentMethod !== "bank_slip") {
+        throw new PaymentError("Método de pagamento não é boleto");
       }
 
-      // Preparar dados para a SICREDI
+      const { getSicrediConfig } = await import('../config/sicredi');
+      const sicrediConfig = getSicrediConfig();
+
+      const dueDate =
+        payment.bank_slip?.sicredi?.dataVencimento?.toISOString().split('T')[0] ||
+        new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+      // Truncate address to 40 chars as required by Sicredi
+      const enderecoStr = `${customerData.endereco.logradouro}, ${customerData.endereco.numero}`.substring(0, 40);
+      const cepStr = customerData.endereco.cep.replace(/\D/g, '').substring(0, 8);
+      const docStr = customerData.cpfCnpj.replace(/\D/g, '');
+      const tipoPessoa: 'PESSOA_FISICA' | 'PESSOA_JURIDICA' = docStr.length <= 11 ? 'PESSOA_FISICA' : 'PESSOA_JURIDICA';
+
+      // seuNumero: max 10 chars
+      const seuNumero = paymentId.substring(paymentId.length - 10);
+
       const boletoRequest = {
-        pagador: customerData,
-        boleto: {
-          seuNumero: paymentId,
-          valor: payment.amount,
-          dataVencimento: payment.bank_slip?.sicredi?.dataVencimento?.toISOString().split('T')[0] || 
-                         new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 dias
-          dataEmissao: new Date().toISOString().split('T')[0],
-          dataLimite: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 dias
-          mensagem: payment.description || "Pagamento Óticas Queiroz",
+        tipoCobranca: 'NORMAL' as const,
+        codigoBeneficiario: sicrediConfig.beneficiaryCode,
+        especieDocumento: 'RECIBO' as const,
+        seuNumero,
+        dataVencimento: dueDate,
+        valor: payment.amount,
+        pagador: {
+          tipoPessoa,
+          documento: docStr,
+          nome: customerData.nome.substring(0, 200),
+          endereco: enderecoStr,
+          cidade: customerData.endereco.cidade.substring(0, 40),
+          uf: customerData.endereco.uf.toUpperCase().substring(0, 2),
+          cep: cepStr || undefined,
+          email: undefined,
         },
-        cobranca: {
-          codigoBeneficiario: "", // Será preenchido pelo serviço
-          codigoPosto: "", // Será preenchido pelo serviço
-          especieDocumento: "01", // Duplicata
-        }
+        mensagem: payment.description
+          ? [payment.description.substring(0, 80)]
+          : ['Pagamento - Oticas Queiroz'],
       };
 
-      // Gerar boleto via SICREDI
       const sicrediResponse = await this.sicrediService.generateBoleto(boletoRequest);
 
       if (sicrediResponse.status === 'error') {
         throw new PaymentError(sicrediResponse.error?.message || "Erro ao gerar boleto");
       }
 
-      // Atualizar pagamento com dados do boleto
       const updateData: Partial<IPayment> = {
         bank_slip: {
           ...payment.bank_slip,
@@ -555,26 +570,21 @@ export class PaymentService {
             nossoNumero: sicrediResponse.data!.nossoNumero,
             codigoBarras: sicrediResponse.data!.codigoBarras,
             linhaDigitavel: sicrediResponse.data!.linhaDigitavel,
-            pdfUrl: sicrediResponse.data!.pdfUrl,
             qrCode: sicrediResponse.data!.qrCode,
             status: "REGISTRADO" as const,
-            dataVencimento: new Date(boletoRequest.boleto.dataVencimento),
-          }
-        }
+            dataVencimento: new Date(dueDate),
+          },
+        },
       };
 
       await this.paymentRepository.update(paymentId, updateData);
 
-      return {
-        success: true,
-        data: sicrediResponse.data
-      };
-
+      return { success: true, data: sicrediResponse.data };
     } catch (error) {
-      console.error("Erro ao gerar boleto SICREDI:", error);
+      logger.error("Erro ao gerar boleto SICREDI", { paymentId, error });
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Erro desconhecido"
+        error: error instanceof Error ? error.message : "Erro desconhecido",
       };
     }
   }
@@ -604,8 +614,7 @@ export class PaymentService {
         throw new PaymentError("Boleto não foi gerado via SICREDI");
       }
 
-      // Consultar status na SICREDI
-      const statusResponse = await this.sicrediService.getBoletoStatus(
+      const statusResponse = await this.sicrediService.getBoleto(
         payment.bank_slip.sicredi.nossoNumero
       );
 
@@ -613,22 +622,29 @@ export class PaymentService {
         throw new PaymentError(statusResponse.error?.message || "Erro ao consultar status");
       }
 
-      // Atualizar pagamento com novo status
+      const boletoData = statusResponse.data!;
+      // Sicredi returns situacao (e.g. "A VENCER", "PAGO", "BAIXADO")
+      // Map to our internal status values
+      const rawStatus = boletoData.situacao?.toUpperCase() || '';
+      const mappedStatus = rawStatus.includes('PAGO') ? 'PAGO'
+        : rawStatus.includes('BAIXADO') ? 'BAIXADO'
+        : rawStatus.includes('PROTESTADO') ? 'PROTESTADO'
+        : rawStatus.includes('VENCIDO') || rawStatus.includes('VENCER') && new Date(boletoData.dataVencimento || '') < new Date()
+          ? 'VENCIDO'
+        : 'REGISTRADO';
+
       const updateData: Partial<IPayment> = {
         bank_slip: {
           ...payment.bank_slip,
           sicredi: {
             ...payment.bank_slip.sicredi,
-            status: statusResponse.data!.status as "REGISTRADO" | "BAIXADO" | "PAGO" | "VENCIDO" | "PROTESTADO" | "CANCELADO",
-            valorPago: statusResponse.data!.valorPago,
-            dataPagamento: statusResponse.data!.dataPagamento ? new Date(statusResponse.data!.dataPagamento) : undefined,
-            dataBaixa: statusResponse.data!.dataBaixa ? new Date(statusResponse.data!.dataBaixa) : undefined,
-          }
+            status: mappedStatus as "REGISTRADO" | "BAIXADO" | "PAGO" | "VENCIDO" | "PROTESTADO" | "CANCELADO",
+            valorPago: boletoData.valorPago,
+            dataPagamento: boletoData.dataPagamento ? new Date(boletoData.dataPagamento) : undefined,
+            dataBaixa: boletoData.dataBaixa ? new Date(boletoData.dataBaixa) : undefined,
+          },
         },
-        // Se foi pago, atualizar status do pagamento
-        ...(statusResponse.data!.status === "PAGO" && {
-          status: "completed" as const
-        })
+        ...(mappedStatus === "PAGO" && { status: "completed" as const }),
       };
 
       await this.paymentRepository.update(paymentId, updateData);
@@ -636,14 +652,14 @@ export class PaymentService {
       return {
         success: true,
         data: {
-          status: statusResponse.data!.status,
-          valorPago: statusResponse.data!.valorPago,
-          dataPagamento: statusResponse.data!.dataPagamento ? new Date(statusResponse.data!.dataPagamento) : undefined,
-        }
+          status: mappedStatus,
+          valorPago: boletoData.valorPago,
+          dataPagamento: boletoData.dataPagamento ? new Date(boletoData.dataPagamento) : undefined,
+        },
       };
 
     } catch (error) {
-      console.error("Erro ao consultar status do boleto SICREDI:", error);
+      logger.error("Erro ao consultar status do boleto SICREDI", { paymentId, error });
       return {
         success: false,
         error: error instanceof Error ? error.message : "Erro desconhecido"
@@ -675,11 +691,9 @@ export class PaymentService {
         throw new PaymentError("Boleto não foi gerado via SICREDI");
       }
 
-      // Cancelar boleto na SICREDI
-      const cancelResponse = await this.sicrediService.cancelBoleto({
-        nossoNumero: payment.bank_slip.sicredi.nossoNumero,
-        motivo
-      });
+      const cancelResponse = await this.sicrediService.cancelBoleto(
+        payment.bank_slip.sicredi.nossoNumero
+      );
 
       if (cancelResponse.status === 'error') {
         throw new PaymentError(cancelResponse.error?.message || "Erro ao cancelar boleto");
@@ -703,7 +717,7 @@ export class PaymentService {
       return { success: true };
 
     } catch (error) {
-      console.error("Erro ao cancelar boleto SICREDI:", error);
+      logger.error("Erro ao cancelar boleto SICREDI", { paymentId, error });
       return {
         success: false,
         error: error instanceof Error ? error.message : "Erro desconhecido"

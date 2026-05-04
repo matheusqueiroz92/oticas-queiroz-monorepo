@@ -3,6 +3,7 @@ import { UserService } from '../services/UserService';
 import { LegacyClientService } from '../services/LegacyClientService';
 import { OrderService } from '../services/OrderService';
 import { SicrediSyncService } from '../services/SicrediSyncService';
+import { logger } from '../config/logger';
 
 
 /**
@@ -40,7 +41,7 @@ const orderService = new OrderService();
         try {
           await sicrediSyncService.performSync();
         } catch (error) {
-          console.error('❌ SICREDI: Erro na primeira sincronização:', error);
+          logger.error('SICREDI: Erro na primeira sincronização', { error });
         }
       }, 60000); // 1 minuto
       
@@ -48,16 +49,12 @@ const orderService = new OrderService();
     }
 
   } catch (error) {
-    console.error('❌ Erro ao iniciar sincronização da SICREDI:', error);
+    logger.error('Erro ao iniciar sincronização da SICREDI', { error });
   }
 }
 
-/**
- * Função para parar a sincronização (útil para testes)
- */
 export function stopSicrediSync(): void {
-  // Esta função seria implementada se mantivermos uma referência global ao serviço
-  console.log('🛑 SICREDI: Parando sincronização automática...');
+  logger.info('SICREDI: Parando sincronização automática');
 }
 
 // Se este arquivo for executado diretamente

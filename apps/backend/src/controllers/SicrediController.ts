@@ -182,23 +182,30 @@ export class SicrediController {
       // Validar dados de entrada
       const validatedData = generateBoletoSchema.parse(req.body);
 
-      // Para teste, vamos gerar o boleto diretamente via SICREDI
-      // sem depender de um pagamento existente
+      const sicrediConfig = getSicrediConfig();
+      const { cpfCnpj, nome, endereco } = validatedData.customerData;
+      const docStr = cpfCnpj.replace(/\D/g, '');
+      const tipoPessoa: 'PESSOA_FISICA' | 'PESSOA_JURIDICA' = docStr.length <= 11 ? 'PESSOA_FISICA' : 'PESSOA_JURIDICA';
+      const enderecoStr = `${endereco.logradouro}, ${endereco.numero}`.substring(0, 40);
+      const dueDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
       const boletoRequest = {
-        pagador: validatedData.customerData,
-        boleto: {
-          seuNumero: validatedData.paymentId,
-          valor: 100.00, // Valor fixo para teste
-          dataVencimento: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 dias
-          dataEmissao: new Date().toISOString().split('T')[0],
-          dataLimite: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 dias
-          mensagem: "Pagamento de teste - Óticas Queiroz"
+        tipoCobranca: 'NORMAL' as const,
+        codigoBeneficiario: sicrediConfig.beneficiaryCode,
+        especieDocumento: 'RECIBO' as const,
+        seuNumero: validatedData.paymentId.substring(validatedData.paymentId.length - 10),
+        dataVencimento: dueDate,
+        valor: 100.00,
+        pagador: {
+          tipoPessoa,
+          documento: docStr,
+          nome: nome.substring(0, 200),
+          endereco: enderecoStr,
+          cidade: endereco.cidade.substring(0, 40),
+          uf: endereco.uf.toUpperCase(),
+          cep: endereco.cep.replace(/\D/g, '').substring(0, 8) || undefined,
         },
-        cobranca: {
-          codigoBeneficiario: getSicrediConfig().cooperativeCode,
-          codigoPosto: getSicrediConfig().postCode,
-          especieDocumento: "01" // Duplicata
-        }
+        mensagem: ['Pagamento de teste - Oticas Queiroz'],
       };
 
       const result = await this.sicrediService.generateBoleto(boletoRequest);

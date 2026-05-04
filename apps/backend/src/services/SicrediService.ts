@@ -1,16 +1,17 @@
-import axios, { AxiosInstance } from 'axios';
-import { getSicrediConfig, SicrediConfig } from '../config/sicredi';
-import {
+import axios from 'axios';
+import type { AxiosInstance } from 'axios';
+import { getSicrediConfig } from '../config/sicredi';
+import type { SicrediConfig } from '../config/sicredi';
+import type {
   SicrediBoletoRequest,
   SicrediBoletoResponse,
-  SicrediTokenResponse,
   SicrediBoletoStatusResponse,
-  SicrediCancelBoletoRequest,
-  SicrediCancelBoletoResponse
+  SicrediCancelBoletoResponse,
 } from '../interfaces/ISicredi';
+import { logger } from '../config/logger';
 
 export class SicrediError extends Error {
-  constructor(message: string, public code?: string, public details?: any) {
+  constructor(message: string, public code?: string, public details?: unknown) {
     super(message);
     this.name = 'SicrediError';
   }
@@ -19,134 +20,142 @@ export class SicrediError extends Error {
 export class SicrediService {
   private config: SicrediConfig;
   private api: AxiosInstance;
+
+  // Dynamic OAuth tokens (password grant, expires 300s / 1800s)
   private accessToken: string | null = null;
+  private refreshToken: string | null = null;
   private tokenExpiry: number = 0;
+  private refreshTokenExpiry: number = 0;
 
   constructor() {
     this.config = getSicrediConfig();
+
     this.api = axios.create({
       baseURL: this.config.baseURL,
       timeout: 30000,
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      }
     });
 
-    // Interceptor para adicionar token automaticamente
-    this.api.interceptors.request.use(async (config) => {
-      // Tentar autenticação OAuth primeiro se não houver token de acesso
-      if (!this.config.accessToken && !this.accessToken) {
-        console.log('🔄 SICREDI: Tentando autenticação OAuth...');
-        await this.authenticate();
-      }
-
-      // Usar o token de acesso da configuração
-      if (this.config.accessToken) {
-        console.log('🔑 SICREDI: Usando token de acesso da configuração');
-        config.headers['x-api-key'] = this.config.accessToken;
-      } else if (this.accessToken) {
-        console.log('🔑 SICREDI: Usando token OAuth');
-        config.headers['x-api-key'] = this.accessToken;
-      } else {
-        console.log('❌ SICREDI: Nenhum token disponível');
-      }
-      
-      console.log('🌐 SICREDI: URL:', (config.baseURL || '') + (config.url || ''));
-      console.log('🔑 SICREDI: Token configurado:', this.config.accessToken ? 'Sim' : 'Não');
-      console.log('📋 SICREDI: Headers:', JSON.stringify(config.headers, null, 2));
-      console.log('📦 SICREDI: Body:', JSON.stringify(config.data, null, 2));
-      
-      return config;
+    // Inject auth headers before every request
+    this.api.interceptors.request.use(async (cfg) => {
+      const token = await this.getValidToken();
+      cfg.headers['x-api-key'] = this.config.apiKey;
+      cfg.headers['Authorization'] = `Bearer ${token}`;
+      cfg.headers['Content-Type'] = 'application/json';
+      return cfg;
     });
 
-    // Interceptor para tratamento de erros
     this.api.interceptors.response.use(
       (response) => response,
       (error) => {
         if (error.response?.status === 401) {
-          // Token expirado, tentar renovar
+          // Force re-authentication on next request
           this.accessToken = null;
           this.tokenExpiry = 0;
         }
-        throw new SicrediError(
-          error.response?.data?.message || error.message,
-          error.response?.data?.code,
-          error.response?.data
-        );
+        const msg: string = error.response?.data?.message || error.message;
+        const code: string = String(error.response?.status ?? 'ERR');
+        throw new SicrediError(msg, code, error.response?.data);
       }
     );
   }
 
-  /**
-   * Verifica se o token precisa ser renovado
-   */
-  private shouldRefreshToken(): boolean {
-    return !this.accessToken || Date.now() >= this.tokenExpiry;
+  // Returns a valid access token, refreshing or re-authenticating as needed
+  private async getValidToken(): Promise<string> {
+    const nowMs = Date.now();
+    const bufferMs = 30_000; // 30s safety buffer
+
+    if (this.accessToken && nowMs < this.tokenExpiry - bufferMs) {
+      return this.accessToken;
+    }
+
+    if (this.refreshToken && nowMs < this.refreshTokenExpiry - bufferMs) {
+      await this.refreshAccessToken();
+      return this.accessToken!;
+    }
+
+    await this.authenticate();
+    return this.accessToken!;
   }
 
   /**
-   * Autentica na API da SICREDI usando token de acesso
+   * Authenticates using Sicredi password grant (API v3.8).
+   *
+   * POST /auth/openapi/token
+   * Headers: x-api-key (static), context: COBRANCA
+   * Body: grant_type=password, username={beneficiaryCode}{cooperativeCode},
+   *       password={accessCode}, scope=cobranca
    */
   private async authenticate(): Promise<void> {
+    const username = `${this.config.beneficiaryCode}${this.config.cooperativeCode}`;
+
+    const body = new URLSearchParams({
+      grant_type: 'password',
+      username,
+      password: this.config.accessCode,
+      scope: 'cobranca',
+    });
+
     try {
-      // Se temos um token de acesso configurado, usamos ele diretamente
-      if (this.config.accessToken) {
-        this.accessToken = this.config.accessToken;
-        this.tokenExpiry = Date.now() + (24 * 60 * 60 * 1000); // 24 horas
-        console.log('✅ SICREDI: Token de acesso configurado');
-        return;
-      }
-
-      // Fallback para OAuth se não houver token de acesso
-      const authResponse = await axios.post(
-        `${this.config.baseURL}/oauth/token`,
-        {
-          grant_type: 'client_credentials',
-          client_id: this.config.clientId,
-          client_secret: this.config.clientSecret,
+      const response = await axios.post(this.config.authURL, body.toString(), {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'x-api-key': this.config.apiKey,
+          context: 'COBRANCA',
         },
-        {
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-        }
-      );
+      });
 
-      const tokenData: SicrediTokenResponse = authResponse.data;
-      
-      this.accessToken = tokenData.access_token;
-      this.tokenExpiry = Date.now() + (tokenData.expires_in * 1000);
+      this.accessToken = response.data.access_token;
+      this.refreshToken = response.data.refresh_token;
+      this.tokenExpiry = Date.now() + response.data.expires_in * 1000;
+      this.refreshTokenExpiry = Date.now() + 1_800_000; // 1800s per spec
 
-      console.log('✅ SICREDI: Autenticação OAuth realizada com sucesso');
+      logger.info('SICREDI: Autenticação realizada com sucesso');
     } catch (error) {
-      console.error('❌ SICREDI: Erro na autenticação:', error);
-      throw new SicrediError(
-        'Falha na autenticação com SICREDI',
-        'AUTH_ERROR',
-        error
-      );
+      logger.error('SICREDI: Erro na autenticação', { error });
+      throw new SicrediError('Falha na autenticação com SICREDI', 'AUTH_ERROR', error);
+    }
+  }
+
+  private async refreshAccessToken(): Promise<void> {
+    const body = new URLSearchParams({
+      grant_type: 'refresh_token',
+      refresh_token: this.refreshToken!,
+    });
+
+    try {
+      const response = await axios.post(this.config.authURL, body.toString(), {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'x-api-key': this.config.apiKey,
+          context: 'COBRANCA',
+        },
+      });
+
+      this.accessToken = response.data.access_token;
+      this.refreshToken = response.data.refresh_token;
+      this.tokenExpiry = Date.now() + response.data.expires_in * 1000;
+      this.refreshTokenExpiry = Date.now() + 1_800_000;
+    } catch {
+      // Refresh failed — fall back to full re-auth
+      this.refreshToken = null;
+      this.refreshTokenExpiry = 0;
+      await this.authenticate();
     }
   }
 
   /**
-   * Gera um boleto bancário
+   * Registers a boleto with Sicredi.
+   *
+   * POST /cobranca/boleto/v1/boletos
+   * Extra headers: cooperativa, posto
    */
   async generateBoleto(request: SicrediBoletoRequest): Promise<SicrediBoletoResponse> {
     try {
-      // Tentar autenticação OAuth primeiro se não houver token de acesso
-      if (!this.config.accessToken) {
-        console.log('🔄 SICREDI: Tentando autenticação OAuth...');
-        await this.authenticate();
-      }
-
-      const response = await this.api.post('/cobranca/boleto/v1/boletos', {
-        ...request,
-        cobranca: {
-          ...request.cobranca,
-          codigoBeneficiario: this.config.cooperativeCode,
-          codigoPosto: this.config.postCode,
-        }
+      const response = await this.api.post('/cobranca/boleto/v1/boletos', request, {
+        headers: {
+          cooperativa: this.config.cooperativeCode,
+          posto: this.config.postCode,
+        },
       });
 
       return {
@@ -155,102 +164,121 @@ export class SicrediService {
           nossoNumero: response.data.nossoNumero,
           codigoBarras: response.data.codigoBarras,
           linhaDigitavel: response.data.linhaDigitavel,
-          pdfUrl: response.data.pdfUrl,
           qrCode: response.data.qrCode,
-        }
+          txid: response.data.txid,
+          cooperativa: response.data.cooperativa,
+          posto: response.data.posto,
+        },
       };
     } catch (error) {
-      console.error('❌ SICREDI: Erro ao gerar boleto:', error);
+      logger.error('SICREDI: Erro ao registrar boleto', { error });
       return {
         status: 'error',
         error: {
-          code: error instanceof SicrediError ? error.code || 'UNKNOWN_ERROR' : 'UNKNOWN_ERROR',
-          message: error instanceof SicrediError ? error.message : 'Erro desconhecido',
+          code: error instanceof SicrediError ? (error.code ?? 'UNKNOWN') : 'UNKNOWN',
+          message: error instanceof Error ? error.message : 'Erro desconhecido',
           details: error instanceof SicrediError ? error.details : error,
-        }
+        },
       };
     }
   }
 
   /**
-   * Consulta o status de um boleto
+   * Queries a boleto by nossoNumero.
+   *
+   * GET /cobranca/boleto/v1/boletos
+   * Extra headers: cooperativa, posto
+   * Params: codigoBeneficiario, nossoNumero
    */
-  async getBoletoStatus(nossoNumero: string): Promise<SicrediBoletoStatusResponse> {
+  async getBoleto(nossoNumero: string): Promise<SicrediBoletoStatusResponse> {
     try {
-      const response = await this.api.get(`/cobranca/boleto/v1/boletos/${nossoNumero}`);
-
-      return {
-        status: 'success',
-        data: {
-          nossoNumero: response.data.nossoNumero,
-          seuNumero: response.data.seuNumero,
-          status: response.data.status,
-          valor: response.data.valor,
-          valorPago: response.data.valorPago,
-          dataVencimento: response.data.dataVencimento,
-          dataPagamento: response.data.dataPagamento,
-          dataBaixa: response.data.dataBaixa,
-        }
-      };
-    } catch (error) {
-      console.error('❌ SICREDI: Erro ao consultar status do boleto:', error);
-      return {
-        status: 'error',
-        error: {
-          code: error instanceof SicrediError ? error.code || 'UNKNOWN_ERROR' : 'UNKNOWN_ERROR',
-          message: error instanceof SicrediError ? error.message : 'Erro desconhecido',
-          details: error instanceof SicrediError ? error.details : error,
-        }
-      };
-    }
-  }
-
-  /**
-   * Cancela um boleto
-   */
-  async cancelBoleto(request: SicrediCancelBoletoRequest): Promise<SicrediCancelBoletoResponse> {
-    try {
-      const response = await this.api.post(`/cobranca/boleto/v1/boletos/${request.nossoNumero}/cancelar`, {
-        motivo: request.motivo,
+      const response = await this.api.get('/cobranca/boleto/v1/boletos', {
+        headers: {
+          cooperativa: this.config.cooperativeCode,
+          posto: this.config.postCode,
+        },
+        params: {
+          codigoBeneficiario: this.config.beneficiaryCode,
+          nossoNumero,
+        },
       });
 
-      return {
-        status: 'success',
-        data: {
-          nossoNumero: response.data.nossoNumero,
-          status: 'CANCELADO',
-          dataCancelamento: response.data.dataCancelamento,
-        }
-      };
+      return { status: 'success', data: response.data };
     } catch (error) {
-      console.error('❌ SICREDI: Erro ao cancelar boleto:', error);
+      logger.error('SICREDI: Erro ao consultar boleto', { nossoNumero, error });
       return {
         status: 'error',
         error: {
-          code: error instanceof SicrediError ? error.code || 'UNKNOWN_ERROR' : 'UNKNOWN_ERROR',
-          message: error instanceof SicrediError ? error.message : 'Erro desconhecido',
+          code: error instanceof SicrediError ? (error.code ?? 'UNKNOWN') : 'UNKNOWN',
+          message: error instanceof Error ? error.message : 'Erro desconhecido',
           details: error instanceof SicrediError ? error.details : error,
-        }
+        },
       };
     }
   }
 
   /**
-   * Testa a conectividade com a API da SICREDI
+   * Settles (baixa) a boleto — Sicredi's cancel mechanism.
+   *
+   * PATCH /cobranca/boleto/v1/boletos/{nossoNumero}/baixa
+   * Extra headers: cooperativa, posto, codigoBeneficiario
    */
+  async cancelBoleto(nossoNumero: string): Promise<SicrediCancelBoletoResponse> {
+    try {
+      await this.api.patch(
+        `/cobranca/boleto/v1/boletos/${nossoNumero}/baixa`,
+        {},
+        {
+          headers: {
+            cooperativa: this.config.cooperativeCode,
+            posto: this.config.postCode,
+            codigoBeneficiario: this.config.beneficiaryCode,
+          },
+        }
+      );
+
+      return { status: 'success' };
+    } catch (error) {
+      logger.error('SICREDI: Erro ao cancelar boleto', { nossoNumero, error });
+      return {
+        status: 'error',
+        error: {
+          code: error instanceof SicrediError ? (error.code ?? 'UNKNOWN') : 'UNKNOWN',
+          message: error instanceof Error ? error.message : 'Erro desconhecido',
+          details: error instanceof SicrediError ? error.details : error,
+        },
+      };
+    }
+  }
+
+  /**
+   * Downloads a boleto PDF.
+   *
+   * GET /cobranca/boleto/v1/boletos/pdf?linhaDigitavel=...
+   * Returns raw binary buffer.
+   */
+  async getBoletoPdf(linhaDigitavel: string): Promise<Buffer> {
+    const token = await this.getValidToken();
+
+    const response = await axios.get(`${this.config.baseURL}/cobranca/boleto/v1/boletos/pdf`, {
+      headers: {
+        'x-api-key': this.config.apiKey,
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      params: { linhaDigitavel },
+      responseType: 'arraybuffer',
+    });
+
+    return Buffer.from(response.data);
+  }
+
   async testConnection(): Promise<boolean> {
     try {
-      console.log('🔍 SICREDI: Iniciando teste de conexão...');
-      console.log('🔍 SICREDI: Base URL:', this.config.baseURL);
-      console.log('🔍 SICREDI: Client ID:', this.config.clientId ? 'Configurado' : 'Não configurado');
-      console.log('🔍 SICREDI: Access Token:', this.config.accessToken ? 'Configurado' : 'Não configurado');
-      
       await this.authenticate();
-      console.log('✅ SICREDI: Conexão testada com sucesso');
       return true;
     } catch (error) {
-      console.error('❌ SICREDI: Falha no teste de conexão:', error);
-      console.error('❌ SICREDI: Detalhes do erro:', error instanceof Error ? error.message : error);
+      logger.error('SICREDI: Falha no teste de conexão', { error });
       return false;
     }
   }
