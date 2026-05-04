@@ -28,10 +28,14 @@ export abstract class BaseRepository<T, CreateDTO = Omit<T, '_id'>>
   }
 
   /**
-   * Cria um novo documento
+   * Cria um novo documento.
+   * Aceita sessão opcional para operações dentro de transações MongoDB.
    */
-  async create(data: CreateDTO): Promise<T> {
+  async create(data: CreateDTO, session?: mongoose.ClientSession): Promise<T> {
     try {
+      if (session) {
+        return this.createWithSession(data, session);
+      }
       const doc = await this.model.create(data);
       return this.convertToInterface(doc);
     } catch (error) {

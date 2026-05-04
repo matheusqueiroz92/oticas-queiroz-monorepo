@@ -61,20 +61,29 @@ export class AuthService {
       const sanitizedCPF = login.replace(/[^\d]/g, "");
       user = await this.userRepository.findByCpf(sanitizedCPF);
     } else if (isServiceOrder) {
-      // Buscar por número de O.S.
+      // Buscar o cliente associado ao número de O.S.
       user = await this.userRepository.findByServiceOrder(login);
-      
-      // Para login com O.S., a senha deve ser o próprio número da O.S.
-      if (user && login !== password) {
+
+      if (!user) {
         throw new AuthError(
           "Credenciais inválidas",
           ErrorCode.INVALID_CREDENTIALS
         );
       }
-      
-      if (user && login === password) {
-        return this.buildLoginResponse(user);
+
+      // Para login com O.S., a senha deve ser o CPF do cliente (somente dígitos)
+      // Isso exige que o usuário saiba TANTO o número da OS QUANTO seu próprio CPF
+      const sanitizedPasswordCpf = password.replace(/[^\d]/g, "");
+      const userCpf = user.cpf?.replace(/[^\d]/g, "") ?? "";
+
+      if (!userCpf || sanitizedPasswordCpf !== userCpf) {
+        throw new AuthError(
+          "Credenciais inválidas",
+          ErrorCode.INVALID_CREDENTIALS
+        );
       }
+
+      return this.buildLoginResponse(user);
     } else {
       // Buscar por email
       user = await this.userRepository.findByEmail(login);

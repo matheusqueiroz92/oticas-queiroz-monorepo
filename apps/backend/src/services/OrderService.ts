@@ -7,6 +7,7 @@ import type { CreateOrderDTO, IOrder } from "../interfaces/IOrder";
 import type { IPayment } from "../interfaces/IPayment";
 import type { ExportOptions } from "../utils/exportUtils";
 import mongoose from "mongoose";
+import { logger } from "../config/logger";
 
 export class OrderError extends Error {
   constructor(message: string) {
@@ -31,26 +32,6 @@ export class OrderService {
     this.validationService = new OrderValidationService();
     this.relationshipService = new OrderRelationshipService();
     this.exportService = new OrderExportService();
-  }
-
-  /**
-   * Verifica se há estoque suficiente para um produto
-   * @param productId ID do produto
-   * @param quantity Quantidade necessária
-   * @returns true se há estoque suficiente
-   */
-  private async hasStock(productId: string, quantity: number = 1): Promise<boolean> {
-    try {
-      // Simular verificação de estoque - na prática, o StockService fará isso no decreaseStock
-      // Adicionar uma condição que pode falhar para cobrir o bloco catch nos testes
-      if (productId === 'FORCE_ERROR_FOR_TESTING') {
-        throw new Error('Simulated error for testing coverage');
-      }
-      // Se o decreaseStock falhar, saberemos que não há estoque
-      return true; // Permitir que o decreaseStock faça a validação real
-    } catch (error) {
-      return false;
-    }
   }
 
   /**
@@ -91,57 +72,86 @@ export class OrderService {
    * @returns Pedido criado
    */
   async createOrder(orderData: Omit<IOrder, "_id">): Promise<IOrder> {
-    try {
-      // Validar pedido
-      await this.validationService.validateOrder(orderData);
-
-      // Determinar status inicial baseado nos produtos
-      // Se não houver status definido ou se for "pending", aplicar lógica
-      if (!orderData.status || orderData.status === "pending") {
-        orderData.status = this.determineInitialStatus(orderData.products);
-      }
-
-      // Criar pedido
-      const order = await this.orderRepository.create(orderData);
-
-      // Processar estoque dos produtos
-      for (const product of orderData.products) {
-        let productId: string;
-        let quantity = 1;
-
-        if (typeof product === 'string') {
-          productId = product;
-        } else if (product instanceof mongoose.Types.ObjectId) {
-          productId = product.toString();
-        } else if (typeof product === 'object' && product !== null && (product as any)._id) {
-          // Garantir que o _id seja uma string válida
-          const id = (product as any)._id;
-          productId = typeof id === 'string' ? id : String(id);
-          quantity = (product as any).quantity || 1;
-        } else {
-          continue;
-        }
-
-        // Validar se o productId é um ObjectId válido antes de chamar o StockService
-        if (!mongoose.Types.ObjectId.isValid(productId)) {
-          continue;
-        }
-
-        // Passar o ID do usuário (employeeId) em vez de 'system'
-        const performedBy = orderData.employeeId ? orderData.employeeId.toString() : 'system';
-        // Processar estoque - agora com suporte automático a transações ou não
-        await this.stockService.decreaseStock(productId, quantity, 'Pedido criado', performedBy, order._id!.toString());
-      }
-
-      // Atualizar relacionamentos
-      await this.relationshipService.updateOrderRelationships(orderData, order._id!);
-
-      return order;
-    } catch (error) {
-      if (error instanceof OrderValidationError) {
-        throw new OrderError(error.message);
-      }
+    // Validar antes de abrir a sessão para falhar rápido sem custo de transação
+    await this.validationService.validateOrder(orderData).catch((error) => {
+      if (error instanceof OrderValidationError) throw new OrderError(error.message);
       throw error;
+    });
+
+    if (!orderData.status || orderData.status === "pending") {
+      orderData.status = this.determineInitialStatus(orderData.products);
+    }
+
+    const session = await mongoose.startSession();
+
+    try {
+      let order: IOrder;
+
+      await session.withTransaction(async () => {
+        // 1. Criar o pedido dentro da transação
+        order = await this.orderRepository.create(orderData, session);
+
+        // 2. Baixar estoque de cada produto (dentro da mesma transação)
+        const performedBy = orderData.employeeId
+          ? orderData.employeeId.toString()
+          : "system";
+
+        for (const product of orderData.products) {
+          let productId: string;
+          let quantity = 1;
+
+          if (typeof product === "string") {
+            productId = product;
+          } else if (product instanceof mongoose.Types.ObjectId) {
+            productId = product.toString();
+          } else if (
+            typeof product === "object" &&
+            product !== null &&
+            (product as any)._id
+          ) {
+            const id = (product as any)._id;
+            productId = typeof id === "string" ? id : String(id);
+            quantity = (product as any).quantity || 1;
+          } else {
+            continue;
+          }
+
+          if (!mongoose.Types.ObjectId.isValid(productId)) {
+            continue;
+          }
+
+          await this.stockService.decreaseStock(
+            productId,
+            quantity,
+            "Pedido criado",
+            performedBy,
+            order!._id!.toString(),
+            session
+          );
+        }
+      });
+
+      // 3. Atualizar relacionamentos fora da transação (operações aditivas não-críticas)
+      // Se falhar, o pedido e o estoque já foram commitados corretamente
+      try {
+        await this.relationshipService.updateOrderRelationships(
+          orderData,
+          order!._id!
+        );
+      } catch (relError) {
+        logger.error(
+          "[OrderService] Falha ao atualizar relacionamentos do pedido — pedido criado com sucesso mas relacionamentos precisam ser revistos",
+          { orderId: order!._id, error: relError }
+        );
+      }
+
+      return order!;
+    } catch (error) {
+      logger.error("[OrderService] Falha ao criar pedido — transação revertida", { error });
+      if (error instanceof OrderValidationError) throw new OrderError(error.message);
+      throw error;
+    } finally {
+      await session.endSession();
     }
   }
 
@@ -335,14 +345,14 @@ export class OrderService {
 
       await this.relationshipService.removeOrderRelationships(cancelledOrder);
 
-      console.log(`[OrderService] Pedido ${id} cancelado com sucesso pelo usuário ${userId}`);
+      logger.info(`Pedido ${id} cancelado com sucesso pelo usuário ${userId}`);
       return cancelledOrder;
 
     } catch (error) {
       if (error instanceof OrderError) {
         throw error;
       }
-      console.error(`[OrderService] Erro ao cancelar pedido ${id}:`, error);
+      logger.error(`Erro ao cancelar pedido ${id}`, { error });
       throw new OrderError("Erro interno ao cancelar pedido");
     }
   }

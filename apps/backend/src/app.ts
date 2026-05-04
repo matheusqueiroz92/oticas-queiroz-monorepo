@@ -39,6 +39,9 @@ class App {
   }
 
   private config(): void {
+    // Traefik atua como reverse proxy — necessário para rate-limiter e IPs reais
+    this.app.set("trust proxy", 1);
+
     // CSP restritiva por padrão para todas as rotas da API
     this.app.use(helmet(baseHelmetOptions));
 

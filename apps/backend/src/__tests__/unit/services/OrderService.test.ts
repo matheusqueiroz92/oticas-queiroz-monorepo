@@ -777,17 +777,13 @@ describe("OrderService", () => {
       // );
     });
 
-    it("should handle hasStock method error case", async () => {
-      // Testar diretamente o método hasStock usando reflexão
-      const hasStockMethod = (orderService as any).hasStock;
-      
-      // Testar caso de sucesso
-      const result1 = await hasStockMethod.call(orderService, "valid-product-id", 1);
-      expect(result1).toBe(true);
-      
-      // Testar caso de erro
-      const result2 = await hasStockMethod.call(orderService, "FORCE_ERROR_FOR_TESTING", 1);
-      expect(result2).toBe(false);
+    it("should detect lenses in products array", () => {
+      const products = [
+        { productType: "lenses", name: "Lente X" },
+        { productType: "prescription_frame", name: "Armação Y" },
+      ];
+      const hasLensesMethod = (orderService as any).hasLenses;
+      expect(hasLensesMethod.call(orderService, products)).toBe(true);
     });
 
     it("should handle cancelOrder with different product formats", async () => {

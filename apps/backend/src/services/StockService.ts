@@ -148,14 +148,19 @@ export class StockService {
    * @param orderId ID do pedido relacionado
    * @returns Produto atualizado ou null
   */
+  /**
+   * Diminui o estoque de um produto.
+   * Se `externalSession` for fornecida, opera dentro dessa sessão (sem criar nova).
+   * Caso contrário, detecta suporte a transações e gerencia sessão internamente.
+   */
   async decreaseStock(
-    productId: string, 
-    quantity = 1, 
-    reason = 'Pedido criado', 
-    performedBy: string = 'system',
-    orderId?: string
+    productId: string,
+    quantity = 1,
+    reason = "Pedido criado",
+    performedBy: string = "system",
+    orderId?: string,
+    externalSession?: mongoose.ClientSession
   ): Promise<IProduct | null> {
-    // Validar se productId é um ObjectId válido
     if (!mongoose.Types.ObjectId.isValid(productId)) {
       throw new StockError(`ID do produto inválido: ${productId}`);
     }
@@ -180,7 +185,40 @@ export class StockService {
     const currentStock = product.stock || 0;
 
     if (currentStock < quantity) {
-      throw new StockError(`Estoque insuficiente para o produto ${product.name}. Disponível: ${currentStock}, Necessário: ${quantity}`);
+      throw new StockError(
+        `Estoque insuficiente para o produto ${product.name}. Disponível: ${currentStock}, Necessário: ${quantity}`
+      );
+    }
+
+    // Se uma sessão externa foi fornecida, operar dentro dela diretamente
+    if (externalSession) {
+      const newStock = currentStock - quantity;
+      const updatedProduct = await this.productRepository.updateStock(
+        productId,
+        quantity,
+        "subtract",
+        externalSession
+      );
+
+      if (!updatedProduct) {
+        throw new StockError(`Falha ao atualizar estoque do produto ${productId}`);
+      }
+
+      const logData = {
+        productId: new mongoose.Types.ObjectId(productId),
+        orderId: this.validateAndConvertToObjectId(orderId),
+        previousStock: currentStock,
+        newStock,
+        quantity,
+        operation: "decrease" as const,
+        reason,
+        performedBy:
+          this.validateAndConvertToObjectId(performedBy) ??
+          new mongoose.Types.ObjectId(),
+      };
+
+      await createStockLogWithSession(logData, externalSession);
+      return updatedProduct;
     }
 
     const newStock = currentStock - quantity;

@@ -55,18 +55,13 @@ export const authorize = (roles: string[]) => {
         throw new AuthError("Token não fornecido", ErrorCode.UNAUTHORIZED);
       }
 
-      if (req.path.includes("/profile")) {
-        next();
-        return;
-      }
-
       if (!roles.includes(req.user.role)) {
         throw new PermissionError(
           "Acesso não autorizado",
           ErrorCode.INSUFFICIENT_PERMISSIONS
         );
       }
-      
+
       next();
     } catch (error: unknown) {
       next(error);

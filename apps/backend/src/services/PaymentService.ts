@@ -104,6 +104,26 @@ export class PaymentService {
         return created;
       });
 
+      // Se há um pedido associado, atualizar o status de pagamento do pedido
+      if (payment.orderId && payment._id) {
+        try {
+          const { PaymentStatusService } = await import('./PaymentStatusService');
+          const paymentStatusService = new PaymentStatusService();
+
+          await paymentStatusService.updateOrderPaymentStatus(
+            payment.orderId.toString(),
+            payment._id.toString(),
+            payment.amount,
+            payment.paymentMethod,
+            'add'
+          );
+
+          logger.info(`Status do pedido ${payment.orderId} atualizado com pagamento ${payment._id}`);
+        } catch (error) {
+          logger.error('Erro ao atualizar status do pedido após pagamento', { error });
+        }
+      }
+
       this.cache.flushAll();
 
       return payment;

@@ -1,0 +1,126 @@
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: oticas-queiroz-mongodb
+    restart: unless-stopped
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?MONGO_ROOT_PASSWORD obrigatório}
+      MONGO_INITDB_DATABASE: oticas-queiroz
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+      - ./scripts/mongo-init-rs.js:/docker-entrypoint-initdb.d/01-init-rs.js:ro
+    networks:
+      - oticas-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    labels:
+      - "traefik.enable=false"
+
+  mongo-rs-init:
+    image: mongo:7.0
+    container_name: oticas-queiroz-mongo-rs-init
+    restart: "no"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - oticas-network
+    entrypoint: >
+      mongosh --host mongodb --username ${MONGO_ROOT_USER:-admin}
+              --password ${MONGO_ROOT_PASSWORD}
+              --authenticationDatabase admin
+              --eval "
+                var status = rs.status();
+                if (status.code === 94 || !status.ok) {
+                  rs.initiate({
+                    _id: 'rs0',
+                    members: [{ _id: 0, host: 'mongodb:27017' }]
+                  });
+                  print('Replica Set inicializado com sucesso');
+                } else {
+                  print('Replica Set já estava inicializado');
+                }
+              "
+
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    container_name: oticas-queiroz-backend
+    restart: unless-stopped
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3333
+      # Formato com autenticação e replicaSet obrigatório para transações
+      MONGODB_URI: mongodb://${MONGO_ROOT_USER:-admin}:${MONGO_ROOT_PASSWORD}@mongodb:27017/oticas-queiroz?authSource=admin&replicaSet=rs0
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET obrigatório}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-24h}
+      FRONTEND_URL: ${FRONTEND_URL:-https://app.oticasqueiroz.com.br}
+      API_URL: ${API_URL:-https://app.oticasqueiroz.com.br/api}
+      EMAIL_HOST: ${EMAIL_HOST}
+      EMAIL_PORT: ${EMAIL_PORT:-587}
+      EMAIL_USER: ${EMAIL_USER}
+      EMAIL_PASS: ${EMAIL_PASS}
+      EMAIL_FROM: ${EMAIL_FROM}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      SWAGGER_ENABLED: ${SWAGGER_ENABLED:-false}
+      SWAGGER_SECRET: ${SWAGGER_SECRET}
+      SICREDI_ENVIRONMENT: ${SICREDI_ENVIRONMENT:-production}
+      SICREDI_CLIENT_ID: ${SICREDI_CLIENT_ID}
+      SICREDI_CLIENT_SECRET: ${SICREDI_CLIENT_SECRET}
+      MERCADO_PAGO_ACCESS_TOKEN: ${MERCADO_PAGO_ACCESS_TOKEN}
+    networks:
+      - oticas-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.oticas-api.rule=Host(`app.oticasqueiroz.com.br`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.oticas-api.entrypoints=websecure"
+      - "traefik.http.routers.oticas-api.tls.certresolver=letsencrypt"
+      - "traefik.http.services.oticas-api.loadbalancer.server.port=3333"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: oticas-queiroz-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://app.oticasqueiroz.com.br/api}
+    networks:
+      - oticas-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.oticas-web.rule=Host(`app.oticasqueiroz.com.br`)"
+      - "traefik.http.routers.oticas-web.entrypoints=websecure"
+      - "traefik.http.routers.oticas-web.tls.certresolver=letsencrypt"
+      - "traefik.http.services.oticas-web.loadbalancer.server.port=3000"
+      # Redirecionar HTTP → HTTPS
+      - "traefik.http.routers.oticas-web-http.rule=Host(`app.oticasqueiroz.com.br`)"
+      - "traefik.http.routers.oticas-web-http.entrypoints=web"
+      - "traefik.http.routers.oticas-web-http.middlewares=redirect-to-https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+
+volumes:
+  mongodb_data:
+    driver: local
+  mongodb_config:
+    driver: local
+
+networks:
+  oticas-network:
+    external: true
+    name: ${TRAEFIK_NETWORK:-traefik-public}

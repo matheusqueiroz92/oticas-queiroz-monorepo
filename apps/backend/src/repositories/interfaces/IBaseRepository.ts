@@ -8,7 +8,7 @@ export interface IBaseRepository<T, CreateDTO = Omit<T, '_id'>> {
    * @param data Dados para criação
    * @returns Documento criado
    */
-  create(data: CreateDTO): Promise<T>;
+  create(data: CreateDTO, session?: import("mongoose").ClientSession): Promise<T>;
 
   /**
    * Busca um documento por ID
