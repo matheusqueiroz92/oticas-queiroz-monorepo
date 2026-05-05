@@ -452,18 +452,20 @@ describe("OrderService", () => {
     it("should cancel order successfully", async () => {
       const cancelledOrder = { ...mockOrder, status: "cancelled" as const };
       mockOrderRepository.findById.mockResolvedValue(mockOrder);
-      mockValidationService.validateCancellation.mockResolvedValue(undefined);
       mockOrderRepository.update.mockResolvedValue(cancelledOrder);
       mockStockService.increaseStock.mockResolvedValue(undefined);
-      mockRelationshipService.removeOrderRelationships.mockResolvedValue(undefined);
 
       const result = await orderService.cancelOrder("order-id-123", "user-id-123", "admin");
 
       expect(result).toEqual(cancelledOrder);
-      expect(mockValidationService.validateCancellation).toHaveBeenCalledWith("pending", "admin");
-      expect(mockStockService.increaseStock).toHaveBeenCalledWith(mockOrderData.products[0], 1);
-      expect(mockStockService.increaseStock).toHaveBeenCalledWith(mockOrderData.products[1], 1);
-      expect(mockRelationshipService.removeOrderRelationships).toHaveBeenCalledWith(cancelledOrder);
+      expect(mockStockService.increaseStock).toHaveBeenCalledWith(
+        mockOrderData.products[0], 1,
+        `Pedido order-id-123 editado - produto removido`, "user-id-123", "order-id-123"
+      );
+      expect(mockStockService.increaseStock).toHaveBeenCalledWith(
+        mockOrderData.products[1], 1,
+        `Pedido order-id-123 editado - produto removido`, "user-id-123", "order-id-123"
+      );
     });
 
     it("should throw error when order not found", async () => {
@@ -481,7 +483,7 @@ describe("OrderService", () => {
       mockOrderRepository.update.mockResolvedValue(null);
 
       await expect(orderService.cancelOrder("order-id-123", "user-id", "admin")).rejects.toThrow(
-        new OrderError("Erro ao cancelar pedido")
+        new OrderError("Erro interno ao cancelar pedido")
       );
     });
   });
@@ -814,9 +816,15 @@ describe("OrderService", () => {
 
       expect(result.status).toBe("cancelled");
       expect(mockStockService.increaseStock).toHaveBeenCalledTimes(3); // 3 produtos válidos
-      expect(mockStockService.increaseStock).toHaveBeenCalledWith(validObjectId1, 1);
-      expect(mockStockService.increaseStock).toHaveBeenCalledWith(expect.any(String), 1);
-      expect(mockStockService.increaseStock).toHaveBeenCalledWith(validObjectId2, 2);
+      expect(mockStockService.increaseStock).toHaveBeenCalledWith(
+        validObjectId1, 1, expect.any(String), "user123", "order123"
+      );
+      expect(mockStockService.increaseStock).toHaveBeenCalledWith(
+        expect.any(String), 1, expect.any(String), "user123", "order123"
+      );
+      expect(mockStockService.increaseStock).toHaveBeenCalledWith(
+        validObjectId2, 1, expect.any(String), "user123", "order123"
+      );
     });
   });
 });

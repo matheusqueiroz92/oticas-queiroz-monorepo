@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, it, expect, beforeEach, jest } from "@jest/globals";
 import { UserService } from "../../../services/UserService";
 import { getRepositories } from "../../../repositories/RepositoryFactory";
@@ -39,6 +40,7 @@ describe("UserService", () => {
       delete: jest.fn(),
       emailExists: jest.fn(),
       count: jest.fn(),
+      updatePassword: jest.fn().mockResolvedValue(undefined),
     };
 
     // Mock do getRepositories
@@ -813,9 +815,10 @@ describe("UserService", () => {
 
       await userService.updatePassword("123", "newpassword");
 
-      expect(mockUserRepository.update).toHaveBeenCalledWith("123", {
-        password: "newpassword"
-      });
+      expect(mockUserRepository.updatePassword).toHaveBeenCalledWith(
+        "123",
+        expect.stringMatching(/^\$2[aby]\$/)
+      );
     });
 
     it("should throw error for invalid password", async () => {

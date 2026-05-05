@@ -219,6 +219,24 @@ export class MongoUserRepository extends BaseRepository<IUser> implements IUserR
     return finalQuery;
   }
 
+  async findById(id: string): Promise<IUser | null> {
+    try {
+      if (!this.isValidId(id)) {
+        return null;
+      }
+      const doc = await this.model.findOne({
+        _id: id,
+        isDeleted: { $ne: true }
+      }).exec();
+      if (!doc) {
+        return null;
+      }
+      return this.convertToInterface(doc);
+    } catch (error) {
+      return null;
+    }
+  }
+
   /**
    * Cria um novo usuário no banco de dados
    */
@@ -489,12 +507,35 @@ export class MongoUserRepository extends BaseRepository<IUser> implements IUserR
   }
 
   /**
+   * Soft delete do usuário (sets isDeleted: true)
+   */
+  async delete(id: string): Promise<IUser | null> {
+    try {
+      if (!this.isValidId(id)) {
+        return null;
+      }
+      const doc = await this.model.findByIdAndUpdate(
+        id,
+        { $set: { isDeleted: true, deletedAt: new Date() } },
+        { new: true }
+      ).exec();
+      if (!doc) {
+        return null;
+      }
+      return this.convertToInterface(doc);
+    } catch (error) {
+      console.error(`Erro ao deletar usuário ${id}:`, error);
+      throw error;
+    }
+  }
+
+  /**
    * Busca usuários deletados
    */
   async findDeleted(
     page: number = 1,
     limit: number = 10
   ): Promise<{ items: IUser[]; total: number; page: number; limit: number }> {
-    return this.findAll(page, limit, { includeDeleted: true, isDeleted: true });
+    return this.findAll(page, limit, { isDeleted: true }, true);
   }
 } 

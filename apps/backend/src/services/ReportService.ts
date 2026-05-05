@@ -69,10 +69,12 @@ export class ReportService {
   
       this.reportCache.set(cacheKey, data);
       
-      if (this.reportCache.size > 100) {
+      while (this.reportCache.size > 100) {
         const oldestKey = this.reportCache.keys().next().value;
         if (oldestKey) {
           this.reportCache.delete(oldestKey);
+        } else {
+          break;
         }
       }
   

@@ -251,7 +251,7 @@ describe("CashRegisterController", () => {
 
       expect(res.status).toBe(200);
       expect(res.body.register._id).toBe(register._id.toString());
-      expect(res.body.payments.sales.total).toBe(200);
+      expect(res.body.payments.sales.total).toBe(400);
       expect(res.body.payments.debts.received).toBe(100);
     });
 

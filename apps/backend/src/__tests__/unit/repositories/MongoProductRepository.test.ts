@@ -191,7 +191,7 @@ describe("MongoProductRepository", () => {
     it("should return empty array when no products", async () => {
       const all = await repository.findAll();
 
-      expect(all).toEqual([]);
+      expect(all.items).toEqual([]);
     });
   });
 
@@ -380,7 +380,7 @@ describe("MongoProductRepository", () => {
 
       const deleted = await repository.delete(created._id);
 
-      expect(deleted).toBe(true);
+      expect(deleted).not.toBeNull();
 
       const found = await repository.findById(created._id);
       expect(found).toBeNull();
@@ -390,13 +390,13 @@ describe("MongoProductRepository", () => {
       const fakeId = new mongoose.Types.ObjectId().toString();
       const deleted = await repository.delete(fakeId);
 
-      expect(deleted).toBe(false);
+      expect(deleted).toBeNull();
     });
 
     it("should return false for invalid id", async () => {
       const deleted = await repository.delete("invalid-id");
 
-      expect(deleted).toBe(false);
+      expect(deleted).toBeNull();
     });
   });
 
@@ -441,7 +441,7 @@ describe("MongoProductRepository", () => {
     it("should return empty array for type with no products", async () => {
       const cleanLenses = await repository.findByType("clean_lenses");
 
-      expect(cleanLenses).toEqual([]);
+      expect(cleanLenses.items).toEqual([]);
     });
   });
 

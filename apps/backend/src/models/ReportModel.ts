@@ -28,8 +28,6 @@ export class ReportModel {
   }
 
   async findById(id: string): Promise<IReport | null> {
-    if (!this.isValidId(id)) return null;
-
     const report = (await Report.findById(id)
       .populate("createdBy", "name email")
       .exec()) as ReportDocument | null;

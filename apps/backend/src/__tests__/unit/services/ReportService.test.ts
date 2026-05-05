@@ -452,15 +452,34 @@ describe("ReportService", () => {
       const startDate = new Date("2023-01-01");
       const endDate = new Date("2023-12-31");
 
-      // Reset mocks
-      jest.clearAllMocks();
-      
-      // Mock para recurringCustomersData
+      // Reset implementations (clearAllMocks only clears calls, not queued values)
+      User.aggregate.mockReset();
+      Order.aggregate.mockReset();
+
+      mockUserRepository.findByRole.mockResolvedValue({
+        items: [
+          { _id: "user1", name: "Cliente 1", createdAt: new Date("2023-01-15") },
+          { _id: "user2", name: "Cliente 2", createdAt: new Date("2023-02-20") },
+        ],
+      });
+
+      // periodData
+      User.aggregate
+        .mockResolvedValueOnce([
+          { _id: { month: 1, year: 2023 }, count: 5 },
+          { _id: { month: 2, year: 2023 }, count: 3 },
+        ])
+        // locationData — only user1 within filtered date range
+        .mockResolvedValueOnce([
+          { _id: "user1", count: 2 },
+        ]);
+
+      // recurringCustomersData
       Order.aggregate
         .mockResolvedValueOnce([
           { _id: "user1", orderCount: 2, totalSpent: 300 },
         ])
-        // Mock para averagePurchaseData
+        // averagePurchaseData
         .mockResolvedValueOnce([
           { _id: null, averagePurchase: 150 },
         ]);
@@ -479,12 +498,12 @@ describe("ReportService", () => {
     });
 
     it("deve retornar zero clientes ativos quando não há dados", async () => {
-      // Reset mocks
-      jest.clearAllMocks();
-      
+      // Reset implementations so beforeEach queued values don't leak in
+      User.aggregate.mockReset();
+      Order.aggregate.mockReset();
+
       mockUserRepository.findByRole.mockResolvedValue({ items: [] });
       User.aggregate
-        .mockResolvedValueOnce([])
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([]);
       Order.aggregate

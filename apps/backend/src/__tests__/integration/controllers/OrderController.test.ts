@@ -45,7 +45,7 @@ describe("OrderController", () => {
     },
     nd: 1.5,
     oc: 1.5,
-    addition: 1.0,
+    addition: "1.0",
     bridge: 18,
     rim: 50,
     vh: 35,

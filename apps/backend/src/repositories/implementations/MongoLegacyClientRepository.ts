@@ -30,7 +30,7 @@ export class MongoLegacyClientRepository
       totalDebt: doc.totalDebt || 0,
       status: doc.status || 'active',
       paymentHistory: doc.paymentHistory?.map((payment: any) => ({
-        paymentId: payment._id?.toString() || payment.paymentId?.toString(),
+        paymentId: payment.paymentId?.toString() || payment._id?.toString(),
         amount: payment.amount || 0,
         date: payment.date ? new Date(payment.date) : new Date(),
         description: payment.description,

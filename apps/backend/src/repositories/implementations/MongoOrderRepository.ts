@@ -1,4 +1,5 @@
 import { Order } from "../../schemas/OrderSchema";
+import { User } from "../../schemas/UserSchema";
 import { BaseRepository } from "./BaseRepository";
 import { IOrderRepository } from "../interfaces/IOrderRepository";
 import type { IOrder, CreateOrderDTO, IPaymentHistoryEntry } from "../../interfaces/IOrder";
@@ -24,7 +25,7 @@ export class MongoOrderRepository extends BaseRepository<IOrder, CreateOrderDTO>
 
     return {
       _id: order._id?.toString(),
-      clientId: order.clientId || "",
+      clientId: order.clientId?._id?.toString() || order.clientId?.toString() || "",
       employeeId: order.employeeId || "",
       institutionId: order.institutionId?.toString() || null,
       isInstitutionalOrder: order.isInstitutionalOrder || false,
@@ -134,16 +135,30 @@ export class MongoOrderRepository extends BaseRepository<IOrder, CreateOrderDTO>
     return query;
   }
 
+  async findById(id: string): Promise<IOrder | null> {
+    try {
+      if (!this.isValidId(id)) {
+        return null;
+      }
+      const doc = await this.model.findOne({
+        _id: id,
+        isDeleted: { $ne: true }
+      }).exec();
+      if (!doc) {
+        return null;
+      }
+      return this.convertToInterface(doc);
+    } catch (error) {
+      return null;
+    }
+  }
+
   /**
    * Busca IDs de clientes por termo de busca
    */
   private async findClientIdsBySearchTerm(searchTerm: string): Promise<string[]> {
     try {
-      // Importar dinamicamente para evitar dependência circular
-      const mongoose = require('mongoose');
-      const UserModel = mongoose.model('User');
-
-      const matchingClients = await UserModel.find({
+      const matchingClients = await User.find({
         $or: [
           { name: { $regex: searchTerm, $options: 'i' } },
           { cpf: { $regex: searchTerm, $options: 'i' } },
@@ -430,7 +445,7 @@ export class MongoOrderRepository extends BaseRepository<IOrder, CreateOrderDTO>
     page: number = 1,
     limit: number = 10
   ): Promise<{ items: IOrder[]; total: number; page: number; limit: number }> {
-    return this.findAll(page, limit, { includeDeleted: true, isDeleted: true });
+    return this.findAll(page, limit, { isDeleted: true }, true);
   }
 
   /**

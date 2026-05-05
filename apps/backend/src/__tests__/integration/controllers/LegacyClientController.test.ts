@@ -40,7 +40,7 @@ describe("LegacyClientController", () => {
     // Criar cliente legado
     const client = await LegacyClient.create({
       name: "Legacy Client Test",
-      documentId: "12345678900",
+      cpf: "12345678900",
       email: "client@test.com",
       phone: "11999999999",
       totalDebt: 1000,
@@ -67,7 +67,7 @@ describe("LegacyClientController", () => {
 
       expect(res.status).toBe(201);
       expect(res.body).toHaveProperty("_id");
-      expect(res.body.documentId).toBe("98765432100");
+      expect(res.body.cpf).toBe("98765432100");
       expect(res.body.status).toBe("active");
     });
 

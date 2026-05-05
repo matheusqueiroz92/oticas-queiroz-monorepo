@@ -90,7 +90,7 @@ describe("AuthService", () => {
     it("should login successfully with service order", async () => {
       // Para service order, não precisamos do comparePassword
       const userMock = { ...mockCustomerUser };
-      
+
       // Configurar mocks para garantir que findByServiceOrder seja chamado
       mockUserRepository.findByEmail.mockResolvedValue(null);
       mockUserRepository.findByCpf.mockResolvedValue(null);
