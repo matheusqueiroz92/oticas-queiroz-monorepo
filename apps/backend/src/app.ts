@@ -1,4 +1,4 @@
-import express from "express";
+import express, { type Request, type Response, type NextFunction } from "express";
 import helmet from "helmet";
 import { setupSwagger } from "./config/swagger";
 import { baseHelmetOptions, swaggerCspDirectives } from "./config/helmetConfig";
@@ -49,14 +49,39 @@ class App {
     // CSP mais permissiva somente para o Swagger UI
     this.app.use("/api-docs", helmet({ contentSecurityPolicy: swaggerCspDirectives }));
 
+    // Permissions-Policy: desativa features do browser que esta API nunca usa.
+    // Helmet v8 não expõe esta opção via HelmetOptions — adicionado manualmente.
+    this.app.use((_req: Request, res: Response, next: NextFunction) => {
+      res.setHeader(
+        "Permissions-Policy",
+        [
+          "camera=()",
+          "microphone=()",
+          "geolocation=()",
+          "payment=()",
+          "usb=()",
+          "accelerometer=()",
+          "gyroscope=()",
+          "magnetometer=()",
+          "fullscreen=(self)",
+          "display-capture=()",
+        ].join(", ")
+      );
+      next();
+    });
+
     const allowedOrigins = process.env.NODE_ENV === "production"
       ? ["https://app.oticasqueiroz.com.br"]
-      : ["http://localhost:3000"];
+      : ["http://localhost:3000", "http://localhost:3333"];
 
     this.app.use(
       cors({
         origin: allowedOrigins,
         credentials: true,
+        methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        allowedHeaders: ["Content-Type", "Authorization", "X-Bot-Api-Key"],
+        exposedHeaders: ["Content-Disposition"],
+        maxAge: 86400, // Cache do preflight por 24 h
       })
     );
 
