@@ -18,7 +18,7 @@ const botWhatsAppRequestSchema = new Schema<BotWhatsAppRequestDocument>(
       enum: BOT_WHATSAPP_REQUEST_TYPES,
       index: true,
     },
-    content: { type: String, required: true },
+    content: { type: String, required: true, maxlength: 2000 },
   },
   { timestamps: true }
 );

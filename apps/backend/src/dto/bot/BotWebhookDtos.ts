@@ -26,7 +26,7 @@ export const botWebhookBodySchema = z.preprocess(
     ),
     text: z.preprocess(
       (value) => normalizeInboundText(value),
-      z.string()
+      z.string().max(2000, "Mensagem muito longa (máximo 2000 caracteres)")
     ),
   })
 );

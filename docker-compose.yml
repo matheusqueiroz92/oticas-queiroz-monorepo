@@ -106,6 +106,12 @@ services:
       MERCADO_PAGO_ACCESS_TOKEN: ${MERCADO_PAGO_ACCESS_TOKEN}
     networks:
       - oticas-network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3333/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.oticas-api.rule=Host(`app.oticasqueiroz.com.br`) && PathPrefix(`/api`)"
@@ -122,12 +128,20 @@ services:
     depends_on:
       n8n:
         condition: service_healthy
+      backend:
+        condition: service_healthy
     environment:
       NODE_ENV: production
       PORT: 3344
       BOT_API_KEY: ${BOT_API_KEY:-}
       # URL interna na rede Docker (path = Production Webhook do workflow n8n)
       N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL:-http://n8n:5678/webhook/oticas-queiroz}
+      # URL do backend ERP na rede Docker interna
+      ERP_API_URL: ${ERP_API_URL:-http://backend:3333}
+      # Modo de operação: n8n (padrão) | erp (direto, sem n8n)
+      BOT_CHAT_MODE: ${BOT_CHAT_MODE:-n8n}
+      # Se n8n falhar, cai automaticamente no ERP
+      BOT_ERP_FALLBACK_ON_N8N_ERROR: ${BOT_ERP_FALLBACK_ON_N8N_ERROR:-true}
       WA_SESSION_PATH: /app/apps/whatsapp-bot/data/auth
       LOG_LEVEL: ${LOG_LEVEL:-info}
       N8N_WEBHOOK_TIMEOUT_MS: ${N8N_WEBHOOK_TIMEOUT_MS:-10000}

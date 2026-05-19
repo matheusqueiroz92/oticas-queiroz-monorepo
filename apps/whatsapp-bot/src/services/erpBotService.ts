@@ -30,9 +30,9 @@ export async function forwardToErpBot(
     }
   );
 
+  // Log sem PII: apenas JID e campos de controle da sessão
   logger.info("Mensagem processada via ERP /api/bot/chat", {
     remoteJid: payload.remoteJid,
-    text: payload.text,
     action: data?.action,
     sessionStatus: data?.sessionStatus,
   });

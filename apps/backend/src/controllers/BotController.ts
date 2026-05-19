@@ -44,11 +44,13 @@ export class BotController {
     res: Response,
     _next: NextFunction
   ): Promise<void> => {
-    logger.info("POST /api/bot/chat — payload recebido", {
-      body: req.body,
-    });
-
     const body = botWebhookBodySchema.parse(req.body);
+
+    // Log sem PII: apenas JID e tamanho do texto
+    logger.info("POST /api/bot/chat — payload recebido", {
+      remoteJid: body.remoteJid,
+      textLength: body.text.length,
+    });
     const payload = await this.processBotInboundMessageUseCase.execute(
       body.remoteJid,
       body.text

@@ -1,3 +1,4 @@
+import path from "node:path";
 import type { Server } from "node:http";
 import { env } from "./config/env";
 import { logger } from "./config/logger";
@@ -6,6 +7,7 @@ import {
   stopWhatsAppConnection,
 } from "./connection/whatsapp";
 import { createApp, startHttpServer } from "./server/http";
+import { loadLidCacheFromDisk } from "./utils/jidResolver";
 
 let httpServer: Server | null = null;
 
@@ -14,6 +16,10 @@ async function main(): Promise<void> {
     nodeEnv: env.NODE_ENV,
     port: env.PORT,
   });
+
+  // Carrega mapeamentos LID→JID persistidos em disco (sobrevive reinicializações)
+  const lidCachePath = path.join(env.WA_SESSION_PATH, "..", "lid-cache.json");
+  await loadLidCacheFromDisk(lidCachePath);
 
   const app = createApp();
   httpServer = startHttpServer(app);

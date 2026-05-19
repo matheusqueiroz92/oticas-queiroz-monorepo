@@ -97,7 +97,8 @@ describe("AuthService", () => {
       mockUserRepository.findByCnpj.mockResolvedValue(null);
       mockUserRepository.findByServiceOrder.mockResolvedValue(userMock);
 
-      const result = await authService.login("123", "123");
+      // Para login por O.S., a senha deve ser o CPF do usuário (somente dígitos)
+      const result = await authService.login("123", validCPFs.customer);
 
       expect(result).toHaveProperty("token");
       expect(result).toHaveProperty("user");
@@ -109,7 +110,8 @@ describe("AuthService", () => {
       const userMock = { ...mockCustomerUser };
       mockUserRepository.findByServiceOrder.mockResolvedValue(userMock);
 
-      const result = await authService.login("456", "456");
+      // Para login por O.S., a senha deve ser o CPF do usuário (somente dígitos)
+      const result = await authService.login("456", validCPFs.customer);
 
       expect(result).toHaveProperty("token");
       expect(result).toHaveProperty("user");

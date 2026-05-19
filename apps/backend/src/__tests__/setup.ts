@@ -1,4 +1,4 @@
-import { MongoMemoryServer } from "mongodb-memory-server";
+import { MongoMemoryReplSet } from "mongodb-memory-server";
 import mongoose from "mongoose";
 import { beforeAll, beforeEach, afterAll } from "@jest/globals";
 import "../schemas/UserSchema";
@@ -7,7 +7,7 @@ import os from "node:os";
 import path from "node:path";
 import fs from "node:fs";
 
-let mongoServer: MongoMemoryServer;
+let mongoServer: MongoMemoryReplSet;
 let tempUploadDir: string;
 
 export const createTempUploadDir = () => {
@@ -21,7 +21,8 @@ export const createTempUploadDir = () => {
 beforeAll(async () => {
   await mongoose.disconnect();
 
-  mongoServer = await MongoMemoryServer.create();
+  // MongoMemoryReplSet é necessário para suportar transações (session.withTransaction)
+  mongoServer = await MongoMemoryReplSet.create({ replSet: { count: 1 } });
   const mongoUri = mongoServer.getUri();
   await mongoose.connect(mongoUri);
 
