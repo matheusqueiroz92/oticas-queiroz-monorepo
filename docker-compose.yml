@@ -49,6 +49,30 @@ services:
                 }
               "
 
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: oticas-queiroz-n8n
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      N8N_HOST: ${N8N_HOST:-localhost}
+      N8N_PORT: 5678
+      WEBHOOK_URL: ${WEBHOOK_URL:-http://localhost:5678/}
+      GENERIC_TIMEZONE: ${GENERIC_TIMEZONE:-America/Sao_Paulo}
+      TZ: ${TZ:-America/Sao_Paulo}
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks:
+      - oticas-network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:5678/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    labels:
+      - "traefik.enable=false"
   backend:
     build:
       context: .
@@ -65,6 +89,7 @@ services:
       MONGODB_URI: mongodb://${MONGO_ROOT_USER:-admin}:${MONGO_ROOT_PASSWORD}@mongodb:27017/oticas-queiroz?authSource=admin&replicaSet=rs0
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET obrigatório}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-24h}
+      BOT_API_KEY: ${BOT_API_KEY:-}
       FRONTEND_URL: ${FRONTEND_URL:-https://app.oticasqueiroz.com.br}
       API_URL: ${API_URL:-https://app.oticasqueiroz.com.br/api}
       EMAIL_HOST: ${EMAIL_HOST}
@@ -87,6 +112,38 @@ services:
       - "traefik.http.routers.oticas-api.entrypoints=websecure"
       - "traefik.http.routers.oticas-api.tls.certresolver=letsencrypt"
       - "traefik.http.services.oticas-api.loadbalancer.server.port=3333"
+
+  whatsapp-bot:
+    build:
+      context: .
+      dockerfile: apps/whatsapp-bot/Dockerfile
+    container_name: oticas-queiroz-whatsapp-bot
+    restart: unless-stopped
+    depends_on:
+      n8n:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3344
+      BOT_API_KEY: ${BOT_API_KEY:-}
+      # URL interna na rede Docker (path = Production Webhook do workflow n8n)
+      N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL:-http://n8n:5678/webhook/oticas-queiroz}
+      WA_SESSION_PATH: /app/apps/whatsapp-bot/data/auth
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      N8N_WEBHOOK_TIMEOUT_MS: ${N8N_WEBHOOK_TIMEOUT_MS:-10000}
+      WA_RECONNECT_DELAY_MS: ${WA_RECONNECT_DELAY_MS:-3000}
+    volumes:
+      - whatsapp_bot_auth:/app/apps/whatsapp-bot/data
+    networks:
+      - oticas-network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3344/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    labels:
+      - "traefik.enable=false"
 
   frontend:
     build:
@@ -119,8 +176,14 @@ volumes:
     driver: local
   mongodb_config:
     driver: local
+  whatsapp_bot_auth:
+    driver: local
+  n8n_data:
+    driver: local
 
 networks:
+  # Rede interna para desenvolvimento local (Docker Desktop).
+  # Em produção com Traefik, use: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
   oticas-network:
-    external: true
-    name: ${TRAEFIK_NETWORK:-traefik-public}
+    name: oticas-network
+    driver: bridge

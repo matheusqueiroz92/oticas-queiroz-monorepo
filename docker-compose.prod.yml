@@ -1,0 +1,7 @@
+# Overlay para deploy no VPS com Traefik (rede externa já criada no servidor).
+# Uso: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+networks:
+  oticas-network:
+    external: true
+    name: ${TRAEFIK_NETWORK:-traefik-public}

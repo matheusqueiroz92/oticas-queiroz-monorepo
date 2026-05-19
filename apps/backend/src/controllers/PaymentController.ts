@@ -1,11 +1,13 @@
 import type { Request, Response } from "express";
 import { PaymentService, PaymentError } from "../services/PaymentService";
 import { OrderService } from "../services/OrderService";
+import { ClientDebtQueryService } from "../services/ClientDebtQueryService";
 import type { JwtPayload } from "jsonwebtoken";
 import type { IPayment } from "../interfaces/IPayment";
 import { z } from "zod";
 import type { ExportOptions } from "../utils/exportUtils";
 import { validatedPaymentSchema } from "../validators/paymentValidators";
+import { AppError } from "../utils/AppError";
 
 interface AuthRequest extends Request {
   user?: JwtPayload;
@@ -14,10 +16,15 @@ interface AuthRequest extends Request {
 export class PaymentController {
   private paymentService: PaymentService;
   private orderService: OrderService;
+  private clientDebtQueryService: ClientDebtQueryService;
 
   constructor() {
     this.paymentService = new PaymentService();
     this.orderService = new OrderService();
+    this.clientDebtQueryService = new ClientDebtQueryService(
+      this.orderService,
+      this.paymentService
+    );
   }
 
   async createPayment(req: AuthRequest, res: Response): Promise<void> {
@@ -760,20 +767,25 @@ export class PaymentController {
       const clientId = req.user.id;
       console.log('🔍 [DEBUG] Buscando débitos para cliente:', clientId);
       
-      const debtsData = await this.getClientDebtsData(clientId);
-      
-      console.log('🔍 [DEBUG] Dados de débitos calculados:', {
-        totalDebt: debtsData.totalDebt,
-        ordersCount: debtsData.orders.length,
-        paymentHistoryCount: debtsData.paymentHistory.length
-      });
-      
+      const debtsData = await this.clientDebtQueryService.getClientDebtsData(
+        clientId
+      );
+
       res.status(200).json(debtsData);
     } catch (error) {
       console.error("❌ [ERROR] Erro ao buscar débitos do cliente:", error);
+      if (error instanceof AppError) {
+        res.status(error.statusCode).json({
+          status: "error",
+          code: error.code,
+          message: error.message,
+          ...(error.details !== undefined ? { details: error.details } : {}),
+        });
+        return;
+      }
       res.status(500).json({
         message: "Erro interno ao buscar débitos",
-        details: error instanceof Error ? error.message : "Erro desconhecido"
+        details: error instanceof Error ? error.message : "Erro desconhecido",
       });
     }
   }
@@ -838,97 +850,26 @@ export class PaymentController {
         return;
       }
 
-      const debtsData = await this.getClientDebtsData(clientId);
-      
+      const debtsData = await this.clientDebtQueryService.getClientDebtsData(
+        clientId
+      );
+
       res.status(200).json(debtsData);
     } catch (error) {
       console.error("Erro ao buscar débitos do cliente:", error);
+      if (error instanceof AppError) {
+        res.status(error.statusCode).json({
+          status: "error",
+          code: error.code,
+          message: error.message,
+          ...(error.details !== undefined ? { details: error.details } : {}),
+        });
+        return;
+      }
       res.status(500).json({
         message: "Erro interno ao buscar débitos",
-        details: error instanceof Error ? error.message : "Erro desconhecido"
+        details: error instanceof Error ? error.message : "Erro desconhecido",
       });
     }
-  }
-
-  /**
-   * Método privado para buscar dados de débitos de um cliente
-   */
-  private async getClientDebtsData(clientId: string) {
-    console.log('🔍 [DEBUG] Iniciando busca de débitos para clientId:', clientId);
-    
-    // Buscar dados do cliente através de um serviço específico
-    const { UserService } = await import('../services/UserService');
-    const userService = new UserService();
-    const client = await userService.getUserById(clientId);
-    
-    if (!client) {
-      throw new Error("Cliente não encontrado");
-    }
-
-    console.log('🔍 [DEBUG] Cliente encontrado:', { id: client._id, name: client.name });
-
-    // Buscar pedidos do cliente com valor pendente
-    const allOrders = await this.orderService.getOrdersByClientId(clientId);
-    console.log('🔍 [DEBUG] Total de pedidos encontrados:', allOrders.length);
-    
-    const ordersWithDebt = allOrders.filter((order: any) => {
-      if (order.status === 'cancelled') return false;
-      
-      const totalPrice = order.finalPrice || order.totalPrice;
-      const paid = (order.paymentEntry || 0) + ((order.paymentHistory || []).reduce((sum: number, entry: any) => sum + entry.amount, 0));
-      
-      console.log('🔍 [DEBUG] Pedido análise:', {
-        id: order._id,
-        serviceOrder: order.serviceOrder,
-        totalPrice,
-        paid,
-        debt: totalPrice - paid,
-        hasDebt: paid < totalPrice,
-        status: order.status
-      });
-      
-      // Verificar se há débito real
-      const hasDebt = paid < totalPrice;
-      
-      if (hasDebt) {
-        console.log('💰 [DEBUG] Pedido COM débito encontrado:', {
-          id: order._id,
-          serviceOrder: order.serviceOrder,
-          debt: totalPrice - paid
-        });
-      }
-      
-      return hasDebt;
-    });
-
-    console.log('🔍 [DEBUG] Pedidos com débito:', ordersWithDebt.length);
-
-    // Calcular débito total baseado nos pedidos em tempo real
-    const calculatedTotalDebt = ordersWithDebt.reduce((total: number, order: any) => {
-      const totalPrice = order.finalPrice || order.totalPrice;
-      const paid = (order.paymentEntry || 0) + ((order.paymentHistory || []).reduce((sum: number, entry: any) => sum + entry.amount, 0));
-      const remainingDebt = Math.max(0, totalPrice - paid);
-      return total + remainingDebt;
-    }, 0);
-
-    console.log('🔍 [DEBUG] Débito total calculado:', calculatedTotalDebt);
-
-    // Buscar histórico de pagamentos do cliente
-    const paymentHistory = await this.paymentService.getAllPayments(1, 100, {
-      customerId: clientId
-    });
-
-    return {
-      totalDebt: calculatedTotalDebt, // Usar débito calculado em tempo real
-      paymentHistory: paymentHistory.payments || [],
-      orders: ordersWithDebt.map((order: any) => ({
-        _id: order._id,
-        serviceOrder: order.serviceOrder,
-        createdAt: order.createdAt,
-        status: order.status,
-        finalPrice: order.finalPrice || order.totalPrice,
-        paymentEntry: (order.paymentEntry || 0) + ((order.paymentHistory || []).reduce((sum: number, entry: any) => sum + entry.amount, 0))
-      }))
-    };
   }
 }

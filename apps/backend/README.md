@@ -74,6 +74,30 @@ npm run dev
 npm test
 ```
 
+### MongoDB local (sem usar o banco de produção)
+
+O `docker-compose.yml` da raiz é o stack de **produção** (Traefik, rede externa). Para desenvolvimento no PC use apenas o Mongo local:
+
+```bash
+# Na raiz do monorepo
+cp .env.docker.dev.example .env.docker.dev   # opcional — senhas customizadas
+npm run docker:dev:mongo
+```
+
+No `apps/backend/.env`, defina `MONGODB_URI` para o Docker local (veja comentários em `.env.example`). Exemplo com credenciais padrão do `docker-compose.dev.yml`:
+
+```
+MONGODB_URI=mongodb://admin:oticas_dev_local@127.0.0.1:27018/oticas-queiroz?authSource=admin&replicaSet=rs0&directConnection=true
+```
+
+Mantenha a URI de **produção** apenas no servidor ou em cópias locais que não sejam commitadas. O banco local começa **vazio**; importe um dump de homologação ou crie dados de teste.
+
+```bash
+cd apps/backend && npm run dev
+```
+
+Parar o Mongo local: `npm run docker:dev:mongo:down` (na raiz).
+
 ## 📊 Status dos Testes
 
 ### ✅ Serviços com 100% de Cobertura

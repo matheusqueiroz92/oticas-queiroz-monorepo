@@ -5,9 +5,18 @@
     "dev": "turbo run dev --filter=backend --filter=web",
     "dev:backend": "turbo run dev --filter=backend",
     "dev:web": "turbo run dev --filter=web",
+    "dev:whatsapp-bot": "turbo run dev --filter=whatsapp-bot",
     "build": "turbo run build",
     "lint": "turbo run lint",
-    "test": "turbo run test"
+    "test": "turbo run test",
+    "docker:dev:mongo": "docker compose -f docker-compose.dev.yml up -d mongodb && docker compose -f docker-compose.dev.yml up mongo-rs-init",
+    "docker:dev:n8n": "docker compose -f docker-compose.dev.yml up -d n8n",
+    "docker:dev:infra": "docker compose -f docker-compose.dev.yml up -d mongodb n8n && docker compose -f docker-compose.dev.yml up mongo-rs-init",
+    "docker:dev:down": "docker compose -f docker-compose.dev.yml down",
+    "docker:dev:mongo:down": "docker compose -f docker-compose.dev.yml down",
+    "docker:dev:mongo:reset": "docker compose -f docker-compose.dev.yml down -v && npm run docker:dev:mongo",
+    "docker:dev:mongo:logs": "docker compose -f docker-compose.dev.yml logs -f mongodb",
+    "docker:dev:n8n:logs": "docker compose -f docker-compose.dev.yml logs -f n8n"
   },
   "devDependencies": {
     "@oticas-queiroz/config": "^1.0.0",

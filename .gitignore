@@ -7,6 +7,7 @@ node_modules
 
 # Local env files — .env.example é rastreado intencionalmente
 .env
+.env.docker.dev
 .env.local
 .env.development.local
 .env.test.local
@@ -27,6 +28,10 @@ coverage
 out/
 build
 dist
+
+# WhatsApp bot — sessão Baileys (credenciais locais)
+apps/whatsapp-bot/data/*
+!apps/whatsapp-bot/data/.gitkeep
 
 # Debug
 npm-debug.log*

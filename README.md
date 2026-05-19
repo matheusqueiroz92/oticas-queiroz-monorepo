@@ -318,6 +318,7 @@ oticas-queiroz-monorepo/
 │   │   │   └── useProfileData.ts       # Hook do perfil com métricas
 │   │   └── schemas/                # Validações Zod frontend
 │   │
+│   ├── whatsapp-bot/               # Gateway WhatsApp (Baileys) ↔ n8n
 │   ├── mobile/                     # React Native (Em desenvolvimento)
 │   └── desktop/                    # Electron (Planejado)
 │
@@ -357,6 +358,72 @@ npm run dev:web         # Apenas frontend (porta 3000)
 ```
 
 > 💡 **Dica:** O comando `npm run dev` usa Turborepo para iniciar backend e frontend simultaneamente com hot reload!
+
+### Como rodar o ambiente completo (Docker)
+
+Stack com **MongoDB**, **API (backend)**, **frontend**, **WhatsApp gateway** e **n8n** na mesma rede Docker (`oticas-network`). Os serviços se comunicam pelos nomes dos containers:
+
+| Serviço        | Host interno (Docker)     | Porta no host |
+|----------------|---------------------------|---------------|
+| `backend`      | `http://backend:3333`     | via Traefik*  |
+| `whatsapp-bot` | `http://whatsapp-bot:3344`| —             |
+| `n8n`          | `http://n8n:5678`         | **5678**      |
+
+\* Em produção o backend é exposto pelo Traefik; dentro da rede, o n8n usa `http://backend:3333/api/bot/...`.
+
+```bash
+# Sempre na RAIZ do monorepo (não dentro de apps/backend)
+cd oticas-queiroz-monorepo
+
+cp .env.example .env
+# Preencha MONGO_ROOT_PASSWORD, JWT_SECRET, BOT_API_KEY, etc.
+
+docker compose up -d
+# Ou apenas o essencial do bot (sem frontend):
+docker compose up -d mongodb mongo-rs-init n8n backend whatsapp-bot
+# Só o n8n (testar editor):
+docker compose up -d n8n
+```
+
+**Problema comum:** `network traefik-public declared as external, but could not be found`  
+Isso ocorria em máquinas locais sem Traefik. O `docker-compose.yml` padrão agora cria a rede `oticas-network` automaticamente. No VPS, use o overlay de produção:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+```
+
+**Acessos locais**
+
+- **n8n (editor):** [http://localhost:5678](http://localhost:5678)
+- **Health WhatsApp bot:** `http://localhost:3344/health` (se a porta estiver publicada; no compose padrão o bot fala só na rede interna — use `docker compose exec whatsapp-bot wget -qO- http://localhost:3344/health`)
+
+**Primeira vez no WhatsApp (Docker)**
+
+```bash
+docker compose run --rm -it whatsapp-bot
+```
+
+Escaneie o QR no celular. A sessão persiste no volume `whatsapp_bot_auth`.
+
+**Chatbot WhatsApp (menu, consultas, agendamento)**
+
+Documentação completa: [`bot-api-docs.md`](bot-api-docs.md) e [`apps/whatsapp-bot/README.md`](apps/whatsapp-bot/README.md).
+
+| Ação | URL (dentro do Docker) |
+|------|-------------------------|
+| Webhook n8n (entrada do gateway) | `http://n8n:5678/webhook/oticas-queiroz` (produção, workflow **ativo**) |
+| **Diálogo (recomendado)** — n8n → ERP | `POST http://backend:3333/api/bot/chat` (header `x-api-key`) |
+| Consultas diretas (opcional) | `GET http://backend:3333/api/bot/order/:os`, `.../customer/debts/:cpf` |
+| Enviar mensagem ao cliente | `POST http://whatsapp-bot:3344/send-message` (header `x-api-key`) |
+
+Menu: `1` O.S. · `2` CPF · `3` Agendar exame · `4` Orçamento · `0` Voltar ao menu.
+
+#### Webhook de Teste vs Produção (n8n)
+
+- **Teste** (`/webhook-test/...`): costuma aceitar **apenas uma chamada** por execução — a segunda mensagem pode retornar **404**. Em dev, use `BOT_CHAT_MODE=erp` no `whatsapp-bot`, `BOT_ERP_FALLBACK_ON_N8N_ERROR=true`, ou URL de **produção** com workflow publicado.
+- **Produção** (`/webhook/...`): workflow **publicado/ativo** — use no Docker: `http://n8n:5678/webhook/oticas-queiroz`.
+
+> O gateway pode chamar o ERP automaticamente se o n8n falhar (`BOT_ERP_FALLBACK_ON_N8N_ERROR=true` em `apps/whatsapp-bot/.env`).
 
 ### Configuração Detalhada
 

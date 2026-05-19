@@ -111,7 +111,15 @@ export class SicrediService {
 
       logger.info('SICREDI: Autenticação realizada com sucesso');
     } catch (error) {
-      logger.error('SICREDI: Erro na autenticação', { error });
+      const axiosError = error as any;
+      const responseBody = axiosError?.response?.data;
+      const statusCode = axiosError?.response?.status;
+      logger.error('SICREDI: Erro na autenticação', {
+        status: statusCode,
+        responseBody,
+        username: `${this.config.beneficiaryCode}${this.config.cooperativeCode}`,
+        authURL: this.config.authURL,
+      });
       throw new SicrediError('Falha na autenticação com SICREDI', 'AUTH_ERROR', error);
     }
   }

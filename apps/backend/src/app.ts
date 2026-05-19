@@ -14,6 +14,7 @@ import legacyClientRoutes from "./routes/legacyClientRoutes";
 import reportRoutes from "./routes/reportRoutes";
 import sicrediRoutes from "./routes/sicrediRoutes";
 import sicrediSyncRoutes from "./routes/sicrediSyncRoutes";
+import botRoutes from "./routes/botRoutes";
 import connectDB from "./config/db";
 import cors from "cors";
 import { globalLimiter } from "./config/rateLimit";
@@ -101,6 +102,7 @@ class App {
     this.app.use("/api/reports", reportRoutes);
     this.app.use("/api/sicredi", sicrediRoutes);
     this.app.use("/api/sicredi-sync", sicrediSyncRoutes);
+    this.app.use("/api/bot", botRoutes);
 
     // Rota de diagnóstico: disponível apenas em desenvolvimento/teste (segurança)
     if (process.env.NODE_ENV !== "production") {

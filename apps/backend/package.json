@@ -31,6 +31,7 @@
     "test:sicredi-sync-controller": "jest --testPathPattern=\"SicrediSyncController\" --coverage --collectCoverageFrom=\"src/controllers/SicrediSyncController.ts\"",
     "test:sicredi-sync-integration": "jest --testPathPattern=\"SicrediSyncController.integration\"",
     "test:sicredi-all": "jest --testPathPattern=\"Sicredi\" --coverage --collectCoverageFrom=\"src/services/SicrediSyncService.ts\" \"src/controllers/SicrediSyncController.ts\"",
+    "test:bot": "jest --config jest.bot.config.ts",
     "coverage": "jest --coverage",
     "test:watch": "jest --watch",
     "lint": "ESLINT_USE_FLAT_CONFIG=false eslint . --ext .ts",

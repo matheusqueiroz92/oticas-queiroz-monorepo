@@ -1,0 +1,134 @@
+# Infraestrutura local para desenvolvimento (npm run dev no host).
+# Não altera docker-compose.yml de produção.
+#
+# Serviços: MongoDB + n8n
+#   npm run docker:dev:mongo   → só Mongo
+#   npm run docker:dev:n8n     → só n8n
+#   npm run docker:dev:infra   → Mongo + n8n
+#
+# Credenciais Mongo (troque em .env.docker.dev):
+#   usuário: admin | senha: oticas_dev_local
+#
+# n8n: http://localhost:5678
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: oticas-queiroz-mongodb-dev
+    restart: unless-stopped
+    entrypoint:
+      - bash
+      - -c
+      - |
+        KEYFILE=/data/db/mongodb-replica-keyfile
+        if [ ! -f "$$KEYFILE" ]; then
+          cp /docker/mongodb-keyfile "$$KEYFILE"
+          chmod 400 "$$KEYFILE"
+        fi
+        exec docker-entrypoint.sh mongod --replSet rs0 --bind_ip_all --keyFile "$$KEYFILE"
+    # Porta 27018 no host evita conflito com MongoDB instalado no Windows (27017)
+    ports:
+      - "27018:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-oticas_dev_local}
+      MONGO_INITDB_DATABASE: oticas-queiroz
+    volumes:
+      - mongodb_dev_data:/data/db
+      - mongodb_dev_config:/data/configdb
+      - ./scripts/dev/mongodb-keyfile:/docker/mongodb-keyfile:ro
+    networks:
+      - oticas-dev
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mongosh",
+          "-u",
+          "admin",
+          "-p",
+          "oticas_dev_local",
+          "--authenticationDatabase",
+          "admin",
+          "--quiet",
+          "--eval",
+          "db.adminCommand('ping').ok",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 8
+      start_period: 60s
+
+  mongo-rs-init:
+    image: mongo:7.0
+    container_name: oticas-queiroz-mongo-rs-init-dev
+    restart: "no"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - oticas-dev
+    environment:
+      MONGO_ROOT_USER: ${MONGO_ROOT_USER:-admin}
+      MONGO_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-oticas_dev_local}
+    entrypoint: ["bash", "-c"]
+    command:
+      - |
+        set -e
+        for i in $$(seq 1 20); do
+          if mongosh --host mongodb -u "$$MONGO_ROOT_USER" -p "$$MONGO_ROOT_PASSWORD" --authenticationDatabase admin --quiet --eval "
+            try {
+              var s = rs.status();
+              if (s.ok) quit(0);
+            } catch (e) {}
+            try {
+              rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'localhost:27017' }] });
+              quit(0);
+            } catch (e2) {
+              if (e2.codeName === 'AlreadyInitialized') quit(0);
+            }
+            quit(1);
+          "; then
+            echo "Replica set dev pronto (localhost:27018 no host)"
+            exit 0
+          fi
+          echo "Aguardando Mongo/replica set... tentativa $$i"
+          sleep 3
+        done
+        echo "Falha ao inicializar replica set"
+        exit 1
+
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: oticas-queiroz-n8n-dev
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      N8N_HOST: ${N8N_HOST:-localhost}
+      N8N_PORT: 5678
+      WEBHOOK_URL: ${WEBHOOK_URL:-http://localhost:5678/}
+      GENERIC_TIMEZONE: ${GENERIC_TIMEZONE:-America/Sao_Paulo}
+      TZ: ${TZ:-America/Sao_Paulo}
+    volumes:
+      - n8n_dev_data:/home/node/.n8n
+    networks:
+      - oticas-dev
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:5678/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  mongodb_dev_data:
+    driver: local
+  mongodb_dev_config:
+    driver: local
+  n8n_dev_data:
+    driver: local
+
+networks:
+  oticas-dev:
+    driver: bridge

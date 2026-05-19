@@ -1,0 +1,2 @@
+scripts/dev/mongodb-keyfile text eol=lf
+docker-compose.dev.yml text eol=lf

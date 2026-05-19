@@ -1,0 +1,17 @@
+{
+  "extends": "@oticas-queiroz/config/tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "baseUrl": ".",
+    "typeRoots": [
+      "${configDir}/../../node_modules/@types",
+      "${configDir}/node_modules/@types"
+    ],
+    "paths": {
+      "@oticas-queiroz/config": ["../../packages/config"]
+    }
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "src/__tests__/**"]
+}
