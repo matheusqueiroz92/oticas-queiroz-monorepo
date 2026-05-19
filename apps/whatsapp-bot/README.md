@@ -66,13 +66,32 @@ npm run dev:backend
 npm run dev:whatsapp-bot
 ```
 
-Na primeira execução, escaneie o **QR Code** no terminal (Aparelhos conectados).
+Na primeira execução, escaneie o **QR Code**:
+
+- **Terminal**: QR impresso no stdout automaticamente.
+- **Navegador**: acesse `http://localhost:3344/qr` (página com auto-refresh a cada 15 s).
 
 ## API HTTP
 
 ### `GET /health`
 
 Sem autenticação. Retorna `{ "status": "ok", "whatsapp": "connected" | "disconnected" }`.
+
+### `GET /qr`
+
+Sem autenticação. Retorna a página de reautenticação WhatsApp.
+
+| Estado | Resposta |
+|--------|----------|
+| Aguardando QR | Página HTML com QR Code em PNG (auto-refresh 15 s) |
+| Já conectado | `{ "status": "connected" }` |
+| Iniciando | `{ "status": "starting" }` (tente novamente em segundos) |
+
+> **Em produção** (porta não exposta externamente): use SSH tunnel para acessar no navegador:
+> ```bash
+> ssh -L 3344:localhost:3344 root@<servidor>
+> # Depois abra: http://localhost:3344/qr
+> ```
 
 ### `POST /send-message`
 
@@ -126,14 +145,34 @@ Payload recebido no webhook n8n (quando usado):
 ## Docker
 
 ```bash
-# Primeira autenticação (QR no terminal)
-docker compose run --rm -it whatsapp-bot
-
-# Depois, em produção
+# Subir apenas o bot (primeira autenticação)
 docker compose up -d whatsapp-bot
+
+# Acompanhar logs para ver o QR no terminal
+docker compose logs -f whatsapp-bot
+
+# Ou abrir via SSH tunnel (sem precisar ver o terminal do container):
+# ssh -L 3344:localhost:3344 root@<servidor>
+# Depois: http://localhost:3344/qr
 ```
 
-A sessão fica no volume `whatsapp_bot_auth`. Se a sessão for deslogada, remova o volume e escaneie o QR novamente.
+### Sessão e backup
+
+A sessão Baileys é armazenada via **bind mount** no host:
+
+```
+./whatsapp-auth/          ← diretório no host (persiste entre recreações)
+    auth/                 ← sessão ativa (WA_SESSION_PATH)
+    auth-backup/          ← cópia automática, atualizada a cada creds.update
+```
+
+Se a sessão for deslogada, o bot agenda uma reconexão automática e um novo QR Code estará disponível em `/qr` — não é necessário remover arquivos manualmente nem recriar o container.
+
+Para restaurar um backup manualmente:
+```bash
+cp -r ./whatsapp-auth/auth-backup ./whatsapp-auth/auth
+docker compose restart whatsapp-bot
+```
 
 ## Testes
 
@@ -146,7 +185,7 @@ npm test
 
 - Ignora **grupos** e mensagens **enviadas por você** (`fromMe`).
 - Apenas mensagens de **texto** (`conversation` / `extendedTextMessage`) disparam o processamento.
-- **Reconexão automática** se a conexão cair (exceto logout explícito).
+- **Reconexão automática** com backoff exponencial (base × 2ⁿ, teto em 60 s) + jitter — inclusive após logout, gerando novo QR automaticamente.
 - **JID `@lid` (privacidade WhatsApp):** respostas são enviadas para o número `@s.whatsapp.net` quando o Baileys informa `senderPn` na mensagem recebida (evita falha “PDO / phone offline” ao responder só no `@lid`).
 - Logs: `Inbound WhatsApp`, `Envio usando JID de telefone (mapeamento LID)`, `Resposta enviada ao WhatsApp`.
 
