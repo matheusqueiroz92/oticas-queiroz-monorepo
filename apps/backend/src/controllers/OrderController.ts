@@ -85,7 +85,6 @@ export class OrderController {
         installments: validatedData.installments,
         orderDate: validatedData.orderDate,
         deliveryDate: validatedData.deliveryDate,
-        status: validatedData.status,
         laboratoryId: validatedData.laboratoryId ? new Types.ObjectId(validatedData.laboratoryId) : undefined,
         prescriptionData: validatedData.prescriptionData,
         observations: validatedData.observations,

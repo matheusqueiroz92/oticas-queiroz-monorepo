@@ -107,6 +107,9 @@ export const updateOrderLaboratorySchema = z.object({
 // Schema para criação de pedidos (com validações adicionais)
 export const createOrderSchema = baseOrderSchema
   .omit({ serviceOrder: true }) // Remove serviceOrder do schema de criação
+  .extend({
+    status: z.enum(["pending", "in_production", "ready", "delivered", "cancelled"]).optional(),
+  })
   .refine(
     (data) => {
       // Validar que o preço final, se fornecido, é menor ou igual ao preço total

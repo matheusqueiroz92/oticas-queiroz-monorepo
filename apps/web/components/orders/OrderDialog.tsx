@@ -183,11 +183,15 @@ export const OrderDialog: React.FC<OrderDialogProps> = ({ open, onOpenChange, or
       
       // Determinar status inicial baseado nos produtos (apenas para criação)
       let orderStatus = data.status;
-      if (mode === "create" && (!orderStatus || orderStatus === "pending")) {
-        const fullProducts = productsData?.filter((p: any) =>
-          data.products?.includes(p._id)
-        ) || [];
-        orderStatus = determineInitialStatus(fullProducts);
+      if (mode === "create") {
+        const productsForStatus = (data.products || []).map((product: any) => {
+          if (product && typeof product === "object" && "productType" in product) {
+            return product;
+          }
+          const productId = typeof product === "string" ? product : product?._id;
+          return productsData?.find((p: any) => p._id === productId);
+        }).filter(Boolean);
+        orderStatus = determineInitialStatus(productsForStatus);
       }
       
       const orderData = {

@@ -88,6 +88,7 @@ describe("OrderService", () => {
       validateUpdatePermissions: jest.fn(),
       validateFinancialData: jest.fn(),
       validateCancellation: jest.fn(),
+      hasLensesInOrder: jest.fn().mockResolvedValue(false),
     };
 
     mockRelationshipService = {
@@ -172,11 +173,15 @@ describe("OrderService", () => {
 
       expect(result).toEqual(mockOrder);
       expect(mockValidationService.validateOrder).toHaveBeenCalledWith(mockOrderData);
-      expect(mockOrderRepository.create).toHaveBeenCalledWith(mockOrderData);
+      const [createPayload] = mockOrderRepository.create.mock.calls[0];
+      expect(createPayload).toMatchObject({ ...mockOrderData, status: "ready" });
       // Temporariamente comentado - mongodb-memory-server não suporta transações
       // expect(mockStockService.decreaseStock).toHaveBeenCalledWith(mockOrderData.products[0], 1, "Pedido criado", "employee-id-123", "order-id-123");
       // expect(mockStockService.decreaseStock).toHaveBeenCalledWith(mockOrderData.products[1], 1, "Pedido criado", "employee-id-123", "order-id-123");
-      expect(mockRelationshipService.updateOrderRelationships).toHaveBeenCalledWith(mockOrderData, mockOrder._id);
+      expect(mockRelationshipService.updateOrderRelationships).toHaveBeenCalledWith(
+        expect.objectContaining({ status: "ready" }),
+        mockOrder._id
+      );
     });
 
     it("should handle different product format variations", async () => {
@@ -777,13 +782,43 @@ describe("OrderService", () => {
       // );
     });
 
-    it("should detect lenses in products array", () => {
-      const products = [
-        { productType: "lenses", name: "Lente X" },
-        { productType: "prescription_frame", name: "Armação Y" },
-      ];
-      const hasLensesMethod = (orderService as any).hasLenses;
-      expect(hasLensesMethod.call(orderService, products)).toBe(true);
+    it("should set status to pending when order has lenses", async () => {
+      mockValidationService.hasLensesInOrder.mockResolvedValueOnce(true);
+      mockValidationService.validateOrder.mockResolvedValue(undefined);
+      mockOrderRepository.create.mockImplementation((data: typeof mockOrderData) =>
+        Promise.resolve({ _id: "order-id-123", ...data })
+      );
+      mockRelationshipService.updateOrderRelationships.mockResolvedValue(undefined);
+
+      const orderWithLenses = {
+        ...mockOrderData,
+        status: "ready" as const,
+        products: [{ _id: "lens-id", productType: "lenses", name: "Lente X" }],
+      };
+
+      const result = await orderService.createOrder(orderWithLenses);
+
+      expect(mockValidationService.hasLensesInOrder).toHaveBeenCalledWith(orderWithLenses.products);
+      expect(result.status).toBe("pending");
+    });
+
+    it("should set status to ready when order has no lenses", async () => {
+      mockValidationService.hasLensesInOrder.mockResolvedValueOnce(false);
+      mockValidationService.validateOrder.mockResolvedValue(undefined);
+      mockOrderRepository.create.mockImplementation((data: typeof mockOrderData) =>
+        Promise.resolve({ _id: "order-id-123", ...data })
+      );
+      mockRelationshipService.updateOrderRelationships.mockResolvedValue(undefined);
+
+      const orderWithoutLenses = {
+        ...mockOrderData,
+        status: "pending" as const,
+        products: [{ _id: "frame-id", productType: "sunglasses_frame", name: "Armação" }],
+      };
+
+      const result = await orderService.createOrder(orderWithoutLenses);
+
+      expect(result.status).toBe("ready");
     });
 
     it("should handle cancelOrder with different product formats", async () => {

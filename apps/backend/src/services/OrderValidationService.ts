@@ -1,5 +1,5 @@
 import { getRepositories } from "../repositories/RepositoryFactory";
-import type { IOrder, OrderProduct } from "../interfaces/IOrder";
+import type { CreateOrderDTO, IOrder, OrderProduct } from "../interfaces/IOrder";
 import type { IProduct } from "../interfaces/IProduct";
 import type { IUserRepository } from "../repositories/interfaces/IUserRepository";
 import type { IProductRepository } from "../repositories/interfaces/IProductRepository";
@@ -67,6 +67,21 @@ export class OrderValidationService {
     }
     
     return false;
+  }
+
+  /**
+   * Verifica se há lentes no pedido (consulta o banco quando necessário)
+   */
+  async hasLensesInOrder(products: OrderProduct[]): Promise<boolean> {
+    if (!products?.length) {
+      return false;
+    }
+
+    const lensChecks = await Promise.all(
+      products.map((product) => this.isLensProduct(product))
+    );
+
+    return lensChecks.some(Boolean);
   }
 
   /**
@@ -228,7 +243,7 @@ export class OrderValidationService {
    * @param orderData Dados do pedido
    * @throws OrderValidationError se alguma validação falhar
    */
-  async validateOrder(orderData: Omit<IOrder, "_id">): Promise<void> {
+  async validateOrder(orderData: CreateOrderDTO): Promise<void> {
     // Converter IDs para string se necessário
     const clientId = typeof orderData.clientId === 'string' ? orderData.clientId : orderData.clientId.toString();
     const employeeId = typeof orderData.employeeId === 'string' ? orderData.employeeId : orderData.employeeId.toString();

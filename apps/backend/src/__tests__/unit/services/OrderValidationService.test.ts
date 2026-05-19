@@ -349,6 +349,35 @@ describe("OrderValidationService", () => {
     });
   });
 
+  describe("hasLensesInOrder", () => {
+    it("deve retornar true quando há lentes no pedido", async () => {
+      const result = await orderValidationService.hasLensesInOrder([
+        mockSunglassesProduct,
+        mockLensProduct,
+      ]);
+      expect(result).toBe(true);
+    });
+
+    it("deve retornar false quando não há lentes no pedido", async () => {
+      const result = await orderValidationService.hasLensesInOrder([mockSunglassesProduct]);
+      expect(result).toBe(false);
+    });
+
+    it("deve retornar false para lista vazia", async () => {
+      const result = await orderValidationService.hasLensesInOrder([]);
+      expect(result).toBe(false);
+    });
+
+    it("deve detectar lentes por ID consultando o repositório", async () => {
+      mockProductRepository.findById.mockResolvedValue(mockLensProduct);
+
+      const result = await orderValidationService.hasLensesInOrder(["lens123"]);
+
+      expect(mockProductRepository.findById).toHaveBeenCalledWith("lens123");
+      expect(result).toBe(true);
+    });
+  });
+
   describe("validateClient - com mocks", () => {
     it("deve validar cliente corretamente", async () => {
       mockUserRepository.findById.mockResolvedValue(mockClient);

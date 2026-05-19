@@ -66,6 +66,7 @@ export interface IOrder {
   updatedAt?: Date;
 }
 
-export type CreateOrderDTO = Omit<IOrder, "_id" | "createdAt" | "updatedAt" | "serviceOrder"> & {
+export type CreateOrderDTO = Omit<IOrder, "_id" | "createdAt" | "updatedAt" | "serviceOrder" | "status"> & {
   serviceOrder?: string;
+  status?: IOrder["status"];
 };

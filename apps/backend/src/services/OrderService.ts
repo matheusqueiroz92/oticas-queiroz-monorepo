@@ -35,35 +35,13 @@ export class OrderService {
   }
 
   /**
-   * Verifica se há lentes no pedido
-   * @param products Array de produtos
-   * @returns true se há lentes no pedido
-   */
-  private hasLenses(products: any[]): boolean {
-    return products.some(product => {
-      // Se for string ou ObjectId, não podemos verificar o tipo
-      if (typeof product === 'string' || product instanceof mongoose.Types.ObjectId) {
-        return false;
-      }
-      
-      // Se for objeto com productType
-      if (product && typeof product === 'object' && 'productType' in product) {
-        return product.productType === 'lenses';
-      }
-      
-      return false;
-    });
-  }
-
-  /**
    * Determina o status inicial do pedido baseado nos produtos
    * @param products Array de produtos
    * @returns Status inicial do pedido
    */
-  private determineInitialStatus(products: any[]): "pending" | "ready" {
-    // Se há lentes, status inicial é "pending"
-    // Se não há lentes, status inicial é "ready"
-    return this.hasLenses(products) ? "pending" : "ready";
+  private async determineInitialStatus(products: IOrder["products"]): Promise<"pending" | "ready"> {
+    const hasLenses = await this.validationService.hasLensesInOrder(products);
+    return hasLenses ? "pending" : "ready";
   }
 
   /**
@@ -71,16 +49,18 @@ export class OrderService {
    * @param orderData Dados do pedido
    * @returns Pedido criado
    */
-  async createOrder(orderData: Omit<IOrder, "_id">): Promise<IOrder> {
+  async createOrder(orderData: CreateOrderDTO): Promise<IOrder> {
     // Validar antes de abrir a sessão para falhar rápido sem custo de transação
     await this.validationService.validateOrder(orderData).catch((error) => {
       if (error instanceof OrderValidationError) throw new OrderError(error.message);
       throw error;
     });
 
-    if (!orderData.status || orderData.status === "pending") {
-      orderData.status = this.determineInitialStatus(orderData.products);
-    }
+    const initialStatus = await this.determineInitialStatus(orderData.products);
+    const orderToCreate: Omit<IOrder, "_id"> = {
+      ...orderData,
+      status: initialStatus,
+    };
 
     const session = await mongoose.startSession();
 
@@ -89,14 +69,14 @@ export class OrderService {
 
       await session.withTransaction(async () => {
         // 1. Criar o pedido dentro da transação
-        order = await this.orderRepository.create(orderData, session);
+        order = await this.orderRepository.create(orderToCreate, session);
 
         // 2. Baixar estoque de cada produto (dentro da mesma transação)
-        const performedBy = orderData.employeeId
-          ? orderData.employeeId.toString()
+        const performedBy = orderToCreate.employeeId
+          ? orderToCreate.employeeId.toString()
           : "system";
 
-        for (const product of orderData.products) {
+        for (const product of orderToCreate.products) {
           let productId: string;
           let quantity = 1;
 
@@ -135,7 +115,7 @@ export class OrderService {
       // Se falhar, o pedido e o estoque já foram commitados corretamente
       try {
         await this.relationshipService.updateOrderRelationships(
-          orderData,
+          orderToCreate,
           order!._id!
         );
       } catch (relError) {
@@ -282,7 +262,7 @@ export class OrderService {
     const updateData: Partial<IOrder> = { laboratoryId };
 
     // Se estiver associando um laboratório E houver lentes no pedido, mudar status para "in_production"
-    if (laboratoryId && this.hasLenses(order.products)) {
+    if (laboratoryId && (await this.validationService.hasLensesInOrder(order.products))) {
       updateData.status = "in_production";
     }
 
