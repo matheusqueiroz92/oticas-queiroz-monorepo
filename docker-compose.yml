@@ -133,7 +133,10 @@ services:
       N8N_WEBHOOK_TIMEOUT_MS: ${N8N_WEBHOOK_TIMEOUT_MS:-10000}
       WA_RECONNECT_DELAY_MS: ${WA_RECONNECT_DELAY_MS:-3000}
     volumes:
-      - whatsapp_bot_auth:/app/apps/whatsapp-bot/data
+      # Bind mount: sessão fica no host em ./whatsapp-auth (persiste recreações de container)
+      # Em produção: /opt/apps/oticas-queiroz/whatsapp-auth
+      # Backup automático feito em código a cada creds.update → auth-backup/
+      - ./whatsapp-auth:/app/apps/whatsapp-bot/data/auth
     networks:
       - oticas-network
     healthcheck:
@@ -175,8 +178,6 @@ volumes:
   mongodb_data:
     driver: local
   mongodb_config:
-    driver: local
-  whatsapp_bot_auth:
     driver: local
   n8n_data:
     driver: local
