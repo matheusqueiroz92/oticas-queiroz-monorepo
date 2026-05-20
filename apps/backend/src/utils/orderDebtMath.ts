@@ -27,3 +27,15 @@ export function orderHasEmbeddedDebt(order: IOrder): boolean {
   const paid = getOrderPaidFromEmbeddedPayments(order);
   return paid < total;
 }
+
+/**
+ * Calcula o valor restante a partir de valores pré-computados (totalPrice e totalPaid).
+ * Usado por DTOs e serviços que já possuem os valores calculados para evitar
+ * duplicação da fórmula `Math.max(0, total - paid)` espalhada pelo código.
+ */
+export function computeRemainingFromPrecomputed(
+  totalPrice: number,
+  totalPaid: number
+): number {
+  return Math.max(0, totalPrice - totalPaid);
+}

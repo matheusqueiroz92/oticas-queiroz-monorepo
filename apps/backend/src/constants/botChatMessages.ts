@@ -1,22 +1,13 @@
-function resolveExamPriceBrl(): string {
-  const raw = process.env.BOT_EXAM_PRICE_BRL;
-  if (!raw) return "150";
-  const parsed = Number.parseFloat(raw.replace(",", "."));
-  if (!Number.isFinite(parsed) || parsed <= 0) return "150";
-  return parsed.toLocaleString("pt-BR", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  });
-}
+import { botEnv } from "../config/botEnv";
 
-export const BOT_EXAM_PRICE_BRL = resolveExamPriceBrl();
+// Preço do exame formatado para exibição em mensagens (ex.: "150" ou "150,50")
+export const BOT_EXAM_PRICE_BRL = botEnv.examPriceBrl.toLocaleString("pt-BR", {
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 2,
+});
 
 export function resolveSessionTtlMinutes(): number {
-  const raw = process.env.BOT_SESSION_TTL_MINUTES;
-  if (!raw) return 30;
-  const minutes = Number.parseInt(raw, 10);
-  if (!Number.isFinite(minutes) || minutes <= 0) return 30;
-  return minutes;
+  return botEnv.sessionTtlMinutes;
 }
 
 export function buildSessionExpiredMenuText(): string {

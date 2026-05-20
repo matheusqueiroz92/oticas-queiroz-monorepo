@@ -4,6 +4,7 @@ import {
   getOrderListTotalPrice,
   getOrderPaidFromEmbeddedPayments,
   getOrderRemainingDebt,
+  computeRemainingFromPrecomputed,
 } from "../../utils/orderDebtMath";
 
 export interface BotOrderSummaryResponse {
@@ -80,7 +81,8 @@ export function mapClientDebtsToBotDto(
   const pendingDebts: BotDebtItemDto[] = data.orders.map((row) => {
     const totalPrice = row.finalPrice;
     const totalPaid = row.paymentEntry;
-    const remainingAmount = Math.max(0, totalPrice - totalPaid);
+    // Usa a função centralizada para não duplicar a fórmula (M4)
+    const remainingAmount = computeRemainingFromPrecomputed(totalPrice, totalPaid);
     const id = row._id != null ? String(row._id) : "";
     return {
       orderId: id,

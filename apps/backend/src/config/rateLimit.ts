@@ -80,3 +80,31 @@ export const authRefreshLimiter = rateLimit({
   handler: rateLimitResponse,
   skip: () => process.env.NODE_ENV === "test",
 });
+
+/**
+ * Rate limiter dedicado para /api/bot/* (M2)
+ *
+ * O globalLimiter usa IP como chave, mas todo o tráfego do bot vem do mesmo
+ * IP interno da rede Docker — o que tornaria o limite global ineficaz.
+ * Aqui usamos o remoteJid (JID do usuário no WhatsApp) como chave, isolando
+ * a quota por usuário real em vez de por IP.
+ *
+ * Limite: 30 mensagens por 1 minuto por remoteJid.
+ * Um usuário legítimo raramente envia mais de 2-3 mensagens por minuto.
+ */
+export const botChatLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minuto
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: rateLimitResponse,
+  skip: () => process.env.NODE_ENV === "test",
+  keyGenerator: (req: Request): string => {
+    // Usa remoteJid do body para /chat; para demais rotas usa IP como fallback
+    const remoteJid = req.body?.remoteJid ?? req.body?.cpf;
+    if (typeof remoteJid === "string" && remoteJid.length > 0) {
+      return remoteJid;
+    }
+    return req.ip ?? "unknown";
+  },
+});

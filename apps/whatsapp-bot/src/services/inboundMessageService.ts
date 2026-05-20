@@ -33,7 +33,6 @@ export async function processInboundMessage(
     if (env.BOT_ERP_FALLBACK_ON_N8N_ERROR) {
       logger.warn("n8n respondeu sem text — usando ERP", {
         remoteJid: payload.remoteJid,
-        text: payload.text,
       });
       return forwardToErpBot(payload);
     }
@@ -45,7 +44,6 @@ export async function processInboundMessage(
     if (env.BOT_ERP_FALLBACK_ON_N8N_ERROR && isN8nRequestFailure(err)) {
       logger.warn("n8n falhou — fallback para ERP /api/bot/chat", {
         remoteJid: payload.remoteJid,
-        text: payload.text,
         status,
         error: err instanceof Error ? err.message : String(err),
       });

@@ -48,7 +48,9 @@ export class ClientDebtQueryService {
       0
     );
 
-    const paymentHistory = await this.paymentService.getAllPayments(1, 100, {
+    // Busca todo o histórico de pagamentos sem paginação artificialmente limitada (M6).
+    // Clientes com histórico extenso (>100 pagamentos) recebiam dados incompletos.
+    const paymentHistory = await this.paymentService.getAllPayments(1, 10_000, {
       customerId: clientId,
     });
 

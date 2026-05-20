@@ -78,7 +78,7 @@ describe("ClientDebtQueryService", () => {
     expect(r.orders[0].serviceOrder).toBe("SO2");
     expect(r.orders[0].paymentEntry).toBe(80);
     expect(r.paymentHistory).toEqual([{ _id: "pay1" }]);
-    expect(mockPaySvc.getAllPayments).toHaveBeenCalledWith(1, 100, {
+    expect(mockPaySvc.getAllPayments).toHaveBeenCalledWith(1, 10_000, {
       customerId: "u1",
     });
   });

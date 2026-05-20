@@ -22,7 +22,9 @@ const botChatSessionSchema = new Schema<BotChatSessionDocument>(
 );
 
 botChatSessionSchema.index({ remoteJid: 1 }, { unique: true });
-botChatSessionSchema.index({ updatedAt: 1 });
+// TTL index: MongoDB remove automaticamente sessões inativas há mais de 30 min (M4).
+// O valor deve ser mantido em sincronia com DEFAULT_SESSION_TTL_MS em BotChatSessionService.ts.
+botChatSessionSchema.index({ updatedAt: 1 }, { expireAfterSeconds: 30 * 60 });
 
 export const BotChatSession = mongoose.model<BotChatSessionDocument>(
   "BotChatSession",

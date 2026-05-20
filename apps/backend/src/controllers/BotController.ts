@@ -33,9 +33,9 @@ export class BotController {
     res: Response,
     _next: NextFunction
   ): Promise<void> => {
-    const payload = await this.getBotCustomerDebtsByCpfUseCase.execute(
-      req.params.cpf ?? ""
-    );
+    // CPF vem no body (POST) para não aparecer em access logs do Traefik/nginx
+    const cpf = typeof req.body?.cpf === "string" ? req.body.cpf.trim() : "";
+    const payload = await this.getBotCustomerDebtsByCpfUseCase.execute(cpf);
     res.status(200).json(payload);
   };
 
