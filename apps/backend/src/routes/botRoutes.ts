@@ -20,7 +20,6 @@ router.get(
   asyncHandler(botController.getOrderByOs.bind(botController))
 );
 
-// POST para que o CPF não apareça em access logs do Traefik/nginx (M1)
 router.post(
   "/customer/debts",
   asyncHandler(botController.getCustomerDebtsByCpf.bind(botController))

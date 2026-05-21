@@ -17,8 +17,10 @@ async function main(): Promise<void> {
     port: env.PORT,
   });
 
-  // Carrega mapeamentos LID→JID persistidos em disco (sobrevive reinicializações)
-  const lidCachePath = path.join(env.WA_SESSION_PATH, "..", "lid-cache.json");
+  // Carrega mapeamentos LID→JID persistidos em disco (sobrevive reinicializações).
+  // O arquivo fica dentro de WA_SESSION_PATH (pasta auth), que é o volume Docker montado
+  // — assim os mapeamentos sobrevivem a recreações de container (A5).
+  const lidCachePath = path.join(env.WA_SESSION_PATH, "lid-cache.json");
   await loadLidCacheFromDisk(lidCachePath);
 
   const app = createApp();

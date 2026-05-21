@@ -79,7 +79,17 @@ class App {
         origin: allowedOrigins,
         credentials: true,
         methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-        allowedHeaders: ["Content-Type", "Authorization", "X-Bot-Api-Key"],
+        allowedHeaders: [
+          "Content-Type",
+          "Authorization",
+          "X-Bot-Api-Key",
+          "Cache-Control",
+          "Pragma",
+          "Expires",
+          "X-Requested-With",
+          "X-Force-Fetch",
+          "X-Timestamp",
+        ],
         exposedHeaders: ["Content-Disposition"],
         maxAge: 86400, // Cache do preflight por 24 h
       })

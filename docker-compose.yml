@@ -135,7 +135,8 @@ services:
       PORT: 3344
       BOT_API_KEY: ${BOT_API_KEY:-}
       # URL interna na rede Docker (path = Production Webhook do workflow n8n)
-      N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL:-http://n8n:5678/webhook/oticas-queiroz}
+      # O path deve corresponder ao Webhook node do workflow no n8n (sem "-test").
+      N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL:-http://n8n:5678/webhook/whatsapp-inbound}
       # URL do backend ERP na rede Docker interna
       ERP_API_URL: ${ERP_API_URL:-http://backend:3333}
       # Modo de operação: n8n (padrão) | erp (direto, sem n8n)
