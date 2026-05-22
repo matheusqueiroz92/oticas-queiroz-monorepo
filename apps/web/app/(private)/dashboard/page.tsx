@@ -8,6 +8,7 @@ import { useDashboard } from "@/hooks/dashboard/useDashboard";
 export default function DashboardPage() {
   const { 
     userName,
+    userId,
     isCustomer,
     isLoadingOrders,
     isLoadingPayments,
@@ -31,6 +32,7 @@ export default function DashboardPage() {
         {!isCustomer ? (
           <EmployeeDashboard
             dashboardData={dashboardData}
+            userId={userId}
             currentCashRegister={currentCashRegister || undefined}
             allPayments={allPayments}
             isLoadingOrders={isLoadingOrders}

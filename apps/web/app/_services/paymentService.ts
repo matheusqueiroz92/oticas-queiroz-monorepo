@@ -205,21 +205,27 @@ export async function getDailyFinancialReport(
 
 export interface DashboardDailySales {
   totalSales: number;
+  totalDebtPayments: number;
   date: string;
 }
 
 /**
- * Total de vendas do dia conforme relatório financeiro diário da API.
+ * Totais do dia conforme relatório financeiro diário da API.
  */
 export async function getDashboardDailySales(date: Date): Promise<DashboardDailySales> {
   const report = await getDailyFinancialReport(date, "json");
 
   if (report instanceof Blob) {
-    return { totalSales: 0, date: formatLocalDateParam(date) };
+    return {
+      totalSales: 0,
+      totalDebtPayments: 0,
+      date: formatLocalDateParam(date),
+    };
   }
 
   return {
     totalSales: report.totalSales ?? 0,
+    totalDebtPayments: report.totalDebtPayments ?? 0,
     date: report.date ?? formatLocalDateParam(date),
   };
 }

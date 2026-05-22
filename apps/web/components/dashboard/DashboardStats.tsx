@@ -1,6 +1,7 @@
 "use client";
 
 import { StatCard } from "@/components/ui/StatCard";
+import { DashboardConfigurableStatCard } from "@/components/dashboard/DashboardConfigurableStatCard";
 import { formatCurrency } from "@/app/_utils/formatters";
 import {
   DollarSign,
@@ -10,6 +11,8 @@ import {
 } from "lucide-react";
 
 interface DashboardStatsProps {
+  userId: string;
+  weeklyCustomersCount: number;
   salesTotal: number;
   todayOrdersCount: number;
   ordersGrowthPercentage: number;
@@ -23,6 +26,8 @@ interface DashboardStatsProps {
 }
 
 export function DashboardStats({
+  userId,
+  weeklyCustomersCount,
   salesTotal,
   todayOrdersCount,
   ordersGrowthPercentage,
@@ -75,6 +80,11 @@ export function DashboardStats({
             {salesGrowthPercentage}% vs ontem
           </>
         }
+      />
+
+      <DashboardConfigurableStatCard
+        userId={userId}
+        weeklyCustomersCount={weeklyCustomersCount}
       />
 
       <StatCard

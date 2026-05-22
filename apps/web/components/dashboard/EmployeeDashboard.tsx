@@ -23,6 +23,7 @@ interface DashboardData {
 
 interface EmployeeDashboardProps {
   dashboardData: DashboardData;
+  userId: string;
   currentCashRegister?: {
     currentBalance: number;
     status?: "open" | "closed";
@@ -41,6 +42,7 @@ interface EmployeeDashboardProps {
 
 export function EmployeeDashboard({
   dashboardData,
+  userId,
   currentCashRegister,
   allPayments,
   isLoadingOrders,
@@ -56,7 +58,7 @@ export function EmployeeDashboard({
   return (
     <>
       <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-4 gap-4">
-        <div className="col-span-1">
+        <div className="col-span-2">
           <QuickOrderSearch />
         </div>
       </div>
@@ -68,6 +70,8 @@ export function EmployeeDashboard({
       />
 
       <DashboardStats
+        userId={userId}
+        weeklyCustomersCount={dashboardData.weeklyCustomersCount}
         salesTotal={dashboardData.salesTotal}
         todayOrdersCount={dashboardData.todayOrdersCount}
         ordersGrowthPercentage={dashboardData.ordersGrowthPercentage}

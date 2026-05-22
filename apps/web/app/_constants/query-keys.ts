@@ -40,11 +40,13 @@ export const QUERY_KEYS = {
     PROFILE_ALL: (userId: string, userRole: string) => ["orders", "profile-all", userId, userRole],
     DAILY: ["orders", "daily"],
     DASHBOARD_DAILY: (date: string) => ["orders", "dashboard-daily", date],
+    COUNT_BY_STATUS: (status: string) => ["orders", "count-by-status", status],
     NEXT_SERVICE_ORDER: ["orders", "next-service-order"],
   },
 
   PRODUCTS: {
     ALL: ['products'],
+    DASHBOARD_LOW_STOCK: ["products", "dashboard-low-stock"],
     PAGINATED: (page?: number, filters?: Record<string, any>) => 
       ['products', 'paginated', page, filters],
     DETAIL: (id: string) => ['products', 'detail', id],
@@ -69,6 +71,15 @@ export const QUERY_KEYS = {
     ],
     MY_DEBTS: ["payments", "my-debts"],
     MY_PAYMENTS: (filters = {}) => ["payments", "my-payments", filters],
+  },
+
+  DASHBOARD: {
+    WIDGET_METRIC: (metricId: string, userId: string) => [
+      "dashboard",
+      "widget-metric",
+      metricId,
+      userId,
+    ],
   },
 
   CASH_REGISTERS: {

@@ -19,6 +19,8 @@ interface StatCardProps {
   };
   isLoading?: boolean;
   skeletonWidth?: string;
+  headerAction?: ReactNode;
+  footerAction?: ReactNode;
   isCashRegisterOpen?: boolean;
   showOpenCashRegisterButton?: boolean;
   cashRegisterOpenHref?: string;
@@ -34,19 +36,29 @@ export function StatCard({
   badge,
   isLoading = false,
   skeletonWidth = "w-24",
+  headerAction,
+  footerAction,
   isCashRegisterOpen,
   showOpenCashRegisterButton = false,
   cashRegisterOpenHref = "/cash-register/open",
 }: StatCardProps) {
   const showCashRegisterFooter =
     isCashRegisterOpen !== undefined || showOpenCashRegisterButton;
+  const showCustomFooter = !!footerAction;
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
-        <CardTitle className="text-xl font-normal text-zinc-900 dark:text-zinc-100">{title}</CardTitle>
-        <div className={`rounded-full ${bgColor} p-2 flex items-center justify-center`}>
-          <Icon className={`h-5 w-5 ${iconColor}`} />
+        <CardTitle className="text-xl font-normal text-zinc-900 dark:text-zinc-100">
+          {title}
+        </CardTitle>
+        <div className="flex items-center gap-1">
+          {headerAction}
+          <div
+            className={`rounded-full ${bgColor} p-2 flex items-center justify-center`}
+          >
+            <Icon className={`h-5 w-5 ${iconColor}`} />
+          </div>
         </div>
       </CardHeader>
       <CardContent className="pt-1">
@@ -54,7 +66,9 @@ export function StatCard({
           <Skeleton className={`h-6 ${skeletonWidth}`} />
         ) : (
           <>
-            <div className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{value}</div>
+            <div className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+              {value}
+            </div>
             {badge && (
               <Badge
                 variant="secondary"
@@ -81,13 +95,23 @@ export function StatCard({
                       <ArrowRight className="h-4 w-4" />
                     </Link>
                   </Button>
-             
                 )}
               </div>
             )}
 
-            {description && !badge && !showCashRegisterFooter && (
-              <div className="text-xs text-[var(--primary-blue)] mt-1">{description}</div>
+            {showCustomFooter && (
+              <div className="mt-2 flex flex-row items-center justify-between gap-2">
+                {description && !badge && (
+                  <div className="text-xs text-muted-foreground">{description}</div>
+                )}
+                {footerAction}
+              </div>
+            )}
+
+            {description && !badge && !showCashRegisterFooter && !showCustomFooter && (
+              <div className="text-xs text-[var(--primary-blue)] mt-1">
+                {description}
+              </div>
             )}
           </>
         )}

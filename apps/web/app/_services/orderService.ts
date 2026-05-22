@@ -132,6 +132,23 @@ export async function getAllOrders(filters: OrderFilters = {}): Promise<{
 }
 
 /**
+ * Retorna o total de pedidos para um status (usa pagination.total da API).
+ */
+export async function getOrdersCountByStatus(status: string): Promise<number> {
+  try {
+    const { pagination } = await getAllOrders({
+      status,
+      page: 1,
+      limit: 1,
+    });
+    return pagination?.total ?? 0;
+  } catch (error) {
+    console.error(`Erro ao contar pedidos com status ${status}:`, error);
+    return 0;
+  }
+}
+
+/**
  * Busca pedidos criados em um dia específico (filtro por createdAt no backend).
  */
 export async function getDailyOrders(date: Date): Promise<Order[]> {
