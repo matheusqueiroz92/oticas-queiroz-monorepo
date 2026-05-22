@@ -1,5 +1,6 @@
 import { api } from "./authService";
 import { API_ROUTES } from "../_constants/api-routes";
+import { formatLocalDateParam } from "@/app/_utils/date-utils";
 import type {
   IPayment,
   CreatePaymentDTO,
@@ -99,7 +100,7 @@ export async function getDailyPayments(
     const params: { date?: string; type?: PaymentType } = {};
 
     if (date) {
-      params.date = date.toISOString().split("T")[0];
+      params.date = formatLocalDateParam(date);
     }
 
     if (type) {
@@ -191,7 +192,7 @@ export async function getDailyFinancialReport(
   const params: { date?: string; format: string } = { format };
 
   if (date) {
-    params.date = date.toISOString().split("T")[0];
+    params.date = formatLocalDateParam(date);
   }
 
   const response = await api.get("/api/payments/report/daily", {
@@ -200,6 +201,27 @@ export async function getDailyFinancialReport(
   });
 
   return response.data;
+}
+
+export interface DashboardDailySales {
+  totalSales: number;
+  date: string;
+}
+
+/**
+ * Total de vendas do dia conforme relatório financeiro diário da API.
+ */
+export async function getDashboardDailySales(date: Date): Promise<DashboardDailySales> {
+  const report = await getDailyFinancialReport(date, "json");
+
+  if (report instanceof Blob) {
+    return { totalSales: 0, date: formatLocalDateParam(date) };
+  }
+
+  return {
+    totalSales: report.totalSales ?? 0,
+    date: report.date ?? formatLocalDateParam(date),
+  };
 }
 
 /**

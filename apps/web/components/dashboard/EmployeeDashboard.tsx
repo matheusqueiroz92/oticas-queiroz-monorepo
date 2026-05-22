@@ -13,24 +13,25 @@ interface DialogStates {
 
 interface DashboardData {
   salesTotal: number;
-  totalOrders: number;
-  pendingOrdersCount: number;
   weeklyCustomersCount: number;
   salesGrowthPercentage: number;
   todayOrdersCount: number;
+  ordersGrowthPercentage: number;
   cashOpenTime: string;
   recentOrders: any[];
 }
 
 interface EmployeeDashboardProps {
   dashboardData: DashboardData;
-  totalCustomers: number;
   currentCashRegister?: {
     currentBalance: number;
+    status?: "open" | "closed";
   };
   allPayments: any[];
   isLoadingOrders: boolean;
   isLoadingPayments: boolean;
+  isLoadingSalesStats: boolean;
+  isLoadingOrdersStats: boolean;
   isLoadingCashRegister: boolean;
   getClientName: (clientId: string) => string;
   dialogStates: DialogStates;
@@ -40,11 +41,12 @@ interface EmployeeDashboardProps {
 
 export function EmployeeDashboard({
   dashboardData,
-  totalCustomers,
   currentCashRegister,
   allPayments,
   isLoadingOrders,
   isLoadingPayments,
+  isLoadingSalesStats,
+  isLoadingOrdersStats,
   isLoadingCashRegister,
   getClientName,
   dialogStates,
@@ -53,39 +55,32 @@ export function EmployeeDashboard({
 }: EmployeeDashboardProps) {
   return (
     <>
-      {/* Pesquisa rápida de pedidos */}
       <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-4 gap-4">
         <div className="col-span-1">
           <QuickOrderSearch />
         </div>
       </div>
 
-      {/* Botões de Ações Rápidas */}
       <DashboardQuickActions
         dialogStates={dialogStates}
         openDialog={openDialog}
         closeDialog={closeDialog}
       />
 
-      {/* Cards de estatísticas */}
       <DashboardStats
         salesTotal={dashboardData.salesTotal}
-        totalOrders={dashboardData.totalOrders}
-        pendingOrdersCount={dashboardData.pendingOrdersCount}
-        totalCustomers={totalCustomers}
-        weeklyCustomersCount={dashboardData.weeklyCustomersCount}
-        currentBalance={currentCashRegister?.currentBalance || 0}
-        salesGrowthPercentage={dashboardData.salesGrowthPercentage}
         todayOrdersCount={dashboardData.todayOrdersCount}
+        ordersGrowthPercentage={dashboardData.ordersGrowthPercentage}
+        currentBalance={currentCashRegister?.currentBalance ?? 0}
+        isCashRegisterOpen={currentCashRegister?.status === "open"}
+        salesGrowthPercentage={dashboardData.salesGrowthPercentage}
         cashOpenTime={dashboardData.cashOpenTime}
-        isLoadingPayments={isLoadingPayments}
-        isLoadingOrders={isLoadingOrders}
+        isLoadingSalesStats={isLoadingSalesStats}
+        isLoadingOrdersStats={isLoadingOrdersStats}
         isLoadingCashRegister={isLoadingCashRegister}
       />
 
-      {/* Seção de conteúdo principal */}
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-4">
-        {/* Pedidos Recentes */}
         <div className="xl:col-span-1">
           <RecentOrdersList
             recentOrders={dashboardData.recentOrders}
@@ -94,7 +89,6 @@ export function EmployeeDashboard({
           />
         </div>
 
-        {/* Gráfico de Vendas */}
         <div className="xl:col-span-3">
           <SalesChart
             payments={allPayments || []}
@@ -104,4 +98,4 @@ export function EmployeeDashboard({
       </div>
     </>
   );
-} 
+}

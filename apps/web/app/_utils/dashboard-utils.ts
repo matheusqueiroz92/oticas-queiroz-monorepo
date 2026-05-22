@@ -19,13 +19,24 @@ export const getTodayPayments = (payments: IPayment[] = []): IPayment[] => {
   };
 
 /**
- * Calcula o valor total das vendas (pagamentos do tipo 'sale').
- * @param payments Array com todos os pagamentos do sistema
+ * Verifica se o pagamento deve entrar no total de vendas do dashboard.
+ * Alinhado ao relatório financeiro diário do backend (vendas concluídas).
+ */
+export const isCompletedSalePayment = (payment: IPayment): boolean =>
+  payment.type === "sale" &&
+  payment.status === "completed" &&
+  payment.isDeleted !== true;
+
+/**
+ * Calcula o valor total das vendas (pagamentos do tipo 'sale' concluídos).
+ * @param payments Array com pagamentos do período
  * @returns Valor total das vendas em número
  */
-  export const getSalesTotal = (payments: IPayment[] = []): number => {
-    return payments.filter(p => p.type === 'sale').reduce((sum, p) => sum + p.amount, 0);
-  };
+export const getSalesTotal = (payments: IPayment[] = []): number => {
+  return payments
+    .filter(isCompletedSalePayment)
+    .reduce((sum, p) => sum + p.amount, 0);
+};
 
 /**
  * Conta quantos pedidos possuem os status especificados.
@@ -86,9 +97,16 @@ export const getRecentOrders = (orders: Order[] = [], limit: number = 4): Order[
 export const getSalesGrowthPercentage = (todayPayments: IPayment[] = [], yesterdayPayments: IPayment[] = []): number => {
   const todayTotal = getSalesTotal(todayPayments);
   const yesterdayTotal = getSalesTotal(yesterdayPayments);
-  
+
+  return getSalesGrowthFromTotals(todayTotal, yesterdayTotal);
+};
+
+/**
+ * Calcula a variação percentual entre dois totais de vendas.
+ */
+export const getSalesGrowthFromTotals = (todayTotal: number, yesterdayTotal: number): number => {
   if (yesterdayTotal === 0) return todayTotal > 0 ? 100 : 0;
-  
+
   return Math.round(((todayTotal - yesterdayTotal) / yesterdayTotal) * 100);
 };
 
@@ -112,32 +130,41 @@ export const getYesterdayPayments = (payments: IPayment[] = []): IPayment[] => {
 };
 
 /**
- * Retorna a quantidade de pedidos criados hoje.
- * @param orders Array com todos os pedidos do sistema
+ * Retorna a quantidade de pedidos criados hoje (por createdAt, alinhado ao backend).
+ * @param orders Array com pedidos do período
  * @returns Número de pedidos criados hoje
  */
 export const getTodayOrdersCount = (orders: Order[] = []): number => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  
-  return orders.filter(order => {
-    const orderDate = new Date(order.createdAt || order.orderDate);
+
+  return orders.filter((order) => {
+    if (!order.createdAt) return false;
+    const orderDate = new Date(order.createdAt);
     orderDate.setHours(0, 0, 0, 0);
     return orderDate.getTime() === today.getTime();
   }).length;
 };
 
 /**
+ * Calcula a variação percentual de pedidos entre hoje e ontem.
+ */
+export const getOrdersGrowthFromCounts = (
+  todayCount: number,
+  yesterdayCount: number
+): number => getSalesGrowthFromTotals(todayCount, yesterdayCount);
+
+/**
  * Retorna o horário de abertura do caixa atual ou uma string padrão.
  * @param cashRegister Dados do caixa atual
  * @returns String formatada com o horário de abertura
  */
-export const getCashOpenTime = (cashRegister: any): string => {
-  if (!cashRegister?.openedAt) return "08:00";
-  
-  const openTime = new Date(cashRegister.openedAt);
-  return openTime.toLocaleTimeString('pt-BR', { 
-    hour: '2-digit', 
-    minute: '2-digit' 
+export const getCashOpenTime = (cashRegister: { openingDate?: Date | string } | null | undefined): string => {
+  if (!cashRegister?.openingDate) return "";
+
+  const openTime = new Date(cashRegister.openingDate);
+  return openTime.toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
   });
 };

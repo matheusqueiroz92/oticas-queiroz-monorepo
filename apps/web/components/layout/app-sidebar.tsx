@@ -165,7 +165,6 @@ export function AppSidebar() {
   const pathname = usePathname();
   const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set());
 
-  // Expandir automaticamente o menu se o usuário estiver em uma sub-rota
   useEffect(() => {
     menuItems.forEach((item) => {
       if (item.subItems?.some((subItem) => pathname === subItem.href)) {
@@ -221,9 +220,9 @@ export function AppSidebar() {
       } as React.CSSProperties}
     >
       {/* Header com Logo */}
-      <SidebarHeader className="p-6 bg-[var(--primary-blue)] border-b border-white/10">
+      <SidebarHeader className="p-2 bg-[var(--primary-blue)] border-b border-white/10">
         <div className="flex flex-col items-center justify-center">
-          <div className="relative w-48 h-24 group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:h-8 transition-all">
+          <div className="relative w-44 h-12 group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:h-8 transition-all">
             <Image
               src={LogoOticasQueiroz}
               alt="Óticas Queiroz Logo"

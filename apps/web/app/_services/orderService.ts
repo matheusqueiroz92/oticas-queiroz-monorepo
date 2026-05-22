@@ -1,7 +1,8 @@
 import { api } from "./authService";
 import type { Order } from "../_types/order";
 import { normalizeOrder, normalizeOrders } from "../_utils/data-normalizers";
-import { API_ROUTES } from "../_constants/api-routes"
+import { API_ROUTES } from "../_constants/api-routes";
+import { formatLocalDateParam } from "@/app/_utils/date-utils";
 import axios from "axios";
 
 export interface OrderFilters {
@@ -128,6 +129,41 @@ export async function getAllOrders(filters: OrderFilters = {}): Promise<{
     
     return { orders: [] };
   }
+}
+
+/**
+ * Busca pedidos criados em um dia específico (filtro por createdAt no backend).
+ */
+export async function getDailyOrders(date: Date): Promise<Order[]> {
+  try {
+    const response = await api.get("/api/orders/daily", {
+      params: { date: formatLocalDateParam(date) },
+    });
+
+    const rawOrders = Array.isArray(response.data) ? response.data : [];
+    return normalizeOrders(rawOrders);
+  } catch (error) {
+    console.error("Erro ao buscar pedidos diários:", error);
+    return [];
+  }
+}
+
+export interface DashboardDailyOrdersCount {
+  count: number;
+  date: string;
+}
+
+/**
+ * Quantidade de pedidos do dia para o dashboard.
+ */
+export async function getDashboardDailyOrdersCount(
+  date: Date
+): Promise<DashboardDailyOrdersCount> {
+  const orders = await getDailyOrders(date);
+  return {
+    count: orders.length,
+    date: formatLocalDateParam(date),
+  };
 }
 
 /**

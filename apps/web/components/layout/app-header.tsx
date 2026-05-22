@@ -60,25 +60,25 @@ export function Header({ title, description }: HeaderProps) {
         {/* Ações do cabeçalho */}
         <div className="flex items-center gap-2">
           {/* Configurações */}
-          <Button variant="ghost" size="icon" className="h-9 w-9">
+          {/* <Button variant="ghost" size="icon" className="h-9 w-9">
             <Settings className="h-4 w-4" />
             <span className="sr-only">Configurações</span>
-          </Button>
+          </Button> */}
 
           {/* Notificações */}
-          <div className="relative">
+          {/* <div className="relative">
             <Button variant="ghost" size="icon" className="h-9 w-9">
               <Bell className="h-4 w-4" />
               <span className="sr-only">Notificações</span>
             </Button>
-            {/* Badge de notificação - pode ser controlado por estado */}
+            
             <Badge 
               variant="destructive" 
               className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
             >
               3
             </Badge>
-          </div>
+          </div> */}
 
           {/* Dados do usuário */}
           <DropdownMenu>

@@ -2,6 +2,16 @@ import rateLimit from "express-rate-limit";
 import type { Request, Response } from "express";
 
 /**
+ * Rate limit só em produção. Em dev/test (incl. Docker Desktop + npm run dev no host)
+ * o limitador fica desligado para evitar bloqueios por hot reload e banco local vazio.
+ * RATE_LIMIT_DISABLED=true no .env força desligado em qualquer ambiente.
+ */
+export const shouldSkipRateLimit = (): boolean => {
+  if (process.env.RATE_LIMIT_DISABLED === "true") return true;
+  return process.env.NODE_ENV !== "production";
+};
+
+/**
  * Formato padronizado de resposta de erro (compatível com AppError)
  */
 const rateLimitResponse = (_req: Request, res: Response) => {
@@ -23,7 +33,7 @@ export const authLoginLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   handler: rateLimitResponse,
-  skip: () => process.env.NODE_ENV === "test",
+  skip: shouldSkipRateLimit,
 });
 
 /**
@@ -37,7 +47,7 @@ export const authForgotPasswordLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   handler: rateLimitResponse,
-  skip: () => process.env.NODE_ENV === "test",
+  skip: shouldSkipRateLimit,
 });
 
 /**
@@ -51,7 +61,7 @@ export const authResetPasswordLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   handler: rateLimitResponse,
-  skip: () => process.env.NODE_ENV === "test",
+  skip: shouldSkipRateLimit,
 });
 
 /**
@@ -64,8 +74,7 @@ export const globalLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   handler: rateLimitResponse,
-  skip: (req) =>
-    process.env.NODE_ENV === "test" || req.path === "/health",
+  skip: (req) => shouldSkipRateLimit() || req.path === "/health",
 });
 
 /**
@@ -78,7 +87,7 @@ export const authRefreshLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   handler: rateLimitResponse,
-  skip: () => process.env.NODE_ENV === "test",
+  skip: shouldSkipRateLimit,
 });
 
 /**
@@ -98,7 +107,7 @@ export const botChatLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   handler: rateLimitResponse,
-  skip: () => process.env.NODE_ENV === "test",
+  skip: shouldSkipRateLimit,
   keyGenerator: (req: Request): string => {
     // Usa remoteJid do body para /chat; para demais rotas usa IP como fallback
     const remoteJid = req.body?.remoteJid ?? req.body?.cpf;

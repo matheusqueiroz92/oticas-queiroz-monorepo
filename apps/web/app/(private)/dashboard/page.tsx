@@ -11,10 +11,11 @@ export default function DashboardPage() {
     isCustomer,
     isLoadingOrders,
     isLoadingPayments,
+    isLoadingSalesStats,
+    isLoadingOrdersStats,
     isLoadingCashRegister,
     isLoadingLegacyClient,
     dashboardData,
-    totalCustomers,
     currentCashRegister,
     legacyClient,
     getClientName,
@@ -30,11 +31,12 @@ export default function DashboardPage() {
         {!isCustomer ? (
           <EmployeeDashboard
             dashboardData={dashboardData}
-            totalCustomers={totalCustomers}
             currentCashRegister={currentCashRegister || undefined}
             allPayments={allPayments}
             isLoadingOrders={isLoadingOrders}
             isLoadingPayments={isLoadingPayments}
+            isLoadingSalesStats={isLoadingSalesStats}
+            isLoadingOrdersStats={isLoadingOrdersStats}
             isLoadingCashRegister={isLoadingCashRegister}
             getClientName={getClientName}
             dialogStates={dialogStates}

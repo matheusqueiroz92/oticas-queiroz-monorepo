@@ -5,104 +5,98 @@ import { formatCurrency } from "@/app/_utils/formatters";
 import {
   DollarSign,
   ShoppingBag,
-  Users,
   HandCoins,
   TrendingUp,
 } from "lucide-react";
 
 interface DashboardStatsProps {
   salesTotal: number;
-  totalOrders: number;
-  pendingOrdersCount: number;
-  totalCustomers: number;
-  weeklyCustomersCount: number;
+  todayOrdersCount: number;
+  ordersGrowthPercentage: number;
   currentBalance: number;
   salesGrowthPercentage: number;
-  todayOrdersCount: number;
   cashOpenTime: string;
-  isLoadingPayments: boolean;
-  isLoadingOrders: boolean;
+  isCashRegisterOpen: boolean;
+  isLoadingSalesStats: boolean;
+  isLoadingOrdersStats: boolean;
   isLoadingCashRegister: boolean;
 }
 
 export function DashboardStats({
   salesTotal,
-  totalOrders,
-  totalCustomers,
-  weeklyCustomersCount,
+  todayOrdersCount,
+  ordersGrowthPercentage,
   currentBalance,
   salesGrowthPercentage,
-  todayOrdersCount,
   cashOpenTime,
-  isLoadingPayments,
-  isLoadingOrders,
+  isCashRegisterOpen,
+  isLoadingSalesStats,
+  isLoadingOrdersStats,
   isLoadingCashRegister,
 }: DashboardStatsProps) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-4">
       <StatCard
-        title="Vendas Hoje"
+        title="Pedidos Hoje"
+        value={todayOrdersCount}
+        icon={ShoppingBag}
+        iconColor="text-slate-600"
+        bgColor="bg-slate-100 dark:bg-slate-100/10"
+        isLoading={isLoadingOrdersStats}
+        skeletonWidth="w-16"
+        description={
+          <>
+            <TrendingUp
+              className={`h-4 w-4 inline mr-1 ${
+                ordersGrowthPercentage >= 0 ? "text-green-600" : "text-red-600"
+              }`}
+            />
+            {ordersGrowthPercentage >= 0 ? "+" : ""}
+            {ordersGrowthPercentage}% vs ontem
+          </>
+        }
+      />
+
+      <StatCard
+        title="Total em Vendas Hoje"
         value={formatCurrency(salesTotal)}
         icon={DollarSign}
         iconColor="text-green-600"
         bgColor="bg-green-100 dark:bg-green-100/10"
-        isLoading={isLoadingPayments}
+        isLoading={isLoadingSalesStats}
         description={
           <>
-            <TrendingUp className={`h-4 w-4 inline mr-1 ${salesGrowthPercentage >= 0 ? 'text-green-600' : 'text-red-600'}`} />
-            {salesGrowthPercentage >= 0 ? '+' : ''}{salesGrowthPercentage}% vs ontem
-          </>
-        }
-      />
-
-      <StatCard
-        title="Pedidos"
-        value={totalOrders}
-        icon={ShoppingBag}
-        iconColor="text-orange-600"
-        bgColor="bg-orange-100 dark:bg-orange-100/10"
-        isLoading={isLoadingOrders}
-        skeletonWidth="w-16"
-        description={
-          <>
-            <span className="text-orange-600 font-semibold">
-              +{todayOrdersCount}
-            </span>{" "}
-            hoje
-          </>
-        }
-      />
-
-      <StatCard
-        title="Total de Clientes"
-        value={totalCustomers}
-        icon={Users}
-        iconColor="text-yellow-600"
-        bgColor="bg-yellow-100 dark:bg-yellow-100/10"
-        description={
-          <>
-            <span className="text-yellow-600 font-semibold">+{weeklyCustomersCount}</span> esta semana
+            <TrendingUp
+              className={`h-4 w-4 inline mr-1 ${
+                salesGrowthPercentage >= 0 ? "text-green-600" : "text-red-600"
+              }`}
+            />
+            {salesGrowthPercentage >= 0 ? "+" : ""}
+            {salesGrowthPercentage}% vs ontem
           </>
         }
       />
 
       <StatCard
         title="Caixa Atual"
-        value={currentBalance > 0 ? formatCurrency(currentBalance) : "Fechado"}
+        value={isCashRegisterOpen ? formatCurrency(currentBalance) : "Fechado"}
         icon={HandCoins}
-        iconColor={currentBalance > 0 ? "text-violet-600" : "text-red-600"}
-        bgColor={currentBalance > 0 ? "bg-violet-100 dark:bg-violet-100/10" : "bg-red-100 dark:bg-red-100/10"}
+        iconColor={isCashRegisterOpen ? "text-violet-600" : "text-red-600"}
+        bgColor={isCashRegisterOpen ? "bg-violet-100 dark:bg-violet-100/10" : "bg-red-100 dark:bg-red-100/10"}
         isLoading={isLoadingCashRegister}
+        isCashRegisterOpen={isCashRegisterOpen}
+        showOpenCashRegisterButton
         description={
-          currentBalance > 0 ? (
+          isCashRegisterOpen ? (
             <>
-              Aberto às <span className="text-purple-600 font-semibold">{cashOpenTime}</span>
+              Aberto às{" "}
+              <span className="text-[var(--primary-blue)] font-semibold">{cashOpenTime}</span>
             </>
           ) : (
-            <span className="text-red-600 font-semibold">Nenhum caixa aberto</span>
+            <span className="text-[var(--secondary-red)] font-semibold">Nenhum caixa aberto</span>
           )
         }
       />
     </div>
   );
-} 
+}

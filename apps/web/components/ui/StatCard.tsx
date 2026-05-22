@@ -1,8 +1,10 @@
 import { ReactNode } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { LucideIcon } from "lucide-react";
+import { ArrowRight, LucideIcon } from "lucide-react";
+import Link from "next/link";
 
 interface StatCardProps {
   title: string;
@@ -17,6 +19,9 @@ interface StatCardProps {
   };
   isLoading?: boolean;
   skeletonWidth?: string;
+  isCashRegisterOpen?: boolean;
+  showOpenCashRegisterButton?: boolean;
+  cashRegisterOpenHref?: string;
 }
 
 export function StatCard({
@@ -29,7 +34,13 @@ export function StatCard({
   badge,
   isLoading = false,
   skeletonWidth = "w-24",
+  isCashRegisterOpen,
+  showOpenCashRegisterButton = false,
+  cashRegisterOpenHref = "/cash-register/open",
 }: StatCardProps) {
+  const showCashRegisterFooter =
+    isCashRegisterOpen !== undefined || showOpenCashRegisterButton;
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
@@ -45,21 +56,42 @@ export function StatCard({
           <>
             <div className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{value}</div>
             {badge && (
-              <Badge 
-                variant="secondary" 
-                className={`text-xs mt-1 pointer-events-none ${badge.className || 'bg-blue-500 text-white border-0'}`}
+              <Badge
+                variant="secondary"
+                className={`text-xs mt-1 pointer-events-none ${badge.className || "bg-blue-500 text-white border-0"}`}
               >
                 {badge.text}
               </Badge>
             )}
-            {description && !badge && (
-              <div className="text-xs text-muted-foreground mt-1">
-                {description}
+
+            {showCashRegisterFooter && (
+              <div className="mt-2 flex flex-row items-center justify-between gap-2">
+                {description && !badge && (
+                  <div className="text-xs">{description}</div>
+                )}
+
+                {showOpenCashRegisterButton && !isCashRegisterOpen && (
+                  <Button
+                    asChild
+                    size="sm"
+                    className="shrink-0 bg-[var(--primary-blue)] text-white hover:bg-primary hover:text-white"
+                  >
+                    <Link href={cashRegisterOpenHref}>
+                      Abrir caixa
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </Button>
+             
+                )}
               </div>
+            )}
+
+            {description && !badge && !showCashRegisterFooter && (
+              <div className="text-xs text-[var(--primary-blue)] mt-1">{description}</div>
             )}
           </>
         )}
       </CardContent>
     </Card>
   );
-} 
+}

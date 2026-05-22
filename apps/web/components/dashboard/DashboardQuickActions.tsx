@@ -2,6 +2,7 @@
 
 import {
   FilePlus,
+  FileText,
   UserPlus,
   PackagePlus,
   HandCoins,
@@ -31,11 +32,10 @@ export function DashboardQuickActions({
   closeDialog,
 }: DashboardQuickActionsProps) {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-4">
       <QuickActionButton
         icon={FilePlus}
-        title="Novo Pedido"
-        description="Criar pedido"
+        title="Gerar Pedido"
         onClick={() => openDialog('orderDialogOpen')}
         ariaLabel="Abrir novo pedido"
       >
@@ -48,8 +48,7 @@ export function DashboardQuickActions({
 
       <QuickActionButton
         icon={UserPlus}
-        title="Novo Cliente"
-        description="Cadastrar cliente"
+        title="Cadastrar Cliente"
         onClick={() => openDialog('customerDialogOpen')}
         ariaLabel="Abrir novo cliente"
       >
@@ -62,8 +61,7 @@ export function DashboardQuickActions({
 
       <QuickActionButton
         icon={PackagePlus}
-        title="Novo Produto"
-        description="Cadastrar produto"
+        title="Incluir Produto"
         onClick={() => openDialog('productDialogOpen')}
         ariaLabel="Abrir novo produto"
       >
@@ -76,8 +74,7 @@ export function DashboardQuickActions({
 
       <QuickActionButton
         icon={HandCoins}
-        title="Novo Pagamento"
-        description="Cadastrar pagamento"
+        title="Registrar Pagamento"
         onClick={() => openDialog('paymentDialogOpen')}
         ariaLabel="Abrir novo pagamento"
       />
@@ -93,8 +90,7 @@ export function DashboardQuickActions({
 
       {/* <QuickActionButton
         icon={FileText}
-        title="Novo Relatório"
-        description="Gerar relatório"
+        title="Gerar Relatório"
         onClick={() => openDialog('customerDialogOpen')}
         ariaLabel="Abrir novo relatório"
       >

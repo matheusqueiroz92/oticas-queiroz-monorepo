@@ -39,6 +39,7 @@ export const QUERY_KEYS = {
     MY_ORDERS: ["orders", "my-orders"],
     PROFILE_ALL: (userId: string, userRole: string) => ["orders", "profile-all", userId, userRole],
     DAILY: ["orders", "daily"],
+    DASHBOARD_DAILY: (date: string) => ["orders", "dashboard-daily", date],
     NEXT_SERVICE_ORDER: ["orders", "next-service-order"],
   },
 
@@ -60,6 +61,7 @@ export const QUERY_KEYS = {
     ],
     DETAIL: (id: string) => ["payments", "detail", id],
     DAILY: ["payments", "daily"],
+    DASHBOARD_SALES: (date: string) => ["payments", "dashboard-sales", date],
     BY_CASH_REGISTER: (cashRegisterId: string) => [
       "payments",
       "cashRegister",
