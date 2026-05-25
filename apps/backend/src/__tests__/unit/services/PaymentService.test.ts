@@ -59,24 +59,64 @@ const mockPaymentExportService = {
   exportFinancialReport: jest.fn(),
 } as any;
 
-// Mock do RepositoryFactory
+// Mocks compartilhados de repositórios usados pela cadeia de serviços
+const mockUserRepository = {
+  findById: jest.fn(),
+  findAll: jest.fn(),
+  create: jest.fn(),
+  update: jest.fn(),
+  delete: jest.fn(),
+  softDelete: jest.fn(),
+  exists: jest.fn(),
+  count: jest.fn(),
+  findByEmail: jest.fn(),
+  findByCpf: jest.fn(),
+  findByRole: jest.fn(),
+} as any;
+
+const mockLegacyClientRepository = {
+  findById: jest.fn(),
+  findAll: jest.fn(),
+  create: jest.fn(),
+  update: jest.fn(),
+  delete: jest.fn(),
+  softDelete: jest.fn(),
+  exists: jest.fn(),
+  count: jest.fn(),
+  findByDocument: jest.fn(),
+} as any;
+
+const mockCashRegisterRepositoryMock = {
+  findById: jest.fn(),
+  updateSales: jest.fn(),
+  updatePayments: jest.fn(),
+} as any;
+
+const mockOrderRepositoryMock = {
+  findById: jest.fn(),
+  update: jest.fn(),
+  findAll: (jest.fn() as any).mockResolvedValue({ items: [], total: 0 }),
+  updateInSession: jest.fn(),
+} as any;
+
+// Mock do RepositoryFactory (classe + helper getRepositories)
 jest.mock("../../../repositories/RepositoryFactory", () => ({
   RepositoryFactory: {
     getInstance: () => ({
       getPaymentRepository: () => mockPaymentRepository,
-      getCashRegisterRepository: () => ({
-        findById: jest.fn(),
-        updateSales: jest.fn(),
-        updatePayments: jest.fn(),
-      }),
-      getOrderRepository: () => ({
-        findById: jest.fn(),
-        update: jest.fn(),
-        findAll: (jest.fn() as any).mockResolvedValue({ items: [], total: 0 }),
-        updateInSession: jest.fn(),
-      }),
+      getCashRegisterRepository: () => mockCashRegisterRepositoryMock,
+      getOrderRepository: () => mockOrderRepositoryMock,
+      getUserRepository: () => mockUserRepository,
+      getLegacyClientRepository: () => mockLegacyClientRepository,
     }),
   },
+  getRepositories: () => ({
+    userRepository: mockUserRepository,
+    orderRepository: mockOrderRepositoryMock,
+    paymentRepository: mockPaymentRepository,
+    cashRegisterRepository: mockCashRegisterRepositoryMock,
+    legacyClientRepository: mockLegacyClientRepository,
+  }),
 }));
 
 // Mock do withTransaction para executar operação sem sessão real
