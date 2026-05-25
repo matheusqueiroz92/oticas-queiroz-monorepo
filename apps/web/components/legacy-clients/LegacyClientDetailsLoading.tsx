@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export function LegacyClientDetailsLoading() {
   return (
-    <div className="container mx-auto p-6 max-w-6xl">
+    <div className="page-shell-wide">
       {/* Header Skeleton */}
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-2">

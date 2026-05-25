@@ -41,7 +41,7 @@ export default function MercadoPagoDirectPage() {
   };
 
   return (
-    <div className="container mx-auto p-4 max-w-3xl">
+    <div className="page-shell-narrow">
       <h1 className="text-2xl font-bold mb-6">Teste Direto do Mercado Pago</h1>
       
       <Alert className="mb-6">

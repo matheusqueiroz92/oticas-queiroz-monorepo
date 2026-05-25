@@ -313,7 +313,7 @@ export function ProductDialog({
     <Dialog open={open} onOpenChange={onOpenChange} modal={true}>
       <DialogOverlay className="bg-black/60" />
       <DialogContent 
-        className="max-w-4xl max-h-[90vh] overflow-y-auto"
+        className="max-w-4xl max-h-[90dvh] overflow-y-auto"
         onInteractOutside={(e) => {
           // Prevenir fechamento acidental por cliques em dropdowns
           const target = e.target as Element;

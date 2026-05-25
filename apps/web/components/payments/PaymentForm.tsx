@@ -1061,7 +1061,7 @@ export function PaymentForm({
   };
   
   return (
-    <div className="max-w-6xl mx-auto p-3">
+    <div className="page-shell-wide">
       <Card className="shadow-sm">
         <CardHeader className="border-b bg-gray-50 p-4 flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">

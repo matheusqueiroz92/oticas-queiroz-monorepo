@@ -45,20 +45,24 @@ export function Header({ title, description }: HeaderProps) {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="w-full flex h-16 items-center justify-between px-4 md:px-8">
+      <div className="w-full flex h-14 sm:h-16 items-center justify-between gap-2 px-3 sm:px-4 md:px-8 min-w-0">
         {/* Título da página */}
-        <div className="flex items-center gap-4">
-          <SidebarTrigger className="md:hidden" />
-          <div className="flex flex-col">
-            <h1 className="text-2xl text-[var(--secondary-red)] font-bold tracking-tight">{title}</h1>
+        <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
+          <SidebarTrigger className="shrink-0 md:hidden touch-target" />
+          <div className="flex flex-col min-w-0">
+            <h1 className="text-lg sm:text-xl md:text-2xl text-[var(--secondary-red)] font-bold tracking-tight truncate">
+              {title}
+            </h1>
             {description && (
-              <p className="text-sm text-muted-foreground">{description}</p>
+              <p className="hidden sm:block text-xs md:text-sm text-muted-foreground line-clamp-1">
+                {description}
+              </p>
             )}
           </div>
         </div>
 
         {/* Ações do cabeçalho */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           {/* Configurações */}
           {/* <Button variant="ghost" size="icon" className="h-9 w-9">
             <Settings className="h-4 w-4" />

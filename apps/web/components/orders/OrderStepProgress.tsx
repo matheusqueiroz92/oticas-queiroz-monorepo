@@ -66,7 +66,7 @@ export default function OrderStepProgress({
             style={{ width: `${100/steps.length}%` }}
           >
             <span className={`
-              text-sm font-semibold transition-colors duration-300
+              text-[10px] sm:text-xs md:text-sm font-semibold transition-colors duration-300 text-center
               ${index === currentStep 
                 ? 'text-blue-900' 
                 : index < currentStep 

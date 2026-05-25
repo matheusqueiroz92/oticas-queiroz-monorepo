@@ -70,7 +70,7 @@ export default function MercadoPagoSettingsPage() {
   };
 
   return (
-    <div className="container mx-auto p-4 max-w-4xl">
+    <div className="page-shell max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold mb-6">Configurações do Mercado Pago</h1>
       
       <Tabs defaultValue="status">

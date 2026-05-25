@@ -48,54 +48,53 @@ export default function ProfilePage() {
 
   return (
     <PageContainer>
-      <div className="space-y-8">
-        {/* Estatísticas do usuário */}
-        <ProfileStats 
-          userRole={user.role} 
-          profileData={profileData}
-          isLoading={loading}
-        />
-
-        {/* Grid principal */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-          {/* Coluna da esquerda - Card do perfil (equivalente a 1 StatCard) */}
-          <div className="lg:col-span-1">
-            <ProfileCard
-              user={user}
-              getUserImageUrl={getUserImageUrl}
-              onEditClick={handleEditClick}
-              onChangePasswordClick={() => setChangePasswordDialogOpen(true)}
-            />
-          </div>
-
-          {/* Coluna da direita - Pedidos recentes (equivalente a 3 StatCards) */}
-          <div className="lg:col-span-3">
-            <RecentOrdersCard
-              orders={profileData.userOrdersForDisplay}
-              onViewDetails={handleViewOrderDetails}
-              isLoading={isLoadingOrders}
-              getClientName={getClientName}
-              userRole={user.role}
-            />
-          </div>
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+        {/* Coluna da esquerda - Card do perfil alinhado com as estatísticas */}
+        <div className="lg:col-span-1 lg:row-span-2">
+          <ProfileCard
+            user={user}
+            getUserImageUrl={getUserImageUrl}
+            onEditClick={handleEditClick}
+            onChangePasswordClick={() => setChangePasswordDialogOpen(true)}
+          />
         </div>
 
-        {/* Dialog de edição */}
-        <ProfileEditDialog
-          open={editDialogOpen}
-          onOpenChange={handleCloseEdit}
-          user={user}
-          onSubmit={handleSubmit}
-          isSubmitting={isUpdatingProfile}
-          getUserImageUrl={getUserImageUrl}
-        />
+        {/* Estatísticas do usuário (3 colunas à direita do perfil) */}
+        <div className="lg:col-span-3">
+          <ProfileStats
+            userRole={user.role}
+            profileData={profileData}
+            isLoading={loading}
+          />
+        </div>
 
-        {/* Dialog de alteração de senha */}
-        <ChangePasswordDialog
-          open={changePasswordDialogOpen}
-          onOpenChange={setChangePasswordDialogOpen}
-        />
+        {/* Pedidos recentes — mantido abaixo das estatísticas */}
+        <div className="lg:col-span-3">
+          <RecentOrdersCard
+            orders={profileData.userOrdersForDisplay}
+            onViewDetails={handleViewOrderDetails}
+            isLoading={isLoadingOrders}
+            getClientName={getClientName}
+            userRole={user.role}
+          />
+        </div>
       </div>
+
+      {/* Dialog de edição */}
+      <ProfileEditDialog
+        open={editDialogOpen}
+        onOpenChange={handleCloseEdit}
+        user={user}
+        onSubmit={handleSubmit}
+        isSubmitting={isUpdatingProfile}
+        getUserImageUrl={getUserImageUrl}
+      />
+
+      {/* Dialog de alteração de senha */}
+      <ChangePasswordDialog
+        open={changePasswordDialogOpen}
+        onOpenChange={setChangePasswordDialogOpen}
+      />
     </PageContainer>
   );
 }

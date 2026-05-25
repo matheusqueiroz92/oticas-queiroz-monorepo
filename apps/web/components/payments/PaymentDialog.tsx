@@ -392,7 +392,7 @@ export function PaymentDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogOverlay className="bg-black/60" />
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90dvh] overflow-y-auto">
         {showSuccessScreen && submittedPayment ? (
           <PaymentSuccessScreen
             submittedPayment={submittedPayment}

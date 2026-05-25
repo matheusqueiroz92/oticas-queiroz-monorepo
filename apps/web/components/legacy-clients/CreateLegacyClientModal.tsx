@@ -92,7 +92,7 @@ export function CreateLegacyClientModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Cadastrar Novo Cliente</DialogTitle>
           <DialogDescription>

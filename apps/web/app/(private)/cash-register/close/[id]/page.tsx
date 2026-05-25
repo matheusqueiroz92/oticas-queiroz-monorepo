@@ -140,7 +140,7 @@ export default function CloseCashRegisterPage() {
   // Mostrar mensagem de erro se não tiver permissão
   if (!hasPermission) {
     return (
-      <div className="max-w-3xl mx-auto p-4 space-y-6">
+      <div className="page-shell-narrow space-y-6">
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Acesso Negado</AlertTitle>
@@ -170,7 +170,7 @@ export default function CloseCashRegisterPage() {
         : "Erro desconhecido ao carregar os dados do caixa";
 
     return (
-      <div className="max-w-3xl mx-auto p-4">
+      <div className="page-shell-narrow">
         <ErrorCashRegisterCard
           errorMessage={errorMessage}
           navigateToCashRegister={navigateToCashRegister}
@@ -182,7 +182,7 @@ export default function CloseCashRegisterPage() {
   {/* Mensagem de caixa já fechado */}
   if (cashRegister && cashRegister.status !== "open") {
     return (
-      <div className="max-w-3xl mx-auto p-4">
+      <div className="page-shell-narrow">
         <CloseCashRegisterMessageCard />
       </div>
     );
@@ -198,13 +198,13 @@ export default function CloseCashRegisterPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto p-4 space-y-6">
-      <div className="flex items-center space-x-2">
+    <div className="page-shell-narrow space-y-6">
+      <div className="flex flex-wrap items-center gap-2">
         <BackButton
           onClick={navigateToCashRegister}
           label="Voltar"
         />
-        <h1 className="text-2xl font-bold">Fechar Caixa</h1>
+        <h1 className="text-xl sm:text-2xl font-bold">Fechar Caixa</h1>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

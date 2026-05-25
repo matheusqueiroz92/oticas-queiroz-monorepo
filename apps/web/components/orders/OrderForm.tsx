@@ -467,15 +467,15 @@ export function OrderForm({
                 {renderStepContent()}
               </div>
               
-              <div className="flex justify-between pt-4 border-t">
-                <div>
+              <div className="flex flex-col sm:flex-row sm:justify-between gap-3 pt-4 border-t">
+                <div className="order-2 sm:order-1">
                   {currentStep > 0 && (
                     <Button
                       type="button"
                       variant="outline"
                       onClick={prevStep}
                       size="sm"
-                      className="flex items-center text-sm h-9"
+                      className="flex items-center text-sm h-9 w-full sm:w-auto"
                     >
                       <ChevronRight className="h-4 w-4 mr-1 rotate-180" />
                       Anterior
@@ -483,13 +483,13 @@ export function OrderForm({
                   )}
                 </div>
                 
-                <div className="flex gap-2">
+                <div className="flex flex-col-reverse sm:flex-row gap-2 order-1 sm:order-2">
                   <Button
                     type="button"
                     variant="outline"
                     onClick={onCancel}
                     size="sm"
-                    className="text-sm h-9"
+                    className="text-sm h-9 w-full sm:w-auto"
                   >
                     Cancelar
                   </Button>
@@ -500,7 +500,7 @@ export function OrderForm({
                       onClick={nextStep}
                       disabled={!checkCanContinue()}
                       size="sm"
-                      className="flex items-center text-sm h-9"
+                      className="flex items-center justify-center text-sm h-9 w-full sm:w-auto"
                     >
                       Próximo
                       <ChevronRight className="h-4 w-4 ml-1" />
@@ -510,7 +510,7 @@ export function OrderForm({
                       type="button" 
                       disabled={isSubmitting || selectedProducts.length === 0}
                       size="sm"
-                      className="text-sm h-9"
+                      className="text-sm h-9 w-full sm:w-auto"
                       onClick={handleSubmitForm}
                     >
                       {isSubmitting ? (

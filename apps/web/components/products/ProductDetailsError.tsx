@@ -9,7 +9,7 @@ interface ProductDetailsErrorProps {
 
 export function ProductDetailsError({ error, onGoBack }: ProductDetailsErrorProps) {
   return (
-    <div className="container mx-auto p-6 max-w-2xl">
+    <div className="page-shell max-w-2xl mx-auto">
       <Alert variant="destructive">
         <AlertTriangle className="h-4 w-4" />
         <AlertTitle>Produto não encontrado</AlertTitle>

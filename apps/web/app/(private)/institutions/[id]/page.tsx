@@ -60,7 +60,7 @@ export default function InstitutionDetailsPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-6xl">
+    <div className="page-shell-wide">
       {/* Header */}
       <InstitutionDetailsHeader
         institution={institution as Institution}

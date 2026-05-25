@@ -2,7 +2,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export function ProductDetailsLoading() {
   return (
-    <div className="container mx-auto p-6 max-w-6xl">
+    <div className="page-shell-wide">
       <div className="mb-6">
         <Skeleton className="h-10 w-48" />
       </div>

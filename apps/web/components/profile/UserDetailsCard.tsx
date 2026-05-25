@@ -51,7 +51,7 @@ export const UserDetailsCard: React.FC<UserDetailsCardProps> = ({
   };
 
   return (
-    <div className="max-w-3xl mx-auto p-4 md:p-6">
+    <div className="page-shell-narrow">
       <div className="mb-6">
         <Button 
           variant="ghost" 

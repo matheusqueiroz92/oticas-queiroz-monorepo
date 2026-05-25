@@ -20,7 +20,7 @@ export default function AuthenticatedLayout({
           title={pageTitle.title}
           description={pageTitle.description}
         />
-        <div className="flex-1">{children}</div>
+        <div className="flex-1 min-w-0 overflow-x-hidden">{children}</div>
       </SidebarInset>
     </SidebarProvider>
   );

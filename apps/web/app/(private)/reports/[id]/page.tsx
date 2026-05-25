@@ -90,7 +90,7 @@ export default function ReportDetailsPage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto py-10 flex justify-center items-center">
+      <div className="page-shell flex justify-center items-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <span className="ml-2">Carregando relatório...</span>
       </div>
@@ -99,7 +99,7 @@ export default function ReportDetailsPage() {
 
   if (isError || !report) {
     return (
-      <div className="container mx-auto py-10">
+      <div className="page-shell">
         <div className="text-center">
           <h2 className="text-2xl font-bold mb-4">
             Erro ao carregar relatório
@@ -118,8 +118,8 @@ export default function ReportDetailsPage() {
   }
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="page-shell space-y-6">
+      <div className="flex flex-wrap justify-between items-center gap-3">
         <div className="flex items-center gap-2">
           <Button variant="outline" size="icon" onClick={() => router.back()}>
             <ArrowLeft className="h-4 w-4" />

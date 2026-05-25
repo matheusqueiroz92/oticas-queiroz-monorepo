@@ -118,7 +118,7 @@ export function SalesChart({ payments = [], isLoading = false }: SalesChartProps
       
       <CardContent className="flex-1 flex flex-col">
         {/* Estatísticas resumidas */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4 mt-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4 mt-4">
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">Total de Vendas</p>
             <p className="text-lg font-semibold text-green-600">

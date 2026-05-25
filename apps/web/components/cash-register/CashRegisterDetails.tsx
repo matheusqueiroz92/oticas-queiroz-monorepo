@@ -66,7 +66,7 @@ export function CashRegisterDetails({
 
   if (error || !register) {
     return (
-      <div className="max-w-4xl mx-auto p-4">
+      <div className="page-shell max-w-4xl mx-auto">
         <Card className="bg-red-50 border-red-200">
           <CardHeader>
             <CardTitle className="text-red-800">Erro</CardTitle>
@@ -101,7 +101,7 @@ export function CashRegisterDetails({
   const difference = calculateDifference();
 
   return (
-    <div className="max-w-4xl mx-auto p-4 space-y-6">
+    <div className="page-shell max-w-4xl mx-auto space-y-4 sm:space-y-6">
       <div className="flex justify-between items-center">
         <div className="flex items-center space-x-2">
           <Button
@@ -289,7 +289,7 @@ export function CashRegisterDetails({
       </div>
 
       <Tabs defaultValue="all" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="w-full grid grid-cols-3">
           <TabsTrigger value="all">Todos</TabsTrigger>
           <TabsTrigger value="incoming">Entradas</TabsTrigger>
           <TabsTrigger value="outgoing">Saídas</TabsTrigger>

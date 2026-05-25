@@ -92,3 +92,31 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  .page-shell {
+    @apply w-full min-w-0 px-3 py-4 sm:px-4 sm:py-5 md:px-8 md:py-6;
+  }
+
+  .page-shell-narrow {
+    @apply page-shell max-w-3xl mx-auto;
+  }
+
+  .page-shell-wide {
+    @apply page-shell max-w-6xl mx-auto;
+  }
+
+  .responsive-table-scroll {
+    @apply -mx-3 w-[calc(100%+1.5rem)] overflow-x-auto sm:mx-0 sm:w-full;
+  }
+
+  .touch-target {
+    @apply min-h-10 min-w-10;
+  }
+}
+
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+}

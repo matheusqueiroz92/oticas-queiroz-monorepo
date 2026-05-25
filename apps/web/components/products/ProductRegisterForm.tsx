@@ -695,7 +695,7 @@ export default function ProductRegisterForm({ title, description }: ProductRegis
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-4">
+    <div className="page-shell max-w-4xl mx-auto">
       {renderSuccessModal()}
       
       <Card className="shadow-sm">

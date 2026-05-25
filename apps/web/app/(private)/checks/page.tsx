@@ -104,15 +104,15 @@ export default function ChecksPage() {
   };
 
   return (
-    <div className="space-y-4 max-w-auto mx-auto p-1 md:p-2">
+    <div className="page-shell space-y-4">
       <Card>
         <CardHeader>
           <CardTitle>Filtros</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-center">
             <Select value={status} onValueChange={(value) => setStatus(value as any)}>
-              <SelectTrigger className="w-[200px]">
+              <SelectTrigger className="w-full sm:w-[200px]">
                 <SelectValue placeholder="Filtrar por status" />
               </SelectTrigger>
               <SelectContent>
@@ -122,8 +122,10 @@ export default function ChecksPage() {
                 <SelectItem value="rejected">Rejeitados</SelectItem>
               </SelectContent>
             </Select>
-            
-            <Button variant="outline" onClick={() => refetch()}>Atualizar</Button>
+
+            <Button variant="outline" className="w-full sm:w-auto" onClick={() => refetch()}>
+              Atualizar
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -133,73 +135,77 @@ export default function ChecksPage() {
           <Loader2 className="h-8 w-8 animate-spin" />
         </div>
       ) : checks && checks.length > 0 ? (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Cliente/Titular</TableHead>
-              <TableHead>Banco</TableHead>
-              <TableHead>Número</TableHead>
-              <TableHead>Data do Cheque</TableHead>
-              <TableHead>Data de Apresentação</TableHead>
-              <TableHead>Valor</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+        <>
+          {/* Mobile: card view */}
+          <div className="space-y-3 md:hidden">
             {checks.map((check: any) => (
-              <TableRow key={check._id}>
-                <TableCell>
-                  <div>
-                    <div className="font-medium">{check.check.accountHolder}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {check.customerId?.name || check.legacyClientId?.name || "Cliente não associado"}
+              <Card key={check._id}>
+                <CardContent className="p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="font-medium truncate">{check.check.accountHolder}</div>
+                      <div className="text-xs text-muted-foreground truncate">
+                        {check.customerId?.name || check.legacyClientId?.name || "Cliente não associado"}
+                      </div>
+                    </div>
+                    <div className="shrink-0">
+                      {getStatusBadge(check.check.compensationStatus)}
                     </div>
                   </div>
-                </TableCell>
-                <TableCell>{check.check.bank}</TableCell>
-                <TableCell>{check.check.checkNumber}</TableCell>
-                <TableCell>{formatDate(check.check.checkDate)}</TableCell>
-                <TableCell>
-                  {check.check.presentationDate 
-                    ? formatDate(check.check.presentationDate) 
-                    : "Imediata"}
-                </TableCell>
-                <TableCell className="font-medium">
-                  {formatCurrency(check.amount)}
-                </TableCell>
-                <TableCell>
-                  {getStatusBadge(check.check.compensationStatus)}
+
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
+                    <div>
+                      <span className="text-muted-foreground">Banco: </span>
+                      <span className="font-medium">{check.check.bank}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Nº: </span>
+                      <span className="font-medium">{check.check.checkNumber}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Cheque: </span>
+                      <span className="font-medium">{formatDate(check.check.checkDate)}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Apresent.: </span>
+                      <span className="font-medium">
+                        {check.check.presentationDate ? formatDate(check.check.presentationDate) : "Imediata"}
+                      </span>
+                    </div>
+                    <div className="col-span-2">
+                      <span className="text-muted-foreground">Valor: </span>
+                      <span className="font-semibold">{formatCurrency(check.amount)}</span>
+                    </div>
+                  </div>
+
                   {check.check.compensationStatus === "rejected" && check.check.rejectionReason && (
-                    <div className="text-xs text-red-500 mt-1">{check.check.rejectionReason}</div>
+                    <p className="text-xs text-red-500">{check.check.rejectionReason}</p>
                   )}
-                </TableCell>
-                <TableCell>
-                  <div className="flex space-x-2">
+
+                  <div className="flex flex-wrap gap-2 pt-1">
                     <Button
                       size="sm"
                       variant="outline"
+                      className="flex-1 min-w-[100px]"
                       onClick={() => router.push(`/payments/${check._id}`)}
                     >
                       Detalhes
                     </Button>
-                    
                     {check.check.compensationStatus === "pending" && (
                       <>
                         <Button
                           size="sm"
                           variant="outline"
-                          className="text-green-600"
+                          className="flex-1 min-w-[120px] text-green-600"
                           onClick={() => handleMarkAsCompensated(check._id)}
                         >
                           <CheckCircle className="h-4 w-4 mr-1" />
                           Compensado
                         </Button>
-                        
                         <Button
                           size="sm"
                           variant="outline"
-                          className="text-red-600"
+                          className="flex-1 min-w-[120px] text-red-600"
                           onClick={() => handleMarkAsRejected(check._id)}
                         >
                           <XCircle className="h-4 w-4 mr-1" />
@@ -208,11 +214,95 @@ export default function ChecksPage() {
                       </>
                     )}
                   </div>
-                </TableCell>
-              </TableRow>
+                </CardContent>
+              </Card>
             ))}
-          </TableBody>
-        </Table>
+          </div>
+
+          {/* Desktop/tablet: table view */}
+          <div className="hidden md:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Cliente/Titular</TableHead>
+                  <TableHead className="hidden lg:table-cell">Banco</TableHead>
+                  <TableHead>Número</TableHead>
+                  <TableHead>Data do Cheque</TableHead>
+                  <TableHead className="hidden xl:table-cell">Data de Apresentação</TableHead>
+                  <TableHead>Valor</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {checks.map((check: any) => (
+                  <TableRow key={check._id}>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">{check.check.accountHolder}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {check.customerId?.name || check.legacyClientId?.name || "Cliente não associado"}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell">{check.check.bank}</TableCell>
+                    <TableCell>{check.check.checkNumber}</TableCell>
+                    <TableCell>{formatDate(check.check.checkDate)}</TableCell>
+                    <TableCell className="hidden xl:table-cell">
+                      {check.check.presentationDate
+                        ? formatDate(check.check.presentationDate)
+                        : "Imediata"}
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {formatCurrency(check.amount)}
+                    </TableCell>
+                    <TableCell>
+                      {getStatusBadge(check.check.compensationStatus)}
+                      {check.check.compensationStatus === "rejected" && check.check.rejectionReason && (
+                        <div className="text-xs text-red-500 mt-1">{check.check.rejectionReason}</div>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => router.push(`/payments/${check._id}`)}
+                        >
+                          Detalhes
+                        </Button>
+
+                        {check.check.compensationStatus === "pending" && (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-green-600"
+                              onClick={() => handleMarkAsCompensated(check._id)}
+                            >
+                              <CheckCircle className="h-4 w-4 mr-1" />
+                              <span className="hidden xl:inline">Compensado</span>
+                            </Button>
+
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-red-600"
+                              onClick={() => handleMarkAsRejected(check._id)}
+                            >
+                              <XCircle className="h-4 w-4 mr-1" />
+                              <span className="hidden xl:inline">Rejeitado</span>
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </>
       ) : (
         <div className="flex flex-col items-center justify-center py-12 text-center border rounded-lg bg-background">
           <AlertTriangle className="h-16 w-16 text-muted-foreground mb-4" />

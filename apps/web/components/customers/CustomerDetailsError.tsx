@@ -9,7 +9,7 @@ interface CustomerDetailsErrorProps {
 
 export function CustomerDetailsError({ error, onGoBack }: CustomerDetailsErrorProps) {
   return (
-    <div className="container mx-auto p-6 max-w-2xl">
+    <div className="page-shell max-w-2xl mx-auto">
       <Alert variant="destructive">
         <AlertTriangle className="h-4 w-4" />
         <AlertTitle>Cliente não encontrado</AlertTitle>

@@ -47,9 +47,9 @@ export function StatCard({
   const showCustomFooter = !!footerAction;
 
   return (
-    <Card>
+    <Card className="bg-primary/10 border border-primary/20">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
-        <CardTitle className="text-xl font-normal text-zinc-900 dark:text-zinc-100">
+        <CardTitle className="text-sm sm:text-base md:text-xl font-normal text-zinc-900 dark:text-zinc-100 line-clamp-2">
           {title}
         </CardTitle>
         <div className="flex items-center gap-1">
@@ -66,7 +66,7 @@ export function StatCard({
           <Skeleton className={`h-6 ${skeletonWidth}`} />
         ) : (
           <>
-            <div className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+            <div className="text-lg sm:text-xl md:text-2xl font-bold text-zinc-900 dark:text-zinc-100 break-words">
               {value}
             </div>
             {badge && (

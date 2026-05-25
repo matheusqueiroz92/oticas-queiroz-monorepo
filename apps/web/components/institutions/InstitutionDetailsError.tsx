@@ -9,7 +9,7 @@ interface InstitutionDetailsErrorProps {
 
 export function InstitutionDetailsError({ error, onGoBack }: InstitutionDetailsErrorProps) {
   return (
-    <div className="container mx-auto p-6 max-w-6xl">
+    <div className="page-shell-wide">
       <div className="space-y-6">
         <div className="flex items-center gap-2">
           <Button variant="ghost" onClick={onGoBack}>

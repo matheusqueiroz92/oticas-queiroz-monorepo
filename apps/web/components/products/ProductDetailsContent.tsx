@@ -22,7 +22,7 @@ export function ProductDetailsContent({
   onEditSuccess,
 }: ProductDetailsContentProps) {
   return (
-    <div className="container mx-auto p-6 max-w-6xl">
+    <div className="page-shell-wide">
       <ProductDetailsHeader
         onGoBack={onGoBack}
         onEditClick={onEditClick}

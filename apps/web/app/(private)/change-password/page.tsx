@@ -20,7 +20,7 @@ export default function ChangePasswordPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-auto mx-auto p-1 md:p-2">
+    <div className="page-shell space-y-4 sm:space-y-6">
       <div className="max-w-md mx-auto space-y-6">
         <ChangePasswordHeader onBack={handleBack} />
         

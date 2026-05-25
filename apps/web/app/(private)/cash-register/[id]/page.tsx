@@ -56,7 +56,7 @@ export default function CashRegisterDetailsPage() {
   // Mostrar mensagem de erro se não tiver permissão
   if (!hasPermission) {
     return (
-      <div className="max-w-3xl mx-auto p-4 space-y-6">
+      <div className="page-shell-narrow space-y-6">
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Acesso Negado</AlertTitle>
@@ -77,7 +77,7 @@ export default function CashRegisterDetailsPage() {
   // Se há erro e não está carregando, mostrar erro
   if (error && !isLoading) {
     return (
-      <div className="max-w-3xl mx-auto p-4 space-y-6">
+      <div className="page-shell-narrow space-y-6">
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Erro ao carregar caixa</AlertTitle>

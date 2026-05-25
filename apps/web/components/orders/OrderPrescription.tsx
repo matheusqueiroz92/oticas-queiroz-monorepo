@@ -11,8 +11,8 @@ interface OrderPrescriptionProps {
 
 export default function OrderPrescription({ form, selectedProducts }: OrderPrescriptionProps) {
   return (
-    <div className="grid grid-cols-12 gap-6 h-full">
-      <div className="col-span-9">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 h-full">
+      <div className="lg:col-span-9">
         <div className="space-y-4">
           <div className="flex items-center gap-2 border-b pb-1">
             <h3 className="text-sm font-medium text-[var(--primary-blue)]">
@@ -25,8 +25,8 @@ export default function OrderPrescription({ form, selectedProducts }: OrderPresc
           <PrescriptionForm form={form} />
         </div>
       </div>
-      
-      <div className="col-span-3">
+
+      <div className="lg:col-span-3">
         <OrderSummary form={form} selectedProducts={selectedProducts} />
       </div>
     </div>

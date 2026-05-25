@@ -250,7 +250,20 @@ export default function ResetPasswordPage({
   };
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-background">
+    <div className="min-h-[100dvh] flex flex-col lg:flex-row bg-background">
+      <div className="lg:hidden bg-[#2f67ff] px-4 py-6 sm:py-8 flex items-center justify-center">
+        <div className="relative h-16 w-44 sm:h-20 sm:w-56">
+          <Image
+            src={LogoOticasQueiroz}
+            alt="Óticas Queiroz Logo"
+            fill
+            sizes="(max-width: 640px) 176px, 224px"
+            className="object-contain"
+            priority
+          />
+        </div>
+      </div>
+
       <div className="hidden lg:flex lg:w-1/2 bg-[#2f67ff] relative">
         <div className="absolute inset-0 bg-black/50" />
         <div className="relative z-10 flex items-center justify-center w-full">
@@ -269,11 +282,11 @@ export default function ResetPasswordPage({
         </div>
       </div>
 
-      <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-8">
+      <div className="flex-1 w-full lg:w-1/2 flex flex-col items-center justify-center p-4 sm:p-6 md:p-8">
         <Card className="w-full max-w-md">
-          <CardHeader className="space-y-1">
-            <h2 className="text-2xl font-bold text-center">Redefinir Senha</h2>
-            <p className="text-sm text-muted-foreground text-center">
+          <CardHeader className="space-y-1 p-4 sm:p-6">
+            <h2 className="text-xl sm:text-2xl font-bold text-center">Redefinir Senha</h2>
+            <p className="text-xs sm:text-sm text-muted-foreground text-center">
               Crie uma nova senha para sua conta
             </p>
           </CardHeader>
@@ -291,7 +304,7 @@ export default function ResetPasswordPage({
           )}
         </Card>
 
-        <footer className="mt-8 text-center text-sm text-muted-foreground">
+        <footer className="mt-6 sm:mt-8 text-center text-xs sm:text-sm text-muted-foreground px-4">
           <p>
             © {new Date().getFullYear()} Óticas Queiroz. Todos os direitos
             reservados.

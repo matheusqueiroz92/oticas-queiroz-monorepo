@@ -34,15 +34,16 @@ export function PageContainer({
   const paddingClasses = [];
   
   if (padding) {
-    paddingClasses.push("px-4 md:px-8 py-6");
+    paddingClasses.push("page-shell");
   } else {
-    if (paddingX) paddingClasses.push("px-4 md:px-8");
-    if (paddingY) paddingClasses.push("py-6");
+    if (paddingX) paddingClasses.push("px-3 sm:px-4 md:px-8");
+    if (paddingY) paddingClasses.push("py-4 sm:py-5 md:py-6");
   }
 
   return (
     <div 
       className={cn(
+        "w-full min-w-0",
         maxWidthClasses[maxWidth],
         maxWidth !== "full" && "mx-auto",
         ...paddingClasses,

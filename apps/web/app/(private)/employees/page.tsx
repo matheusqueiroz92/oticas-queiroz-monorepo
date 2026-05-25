@@ -47,7 +47,7 @@ export default function EmployeesPage() {
 
   return (
     <PageContainer>
-      <div className="space-y-8">
+      <div className="space-y-4 sm:space-y-6 lg:space-y-8">
         {/* Cards de Estatísticas */}
         <EmployeeStatsCards
           totalEmployees={stats.totalEmployees}

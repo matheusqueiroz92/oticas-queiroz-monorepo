@@ -75,10 +75,10 @@ export function DataTableWithFilters({
     <Card className={className}>
       <CardHeader className={headerClassName}>
         <CardTitle className="text-lg">{title}</CardTitle>
-        <div className="flex flex-col sm:flex-row gap-4 mt-4 sm:items-center">
+        <div className="flex flex-col gap-3 sm:gap-4 mt-4 lg:flex-row lg:items-center">
           {/* Área esquerda: Input de busca e selects */}
-          <div className="flex flex-1 flex-col sm:flex-row gap-4">
-            <div className="relative flex-1 max-w-md">
+          <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:gap-4 sm:flex-wrap">
+            <div className="relative flex-1 w-full sm:min-w-[200px] sm:max-w-md">
               <Input
                 placeholder={searchPlaceholder}
                 value={searchValue}
@@ -95,7 +95,7 @@ export function DataTableWithFilters({
                 value={filter.value} 
                 onValueChange={filter.onChange}
               >
-                <SelectTrigger className={filter.width || "w-[180px]"}>
+                <SelectTrigger className={filter.width || "w-full sm:w-[180px]"}>
                   <SelectValue placeholder={filter.placeholder} />
                 </SelectTrigger>
                 <SelectContent>
@@ -113,7 +113,7 @@ export function DataTableWithFilters({
           </div>
 
           {/* Área direita: Botões de ação */}
-          <div className="flex gap-2 justify-end sm:ml-auto">
+          <div className="flex flex-wrap gap-2 justify-stretch sm:justify-end lg:ml-auto [&>button]:flex-1 sm:[&>button]:flex-none">
             <Button 
               variant="outline" 
               size="sm" 

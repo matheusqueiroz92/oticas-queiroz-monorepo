@@ -55,7 +55,7 @@ export default function OpenCashRegisterPage() {
   // Mostrar loading enquanto verifica permissões
   if (isLoading) {
     return (
-      <div className="max-w-3xl mx-auto p-4 space-y-6">
+      <div className="page-shell-narrow space-y-6">
         <div className="flex items-center justify-center h-64">
           <p>Carregando...</p>
         </div>
@@ -66,7 +66,7 @@ export default function OpenCashRegisterPage() {
   // Mostrar mensagem de erro se não tiver permissão (apenas se o usuário foi carregado)
   if (user && !hasPermission) {
     return (
-      <div className="max-w-3xl mx-auto p-4 space-y-6">
+      <div className="page-shell-narrow space-y-6">
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Acesso Negado</AlertTitle>
@@ -79,7 +79,7 @@ export default function OpenCashRegisterPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto p-4 space-y-6">
+    <div className="page-shell-narrow space-y-6">
       <div className="flex items-center space-x-2">
         <BackButton
           onClick={navigateToCashRegister}

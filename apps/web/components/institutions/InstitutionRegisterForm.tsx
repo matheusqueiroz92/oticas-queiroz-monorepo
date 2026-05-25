@@ -535,7 +535,7 @@ export function InstitutionRegisterForm({ title, description }: InstitutionFormP
   };
 
   return (
-    <div className="max-w-3xl mx-auto p-4">
+    <div className="page-shell-narrow">
       {renderSuccessModal()}
       
       <Card className="shadow-sm">

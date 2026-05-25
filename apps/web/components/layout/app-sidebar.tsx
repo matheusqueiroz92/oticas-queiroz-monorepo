@@ -236,7 +236,7 @@ export function AppSidebar() {
 
       {/* Conteúdo do Menu */}
       <SidebarContent className="bg-[var(--primary-blue)] text-white p-2">
-        <SidebarMenu>
+        <SidebarMenu className="flex flex-col gap-1 md:gap-2 lg:gap-1.5">
           {menuItems.map((item) => {
             if (!shouldShowMenuItem(item.roles)) return null;
 
@@ -329,7 +329,7 @@ export function AppSidebar() {
               onClick={handleSignOut}
               tooltip="Sair"
               className={cn(
-                "text-white hover:bg-white/10",
+                "text-white hover:bg-white/10 hover:text-white",
                 "group-data-[collapsible=icon]:justify-center"
               )}
             >

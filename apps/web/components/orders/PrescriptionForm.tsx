@@ -131,7 +131,7 @@ export default function PrescriptionForm({ form }: PrescriptionFormProps) {
   return (
     <div className="space-y-6">
       {/* Dados básicos do médico - compacto */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         <FormField
           control={form.control}
           name="prescriptionData.doctorName"
@@ -188,13 +188,13 @@ export default function PrescriptionForm({ form }: PrescriptionFormProps) {
       </div>
 
       {/* Seções dos olhos lado a lado */}
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
         <EyeFormSection eye="right" title="Olho Direito" form={form} />
         <EyeFormSection eye="left" title="Olho Esquerdo" form={form} />
       </div>
 
       {/* Campos adicionais - mais compactos */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         <FormField
           control={form.control}
           name="prescriptionData.nd"
@@ -264,7 +264,7 @@ export default function PrescriptionForm({ form }: PrescriptionFormProps) {
       </div>
 
       {/* Última linha de campos */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
         <FormField
           control={form.control}
           name="prescriptionData.bridge"

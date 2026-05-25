@@ -25,8 +25,8 @@ export default function NotFound() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--primary-blue)] p-4">
-      <div className="w-32 h-32">
+    <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-[var(--primary-blue)] p-4 sm:p-6">
+      <div className="w-24 h-24 sm:w-32 sm:h-32">
         <Image
           src={LogoOticasQueiroz}
           alt="Óticas Queiroz Logo"
@@ -35,11 +35,11 @@ export default function NotFound() {
         />
       </div>
       <Card className="max-w-lg w-full shadow-lg border-t-4 border-t-[var(--secondary-red)]">
-        <CardHeader className="text-center pb-2">
-          <div className="w-20 h-20 bg-blue-50 rounded-full mx-auto mb-4 flex items-center justify-center">
-            <FileQuestion className="h-10 w-10 text-[var(--secondary-red)]" />
+        <CardHeader className="text-center pb-2 p-4 sm:p-6">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-blue-50 rounded-full mx-auto mb-3 sm:mb-4 flex items-center justify-center">
+            <FileQuestion className="h-8 w-8 sm:h-10 sm:w-10 text-[var(--secondary-red)]" />
           </div>
-          <CardTitle className="text-2xl font-bold text-[var(--secondary-red)]">Página não encontrada</CardTitle>
+          <CardTitle className="text-xl sm:text-2xl font-bold text-[var(--secondary-red)]">Página não encontrada</CardTitle>
         </CardHeader>
         
         <CardContent className="text-center">
@@ -61,7 +61,7 @@ export default function NotFound() {
           </div>
         </CardContent>
         
-        <CardFooter className="flex justify-between gap-4 pt-2">
+        <CardFooter className="flex flex-col sm:flex-row justify-between gap-3 sm:gap-4 pt-2 p-4 sm:p-6">
           <Button 
             variant="outline" 
             onClick={handleGoBack}
