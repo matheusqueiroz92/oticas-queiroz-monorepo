@@ -27,6 +27,13 @@ export interface IOrder {
   paymentHistory?: Array<IPaymentHistoryEntry>;
   paymentEntry?: number;
   installments?: number;
+  sicrediInstallments?: {
+    total: number;
+    schedule: Array<{
+      dueDate: Date;
+      amount: number;
+    }>;
+  };
   orderDate: Date;
   deliveryDate?: Date;
   status: "pending" | "in_production" | "ready" | "delivered" | "cancelled";

@@ -100,6 +100,16 @@ describe("OrderModel", () => {
       expect(order.totalPrice).toBe(mockOrder.totalPrice);
       expect(order.status).toBe("pending");
     });
+
+    it("should create an order with sicredi_boleto payment method", async () => {
+      const order = await orderModel.create({
+        ...mockOrder,
+        paymentMethod: "sicredi_boleto",
+      });
+
+      expect(order).toHaveProperty("_id");
+      expect(order.paymentMethod).toBe("sicredi_boleto");
+    });
   });
 
   describe("findById", () => {

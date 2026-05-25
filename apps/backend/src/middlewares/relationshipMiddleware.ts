@@ -52,7 +52,11 @@ export const validateAndUpdateRelationships = async (req: Request, res: Response
               }
               
               // Atualizar dívida do cliente se for pagamento parcelado
-              if (order.paymentMethod === 'bank_slip' || order.paymentMethod === 'promissory_note') {
+              if (
+                order.paymentMethod === 'bank_slip' ||
+                order.paymentMethod === 'promissory_note' ||
+                order.paymentMethod === 'sicredi_boleto'
+              ) {
                 if (client) {
                   const debtAmount = order.finalPrice - (order.paymentEntry || 0);
                   if (debtAmount > 0) {

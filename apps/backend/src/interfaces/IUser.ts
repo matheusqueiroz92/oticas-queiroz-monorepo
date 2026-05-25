@@ -6,6 +6,15 @@ export interface IUser {
   role: "admin" | "employee" | "customer" | "institution";
   image?: string;
   address?: string;
+  addressDetails?: {
+    logradouro?: string;
+    numero?: string;
+    complemento?: string;
+    bairro?: string;
+    cidade?: string;
+    uf?: string;
+    cep?: string;
+  };
   phone?: string;
   cpf?: string;
   cnpj?: string;

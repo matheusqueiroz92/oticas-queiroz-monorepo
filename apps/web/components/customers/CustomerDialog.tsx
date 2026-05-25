@@ -38,6 +38,17 @@ const customerSchema = z.object({
   cpf: z.string().optional(),
   rg: z.string().optional(),
   address: z.string().optional(),
+  addressDetails: z
+    .object({
+      logradouro: z.string().optional(),
+      numero: z.string().optional(),
+      complemento: z.string().optional(),
+      bairro: z.string().optional(),
+      cidade: z.string().optional(),
+      uf: z.string().max(2).optional(),
+      cep: z.string().optional(),
+    })
+    .optional(),
   birthDate: z.date({
     required_error: "Data de nascimento é obrigatória",
   }),
@@ -45,6 +56,43 @@ const customerSchema = z.object({
 });
 
 type CustomerFormData = z.infer<typeof customerSchema>;
+
+const EMPTY_ADDRESS_DETAILS = {
+  logradouro: "",
+  numero: "",
+  complemento: "",
+  bairro: "",
+  cidade: "",
+  uf: "",
+  cep: "",
+} as const;
+
+function normalizeAddressDetails(
+  details?: UserType["addressDetails"]
+): CustomerFormData["addressDetails"] {
+  return {
+    logradouro: details?.logradouro ?? "",
+    numero: details?.numero ?? "",
+    complemento: details?.complemento ?? "",
+    bairro: details?.bairro ?? "",
+    cidade: details?.cidade ?? "",
+    uf: details?.uf ?? "",
+    cep: details?.cep ?? "",
+  };
+}
+
+function formatAddressFromDetails(
+  details?: CustomerFormData["addressDetails"]
+): string {
+  if (!details?.logradouro?.trim()) return "";
+  const parts = [
+    details.logradouro,
+    details.numero,
+    details.bairro,
+    details.cidade && details.uf ? `${details.cidade} - ${details.uf}` : details.cidade,
+  ].filter(Boolean);
+  return parts.join(", ");
+}
 
 interface CustomerDialogProps {
   open: boolean;
@@ -80,6 +128,7 @@ export function CustomerDialog({
       cpf: "",
       rg: "",
       address: "",
+      addressDetails: { ...EMPTY_ADDRESS_DETAILS },
       birthDate: undefined,
       image: undefined,
     },
@@ -101,6 +150,7 @@ export function CustomerDialog({
           cpf: memoizedCustomer.cpf || "",
           rg: memoizedCustomer.rg || "",
           address: memoizedCustomer.address || "",
+          addressDetails: normalizeAddressDetails(memoizedCustomer.addressDetails),
           birthDate: memoizedCustomer.birthDate ? new Date(memoizedCustomer.birthDate) : undefined,
         });
         
@@ -123,6 +173,7 @@ export function CustomerDialog({
           cpf: "",
           rg: "",
           address: "",
+          addressDetails: { ...EMPTY_ADDRESS_DETAILS },
           birthDate: undefined,
           image: undefined,
         });
@@ -171,8 +222,12 @@ export function CustomerDialog({
       if (data.rg && data.rg.trim()) {
         formData.append("rg", data.rg);
       }
-      if (data.address && data.address.trim()) {
-        formData.append("address", data.address);
+      if (data.addressDetails) {
+        formData.append("addressDetails", JSON.stringify(data.addressDetails));
+        const legacyAddress = formatAddressFromDetails(data.addressDetails);
+        if (legacyAddress) {
+          formData.append("address", legacyAddress);
+        }
       }
 
       if (isEditMode && memoizedCustomer) {
@@ -229,7 +284,7 @@ export function CustomerDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogOverlay className="bg-black/60" />
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold flex items-center gap-2">
             <UserPlus className="w-6 h-6 text-blue-600" />
@@ -376,19 +431,67 @@ export function CustomerDialog({
 
             {/* Endereço */}
             <div className="space-y-4">
-              <FormField
-                control={form.control}
-                name="address"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Endereço Completo</FormLabel>
+              <p className="text-xs text-muted-foreground font-medium">
+                Endereço (obrigatório para boleto SICREDI)
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <FormField control={form.control} name="addressDetails.logradouro" render={({ field }) => (
+                  <FormItem className="col-span-2">
+                    <FormLabel>Logradouro</FormLabel>
                     <FormControl>
-                      <Input placeholder="Rua, número, bairro, cidade - UF" {...field} />
+                      <Input {...field} value={field.value ?? ""} />
                     </FormControl>
-                    <FormMessage />
                   </FormItem>
-                )}
-              />
+                )} />
+                <FormField control={form.control} name="addressDetails.numero" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Número</FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value ?? ""} />
+                    </FormControl>
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="addressDetails.complemento" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Complemento</FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value ?? ""} />
+                    </FormControl>
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="addressDetails.bairro" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Bairro</FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value ?? ""} />
+                    </FormControl>
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="addressDetails.cidade" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Cidade</FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value ?? ""} />
+                    </FormControl>
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="addressDetails.uf" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>UF</FormLabel>
+                    <FormControl>
+                      <Input maxLength={2} {...field} value={field.value ?? ""} />
+                    </FormControl>
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="addressDetails.cep" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>CEP</FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value ?? ""} />
+                    </FormControl>
+                  </FormItem>
+                )} />
+              </div>
             </div>
 
             {/* Botões */}

@@ -37,6 +37,11 @@ const orderProductSchema = z.object({
   // Outros campos opcionais
 });
 
+const sicrediInstallmentScheduleItemSchema = z.object({
+  dueDate: z.coerce.date(),
+  amount: z.number().positive("Valor da parcela deve ser positivo"),
+});
+
 // Schema base para pedidos
 const baseOrderSchema = z.object({
   clientId: z.string().min(1, "ID do cliente é obrigatório"),
@@ -49,6 +54,12 @@ const baseOrderSchema = z.object({
   paymentStatus: z.enum(["pending", "partially_paid", "paid"]),
   paymentEntry: z.number().min(0).optional(),
   installments: z.number().min(1).optional(),
+  sicrediInstallments: z
+    .object({
+      total: z.number().min(1),
+      schedule: z.array(sicrediInstallmentScheduleItemSchema).min(1),
+    })
+    .optional(),
   orderDate: z.coerce.date(),
   deliveryDate: z.coerce.date().optional(),
   status: z.enum(["pending", "in_production", "ready", "delivered", "cancelled"]),

@@ -28,6 +28,7 @@ import ClientSearch from "@/components/orders/ClientSearch";
 import ProductSearch from "@/components/orders/ProductSearch";
 import SelectedProductsList from "@/components/orders/SelectedProductList";
 import OrderSummary from "./OrderSummary";
+import SicrediInstallmentScheduleEditor from "./SicrediInstallmentScheduleEditor";
 
 interface OrderClientProductsProps {
   form: any;
@@ -110,14 +111,14 @@ export default function OrderClientProducts({
   }, [form]);
 
   return (
-    <div className="grid grid-cols-12 gap-6 h-full">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 h-full">
       {/* Coluna principal - Cliente e Produtos */}
-      <div className="col-span-8 space-y-6">
+      <div className="lg:col-span-8 space-y-4 lg:space-y-6">
         {/* Seção do Cliente */}
-        <div className="space-y-4 bg-background rounded-lg border p-4 shadow-sm">
+        <div className="space-y-4 bg-background rounded-lg border p-3 sm:p-4 shadow-sm">
           <h3 className="text-base font-semibold text-primary border-b pb-2">INFORMAÇÕES DO CLIENTE</h3>
-          <div className="grid grid-cols-5 gap-4 items-start">
-            <div className="col-span-4">
+          <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 sm:gap-4 items-start">
+            <div className="sm:col-span-4">
               <ClientSearch
                 customers={customersData || []}
                 form={form}
@@ -126,7 +127,7 @@ export default function OrderClientProducts({
                 selectedCustomer={selectedCustomer}
               />
             </div>
-            <div className="col-span-1">
+            <div className="sm:col-span-1">
               <FormField
                 control={form.control}
                 name="serviceOrder"
@@ -160,7 +161,7 @@ export default function OrderClientProducts({
           </div>
           {selectedCustomer && (
             <div className="bg-blue-100/10 p-2 rounded border border-blue-100 text-xs mt-2">
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
                 <div><strong>Nome:</strong> {selectedCustomer.name}</div>
                 {selectedCustomer.phone && <div><strong>Tel:</strong> {selectedCustomer.phone}</div>}
                 {selectedCustomer.email && <div><strong>Email:</strong> {selectedCustomer.email}</div>}
@@ -239,7 +240,7 @@ export default function OrderClientProducts({
               />
               {selectedResponsible && (
                 <div className="bg-orange-100/10 p-2 rounded border border-orange-100 text-xs">
-                  <div className="grid grid-cols-4 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
                     <div><strong>Responsável:</strong> {selectedResponsible.name}</div>
                     {selectedResponsible.phone && <div><strong>Tel:</strong> {selectedResponsible.phone}</div>}
                     {selectedResponsible.email && <div><strong>Email:</strong> {selectedResponsible.email}</div>}
@@ -270,7 +271,7 @@ export default function OrderClientProducts({
       </div>
       
       {/* Coluna lateral - Resumo e Pagamento */}
-      <div className="col-span-4 space-y-4">
+      <div className="lg:col-span-4 space-y-4">
         <OrderSummary 
           form={form}
           selectedProducts={selectedProducts}
@@ -293,8 +294,18 @@ export default function OrderClientProducts({
                     onValueChange={(value) => {
                       field.onChange(value);
                       setShowInstallments(
-                        value === "credit" || value === "bank_slip" || value === "promissory_note" || value === "check"
+                        value === "credit" ||
+                          value === "bank_slip" ||
+                          value === "promissory_note" ||
+                          value === "check" ||
+                          value === "sicredi_boleto"
                       );
+                      if (value === "sicredi_boleto") {
+                        form.setValue("emitBoletosNow", true);
+                        if (!form.getValues("installments")) {
+                          form.setValue("installments", 1);
+                        }
+                      }
                     }}
                     value={field.value}
                   >
@@ -438,18 +449,44 @@ export default function OrderClientProducts({
               const installments = form.watch("installments") || 1;
               const remainingAmount = Math.max(0, finalPrice - paymentEntry);
               const installmentValue = remainingAmount / installments;
-              
+              const isSicredi = form.watch("paymentMethod") === "sicredi_boleto";
+
               return (
-                <div className="p-2 bg-blue-100/10 rounded text-xs text-blue-800 border border-blue-100">
-                  <div className="space-y-1">
-                    <div>Valor das parcelas: {formatCurrency(installmentValue)}</div>
-                    <div className="text-xs text-gray-600">
-                      (Valor final: {formatCurrency(finalPrice)} - Entrada: {formatCurrency(paymentEntry)} = {formatCurrency(remainingAmount)} ÷ {installments}x)
+                <div className="space-y-2">
+                  {!isSicredi && (
+                    <div className="p-2 bg-blue-100/10 rounded text-xs text-blue-800 border border-blue-100">
+                      <div className="space-y-1">
+                        <div>Valor das parcelas: {formatCurrency(installmentValue)}</div>
+                        <div className="text-xs text-gray-600">
+                          (Valor final: {formatCurrency(finalPrice)} - Entrada: {formatCurrency(paymentEntry)} = {formatCurrency(remainingAmount)} ÷ {installments}x)
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  )}
+                  {isSicredi && <SicrediInstallmentScheduleEditor form={form} />}
                 </div>
               );
             })()}
+
+            {form.watch("paymentMethod") === "sicredi_boleto" && (
+              <FormField
+                control={form.control}
+                name="emitBoletosNow"
+                render={({ field }) => (
+                  <FormItem className="flex items-center gap-2 space-y-0">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value !== false}
+                        onCheckedChange={(checked) => field.onChange(checked === true)}
+                      />
+                    </FormControl>
+                    <FormLabel className="text-xs font-normal cursor-pointer">
+                      Emitir boletos SICREDI ao finalizar o pedido
+                    </FormLabel>
+                  </FormItem>
+                )}
+              />
+            )}
 
             <FormField
               control={form.control}

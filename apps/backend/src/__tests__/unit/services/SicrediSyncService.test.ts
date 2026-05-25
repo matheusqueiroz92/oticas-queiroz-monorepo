@@ -453,10 +453,10 @@ describe("SicrediSyncService", () => {
     });
   });
 
-  // ==================== updateClientDebt (private method) ====================
+  // ==================== debt settlement tracking (via performSync) ====================
 
-  describe("updateClientDebt (via performSync)", () => {
-    it("should update regular customer debt when paid", async () => {
+  describe("debt settlement tracking (via performSync)", () => {
+    it("should count updatedDebts when settlement marks debtSettledAt", async () => {
       const mockPayments = [
         {
           _id: "payment1",
@@ -475,32 +475,35 @@ describe("SicrediSyncService", () => {
         success: true,
         data: { status: "PAGO", valorPago: 100, dataPagamento: new Date() },
       } as any);
-
-      (mockUserService.getUserById as any) = jest.fn().mockResolvedValue({
-        _id: "customer123",
-        name: "Test Customer",
-        debts: 500,
+      (mockPaymentService.getPaymentById as any) = jest.fn().mockResolvedValue({
+        _id: "payment1",
+        bank_slip: {
+          sicredi: {
+            nossoNumero: "123",
+            status: "PAGO",
+            debtSettledAt: new Date(),
+          },
+        },
       } as any);
-
-      (mockUserService.updateUser as any) = jest.fn().mockResolvedValue({} as any);
 
       const result = await sicrediSyncService.performSync();
 
-      expect(mockUserService.getUserById).toHaveBeenCalledWith("customer123");
-      expect(mockUserService.updateUser).toHaveBeenCalledWith(
-        "customer123",
-        expect.objectContaining({ debts: 400 }) // 500 - 100
-      );
+      expect(mockPaymentService.checkSicrediBoletoStatus).toHaveBeenCalledWith("payment1");
+      expect(mockPaymentService.getPaymentById).toHaveBeenCalledWith("payment1");
       expect(result.updatedDebts).toBe(1);
     });
 
-    it("should update legacy client debt when paid", async () => {
+    it("should not count updatedDebts when debt was already settled", async () => {
       const mockPayments = [
         {
           _id: "payment1",
-          legacyClientId: "legacy123",
+          customerId: "customer123",
           bank_slip: {
-            sicredi: { nossoNumero: "123", status: "PENDENTE" },
+            sicredi: {
+              nossoNumero: "123",
+              status: "PENDENTE",
+              debtSettledAt: new Date("2024-01-01"),
+            },
           },
         },
       ] as any;
@@ -514,31 +517,13 @@ describe("SicrediSyncService", () => {
         data: { status: "PAGO", valorPago: 100, dataPagamento: new Date() },
       } as any);
 
-      (mockLegacyClientService.getLegacyClientById as any) = jest
-        .fn()
-        .mockResolvedValue({
-          _id: "legacy123",
-          name: "Legacy Customer",
-          totalDebt: 300,
-        } as any);
-
-      (mockLegacyClientService.updateLegacyClient as any) = jest
-        .fn()
-        .mockResolvedValue({} as any);
-
       const result = await sicrediSyncService.performSync();
 
-      expect(mockLegacyClientService.getLegacyClientById).toHaveBeenCalledWith(
-        "legacy123"
-      );
-      expect(mockLegacyClientService.updateLegacyClient).toHaveBeenCalledWith(
-        "legacy123",
-        expect.objectContaining({ totalDebt: 200 }) // 300 - 100
-      );
-      expect(result.updatedDebts).toBe(1);
+      expect(mockPaymentService.getPaymentById).not.toHaveBeenCalled();
+      expect(result.updatedDebts).toBe(0);
     });
 
-    it("should not allow negative debt", async () => {
+    it("should not count updatedDebts when boleto is not paid", async () => {
       const mockPayments = [
         {
           _id: "payment1",
@@ -555,30 +540,19 @@ describe("SicrediSyncService", () => {
         .mockResolvedValue({ payments: mockPayments } as any);
       (mockPaymentService.checkSicrediBoletoStatus as any) = jest.fn().mockResolvedValue({
         success: true,
-        data: { status: "PAGO", valorPago: 200, dataPagamento: new Date() },
+        data: { status: "VENCIDO" },
       } as any);
 
-      (mockUserService.getUserById as any) = jest.fn().mockResolvedValue({
-        _id: "customer123",
-        name: "Test Customer",
-        debts: 50, // Menor que o valor pago
-      } as any);
+      const result = await sicrediSyncService.performSync();
 
-      (mockUserService.updateUser as any) = jest.fn().mockResolvedValue({} as any);
-
-      await sicrediSyncService.performSync();
-
-      expect(mockUserService.updateUser).toHaveBeenCalledWith(
-        "customer123",
-        expect.objectContaining({ debts: 0 }) // Math.max(0, 50 - 200)
-      );
+      expect(result.updatedDebts).toBe(0);
+      expect(mockPaymentService.getPaymentById).not.toHaveBeenCalled();
     });
 
-    it("should handle payment without customer ID", async () => {
+    it("should not count updatedDebts when settlement did not mark debtSettledAt", async () => {
       const mockPayments = [
         {
           _id: "payment1",
-          // Sem customerId nem legacyClientId
           bank_slip: {
             sicredi: { nossoNumero: "123", status: "PENDENTE" },
           },
@@ -593,14 +567,20 @@ describe("SicrediSyncService", () => {
         success: true,
         data: { status: "PAGO", valorPago: 100, dataPagamento: new Date() },
       } as any);
+      (mockPaymentService.getPaymentById as any) = jest.fn().mockResolvedValue({
+        _id: "payment1",
+        bank_slip: {
+          sicredi: { nossoNumero: "123", status: "PAGO" },
+        },
+      } as any);
 
       const result = await sicrediSyncService.performSync();
 
-      expect(result.errors.length).toBe(1);
-      expect(result.errors[0].error).toContain("cliente associado");
+      expect(result.updatedDebts).toBe(0);
+      expect(result.errors.length).toBe(0);
     });
 
-    it("should handle customer not found", async () => {
+    it("should process payment when customer is not found (handled by settlement)", async () => {
       const mockPayments = [
         {
           _id: "payment1",
@@ -619,16 +599,20 @@ describe("SicrediSyncService", () => {
         success: true,
         data: { status: "PAGO", valorPago: 100, dataPagamento: new Date() },
       } as any);
-
-      (mockUserService.getUserById as any) = jest.fn().mockResolvedValue(null);
+      (mockPaymentService.getPaymentById as any) = jest.fn().mockResolvedValue({
+        _id: "payment1",
+        bank_slip: {
+          sicredi: { nossoNumero: "123", status: "PAGO" },
+        },
+      } as any);
 
       const result = await sicrediSyncService.performSync();
 
-      // Deve processar sem erro (cliente não encontrado é tratado silenciosamente)
       expect(result.totalProcessed).toBe(1);
+      expect(result.errors.length).toBe(0);
     });
 
-    it("should handle debt update error", async () => {
+    it("should report error when checkSicrediBoletoStatus fails", async () => {
       const mockPayments = [
         {
           _id: "payment1",
@@ -644,18 +628,9 @@ describe("SicrediSyncService", () => {
         .fn()
         .mockResolvedValue({ payments: mockPayments } as any);
       (mockPaymentService.checkSicrediBoletoStatus as any) = jest.fn().mockResolvedValue({
-        success: true,
-        data: { status: "PAGO", valorPago: 100, dataPagamento: new Date() },
+        success: false,
+        error: "Erro ao atualizar débito do cliente",
       } as any);
-
-      (mockUserService.getUserById as any) = jest.fn().mockResolvedValue({
-        _id: "customer123",
-        debts: 500,
-      } as any);
-
-      (mockUserService.updateUser as any) = jest
-        .fn()
-        .mockRejectedValue(new Error("Update failed"));
 
       const result = await sicrediSyncService.performSync();
 

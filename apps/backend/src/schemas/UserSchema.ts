@@ -24,6 +24,15 @@ const userSchema = new Schema<IUser>(
       required: true,
     },
     address: { type: String },
+    addressDetails: {
+      logradouro: { type: String },
+      numero: { type: String },
+      complemento: { type: String },
+      bairro: { type: String },
+      cidade: { type: String },
+      uf: { type: String },
+      cep: { type: String },
+    },
     phone: { type: String },
     cpf: {
       type: String,

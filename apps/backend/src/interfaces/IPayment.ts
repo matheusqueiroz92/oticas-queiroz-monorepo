@@ -46,6 +46,9 @@ export interface IPayment {
       dataBaixa?: Date;
       valorPago?: number;
       motivoCancelamento?: string;
+      installmentNumber?: number;
+      installmentTotal?: number;
+      debtSettledAt?: Date;
     };
   };
 

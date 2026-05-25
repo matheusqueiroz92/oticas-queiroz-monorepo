@@ -41,6 +41,8 @@ const sicrediController = new SicrediController();
  */
 router.get(
   "/test-connection",
+  authenticate,
+  authorize(["admin", "employee"]),
   asyncHandler(sicrediController.testConnection.bind(sicrediController))
 );
 
@@ -178,6 +180,8 @@ router.get(
  */
 router.post(
   "/generate-boleto",
+  authenticate,
+  authorize(["admin", "employee"]),
   asyncHandler(sicrediController.generateBoleto.bind(sicrediController))
 );
 
@@ -297,6 +301,13 @@ router.post(
   authenticate,
   authorize(["admin", "employee"]),
   asyncHandler(sicrediController.cancelBoleto.bind(sicrediController))
+);
+
+router.get(
+  "/boleto-pdf/:paymentId",
+  authenticate,
+  authorize(["admin", "employee"]),
+  asyncHandler(sicrediController.getBoletoPdf.bind(sicrediController))
 );
 
 export default router;

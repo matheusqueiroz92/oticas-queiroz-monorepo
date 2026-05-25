@@ -24,6 +24,8 @@ import {
 import OrderLaboratoryUpdate from "@/components/orders/OrderLaboratoryUpdate";
 import OrderStatusUpdate from "@/components/orders/OrderStatusUpdate";
 import OrderPaymentHistory from "@/components/orders/OrderPaymentHistory";
+import OrderSicrediBoletoSection from "@/components/orders/OrderSicrediBoletoSection";
+import { resolveSicrediCustomerDataFromUser } from "@/app/_utils/resolveSicrediCustomerData";
 import { 
   Beaker, 
   FileText,
@@ -169,7 +171,7 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
   };
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto p-4">
+    <div className="page-shell max-w-5xl mx-auto space-y-4 sm:space-y-6">
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" onClick={onGoBack} className="hover:bg-muted">
@@ -181,17 +183,17 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
 
       <Card className="shadow-md overflow-hidden">
         <CardHeader className="pb-2 border-b">
-          <div className="flex justify-between items-center">
-            <div>
-              <CardTitle className="text-xl flex items-center gap-2">
-                <ShoppingBag className="h-5 w-5 text-primary" />
-                Pedido #{order._id.substring(0, 8)}
+          <div className="flex flex-col gap-2 sm:flex-row sm:justify-between sm:items-center">
+            <div className="min-w-0">
+              <CardTitle className="text-lg sm:text-xl flex items-center gap-2 break-all">
+                <ShoppingBag className="h-5 w-5 text-primary shrink-0" />
+                <span className="truncate">Pedido #{order._id.substring(0, 8)}</span>
               </CardTitle>
-              <CardDescription className="text-sm">
+              <CardDescription className="text-xs sm:text-sm">
                 Criado em {formatDate(order.createdAt)} • Nº OS: {order.serviceOrder || 'N/A'}
               </CardDescription>
             </div>
-            <div className="badge-container">
+            <div className="badge-container shrink-0">
               <StatusBadge status={order.status} />
             </div>
           </div>
@@ -200,33 +202,33 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
         <CardContent className="p-0 card-content">
           <Tabs defaultValue="details" className="w-full">
             <TabsList 
-              className="w-full border-b p-0 rounded-none h-12 tabs-list"
+              className="w-full border-b p-0 rounded-none h-12 tabs-list overflow-x-auto scrollbar-thin justify-start"
               style={{ 
                 backgroundColor: isDark ? '#1f2937' : '#f9fafb'
               }}
             >
-              <TabsTrigger value="details" className="text-sm flex items-center gap-1 rounded-none h-12 border-b-2 border-transparent data-[state=active]:border-primary">
+              <TabsTrigger value="details" className="text-xs sm:text-sm flex items-center gap-1 rounded-none h-12 border-b-2 border-transparent data-[state=active]:border-primary shrink-0">
                 <ShoppingBag className="h-4 w-4" />
                 Detalhes
               </TabsTrigger>
               {hasPrescriptionData && (
-                <TabsTrigger value="prescription" className="text-sm flex items-center gap-1 rounded-none h-12 border-b-2 border-transparent data-[state=active]:border-primary">
+                <TabsTrigger value="prescription" className="text-xs sm:text-sm flex items-center gap-1 rounded-none h-12 border-b-2 border-transparent data-[state=active]:border-primary shrink-0">
                   <FileText className="h-4 w-4" />
                   Receita
                 </TabsTrigger>
               )}
-              <TabsTrigger value="laboratory" className="text-sm flex items-center gap-1 rounded-none h-12 border-b-2 border-transparent data-[state=active]:border-primary">
+              <TabsTrigger value="laboratory" className="text-xs sm:text-sm flex items-center gap-1 rounded-none h-12 border-b-2 border-transparent data-[state=active]:border-primary shrink-0">
                 <Beaker className="h-4 w-4" />
                 Laboratório
               </TabsTrigger>
             </TabsList>
             
             {/* Conteúdo da aba de detalhes */}
-            <TabsContent value="details" className="p-6">
-              <div className="grid md:grid-cols-3 gap-6">
-                <div className="md:col-span-2 space-y-6">
+            <TabsContent value="details" className="p-3 sm:p-4 md:p-6">
+              <div className="grid md:grid-cols-3 gap-4 md:gap-6">
+                <div className="md:col-span-2 space-y-4 md:space-y-6">
                   {/* Informações Cliente e Vendedor */}
-                  <div className="grid grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
                     {/* Cliente */}
                     <Card className="shadow-md border">
                       <CardHeader className="p-4 pb-0">
@@ -309,8 +311,8 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="p-0">
-                      <div className="overflow-hidden border-t">
-                        <table className="w-full">
+                      <div className="overflow-x-auto border-t scrollbar-thin">
+                        <table className="w-full min-w-[420px]">
                           <thead 
                             className="text-sm"
                             style={{ backgroundColor: isDark ? '#374151' : '#f9fafb' }}
@@ -568,13 +570,30 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
                     orderId={order._id}
                     finalPrice={order.finalPrice || order.totalPrice || 0}
                   />
+                  {order.paymentMethod === "sicredi_boleto" && client && (() => {
+                    const sicrediResolved = resolveSicrediCustomerDataFromUser(client);
+                    return (
+                      <OrderSicrediBoletoSection
+                        mode="details"
+                        compact
+                        orderId={order._id}
+                        serviceOrder={order.serviceOrder}
+                        deliveryDate={order.deliveryDate}
+                        finalPrice={order.finalPrice || order.totalPrice || 0}
+                        paymentEntry={order.paymentEntry}
+                        customerDefaults={sicrediResolved.data}
+                        addressComplete={sicrediResolved.isComplete}
+                        missingAddressFields={sicrediResolved.missingFields}
+                      />
+                    );
+                  })()}
                 </div>
               </div>
             </TabsContent>
 
             {/* Aba de Receita Médica */}
             {hasPrescriptionData && (
-              <TabsContent value="prescription" className="p-6">
+              <TabsContent value="prescription" className="p-3 sm:p-4 md:p-6">
                 <div className="flex justify-between items-start mb-4">
                   <h3 className="font-medium text-xl flex items-center">
                     <FileText className="h-5 w-5 mr-2" />
@@ -586,7 +605,7 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
                   style={{ backgroundColor: isDark ? '#374151' : '#f9fafb' }}
                 >
                   <div className="space-y-5">
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
                       <p 
                         className="text-sm"
                         style={{ color: isDark ? '#f9fafb' : '#111827' }}
@@ -611,7 +630,7 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
                     </div>
 
                     {/* Tabela de receita */}
-                    <div className="mt-4 overflow-x-auto">
+                    <div className="mt-4 overflow-x-auto scrollbar-thin -mx-3 sm:mx-0">
                       <table 
                         className="min-w-full border text-sm shadow-sm"
                         style={{ 
@@ -848,7 +867,7 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
             )}
 
             {/* Aba de Laboratório */}
-            <TabsContent value="laboratory" className="p-6">
+            <TabsContent value="laboratory" className="p-3 sm:p-4 md:p-6">
               <div className="flex justify-between items-start mb-4">
                 <h3 className="font-medium text-xl flex items-center">
                   <Beaker className="h-5 w-5 mr-2" />
@@ -866,7 +885,7 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
                 <div className="p-4 rounded-md">
                   <Card className="shadow-md border">
                     <CardContent className="p-4">
-                      <div className="grid grid-cols-2 gap-6 text-sm">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6 text-sm">
                         <div className="space-y-3">
                           <div>
                             <p style={{ color: isDark ? '#9ca3af' : '#4b5563' }}>Nome:</p>
@@ -985,8 +1004,8 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
           </Tabs>
         </CardContent>
         
-        <CardFooter className="border-t p-4 flex justify-between">
-          <div className="flex gap-3">
+        <CardFooter className="border-t p-3 sm:p-4 flex flex-col sm:flex-row sm:justify-between gap-3">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
             <OrderPdfExporter
               order={order}
               customer={client}

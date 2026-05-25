@@ -178,6 +178,9 @@ export class SicrediSyncService {
     }
 
     // Consultar status na SICREDI
+    const previousStatus = payment.bank_slip.sicredi?.status;
+    const hadDebtSettled = Boolean(payment.bank_slip?.sicredi?.debtSettledAt);
+
     const statusResult = await this.paymentService.checkSicrediBoletoStatus(payment._id?.toString() || '');
     
     if (!statusResult.success) {
@@ -204,65 +207,15 @@ export class SicrediSyncService {
     }
 
     // Se o status mudou, atualizar contador
-    if (payment.bank_slip.sicredi?.status !== newStatus) {
+    if (previousStatus !== newStatus) {
       result.updatedPayments++;
     }
 
-    // Se foi pago, atualizar débito do cliente
-    if (newStatus === 'PAGO' && valorPago && valorPago > 0) {
-      await this.updateClientDebt(payment, valorPago, dataPagamento);
-      result.updatedDebts++;
-    }
-  }
-
-  /**
-   * Atualiza débito do cliente quando boleto é pago
-   */
-  private async updateClientDebt(
-    payment: IPayment, 
-    valorPago: number, 
-    dataPagamento?: Date
-  ): Promise<void> {
-    const clientId = payment.customerId;
-    const legacyClientId = payment.legacyClientId;
-
-    if (!clientId && !legacyClientId) {
-      throw new SicrediSyncError('Pagamento não possui cliente associado');
-    }
-
-    logger.info(`SICREDI Sync: Atualizando débito - Cliente: ${clientId || legacyClientId}, Valor: R$ ${valorPago}`);
-
-    try {
-      if (clientId) {
-        // Cliente regular
-        const client = await this.userService.getUserById(clientId);
-        if (client) {
-          const currentDebt = client.debts || 0;
-          const newDebt = Math.max(0, currentDebt - valorPago);
-          
-          await this.userService.updateUser(clientId, { debts: newDebt });
-          
-          logger.info(`SICREDI Sync: Débito do cliente ${client.name} atualizado de R$ ${currentDebt} para R$ ${newDebt}`);
-        }
-      } else if (legacyClientId) {
-        // Cliente legado
-        const legacyClient = await this.legacyClientService.getLegacyClientById(legacyClientId);
-        if (legacyClient) {
-          const currentDebt = legacyClient.totalDebt || 0;
-          const newDebt = Math.max(0, currentDebt - valorPago);
-          
-          await this.legacyClientService.updateLegacyClient(legacyClientId, { totalDebt: newDebt });
-          
-          logger.info(`SICREDI Sync: Débito do cliente legado ${legacyClient.name} atualizado de R$ ${currentDebt} para R$ ${newDebt}`);
-        }
+    if (newStatus === "PAGO" && !hadDebtSettled) {
+      const refreshed = await this.paymentService.getPaymentById(payment._id?.toString() || "");
+      if (refreshed?.bank_slip?.sicredi?.debtSettledAt) {
+        result.updatedDebts++;
       }
-    } catch (error) {
-      logger.error('SICREDI Sync: Erro ao atualizar débito do cliente', { error });
-      throw new SicrediSyncError(
-        'Falha ao atualizar débito do cliente',
-        'DEBT_UPDATE_ERROR',
-        error
-      );
     }
   }
 

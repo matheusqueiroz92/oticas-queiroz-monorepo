@@ -90,6 +90,7 @@ export const createOrderform = () => {
       paymentMethod: "",
       paymentEntry: 0,
       installments: undefined,
+      emitBoletosNow: true,
       orderDate: new Date().toISOString().split("T")[0],
       deliveryDate: new Date().toISOString().split("T")[0],
       status: "pending",

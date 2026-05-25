@@ -40,7 +40,25 @@ export interface IPayment {
     presentationDate: Date,
     compensationStatus: "pending" | "compensated" | "rejected",
     rejectionReason?: string;
-  }
+  };
+  bank_slip?: {
+    code?: string;
+    bank?: string;
+    sicredi?: {
+      nossoNumero?: string;
+      codigoBarras?: string;
+      linhaDigitavel?: string;
+      pdfUrl?: string;
+      qrCode?: string;
+      status?: "REGISTRADO" | "BAIXADO" | "PAGO" | "VENCIDO" | "PROTESTADO" | "CANCELADO";
+      dataVencimento?: string | Date;
+      dataPagamento?: string | Date;
+      valorPago?: number;
+      installmentNumber?: number;
+      installmentTotal?: number;
+      debtSettledAt?: string | Date;
+    };
+  };
   description?: string;
   category?: string;
   createdAt?: Date;

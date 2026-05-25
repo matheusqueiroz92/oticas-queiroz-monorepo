@@ -11,6 +11,7 @@ import type { Customer } from "../../../app/_types/customer";
 import type { OrderFormValues } from "@/app/_types/order";
 import type { Product } from "@/app/_types/product";
 import { getProductTypeLabel } from "@/app/_utils/product-utils";
+import { translatePaymentMethod } from "@/app/_utils/formatters";
 import { Employee } from "@/app/_types/employee";
 
 export interface OrderPDFProps {
@@ -364,14 +365,7 @@ const OrderDetailsSection = ({ data, employee }: { data: OrderFormValues & { _id
     <View style={styles.dataRow}>
       <Text style={styles.label}>Método Pag.:</Text>
       <Text style={styles.value}>
-        {data.paymentMethod === "credit" && "Cartão de Crédito"}
-        {data.paymentMethod === "debit" && "Cartão de Débito"}
-        {data.paymentMethod === "cash" && "Dinheiro"}
-        {data.paymentMethod === "pix" && "PIX"}
-        {data.paymentMethod === "bank_slip" && "Boleto"}
-        {data.paymentMethod === "promissory_note" && "Promissória"}
-        {data.paymentMethod === "check" && "Cheque"}
-        {data.paymentMethod === "installment" && "Parcelado"}
+        {data.paymentMethod ? translatePaymentMethod(String(data.paymentMethod)) : "—"}
       </Text>
     </View>
     {(data.paymentEntry ?? 0) > 0 && (

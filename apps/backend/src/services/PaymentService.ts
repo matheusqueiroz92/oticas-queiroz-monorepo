@@ -4,6 +4,7 @@ import { PaymentCalculationService } from "./PaymentCalculationService";
 import { PaymentExportService } from "./PaymentExportService";
 import { SicrediService } from "./SicrediService";
 import { PaymentStatusService } from "./PaymentStatusService";
+import { SicrediPaymentSettlementService } from "./SicrediPaymentSettlementService";
 import type { IPayment, CreatePaymentDTO } from "../interfaces/IPayment";
 import type { IPaymentRepository } from "../repositories/interfaces/IPaymentRepository";
 import NodeCache from "node-cache";
@@ -45,6 +46,7 @@ export class PaymentService {
   private cache: NodeCache;
 
   private paymentStatusService: PaymentStatusService;
+  private sicrediSettlementService: SicrediPaymentSettlementService;
 
   constructor() {
     const repositories = RepositoryFactory.getInstance();
@@ -54,6 +56,7 @@ export class PaymentService {
     this.exportService = new PaymentExportService();
     this.sicrediService = new SicrediService();
     this.paymentStatusService = new PaymentStatusService();
+    this.sicrediSettlementService = new SicrediPaymentSettlementService();
     this.cache = new NodeCache({ stdTTL: 300 });
   }
 
@@ -498,6 +501,11 @@ export class PaymentService {
         uf: string;
         cep: string;
       };
+    },
+    options?: {
+      seuNumero?: string;
+      mensagem?: string[];
+      dataVencimento?: string;
     }
   ): Promise<{
     success: boolean;
@@ -523,6 +531,7 @@ export class PaymentService {
       const sicrediConfig = getSicrediConfig();
 
       const dueDate =
+        options?.dataVencimento ||
         payment.bank_slip?.sicredi?.dataVencimento?.toISOString().split('T')[0] ||
         new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
@@ -533,10 +542,12 @@ export class PaymentService {
       const tipoPessoa: 'PESSOA_FISICA' | 'PESSOA_JURIDICA' = docStr.length <= 11 ? 'PESSOA_FISICA' : 'PESSOA_JURIDICA';
 
       // seuNumero: max 10 chars
-      const seuNumero = paymentId.substring(paymentId.length - 10);
+      const seuNumero =
+        options?.seuNumero?.substring(Math.max(0, (options.seuNumero?.length || 0) - 10)) ||
+        paymentId.substring(paymentId.length - 10);
 
       const boletoRequest = {
-        tipoCobranca: 'NORMAL' as const,
+        tipoCobranca: sicrediConfig.tipoCobranca,
         codigoBeneficiario: sicrediConfig.beneficiaryCode,
         especieDocumento: 'RECIBO' as const,
         seuNumero,
@@ -552,9 +563,11 @@ export class PaymentService {
           cep: cepStr || undefined,
           email: undefined,
         },
-        mensagem: payment.description
-          ? [payment.description.substring(0, 80)]
-          : ['Pagamento - Oticas Queiroz'],
+        mensagem:
+          options?.mensagem ||
+          (payment.description
+            ? [payment.description.substring(0, 80)]
+            : ['Pagamento - Oticas Queiroz']),
       };
 
       const sicrediResponse = await this.sicrediService.generateBoleto(boletoRequest);
@@ -648,6 +661,21 @@ export class PaymentService {
       };
 
       await this.paymentRepository.update(paymentId, updateData);
+
+      if (mappedStatus === "PAGO") {
+        const updatedPayment = await this.paymentRepository.findById(paymentId);
+        if (updatedPayment) {
+          const valorPago = boletoData.valorPago ?? updatedPayment.amount;
+          const dataPagamento = boletoData.dataPagamento
+            ? new Date(boletoData.dataPagamento)
+            : undefined;
+          await this.sicrediSettlementService.settlePaidBoleto(
+            updatedPayment,
+            valorPago,
+            dataPagamento
+          );
+        }
+      }
 
       return {
         success: true,

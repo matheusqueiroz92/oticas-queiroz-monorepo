@@ -194,8 +194,13 @@ export const OrderDialog: React.FC<OrderDialogProps> = ({ open, onOpenChange, or
         orderStatus = determineInitialStatus(productsForStatus);
       }
       
+      const { emitBoletosNow: _emitBoletosNow, ...orderPayload } = data as typeof data & {
+        emitBoletosNow?: boolean;
+      };
+
       const orderData = {
-        ...data,
+        ...orderPayload,
+        sicrediInstallments: data.sicrediInstallments,
         employeeId: loggedEmployee.id,
         products: data.products || [],
         orderDate: data.orderDate || new Date().toISOString().split("T")[0],
@@ -295,14 +300,14 @@ export const OrderDialog: React.FC<OrderDialogProps> = ({ open, onOpenChange, or
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogOverlay className="bg-black/60" />
-      <DialogContent className="max-w-5xl w-full overflow-y-auto max-h-[90vh] p-0 border-0">
-        <div className="p-6 pb-2">
+      <DialogContent className="max-w-5xl w-[calc(100%-1.5rem)] sm:w-full overflow-y-auto max-h-[90dvh] p-0 border-0">
+        <div className="p-4 sm:p-6 pb-2">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold flex items-center gap-2">
-              <FilePlus className="w-6 h-6 text-[var(--primary-blue)]" />
+            <DialogTitle className="text-lg sm:text-xl md:text-2xl font-bold flex items-center gap-2">
+              <FilePlus className="w-5 h-5 sm:w-6 sm:h-6 text-[var(--primary-blue)]" />
               {mode === "edit" ? "Editar Pedido" : "Novo Pedido"}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-xs sm:text-sm">
               {mode === "edit" 
                 ? "Edite as informações do pedido no sistema" 
                 : "Cadastre um novo pedido no sistema"
@@ -312,21 +317,38 @@ export const OrderDialog: React.FC<OrderDialogProps> = ({ open, onOpenChange, or
         </div>
         
         {showSuccessScreen && createdOrder ? (
-          <div className="p-6">
+          <div className="p-3 sm:p-4 md:p-6">
             <OrderSuccessScreen
-              form={formData ? { 
-                getValues: () => ({
-                  ...formData,
-                  // Garantir que os dados do pedido criado sejam usados
-                  paymentMethod: formData.paymentMethod || createdOrder.paymentMethod,
-                  paymentEntry: formData.paymentEntry || createdOrder.paymentEntry || 0,
-                  installments: formData.installments || createdOrder.installments || 1,
-                  orderDate: formData.orderDate || createdOrder.orderDate,
-                  deliveryDate: formData.deliveryDate || createdOrder.deliveryDate,
-                  totalPrice: formData.totalPrice || createdOrder.totalPrice || 0,
-                  discount: formData.discount || createdOrder.discount || 0,
-                  finalPrice: formData.finalPrice || createdOrder.finalPrice || createdOrder.totalPrice || 0,
-                })
+              form={formData ? {
+                getValues: (field?: string) => {
+                  const values = {
+                    ...formData,
+                    paymentMethod: formData.paymentMethod || createdOrder.paymentMethod,
+                    paymentEntry: formData.paymentEntry ?? createdOrder.paymentEntry ?? 0,
+                    installments: formData.installments ?? createdOrder.installments ?? 1,
+                    emitBoletosNow: formData.emitBoletosNow ?? true,
+                    orderDate: formData.orderDate || createdOrder.orderDate,
+                    deliveryDate: formData.deliveryDate || createdOrder.deliveryDate,
+                    totalPrice: formData.totalPrice ?? createdOrder.totalPrice ?? 0,
+                    discount: formData.discount ?? createdOrder.discount ?? 0,
+                    finalPrice:
+                      formData.finalPrice ??
+                      createdOrder.finalPrice ??
+                      createdOrder.totalPrice ??
+                      0,
+                    products: formData.products?.length
+                      ? formData.products
+                      : createdOrder.products || [],
+                    clientId: formData.clientId || createdOrder.clientId,
+                    employeeId: formData.employeeId || createdOrder.employeeId,
+                    prescriptionData:
+                      formData.prescriptionData || createdOrder.prescriptionData,
+                  };
+                  if (field) {
+                    return values[field as keyof typeof values];
+                  }
+                  return values;
+                },
               } : undefined}
               submittedOrder={createdOrder}
               selectedCustomer={selectedCustomer}

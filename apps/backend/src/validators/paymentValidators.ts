@@ -9,24 +9,27 @@ const creditCardSchema = z.object({
     .optional(),
 });
 
+const sicrediFieldsSchema = z.object({
+  nossoNumero: z.string().optional(),
+  codigoBarras: z.string().optional(),
+  linhaDigitavel: z.string().optional(),
+  pdfUrl: z.string().optional(),
+  qrCode: z.string().optional(),
+  status: z
+    .enum(["REGISTRADO", "BAIXADO", "PAGO", "VENCIDO", "PROTESTADO", "CANCELADO"])
+    .optional(),
+  dataVencimento: z.coerce.date().optional(),
+  dataPagamento: z.coerce.date().optional(),
+  dataBaixa: z.coerce.date().optional(),
+  valorPago: z.number().optional(),
+  motivoCancelamento: z.string().optional(),
+});
+
 const bankSlipSchema = z.object({
   bank_slip: z.object({
     code: z.string().min(1, "Código do boleto é obrigatório"),
     bank: z.string().min(1, "Banco é obrigatório"),
-    // Campos opcionais da SICREDI
-    sicredi: z.object({
-      nossoNumero: z.string().optional(),
-      codigoBarras: z.string().optional(),
-      linhaDigitavel: z.string().optional(),
-      pdfUrl: z.string().optional(),
-      qrCode: z.string().optional(),
-      status: z.enum(["REGISTRADO", "BAIXADO", "PAGO", "VENCIDO", "PROTESTADO", "CANCELADO"]).optional(),
-      dataVencimento: z.date().optional(),
-      dataPagamento: z.date().optional(),
-      dataBaixa: z.date().optional(),
-      valorPago: z.number().optional(),
-      motivoCancelamento: z.string().optional(),
-    }).optional(),
+    sicredi: sicrediFieldsSchema.optional(),
   }),
   clientDebt: z
     .object({
@@ -38,6 +41,17 @@ const bankSlipSchema = z.object({
         })
         .optional(),
       dueDates: z.array(z.date()).optional(),
+    })
+    .optional(),
+});
+
+/** Boleto SICREDI: dados do boleto são preenchidos após emissão na API */
+const sicrediBoletoSchema = z.object({
+  bank_slip: z
+    .object({
+      code: z.string().optional(),
+      bank: z.string().optional(),
+      sicredi: sicrediFieldsSchema.optional(),
     })
     .optional(),
 });
@@ -147,7 +161,7 @@ const paymentSchema = z.discriminatedUnion("paymentMethod", [
     .extend({
       paymentMethod: z.literal("sicredi_boleto"),
     })
-    .merge(bankSlipSchema),
+    .merge(sicrediBoletoSchema),
 
   // Promissória
   basePaymentSchema

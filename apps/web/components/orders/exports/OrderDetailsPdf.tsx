@@ -188,6 +188,11 @@ const OrderPDFDocument = ({
       cash: "Dinheiro",
       pix: "PIX",
       installment: "Parcelado",
+      bank_slip: "Boleto Bancário",
+      promissory_note: "Nota Promissória",
+      check: "Cheque",
+      mercado_pago: "Mercado Pago",
+      sicredi_boleto: "Boleto SICREDI",
     };
     return methodMap[method] || method;
   };

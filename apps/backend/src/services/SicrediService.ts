@@ -20,6 +20,7 @@ export class SicrediError extends Error {
 export class SicrediService {
   private config: SicrediConfig;
   private api: AxiosInstance;
+  private configFingerprint = '';
 
   // Dynamic OAuth tokens (password grant, expires 300s / 1800s)
   private accessToken: string | null = null;
@@ -29,6 +30,7 @@ export class SicrediService {
 
   constructor() {
     this.config = getSicrediConfig();
+    this.configFingerprint = this.buildConfigFingerprint(this.config);
 
     this.api = axios.create({
       baseURL: this.config.baseURL,
@@ -59,8 +61,40 @@ export class SicrediService {
     );
   }
 
+  private buildConfigFingerprint(config: SicrediConfig): string {
+    return [
+      config.environment,
+      config.beneficiaryCode,
+      config.cooperativeCode,
+      config.accessCode,
+      config.apiKey,
+      config.baseURL,
+    ].join('|');
+  }
+
+  /** Recarrega .env a cada requisição (nodemon não reinicia só por mudança no .env). */
+  private reloadConfig(): void {
+    const next = getSicrediConfig();
+    const fingerprint = this.buildConfigFingerprint(next);
+    if (fingerprint !== this.configFingerprint) {
+      this.configFingerprint = fingerprint;
+      this.accessToken = null;
+      this.refreshToken = null;
+      this.tokenExpiry = 0;
+      this.refreshTokenExpiry = 0;
+      this.api.defaults.baseURL = next.baseURL;
+      logger.info('SICREDI: Configuração recarregada', {
+        environment: next.environment,
+        username: `${next.beneficiaryCode}${next.cooperativeCode}`,
+      });
+    }
+    this.config = next;
+  }
+
   // Returns a valid access token, refreshing or re-authenticating as needed
   private async getValidToken(): Promise<string> {
+    this.reloadConfig();
+
     const nowMs = Date.now();
     const bufferMs = 30_000; // 30s safety buffer
 
@@ -111,7 +145,7 @@ export class SicrediService {
 
       logger.info('SICREDI: Autenticação realizada com sucesso');
     } catch (error) {
-      const axiosError = error as any;
+      const axiosError = error as { response?: { status?: number; data?: { error?: string; error_description?: string } } };
       const responseBody = axiosError?.response?.data;
       const statusCode = axiosError?.response?.status;
       logger.error('SICREDI: Erro na autenticação', {
@@ -120,7 +154,19 @@ export class SicrediService {
         username: `${this.config.beneficiaryCode}${this.config.cooperativeCode}`,
         authURL: this.config.authURL,
       });
-      throw new SicrediError('Falha na autenticação com SICREDI', 'AUTH_ERROR', error);
+
+      const sicrediDescription = responseBody?.error_description;
+      let message = 'Falha na autenticação com SICREDI';
+      if (sicrediDescription === 'Invalid user credentials') {
+        message =
+          'Credenciais SICREDI inválidas. Confira no .env: SICREDI_API_KEY (portal desenvolvedor), ' +
+          'SICREDI_BENEFICIARY_CODE (5 dígitos), SICREDI_COOPERATIVE_CODE (4 dígitos) e ' +
+          'SICREDI_ACCESS_CODE (código de acesso gerado no Internet Banking → Cobrança, não é o x-api-key).';
+      } else if (sicrediDescription) {
+        message = `Falha na autenticação com SICREDI: ${sicrediDescription}`;
+      }
+
+      throw new SicrediError(message, 'AUTH_ERROR', error);
     }
   }
 

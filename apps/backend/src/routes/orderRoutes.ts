@@ -1187,6 +1187,34 @@ router.get(
  *       500:
  *         description: Erro interno do servidor
  */
+router.post(
+  "/:id/sicredi-boleto",
+  authenticate,
+  authorize(["admin", "employee"]),
+  asyncHandler(orderController.emitSicrediBoleto.bind(orderController))
+);
+
+router.post(
+  "/:id/sicredi-boletos",
+  authenticate,
+  authorize(["admin", "employee"]),
+  asyncHandler(orderController.emitSicrediBoleto.bind(orderController))
+);
+
+router.get(
+  "/:id/sicredi-boletos/pdf",
+  authenticate,
+  authorize(["admin", "employee"]),
+  asyncHandler(orderController.downloadSicrediBoletosPdf.bind(orderController))
+);
+
+router.get(
+  "/:id/sicredi-payer-data",
+  authenticate,
+  authorize(["admin", "employee"]),
+  asyncHandler(orderController.getSicrediPayerData.bind(orderController))
+);
+
 router.get(
   "/:id/payments",
   authenticate,

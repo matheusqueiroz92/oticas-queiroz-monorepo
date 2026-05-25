@@ -1,6 +1,14 @@
 import type { Request, Response } from "express";
 import { OrderService, OrderError } from "../services/OrderService";
+import {
+  OrderSicrediBoletoService,
+  OrderSicrediBoletoError,
+} from "../services/OrderSicrediBoletoService";
+import { OrderSicrediPdfService } from "../services/OrderSicrediPdfService";
+import { resolveSicrediCustomerData } from "../utils/resolveSicrediCustomerData";
 import { UserService } from "../services/UserService";
+import { emitOrderSicrediBoletoSchema } from "../validators/sicrediValidators";
+import { PaymentValidationError } from "../services/PaymentValidationService";
 import { CounterService } from "../services/CounterService";
 import { z } from "zod";
 import type { CreateOrderDTO, IOrder } from "../interfaces/IOrder";
@@ -22,10 +30,12 @@ interface AuthRequest extends Request {
 
 export class OrderController {
   private orderService: OrderService;
+  private orderSicrediBoletoService: OrderSicrediBoletoService;
   private userService: UserService;
 
   constructor() {
     this.orderService = new OrderService();
+    this.orderSicrediBoletoService = new OrderSicrediBoletoService();
     this.userService = new UserService();
   }
 
@@ -804,6 +814,119 @@ export class OrderController {
         return;
       }
       res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  }
+
+  async emitSicrediBoleto(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      if (!req.user?.id) {
+        res.status(401).json({ message: "Usuário não autenticado" });
+        return;
+      }
+
+      const validatedData = emitOrderSicrediBoletoSchema.parse(req.body);
+
+      const result = await this.orderSicrediBoletoService.emitBoletoForOrder(
+        req.params.id,
+        req.user.id,
+        validatedData.customerData,
+        validatedData.dataVencimento,
+        validatedData.cashRegisterId
+      );
+
+      const boletosCount = result.boletos?.length ?? 1;
+      res.status(result.alreadyIssued ? 200 : 201).json({
+        success: true,
+        message: result.alreadyIssued
+          ? "Boletos já emitidos para este pedido"
+          : boletosCount > 1
+            ? `${boletosCount} boletos emitidos com sucesso`
+            : "Boleto emitido com sucesso",
+        payment: result.payment,
+        boleto: result.boleto,
+        boletos: result.boletos,
+        alreadyIssued: result.alreadyIssued ?? false,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({
+          message: "Dados inválidos",
+          errors: error.errors,
+        });
+        return;
+      }
+      if (error instanceof OrderSicrediBoletoError) {
+        res.status(400).json({ message: error.message });
+        return;
+      }
+      if (error instanceof OrderError) {
+        res.status(404).json({ message: error.message });
+        return;
+      }
+      if (error instanceof PaymentValidationError) {
+        res.status(400).json({ message: error.message });
+        return;
+      }
+      console.error("Erro ao emitir boleto SICREDI do pedido:", error);
+      res.status(500).json({
+        message: "Erro interno do servidor",
+        details:
+          process.env.NODE_ENV !== "production"
+            ? error instanceof Error
+              ? error.message
+              : String(error)
+            : undefined,
+      });
+    }
+  }
+
+  async getSicrediPayerData(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const order = await this.orderService.getOrderById(req.params.id);
+      const clientId =
+        typeof order.clientId === "string" ? order.clientId : order.clientId.toString();
+      const client = await this.userService.getUserById(clientId);
+      if (!client) {
+        res.status(404).json({ message: "Cliente não encontrado" });
+        return;
+      }
+      const resolved = resolveSicrediCustomerData(client);
+      res.status(200).json(resolved);
+    } catch (error) {
+      if (error instanceof OrderError) {
+        res.status(404).json({ message: error.message });
+        return;
+      }
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  }
+
+  async downloadSicrediBoletosPdf(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const order = await this.orderService.getOrderById(req.params.id);
+      const payments = await this.orderSicrediBoletoService.getOrderSicrediPayments(
+        req.params.id
+      );
+      const pdfService = new OrderSicrediPdfService();
+      const { buffer, filename, contentType } = await pdfService.buildBoletosPdf(
+        payments,
+        order.serviceOrder
+      );
+      res.setHeader("Content-Type", contentType);
+      res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+      res.send(buffer);
+    } catch (error) {
+      if (error instanceof OrderError) {
+        res.status(404).json({ message: error.message });
+        return;
+      }
+      if (error instanceof OrderSicrediBoletoError) {
+        res.status(400).json({ message: error.message });
+        return;
+      }
+      res.status(400).json({
+        message: error instanceof Error ? error.message : "Erro ao exportar boletos",
+      });
     }
   }
   

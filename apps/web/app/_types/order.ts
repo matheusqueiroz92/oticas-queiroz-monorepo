@@ -19,6 +19,10 @@ export interface Order {
   }>;
   paymentEntry?: number;
   installments?: number;
+  sicrediInstallments?: {
+    total: number;
+    schedule: Array<{ dueDate: string | Date; amount: number }>;
+  };
   orderDate: string | Date;
   deliveryDate?: string | Date;
   status: "pending" | "in_production" | "ready" | "delivered" | "cancelled";
@@ -103,6 +107,11 @@ export interface OrderFormValues {
   paymentMethod: string;
   paymentEntry: number;
   installments?: number;
+  sicrediInstallments?: {
+    total: number;
+    schedule: Array<{ dueDate: string; amount: number }>;
+  };
+  emitBoletosNow?: boolean;
   orderDate: string;
   deliveryDate?: string;
   status: string;

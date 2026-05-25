@@ -31,6 +31,7 @@ export default function OrderConfirmation({
       case "cash": return "Dinheiro";
       case "pix": return "PIX";
       case "bank_slip": return "Boleto Bancário";
+      case "sicredi_boleto": return "Boleto SICREDI";
       case "promissory_note": return "Nota Promissória";
       case "check": return "Cheque";
       default: return "Não especificado";
@@ -38,8 +39,8 @@ export default function OrderConfirmation({
   };
   
   return (
-    <div className="grid grid-cols-12 gap-6 h-full">
-      <div className="col-span-9 space-y-4">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 h-full">
+      <div className="lg:col-span-9 space-y-4">
         <h3 className="text-sm font-medium text-[var(--primary-blue)] border-b pb-1">
           Confirmação do Pedido
         </h3>
@@ -61,7 +62,7 @@ export default function OrderConfirmation({
         <div className="bg-background p-4 rounded border border-input">
           <h4 className="font-medium text-sm mb-3 text-foreground">Resumo das Informações</h4>
           
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
             <div className="space-y-3">
               <div>
                 <h5 className="font-medium text-xs text-muted-foreground uppercase tracking-wide">Cliente</h5>
@@ -133,7 +134,7 @@ export default function OrderConfirmation({
       </div>
       
       {/* Resumo do pedido */}
-      <div className="col-span-3">
+      <div className="lg:col-span-3">
         <OrderSummary 
           form={form}
           selectedProducts={selectedProducts}

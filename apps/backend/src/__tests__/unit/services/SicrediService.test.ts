@@ -14,6 +14,7 @@ jest.mock("../../../config/sicredi", () => ({
     cooperativeCode: "6789",
     postCode: "03",
     environment: "homologation",
+    tipoCobranca: "NORMAL",
   }),
 }));
 

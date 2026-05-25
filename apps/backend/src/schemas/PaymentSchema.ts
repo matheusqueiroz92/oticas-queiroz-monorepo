@@ -71,6 +71,9 @@ const paymentSchema = new Schema(
         dataBaixa: { type: Date },
         valorPago: { type: Number },
         motivoCancelamento: { type: String },
+        installmentNumber: { type: Number },
+        installmentTotal: { type: Number },
+        debtSettledAt: { type: Date },
       }
     },
     // Campos específicos para promissória

@@ -1,5 +1,5 @@
 # 🕶️ Óticas Queiroz - Sistema de Gestão Completo
-![Status](https://img.shields.io/badge/Status-Em_Produção-green) ![Versão](https://img.shields.io/badge/Versão-2.5.0-blue) ![Licença](https://img.shields.io/badge/Licença-Proprietária-red)
+![Status](https://img.shields.io/badge/Status-Em_Produção-green) ![Versão](https://img.shields.io/badge/Versão-2.6.0-blue) ![Licença](https://img.shields.io/badge/Licença-Proprietária-red)
 
 Sistema completo de gestão para Óticas Queiroz, desenvolvido para otimizar processos de vendas, controle de estoque, gestão financeira e atendimento ao cliente com foco em análise de dados e experiência do usuário.
 
@@ -22,6 +22,7 @@ Sistema completo de gestão para Óticas Queiroz, desenvolvido para otimizar pro
 - **CPF Opcional**: Cadastro flexível sem obrigatoriedade de documento
 - **Responsável pela Compra**: Suporte a cenários onde comprador ≠ pagador
 - **Integração Mercado Pago**: Pagamentos online seguros com checkout transparente
+- **🆕 Boletos SICREDI**: Emissão parcelada, sincronização de status e exportação em PDF único para impressão
 - **🆕 Status Automático Inteligente**: Sistema detecta tipo de produto e define status automaticamente
 - **🆕 Prescrição Médica Opcional**: Flexibilidade para criar pedidos sem receita médica
 - **🆕 Reset de Senha Visual**: Admin pode resetar senhas de funcionários pela interface
@@ -154,6 +155,19 @@ Sistema completo de gestão para Óticas Queiroz, desenvolvido para otimizar pro
   - **Boleto Bancário**: Códigos de barras e bancos específicos
   - **Promissória**: Numeração sequencial e controle
   - **Cheque**: Gestão completa com status de compensação, emissão, vencimento
+  - **🆕 Boleto SICREDI**: Cobrança bancária integrada à API Cobrança v3.8 (homologação e produção)
+
+- 🏦 **🆕 Integração SICREDI — Boletos e Cobrança**:
+  - **Emissão no pedido**: Forma de pagamento `sicredi_boleto` com parcelas configuráveis (cronograma de vencimentos e valores)
+  - **Emissão automática**: Opção "Emitir boletos ao finalizar" na criação do pedido (padrão ativado)
+  - **Endereço do pagador**: Cadastro estruturado no cliente (logradouro, número, bairro, cidade, UF, CEP) com preenchimento automático na emissão
+  - **Múltiplos boletos por pedido**: Um boleto por parcela, com `seuNumero` único e metadados de parcela no pagamento
+  - **Sincronização de status**: Consulta periódica na SICREDI e atualização de pagamentos (PAGO, VENCIDO, etc.)
+  - **Baixa de débito idempotente**: Ao confirmar pagamento do boleto, recalcula status do pedido e reduz débito do cliente uma única vez
+  - **Exportação PDF**: Download de todos os boletos do pedido em **um único PDF multi-página** (uma página por boleto)
+  - **Tela de sucesso**: Resumo compacto do pedido + painel de boletos com download individual e em lote
+  - **Detalhes do pedido**: Painel com resumo Pagos/Pendentes/Vencidos, reemissão de PDF por parcela e modal para emitir boletos quando necessário
+  - **Scripts de diagnóstico**: `apps/backend/scripts/dev/test-sicredi-auth*.ts` para validar credenciais OAuth
 
 - 💰 **Gestão de Caixa Completa**:
   - **Abertura e Fechamento**: Controle diário do caixa físico
@@ -287,8 +301,9 @@ oticas-queiroz-monorepo/
 ├── apps/
 │   ├── backend/                    # API Node.js + Express
 │   │   ├── src/
-│   │   │   ├── controllers/        # Camada HTTP (AuthController, OrderController...)
-│   │   │   ├── services/           # Lógica de negócio (AuthService, PaymentService...)
+│   │   │   ├── controllers/        # Camada HTTP (OrderController, SicrediController...)
+│   │   │   ├── services/           # SicrediService, OrderSicrediBoletoService, PaymentService...
+│   │   │   ├── scripts/dev/        # Scripts de teste OAuth SICREDI
 │   │   │   ├── repositories/       # Acesso a dados com Repository Pattern
 │   │   │   ├── models/             # Schemas Mongoose
 │   │   │   ├── middlewares/        # Auth, CORS, Error handling
@@ -301,8 +316,9 @@ oticas-queiroz-monorepo/
 │   │   │   ├── (authenticated)/    # Rotas protegidas
 │   │   │   │   ├── dashboard/      # Dashboard com gráficos
 │   │   │   │   ├── profile/        # Perfil avançado
-│   │   │   │   ├── orders/         # Gestão de pedidos
+│   │   │   │   ├── orders/         # Gestão de pedidos (+ SICREDI)
 │   │   │   │   └── payments/       # Gestão financeira
+│   │   │   ├── _services/          # sicrediService, orders, payments...
 │   │   │   ├── _utils/             # Funções utilitárias especializadas
 │   │   │   │   ├── dashboard-utils.ts  # Cálculos do dashboard
 │   │   │   │   ├── sales-utils.ts      # Análise de vendas
@@ -455,7 +471,20 @@ EMAIL_PASSWORD=sua_senha_de_app
 # Mercado Pago
 MERCADO_PAGO_ACCESS_TOKEN=seu_token_mercado_pago
 MERCADO_PAGO_PUBLIC_KEY=sua_public_key_mercado_pago
+
+# SICREDI (API Cobrança)
+SICREDI_ENVIRONMENT=homologation
+SICREDI_API_KEY=                    # Token do app (Sandbox ou Produção)
+SICREDI_ACCESS_CODE=                # Homolog: teste123 | Produção: Internet Banking
+SICREDI_BENEFICIARY_CODE=           # Homolog: 12345
+SICREDI_COOPERATIVE_CODE=           # Homolog: 6789
+SICREDI_POST_CODE=06
+SICREDI_AUTO_SYNC=false
+SICREDI_SYNC_INTERVAL=30
+SICREDI_TIPO_COBRANCA=NORMAL
 ```
+
+> **Homologação:** use credenciais do [Portal do Desenvolvedor Sandbox](https://developers.sicredi.com.br/) (`12345` / `6789` / `teste123`). **Produção:** credenciais do Internet Banking + token do app de Produção — não misture ambientes.
 
 #### Frontend (.env.local)
 ```bash
@@ -490,6 +519,16 @@ npm run format              # Prettier
 ```
 
 ## 📊 Destaques das Últimas Versões
+
+### 🎯 v2.6.0 - Boletos SICREDI (Maio 2026)
+
+**Cobrança integrada à SICREDI**
+- **Emissão parcelada**: Cronograma de vencimentos/valores no pedido; um boleto por parcela
+- **Cliente com endereço estruturado**: Campos no cadastro para emissão automática de boletos
+- **Emissão ao finalizar pedido**: Checkbox configurável; tela de sucesso com painel de boletos
+- **PDF único multi-página**: Todos os boletos do pedido em um arquivo para impressão
+- **Sincronização e settlement**: Status na SICREDI atualiza pagamentos e débito do cliente de forma idempotente
+- **Detalhes do pedido**: Resumo Pagos/Pendentes/Vencidos, download por parcela, modal para nova emissão
 
 ### 🎯 v2.5.0 - Automação e Flexibilidade (Outubro 2025)
 
@@ -599,7 +638,22 @@ npm run format              # Prettier
 
 ## 📝 Changelog
 
-### v2.5.0 (Outubro 2025) 🚀 **ATUAL**
+### v2.6.0 (Maio 2026) 🚀 **ATUAL**
+
+**🆕 Boletos SICREDI**
+- ✅ Integração API Cobrança SICREDI (OAuth, emissão, consulta, cancelamento, PDF)
+- ✅ Parcelamento com grade de vencimentos (`sicrediInstallments` no pedido)
+- ✅ Endereço estruturado no cadastro de clientes + preenchimento automático na emissão
+- ✅ Emissão automática opcional ao criar pedido
+- ✅ Exportação em PDF único multi-página (`pdf-lib`)
+- ✅ Painel de boletos na confirmação e nos detalhes do pedido
+- ✅ Sincronização automática configurável (`SICREDI_AUTO_SYNC`)
+- ✅ Settlement centralizado pós-pagamento (pedido, histórico, débito)
+
+**🧪 Testes**
+- ✅ `OrderSicrediBoletoService`, `OrderSicrediPdfService`, `SicrediSyncService`
+
+### v2.5.0 (Outubro 2025)
 
 **🆕 Novas Funcionalidades**
 - ✅ **Status Automático Inteligente**: Pedidos sem lentes ficam "Pronto" automaticamente

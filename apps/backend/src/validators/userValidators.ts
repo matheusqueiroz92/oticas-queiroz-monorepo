@@ -7,6 +7,20 @@ export const userSchema = z.object({
   password: z.string().min(6).optional(),
   role: z.enum(["admin", "employee", "customer", "institution"]).optional(),
   address: z.string().optional(),
+  addressDetails: z
+    .union([
+      z.object({
+        logradouro: z.string().optional(),
+        numero: z.string().optional(),
+        complemento: z.string().optional(),
+        bairro: z.string().optional(),
+        cidade: z.string().optional(),
+        uf: z.string().optional(),
+        cep: z.string().optional(),
+      }),
+      z.string().transform((str) => JSON.parse(str)),
+    ])
+    .optional(),
   phone: z.string().optional(),
   image: z.string().optional(),
   cpf: z

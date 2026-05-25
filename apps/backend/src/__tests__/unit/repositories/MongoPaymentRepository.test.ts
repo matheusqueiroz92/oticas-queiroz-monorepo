@@ -139,6 +139,35 @@ describe("MongoPaymentRepository", () => {
       expect(created.check).toBeDefined();
       expect(created.check?.checkNumber).toBe("123456");
     });
+
+    it("should persist and return sicredi boleto fields on bank_slip", async () => {
+      const paymentData = {
+        createdBy: testCreatedById,
+        customerId: testCustomerId,
+        cashRegisterId: new mongoose.Types.ObjectId().toString(),
+        amount: 250,
+        date: new Date(),
+        type: "sale",
+        paymentMethod: "sicredi_boleto",
+        status: "pending",
+        bank_slip: {
+          sicredi: {
+            nossoNumero: "123456789",
+            codigoBarras: "74891123456789012345678901234567890123456789",
+            linhaDigitavel: "74891.12345 67890.123456 78901.234567 8 90123456789012",
+            status: "REGISTRADO",
+            dataVencimento: new Date("2026-06-01"),
+          },
+        },
+      };
+
+      const created = await repository.create(paymentData as any);
+      const found = await repository.findById(created._id!);
+
+      expect(found?.bank_slip?.sicredi?.nossoNumero).toBe("123456789");
+      expect(found?.bank_slip?.sicredi?.linhaDigitavel).toContain("74891");
+      expect(found?.bank_slip?.sicredi?.status).toBe("REGISTRADO");
+    });
   });
 
   describe("findById()", () => {

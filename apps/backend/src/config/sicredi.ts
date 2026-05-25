@@ -3,6 +3,8 @@ import { logger } from './logger';
 
 dotenv.config();
 
+export type SicrediTipoCobranca = 'NORMAL' | 'HIBRIDO';
+
 export interface SicrediConfig {
   baseURL: string;
   authURL: string;
@@ -17,6 +19,7 @@ export interface SicrediConfig {
   // 2-char posto (agência)
   postCode: string;
   environment: 'homologation' | 'production';
+  tipoCobranca: SicrediTipoCobranca;
 }
 
 export const getSicrediConfig = (): SicrediConfig => {
@@ -41,6 +44,8 @@ export const getSicrediConfig = (): SicrediConfig => {
     cooperativeCode: process.env.SICREDI_COOPERATIVE_CODE || '',
     postCode: process.env.SICREDI_POST_CODE || '',
     environment,
+    tipoCobranca:
+      process.env.SICREDI_TIPO_COBRANCA === 'HIBRIDO' ? 'HIBRIDO' : 'NORMAL',
   };
 
   const missingFields: string[] = [];

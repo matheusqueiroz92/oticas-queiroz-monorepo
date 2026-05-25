@@ -62,7 +62,7 @@ const orderSchema = new Schema<IOrder>({
   paymentMethod: {
     type: String, 
     required: true,
-    enum: ["credit", "debit", "cash", "pix", "installment", "bank_slip", "promissory_note", "check"],
+    enum: ["credit", "debit", "cash", "pix", "installment", "bank_slip", "promissory_note", "check", "sicredi_boleto"],
   },
   paymentStatus: {
     type: String,
@@ -73,6 +73,15 @@ const orderSchema = new Schema<IOrder>({
   paymentHistory: [paymentHistorySchema],
   paymentEntry: Number,
   installments: Number,
+  sicrediInstallments: {
+    total: { type: Number },
+    schedule: [
+      {
+        dueDate: { type: Date, required: true },
+        amount: { type: Number, required: true },
+      },
+    ],
+  },
   orderDate: { 
     type: Date, 
     required: true,

@@ -10,6 +10,15 @@ export interface User {
   role: UserRole;
   image?: string;
   address?: string;
+  addressDetails?: {
+    logradouro?: string;
+    numero?: string;
+    complemento?: string;
+    bairro?: string;
+    cidade?: string;
+    uf?: string;
+    cep?: string;
+  };
   phone?: string;
   sales?: string[];
   debts?: number;

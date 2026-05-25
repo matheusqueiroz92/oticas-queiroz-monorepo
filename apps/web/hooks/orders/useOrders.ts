@@ -578,6 +578,10 @@ export function useOrders(options: UseOrdersOptions = {}) {
       cash: "Dinheiro",
       pix: "PIX",
       installment: "Parcelado",
+      bank_slip: "Boleto Bancário",
+      sicredi_boleto: "Boleto SICREDI",
+      promissory_note: "Nota Promissória",
+      check: "Cheque",
     };
 
     return methodMap[method] || method;

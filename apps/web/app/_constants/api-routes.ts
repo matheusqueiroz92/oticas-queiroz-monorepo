@@ -21,6 +21,17 @@ export const API_ROUTES = {
     MY_ORDERS: "/api/orders/my-orders",
     PARAMS: (params: string) => `/api/orders?${params}`,
     NEXT_SERVICE_ORDER: "/api/orders/next-service-order",
+    SICREDI_BOLETO: (id: string) => `/api/orders/${id}/sicredi-boleto`,
+    SICREDI_BOLETOS: (id: string) => `/api/orders/${id}/sicredi-boletos`,
+    SICREDI_BOLETOS_PDF: (id: string) => `/api/orders/${id}/sicredi-boletos/pdf`,
+    SICREDI_PAYER_DATA: (id: string) => `/api/orders/${id}/sicredi-payer-data`,
+  },
+  SICREDI: {
+    TEST_CONNECTION: "/api/sicredi/test-connection",
+    GENERATE_BOLETO: "/api/sicredi/generate-boleto",
+    CHECK_STATUS: (paymentId: string) => `/api/sicredi/check-status/${paymentId}`,
+    CANCEL_BOLETO: "/api/sicredi/cancel-boleto",
+    BOLETO_PDF: (paymentId: string) => `/api/sicredi/boleto-pdf/${paymentId}`,
   },
   CASH_REGISTERS: {
     BASE: "/api/cash-registers",

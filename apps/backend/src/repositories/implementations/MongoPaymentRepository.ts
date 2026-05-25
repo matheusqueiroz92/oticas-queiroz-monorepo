@@ -43,10 +43,30 @@ export class MongoPaymentRepository extends BaseRepository<IPayment, CreatePayme
         total: payment.creditCardInstallments.total || 1,
         value: payment.creditCardInstallments.value
       } : undefined,
-      bank_slip: payment.bank_slip ? {
-        code: payment.bank_slip.code || "",
-        bank: payment.bank_slip.bank || ""
-      } : undefined,
+      bank_slip: payment.bank_slip
+        ? {
+            code: payment.bank_slip.code || "",
+            bank: payment.bank_slip.bank || "",
+            sicredi: payment.bank_slip.sicredi
+              ? {
+                  nossoNumero: payment.bank_slip.sicredi.nossoNumero,
+                  codigoBarras: payment.bank_slip.sicredi.codigoBarras,
+                  linhaDigitavel: payment.bank_slip.sicredi.linhaDigitavel,
+                  pdfUrl: payment.bank_slip.sicredi.pdfUrl,
+                  qrCode: payment.bank_slip.sicredi.qrCode,
+                  status: payment.bank_slip.sicredi.status,
+                  dataVencimento: payment.bank_slip.sicredi.dataVencimento,
+                  dataPagamento: payment.bank_slip.sicredi.dataPagamento,
+                  dataBaixa: payment.bank_slip.sicredi.dataBaixa,
+                  valorPago: payment.bank_slip.sicredi.valorPago,
+                  motivoCancelamento: payment.bank_slip.sicredi.motivoCancelamento,
+                  installmentNumber: payment.bank_slip.sicredi.installmentNumber,
+                  installmentTotal: payment.bank_slip.sicredi.installmentTotal,
+                  debtSettledAt: payment.bank_slip.sicredi.debtSettledAt,
+                }
+              : undefined,
+          }
+        : undefined,
       promissoryNote: payment.promissoryNote ? {
         number: payment.promissoryNote.number || ""
       } : undefined,
