@@ -603,7 +603,14 @@ export class PaymentService {
   }
 
   /**
-   * Consulta status de boleto SICREDI
+   * Consulta status de boleto SICREDI e atualiza o pagamento.
+   *
+   * IMPORTANTE: a API SICREDI Cobranca v3.8 mantem 'situacao' como REGISTRADO
+   * mesmo apos o cliente pagar — o pagamento eh sinalizado via
+   * dataPagamento/valorPago/dataLiquidacao no payload. Este metodo considera
+   * o boleto PAGO quando qualquer dessas evidencias existir, alem de
+   * 'PAGO'/'LIQUIDADO' no campo situacao.
+   *
    * @param paymentId ID do pagamento
    * @returns Status atualizado do boleto
    */
@@ -636,24 +643,55 @@ export class PaymentService {
       }
 
       const boletoData = statusResponse.data!;
-      // Sicredi returns situacao (e.g. "A VENCER", "PAGO", "BAIXADO")
-      // Map to our internal status values
+      // SICREDI Cobranca v3.8: o campo 'situacao' indica o estado de REGISTRO
+      // do titulo (REGISTRADO, BAIXADO, PROTESTADO) e NAO eh atualizado para
+      // "PAGO" quando o cliente paga. O pagamento eh sinalizado via
+      // dataPagamento/valorPago/dataLiquidacao no payload, mesmo com
+      // situacao='REGISTRADO'.
       const rawStatus = boletoData.situacao?.toUpperCase() || '';
-      const mappedStatus = rawStatus.includes('PAGO') ? 'PAGO'
-        : rawStatus.includes('BAIXADO') ? 'BAIXADO'
-        : rawStatus.includes('PROTESTADO') ? 'PROTESTADO'
-        : rawStatus.includes('VENCIDO') || rawStatus.includes('VENCER') && new Date(boletoData.dataVencimento || '') < new Date()
-          ? 'VENCIDO'
-        : 'REGISTRADO';
+      const dataPagamentoRaw = boletoData.dataPagamento || boletoData.dataLiquidacao;
+      const valorPagoRaw = boletoData.valorPago ?? boletoData.valorLiquidacao;
+      const hasPaymentEvidence =
+        Boolean(dataPagamentoRaw) ||
+        (typeof valorPagoRaw === 'number' && valorPagoRaw > 0) ||
+        rawStatus.includes('PAGO') ||
+        rawStatus.includes('LIQUID');
+
+      const isCancelled = rawStatus.includes('BAIXADO') && !hasPaymentEvidence;
+      const isProtested = rawStatus.includes('PROTESTADO');
+      const vencimentoDate = boletoData.dataVencimento
+        ? new Date(boletoData.dataVencimento)
+        : null;
+      const isOverdue =
+        !hasPaymentEvidence &&
+        !isCancelled &&
+        !isProtested &&
+        (rawStatus.includes('VENCIDO') ||
+          (vencimentoDate !== null && vencimentoDate < new Date()));
+
+      const mappedStatus: "PAGO" | "BAIXADO" | "PROTESTADO" | "VENCIDO" | "REGISTRADO" =
+        hasPaymentEvidence
+          ? 'PAGO'
+          : isCancelled
+            ? 'BAIXADO'
+            : isProtested
+              ? 'PROTESTADO'
+              : isOverdue
+                ? 'VENCIDO'
+                : 'REGISTRADO';
+
+      const dataPagamento = dataPagamentoRaw ? new Date(dataPagamentoRaw) : undefined;
+      const valorPago =
+        typeof valorPagoRaw === 'number' ? valorPagoRaw : undefined;
 
       const updateData: Partial<IPayment> = {
         bank_slip: {
           ...payment.bank_slip,
           sicredi: {
             ...payment.bank_slip.sicredi,
-            status: mappedStatus as "REGISTRADO" | "BAIXADO" | "PAGO" | "VENCIDO" | "PROTESTADO" | "CANCELADO",
-            valorPago: boletoData.valorPago,
-            dataPagamento: boletoData.dataPagamento ? new Date(boletoData.dataPagamento) : undefined,
+            status: mappedStatus,
+            valorPago,
+            dataPagamento,
             dataBaixa: boletoData.dataBaixa ? new Date(boletoData.dataBaixa) : undefined,
           },
         },
@@ -665,13 +703,10 @@ export class PaymentService {
       if (mappedStatus === "PAGO") {
         const updatedPayment = await this.paymentRepository.findById(paymentId);
         if (updatedPayment) {
-          const valorPago = boletoData.valorPago ?? updatedPayment.amount;
-          const dataPagamento = boletoData.dataPagamento
-            ? new Date(boletoData.dataPagamento)
-            : undefined;
+          const settlementValor = valorPago ?? updatedPayment.amount;
           await this.sicrediSettlementService.settlePaidBoleto(
             updatedPayment,
-            valorPago,
+            settlementValor,
             dataPagamento
           );
         }
@@ -681,8 +716,8 @@ export class PaymentService {
         success: true,
         data: {
           status: mappedStatus,
-          valorPago: boletoData.valorPago,
-          dataPagamento: boletoData.dataPagamento ? new Date(boletoData.dataPagamento) : undefined,
+          valorPago,
+          dataPagamento,
         },
       };
 

@@ -257,6 +257,21 @@ export class SicrediService {
         },
       });
 
+      // Log do payload bruto da SICREDI (sem PII relevante) para observabilidade
+      // do mapeamento de status. SICREDI v3.8 nao atualiza 'situacao' para PAGO —
+      // o pagamento eh sinalizado via dataPagamento/valorPago/dataLiquidacao.
+      logger.info('SICREDI: Consulta de boleto', {
+        nossoNumero,
+        situacao: response.data?.situacao,
+        valor: response.data?.valor,
+        valorPago: response.data?.valorPago,
+        valorLiquidacao: response.data?.valorLiquidacao,
+        dataVencimento: response.data?.dataVencimento,
+        dataPagamento: response.data?.dataPagamento,
+        dataLiquidacao: response.data?.dataLiquidacao,
+        dataBaixa: response.data?.dataBaixa,
+      });
+
       return { status: 'success', data: response.data };
     } catch (error) {
       logger.error('SICREDI: Erro ao consultar boleto', { nossoNumero, error });

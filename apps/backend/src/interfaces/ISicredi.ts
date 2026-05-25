@@ -93,17 +93,24 @@ export interface SicrediBoletoStatus {
   carteira: string;
   seuNumero: string;
   nossoNumero: string;
-  // Status returned by API — 'BAIXADO' means settled/cancelled
+  // Sicredi v3.8 retorna 'situacao' indicando o estado de REGISTRO do titulo
+  // (REGISTRADO, BAIXADO, PROTESTADO...). Esse campo NAO muda para "PAGO"
+  // quando o cliente paga — a SICREDI sinaliza o pagamento via
+  // dataPagamento/valorPago/dataLiquidacao no payload.
   situacao?: string;
   valor?: number;
   valorPago?: number;
+  // Alguns ambientes/versoes retornam dataLiquidacao em vez de dataPagamento
+  valorLiquidacao?: number;
   dataVencimento?: string;      // YYYY-MM-DD
   dataPagamento?: string;       // YYYY-MM-DD
+  dataLiquidacao?: string;      // YYYY-MM-DD
   dataBaixa?: string;
   pagador?: {
     documento: string;
     nome: string;
   };
+  [key: string]: unknown;       // Campos extras retornados pela SICREDI
 }
 
 export interface SicrediBoletoStatusResponse {
