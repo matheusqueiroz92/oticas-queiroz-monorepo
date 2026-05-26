@@ -165,7 +165,7 @@ export function PaymentsTableWithFilters({
       )}
       
       {!isLoading && !error && payments.length > 0 && (
-        <div className="overflow-hidden">
+        <div className="overflow-x-auto">
           <PaymentsList 
             payments={payments}
             isLoading={isLoading}
