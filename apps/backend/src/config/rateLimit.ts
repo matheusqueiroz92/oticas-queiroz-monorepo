@@ -1,5 +1,6 @@
-import rateLimit from "express-rate-limit";
+import rateLimit, { ipKeyGenerator, type Options } from "express-rate-limit";
 import type { Request, Response } from "express";
+import { logger } from "./logger";
 
 /**
  * Rate limit só em produção. Em dev/test (incl. Docker Desktop + npm run dev no host)
@@ -12,82 +13,117 @@ export const shouldSkipRateLimit = (): boolean => {
 };
 
 /**
+ * Lê um número inteiro positivo do process.env, com fallback seguro.
+ */
+const intEnv = (name: string, fallback: number): number => {
+  const raw = process.env[name];
+  if (!raw) return fallback;
+  const parsed = Number.parseInt(raw, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+};
+
+/**
  * Formato padronizado de resposta de erro (compatível com AppError)
  */
-const rateLimitResponse = (_req: Request, res: Response) => {
+const rateLimitResponse = (req: Request, res: Response) => {
+  logger.warn("Rate limit excedido", {
+    path: req.originalUrl,
+    method: req.method,
+    ip: req.ip,
+    userAgent: req.get("user-agent"),
+  });
+
   res.status(429).json({
     status: "error",
     code: "RATE_LIMIT_EXCEEDED",
-    message: "Muitas tentativas. Por favor, aguarde alguns minutos antes de tentar novamente.",
+    message:
+      "Muitas tentativas. Por favor, aguarde alguns minutos antes de tentar novamente.",
   });
 };
 
 /**
- * Rate limiter para login - proteção contra brute force
- * 10 requisições por 15 minutos por IP
+ * Defaults compartilhados por todos os limiters.
+ * Mantemos standardHeaders=true para expor RateLimit-* headers (RFC).
+ */
+const baseOptions: Partial<Options> = {
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: rateLimitResponse,
+  skip: shouldSkipRateLimit,
+};
+
+/**
+ * Rate limiter para login — proteção contra brute force.
+ *
+ * Chave: IP + login (normalizado). Isso evita que várias pessoas atrás do
+ * mesmo NAT (escritório/loja) consumam a mesma quota apenas por compartilharem
+ * o IP público. Cada par (IP, login) tem sua própria contagem.
+ *
+ * Padrão: 20 tentativas por 15 minutos por (IP + login).
  */
 export const authLoginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 10,
-  message: "Muitas tentativas de login. Tente novamente em 15 minutos.",
-  standardHeaders: true,
-  legacyHeaders: false,
-  handler: rateLimitResponse,
-  skip: shouldSkipRateLimit,
+  ...baseOptions,
+  windowMs: intEnv("RATE_LIMIT_LOGIN_WINDOW_MS", 15 * 60 * 1000),
+  max: intEnv("RATE_LIMIT_LOGIN_MAX", 20),
+  keyGenerator: (req: Request): string => {
+    const rawLogin = req.body?.login;
+    const login =
+      typeof rawLogin === "string" ? rawLogin.trim().toLowerCase() : "";
+    const ip = ipKeyGenerator(req.ip ?? "unknown");
+    return login ? `${ip}::${login}` : ip;
+  },
 });
 
 /**
- * Rate limiter para forgot-password - proteção contra enumeração de emails
- * 5 requisições por 15 minutos por IP
+ * Rate limiter para forgot-password — proteção contra enumeração de e-mails.
+ * Padrão: 10 requisições por 15 minutos por IP.
  */
 export const authForgotPasswordLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 5,
-  message: "Muitas solicitações de redefinição. Tente novamente em 15 minutos.",
-  standardHeaders: true,
-  legacyHeaders: false,
-  handler: rateLimitResponse,
-  skip: shouldSkipRateLimit,
+  ...baseOptions,
+  windowMs: intEnv("RATE_LIMIT_FORGOT_WINDOW_MS", 15 * 60 * 1000),
+  max: intEnv("RATE_LIMIT_FORGOT_MAX", 10),
 });
 
 /**
- * Rate limiter para reset-password e validate-reset-token
- * 5 requisições por 15 minutos por IP
+ * Rate limiter para reset-password e validate-reset-token.
+ * Padrão: 10 requisições por 15 minutos por IP.
  */
 export const authResetPasswordLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 5,
-  message: "Muitas tentativas. Tente novamente em 15 minutos.",
-  standardHeaders: true,
-  legacyHeaders: false,
-  handler: rateLimitResponse,
-  skip: shouldSkipRateLimit,
+  ...baseOptions,
+  windowMs: intEnv("RATE_LIMIT_RESET_WINDOW_MS", 15 * 60 * 1000),
+  max: intEnv("RATE_LIMIT_RESET_MAX", 10),
 });
 
 /**
- * Rate limiter global - proteção contra abuso da API
- * 100 requisições por 15 minutos por IP
+ * Rate limiter global — proteção contra abuso da API.
+ *
+ * IMPORTANTE: este limiter é aplicado a /api inteira e a quota é POR IP.
+ * Quando vários usuários acessam de uma mesma rede (NAT da loja, escritório),
+ * todos compartilham o mesmo IP público e, portanto, a mesma quota.
+ *
+ * O valor anterior (100 / 15min) era irrealista: uma única navegação no
+ * dashboard dispara dezenas de requisições; bastava 2-3 funcionários ativos
+ * para esgotar a quota e travar todo mundo, inclusive na tela de login.
+ *
+ * Padrão: 1000 requisições por minuto por IP (~16 req/s), configurável.
+ * Para desabilitar completamente em casos extremos: RATE_LIMIT_DISABLED=true.
  */
 export const globalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 100,
-  standardHeaders: true,
-  legacyHeaders: false,
-  handler: rateLimitResponse,
+  ...baseOptions,
+  windowMs: intEnv("RATE_LIMIT_GLOBAL_WINDOW_MS", 60 * 1000),
+  max: intEnv("RATE_LIMIT_GLOBAL_MAX", 1000),
   skip: (req) => shouldSkipRateLimit() || req.path === "/health",
 });
 
 /**
- * Rate limiter para refresh token - evita abuso de renovação
- * 20 requisições por 15 minutos por IP
+ * Rate limiter para refresh token — evita abuso de renovação.
+ * Padrão: 60 requisições por 15 minutos por IP (mais alto porque o frontend
+ * pode disparar refresh em paralelo a partir de várias abas/usuários no NAT).
  */
 export const authRefreshLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 20,
-  standardHeaders: true,
-  legacyHeaders: false,
-  handler: rateLimitResponse,
-  skip: shouldSkipRateLimit,
+  ...baseOptions,
+  windowMs: intEnv("RATE_LIMIT_REFRESH_WINDOW_MS", 15 * 60 * 1000),
+  max: intEnv("RATE_LIMIT_REFRESH_MAX", 60),
 });
 
 /**
@@ -102,18 +138,15 @@ export const authRefreshLimiter = rateLimit({
  * Um usuário legítimo raramente envia mais de 2-3 mensagens por minuto.
  */
 export const botChatLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minuto
-  max: 30,
-  standardHeaders: true,
-  legacyHeaders: false,
-  handler: rateLimitResponse,
-  skip: shouldSkipRateLimit,
+  ...baseOptions,
+  windowMs: intEnv("RATE_LIMIT_BOT_WINDOW_MS", 60 * 1000),
+  max: intEnv("RATE_LIMIT_BOT_MAX", 30),
   keyGenerator: (req: Request): string => {
     // Usa remoteJid do body para /chat; para demais rotas usa IP como fallback
     const remoteJid = req.body?.remoteJid ?? req.body?.cpf;
     if (typeof remoteJid === "string" && remoteJid.length > 0) {
       return remoteJid;
     }
-    return req.ip ?? "unknown";
+    return ipKeyGenerator(req.ip ?? "unknown");
   },
 });
