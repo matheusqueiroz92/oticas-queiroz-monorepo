@@ -132,7 +132,8 @@ export function PaymentsList({
 
       {!isLoading && !error && payments.length > 0 && (
         <>
-          <Table>
+          <div className="overflow-x-auto">
+          <Table className="min-w-[900px]">
             <TableHeader className="bg-gray-100 dark:bg-slate-800/50">
               <TableRow>
                 <TableHead>Nº OS</TableHead>
@@ -215,6 +216,7 @@ export function PaymentsList({
               ))}
             </TableBody>
           </Table>
+          </div>
 
           <PaginationItems
             currentPage={currentPage}
@@ -223,8 +225,4 @@ export function PaymentsList({
             totalItems={totalItems}
             pageSize={pageSize || payments.length}
           />
-        </>
-      )}
-    </>
-  );
-}
+        <

@@ -110,20 +110,20 @@ export function CashRegisterStatus({
   const cashRegister = data.data;
 
   return (
-    <div className="w-full md:w-1/4 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
-      <div className="flex justify-between items-center">
-        <div className="flex items-center">
-          <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mr-3">
+    <div className="w-full bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
+      <div className="flex flex-wrap justify-between items-center gap-2">
+        <div className="flex items-center min-w-0">
+          <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mr-3 shrink-0">
             <DollarSign className="h-4 w-4 text-green-600 dark:text-green-400" />
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="font-medium text-green-700 dark:text-green-300 text-sm">Caixa Aberto</p>
-            <p className="text-xs text-green-600 dark:text-green-400">
+            <p className="text-xs text-green-600 dark:text-green-400 truncate">
               Saldo atual: {formatCurrency(cashRegister.currentBalance)}
             </p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 shrink-0">
           {/* Botão de visualizar caixa */}
           <Button
             variant="outline"
@@ -152,10 +152,4 @@ export function CashRegisterStatus({
               className="border-green-300 text-green-600 hover:bg-green-100 hover:text-green-900 dark:text-green-300  dark:hover:bg-green-900 dark:hover:text-white"
             >
               Fechar Caixa
-            </Button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
+            </Butto

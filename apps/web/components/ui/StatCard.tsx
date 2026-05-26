@@ -79,9 +79,9 @@ export function StatCard({
             )}
 
             {showCashRegisterFooter && (
-              <div className="mt-2 flex flex-wrap items-center gap-2">
+              <div className="mt-2 flex flex-row items-center justify-between gap-2">
                 {description && !badge && (
-                  <div className="text-xs min-w-0 flex-1">{description}</div>
+                  <div className="text-xs">{description}</div>
                 )}
 
                 {showOpenCashRegisterButton && !isCashRegisterOpen && (
@@ -100,9 +100,9 @@ export function StatCard({
             )}
 
             {showCustomFooter && (
-              <div className="mt-2 flex flex-wrap items-center gap-2">
+              <div className="mt-2 flex flex-row items-center justify-between gap-2">
                 {description && !badge && (
-                  <div className="text-xs text-muted-foreground min-w-0 flex-1">{description}</div>
+                  <div className="text-xs text-muted-foreground">{description}</div>
                 )}
                 {footerAction}
               </div>
