@@ -57,11 +57,8 @@ export function EmployeeDashboard({
 }: EmployeeDashboardProps) {
   return (
     <>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div className="col-span-2">
-          <QuickOrderSearch />
-        </div>
-      </div>
+      {/* Busca rápida de pedidos — ocupa largura total em mobile, metade em sm+ */}
+      <QuickOrderSearch className="w-full" />
 
       <DashboardQuickActions
         dialogStates={dialogStates}
@@ -84,8 +81,9 @@ export function EmployeeDashboard({
         isLoadingCashRegister={isLoadingCashRegister}
       />
 
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-4">
-        <div className="xl:col-span-1">
+      {/* Pedidos recentes + Gráfico de vendas */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+        <div className="lg:col-span-1">
           <RecentOrdersList
             recentOrders={dashboardData.recentOrders}
             isLoadingOrders={isLoadingOrders}
@@ -93,7 +91,7 @@ export function EmployeeDashboard({
           />
         </div>
 
-        <div className="xl:col-span-3">
+        <div className="lg:col-span-3">
           <SalesChart
             payments={allPayments || []}
             isLoading={isLoadingPayments}

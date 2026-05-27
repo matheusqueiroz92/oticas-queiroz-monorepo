@@ -59,6 +59,7 @@ export function InstitutionTable({
 
   return (
     <div className="space-y-4">
+      <div className="overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
@@ -144,6 +145,7 @@ export function InstitutionTable({
           ))}
         </TableBody>
       </Table>
+      </div>
     </div>
   );
 }

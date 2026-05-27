@@ -95,19 +95,19 @@ export function ReportDataVisualization({
 
     return (
       <Tabs defaultValue="summary" className="w-full">
-        <TabsList>
-          <TabsTrigger value="summary">Resumo</TabsTrigger>
-          <TabsTrigger value="byPeriod">Por Período</TabsTrigger>
-          <TabsTrigger value="byPaymentMethod">
-            Por Método de Pagamento
+        <TabsList className="w-full flex flex-wrap h-auto gap-1">
+          <TabsTrigger className="flex-1 min-w-fit text-xs sm:text-sm" value="summary">Resumo</TabsTrigger>
+          <TabsTrigger className="flex-1 min-w-fit text-xs sm:text-sm" value="byPeriod">Por Período</TabsTrigger>
+          <TabsTrigger className="flex-1 min-w-fit text-xs sm:text-sm" value="byPaymentMethod">
+            <><span className="hidden sm:inline">Por Método de Pagamento</span><span className="sm:hidden">Por Método</span></>
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="summary">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 my-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 my-4">
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-2xl">
+                <CardTitle className="text-xl sm:text-2xl">
                   {data.totalSales?.toLocaleString("pt-BR", {
                     style: "currency",
                     currency: "BRL",
@@ -119,7 +119,7 @@ export function ReportDataVisualization({
 
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-2xl">
+                <CardTitle className="text-xl sm:text-2xl">
                   {data.averageSale?.toLocaleString("pt-BR", {
                     style: "currency",
                     currency: "BRL",
@@ -131,7 +131,7 @@ export function ReportDataVisualization({
 
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-2xl">{data.count || 0}</CardTitle>
+                <CardTitle className="text-xl sm:text-2xl">{data.count || 0}</CardTitle>
                 <CardDescription>Número de Vendas</CardDescription>
               </CardHeader>
             </Card>
@@ -141,7 +141,7 @@ export function ReportDataVisualization({
             <h3 className="text-lg font-medium mb-4">
               Distribuição por Método de Pagamento
             </h3>
-            <div className="h-80">
+            <div className="h-56 sm:h-72 md:h-80">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -179,7 +179,7 @@ export function ReportDataVisualization({
         </TabsContent>
 
         <TabsContent value="byPeriod">
-          <div className="mt-4 h-96">
+          <div className="mt-4 h-64 sm:h-80 md:h-96">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
                 data={periodData}
@@ -216,7 +216,7 @@ export function ReportDataVisualization({
         </TabsContent>
 
         <TabsContent value="byPaymentMethod">
-          <div className="mt-4 h-96">
+          <div className="mt-4 h-64 sm:h-80 md:h-96">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={paymentMethodData}
@@ -251,17 +251,17 @@ export function ReportDataVisualization({
 
     return (
       <Tabs defaultValue="summary" className="w-full">
-        <TabsList>
-          <TabsTrigger value="summary">Resumo</TabsTrigger>
-          <TabsTrigger value="byCategory">Por Categoria</TabsTrigger>
-          <TabsTrigger value="lowStock">Estoque Baixo</TabsTrigger>
+        <TabsList className="w-full flex flex-wrap h-auto gap-1">
+          <TabsTrigger className="flex-1 min-w-fit text-xs sm:text-sm" value="summary">Resumo</TabsTrigger>
+          <TabsTrigger className="flex-1 min-w-fit text-xs sm:text-sm" value="byCategory">Por Categoria</TabsTrigger>
+          <TabsTrigger className="flex-1 min-w-fit text-xs sm:text-sm" value="lowStock">Estoque Baixo</TabsTrigger>
         </TabsList>
 
         <TabsContent value="summary">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 my-4">
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-2xl">
+                <CardTitle className="text-xl sm:text-2xl">
                   {data.totalItems || 0}
                 </CardTitle>
                 <CardDescription>Total de Itens</CardDescription>
@@ -270,7 +270,7 @@ export function ReportDataVisualization({
 
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-2xl">
+                <CardTitle className="text-xl sm:text-2xl">
                   {data.totalValue?.toLocaleString("pt-BR", {
                     style: "currency",
                     currency: "BRL",
@@ -283,7 +283,7 @@ export function ReportDataVisualization({
         </TabsContent>
 
         <TabsContent value="byCategory">
-          <div className="mt-4 h-96">
+          <div className="mt-4 h-64 sm:h-80 md:h-96">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={categoryData}
@@ -311,7 +311,7 @@ export function ReportDataVisualization({
         <TabsContent value="lowStock">
           <div className="mt-4">
             {data.lowStock && data.lowStock.length > 0 ? (
-              <Table>
+              <div className="overflow-x-auto"><Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>ID do Produto</TableHead>
@@ -334,7 +334,7 @@ export function ReportDataVisualization({
                     </TableRow>
                   ))}
                 </TableBody>
-              </Table>
+              </Table></div>
             ) : (
               <p className="text-center py-4 text-muted-foreground">
                 Não há produtos com estoque baixo.
@@ -359,16 +359,16 @@ export function ReportDataVisualization({
 
     return (
       <Tabs defaultValue="summary" className="w-full">
-        <TabsList>
-          <TabsTrigger value="summary">Resumo</TabsTrigger>
-          <TabsTrigger value="byLocation">Por Localização</TabsTrigger>
+        <TabsList className="w-full flex flex-wrap h-auto gap-1">
+          <TabsTrigger className="flex-1 min-w-fit text-xs sm:text-sm" value="summary">Resumo</TabsTrigger>
+          <TabsTrigger className="flex-1 min-w-fit text-xs sm:text-sm" value="byLocation">Por Localização</TabsTrigger>
         </TabsList>
 
         <TabsContent value="summary">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 my-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 my-4">
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-2xl">
+                <CardTitle className="text-xl sm:text-2xl">
                   {data.totalCustomers || 0}
                 </CardTitle>
                 <CardDescription>Total de Clientes</CardDescription>
@@ -377,7 +377,7 @@ export function ReportDataVisualization({
 
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-2xl">
+                <CardTitle className="text-xl sm:text-2xl">
                   {data.newCustomers || 0}
                 </CardTitle>
                 <CardDescription>Novos Clientes</CardDescription>
@@ -386,7 +386,7 @@ export function ReportDataVisualization({
 
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-2xl">
+                <CardTitle className="text-xl sm:text-2xl">
                   {data.recurring || 0}
                 </CardTitle>
                 <CardDescription>Clientes Recorrentes</CardDescription>
@@ -395,7 +395,7 @@ export function ReportDataVisualization({
 
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-2xl">
+                <CardTitle className="text-xl sm:text-2xl">
                   {data.averagePurchase?.toLocaleString("pt-BR", {
                     style: "currency",
                     currency: "BRL",
@@ -408,7 +408,7 @@ export function ReportDataVisualization({
         </TabsContent>
 
         <TabsContent value="byLocation">
-          <div className="mt-4 h-96">
+          <div className="mt-4 h-64 sm:h-80 md:h-96">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -454,17 +454,17 @@ export function ReportDataVisualization({
 
     return (
       <Tabs defaultValue="summary" className="w-full">
-        <TabsList>
-          <TabsTrigger value="summary">Resumo</TabsTrigger>
-          <TabsTrigger value="byStatus">Por Status</TabsTrigger>
-          <TabsTrigger value="byPeriod">Por Período</TabsTrigger>
+        <TabsList className="w-full flex flex-wrap h-auto gap-1">
+          <TabsTrigger className="flex-1 min-w-fit text-xs sm:text-sm" value="summary">Resumo</TabsTrigger>
+          <TabsTrigger className="flex-1 min-w-fit text-xs sm:text-sm" value="byStatus">Por Status</TabsTrigger>
+          <TabsTrigger className="flex-1 min-w-fit text-xs sm:text-sm" value="byPeriod">Por Período</TabsTrigger>
         </TabsList>
 
         <TabsContent value="summary">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 my-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 my-4">
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-2xl">
+                <CardTitle className="text-xl sm:text-2xl">
                   {data.totalOrders || 0}
                 </CardTitle>
                 <CardDescription>Total de Pedidos</CardDescription>
@@ -473,7 +473,7 @@ export function ReportDataVisualization({
 
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-2xl">
+                <CardTitle className="text-xl sm:text-2xl">
                   {data.totalValue?.toLocaleString("pt-BR", {
                     style: "currency",
                     currency: "BRL",
@@ -485,7 +485,7 @@ export function ReportDataVisualization({
 
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-2xl">
+                <CardTitle className="text-xl sm:text-2xl">
                   {data.averageValue?.toLocaleString("pt-BR", {
                     style: "currency",
                     currency: "BRL",
@@ -498,7 +498,7 @@ export function ReportDataVisualization({
         </TabsContent>
 
         <TabsContent value="byStatus">
-          <div className="mt-4 h-96">
+          <div className="mt-4 h-64 sm:h-80 md:h-96">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -528,7 +528,7 @@ export function ReportDataVisualization({
         </TabsContent>
 
         <TabsContent value="byPeriod">
-          <div className="mt-4 h-96">
+          <div className="mt-4 h-64 sm:h-80 md:h-96">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
                 data={periodData}
@@ -586,14 +586,14 @@ export function ReportDataVisualization({
 
     return (
       <Tabs defaultValue="summary" className="w-full">
-        <TabsList>
-          <TabsTrigger value="summary">Resumo</TabsTrigger>
-          <TabsTrigger value="byCategory">Por Categoria</TabsTrigger>
-          <TabsTrigger value="byPeriod">Por Período</TabsTrigger>
+        <TabsList className="w-full flex flex-wrap h-auto gap-1">
+          <TabsTrigger className="flex-1 min-w-fit text-xs sm:text-sm" value="summary">Resumo</TabsTrigger>
+          <TabsTrigger className="flex-1 min-w-fit text-xs sm:text-sm" value="byCategory">Por Categoria</TabsTrigger>
+          <TabsTrigger className="flex-1 min-w-fit text-xs sm:text-sm" value="byPeriod">Por Período</TabsTrigger>
         </TabsList>
 
         <TabsContent value="summary">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 my-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 my-4">
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-2xl text-green-600">
@@ -635,7 +635,7 @@ export function ReportDataVisualization({
         </TabsContent>
 
         <TabsContent value="byCategory">
-          <div className="mt-4 h-96">
+          <div className="mt-4 h-64 sm:h-80 md:h-96">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={categoryData}
@@ -660,7 +660,7 @@ export function ReportDataVisualization({
         </TabsContent>
 
         <TabsContent value="byPeriod">
-          <div className="mt-4 h-96">
+          <div className="mt-4 h-64 sm:h-80 md:h-96">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
                 data={periodData}

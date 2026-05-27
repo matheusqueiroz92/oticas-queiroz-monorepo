@@ -35,7 +35,7 @@ export function CustomerDetailsStatsSection({
           </div>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{formatCurrency(totalSpent)}</div>
+          <div className="text-xl sm:text-2xl font-bold">{formatCurrency(totalSpent)}</div>
           <p className="text-xs text-green-600 mt-1">
             +{formatCurrency(currentMonthSpent)} este mês
           </p>
@@ -52,7 +52,7 @@ export function CustomerDetailsStatsSection({
           </div>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{totalOrders}</div>
+          <div className="text-xl sm:text-2xl font-bold">{totalOrders}</div>
           <p className="text-xs text-blue-600 mt-1">
             +{currentMonthOrders} este mês
           </p>
@@ -69,7 +69,7 @@ export function CustomerDetailsStatsSection({
           </div>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{totalGlasses}</div>
+          <div className="text-xl sm:text-2xl font-bold">{totalGlasses}</div>
           <p className="text-xs text-purple-600 mt-1">
             {deliveredOrdersCount > 0 && lastDeliveryDate 
               ? `Último: ${formatDate(lastDeliveryDate)}` 
@@ -89,7 +89,7 @@ export function CustomerDetailsStatsSection({
           </div>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{loyaltyPoints.toLocaleString()}</div>
+          <div className="text-xl sm:text-2xl font-bold">{loyaltyPoints.toLocaleString()}</div>
           <p className="text-xs text-yellow-600 mt-1">
             Pontos acumulados
           </p>

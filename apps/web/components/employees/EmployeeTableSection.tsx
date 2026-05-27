@@ -81,7 +81,7 @@ export function EmployeeTableSection({
       )}
 
       {!isLoading && !error && employees.length > 0 && (
-        <div className="overflow-hidden">
+        <div className="overflow-x-auto">
           <UserTable
             data={employees}
             columns={columns}

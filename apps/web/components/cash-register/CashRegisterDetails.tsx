@@ -102,7 +102,7 @@ export function CashRegisterDetails({
 
   return (
     <div className="page-shell max-w-4xl mx-auto space-y-4 sm:space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
         <div className="flex items-center space-x-2">
           <Button
             variant="ghost"
@@ -113,7 +113,7 @@ export function CashRegisterDetails({
             Voltar
           </Button>
         </div>
-        <div className="flex space-x-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={onPrint}>
             <Printer className="h-4 w-4 mr-2" />
             Imprimir
@@ -129,10 +129,10 @@ export function CashRegisterDetails({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         <Card className="md:col-span-2">
           <CardHeader className="pb-2">
-            <CardTitle className="flex items-center">
+            <CardTitle className="flex flex-wrap items-center gap-2 text-base sm:text-lg">
               <CircleDollarSign className="h-5 w-5 mr-2" />
               Dados do Caixa
               <Badge
@@ -148,7 +148,7 @@ export function CashRegisterDetails({
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+              <div className="grid grid-cols-1 xs:grid-cols-2 gap-x-4 gap-y-3">
                 <div className="flex items-center space-x-2">
                   <CalendarClock className="h-4 w-4 text-gray-500" />
                   <div>
@@ -248,7 +248,7 @@ export function CashRegisterDetails({
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="flex items-center text-base">
+            <CardTitle className="flex items-center text-base sm:text-lg">
               <ReceiptText className="h-5 w-5 mr-2" />
               Resumo Financeiro
             </CardTitle>

@@ -76,7 +76,7 @@ export function MyOrdersContent({
       )}
 
       {!isLoading && !error && orders.length > 0 && (
-        <div className="overflow-hidden">
+        <div className="overflow-x-auto">
           <OrdersList
             data={orders}
             columns={orderColumns}

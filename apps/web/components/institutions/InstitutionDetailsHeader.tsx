@@ -17,16 +17,16 @@ export function InstitutionDetailsHeader({
   onEditInstitution,
 }: InstitutionDetailsHeaderProps) {
   return (
-    <div className="flex justify-between items-center mb-6">
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" onClick={onGoBack}>
+    <div className="flex flex-wrap items-center justify-between gap-2 mb-4 sm:mb-6">
+      <div className="flex items-center gap-2 flex-wrap">
+        <Button variant="ghost" size="sm" onClick={onGoBack}>
           <ArrowLeft className="h-4 w-4 mr-2" />
           Voltar
         </Button>
         {!isLoading && (
           <Badge
             variant={institution.status === "active" ? "default" : "secondary"}
-            className={`ml-2 ${
+            className={`${
               institution.status === "active" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"
             }`}
           >
@@ -34,16 +34,15 @@ export function InstitutionDetailsHeader({
           </Badge>
         )}
       </div>
-      <div className="flex gap-2">
-        <Button 
-          variant="outline"
-          onClick={onEditInstitution}
-          disabled={!institution}
-        >
-          <Edit className="h-4 w-4 mr-2" />
-          Editar
-        </Button>
-      </div>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={onEditInstitution}
+        disabled={!institution}
+      >
+        <Edit className="h-4 w-4 mr-2" />
+        Editar
+      </Button>
     </div>
   );
 }

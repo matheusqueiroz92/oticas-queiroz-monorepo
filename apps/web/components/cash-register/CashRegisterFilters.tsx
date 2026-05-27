@@ -29,17 +29,16 @@ export function CashRegisterFilters({
 }: CashRegisterFiltersProps) {
   
   return (
-    <div className="flex flex-col md:flex-row justify-between gap-4">
-      <div className="flex items-center space-x-2">
+    <div className="flex flex-wrap items-center gap-2">
         <Input
           placeholder="Buscar por data ou responsável..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="max-w-xs"
+          className="flex-1 min-w-[180px] max-w-xs"
         />
         <Popover>
           <PopoverTrigger asChild>
-            <Button variant="outline" className="h-10 px-3">
+            <Button variant="outline" size="sm" className="shrink-0">
               <CalendarIcon className="h-4 w-4 mr-2" />
               {date
                 ? format(date, "dd/MM/yyyy", { locale: ptBR })
@@ -67,10 +66,9 @@ export function CashRegisterFilters({
             </div>
           </PopoverContent>
         </Popover>
-        <Button variant="outline" onClick={onClearFilters} className="h-10">
+        <Button variant="outline" size="sm" onClick={onClearFilters} className="shrink-0">
           Limpar Filtros
         </Button>
-      </div>
     </div>
   );
 }

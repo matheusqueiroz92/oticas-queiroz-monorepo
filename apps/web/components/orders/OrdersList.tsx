@@ -85,6 +85,7 @@ export const OrdersList: React.FC<OrderTableProps> = ({
 
   return (
     <div className="space-y-4">
+      <div className="overflow-x-auto">
       <Table>
         <TableHeader className="bg-gray-100 dark:bg-slate-800/50">
           <TableRow>
@@ -124,6 +125,7 @@ export const OrdersList: React.FC<OrderTableProps> = ({
           ))}
         </TableBody>
       </Table>
+      </div>
 
       {(totalItems ?? 0) > 10 && (
         <PaginationItems

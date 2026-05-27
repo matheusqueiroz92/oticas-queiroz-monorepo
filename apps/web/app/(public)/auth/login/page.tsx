@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Image from "next/image";
-import LogoOticasQueiroz from "@/public/logo-oticas-queiroz-branca.png";
+import LogoOticasQueiroz from "@/public/logo-oticas-queiroz-branca-2.png";
 import Link from "next/link";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ import axios from "axios";
 import { LoginFormData, loginSchema } from "@/schemas/login-schema";
 import { API_ROUTES } from "@/app/_constants/api-routes";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import AppFooterAuth from "@/components/layout/app-footer-auth";
 
 export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
@@ -126,10 +127,11 @@ export default function LoginPage() {
         </div>
       </div>
 
+      {/* Logo centralizado em desktop */}
       <div className="hidden lg:flex lg:w-1/2 bg-[var(--primary-blue)] relative">
         <div className="relative z-10 flex items-center justify-center w-full">
           <div className="text-center">
-            <div className="w-[300px] h-[120px] mx-auto relative">
+            <div className="w-[600px] h-[240px] mx-auto relative">
               <Image
                 src={LogoOticasQueiroz}
                 alt="Óticas Queiroz Logo"
@@ -143,8 +145,9 @@ export default function LoginPage() {
         </div>
       </div>
 
+      {/* Formulário de login */}
       <div className="flex-1 w-full lg:w-1/2 flex flex-col items-center justify-center p-4 sm:p-6 md:p-8">
-        <Card className="w-full max-w-md">
+        <Card className="w-full max-w-md bg-primary/5 border border-primary/10">
           <CardHeader className="space-y-1 p-4 sm:p-6">
             <h2 className="text-xl sm:text-2xl font-bold text-center text-[var(--primary-blue)]">Login</h2>
             <p className="text-xs sm:text-sm text-muted-foreground text-center">
@@ -167,7 +170,7 @@ export default function LoginPage() {
                   type="text"
                   placeholder="seu@email.com ou CPF."
                   {...register("login")}
-                  className={errors.login ? "border-destructive" : ""}
+                  className={errors.login ? "border-destructive" : "border border-primary/10"}
                 />
                 {errors.login && (
                   <p className="text-sm text-destructive">
@@ -185,7 +188,7 @@ export default function LoginPage() {
                   type="password"
                   placeholder="••••••••"
                   {...register("password")}
-                  className={errors.password ? "border-destructive" : ""}
+                  className={errors.password ? "border-destructive" : "border border-primary/10"}
                 />
                 {errors.password && (
                   <p className="text-sm text-destructive">
@@ -213,23 +216,14 @@ export default function LoginPage() {
           <CardFooter className="flex flex-col space-y-4">
             <Link
               href="/auth/forgot-password"
-              className="text-sm text-[var(--primary-blue)] hover:underline text-center w-full"
+              className="text-sm text-[var(--primary-blue)] hover:underline hover:text-primary text-center w-full"
             >
               Esqueceu sua senha?
             </Link>
           </CardFooter>
         </Card>
 
-        <footer className="mt-6 sm:mt-8 text-center text-xs sm:text-sm text-muted-foreground px-4">
-          <p>
-            © {new Date().getFullYear()} Óticas Queiroz. Todos os direitos
-            reservados.
-          </p>
-          <p className="mt-1">
-            Desenvolvido por{" "}
-            <span className="font-medium">Matheus Queiroz</span>
-          </p>
-        </footer>
+        <AppFooterAuth />
       </div>
     </div>
   );

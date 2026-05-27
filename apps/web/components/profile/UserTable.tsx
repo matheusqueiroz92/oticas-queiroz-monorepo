@@ -65,6 +65,7 @@ export function UserTable({
 
   return (
     <div className="space-y-4">
+      <div className="overflow-x-auto">
       <Table>
         <TableHeader className="bg-gray-100 dark:bg-slate-800/50">
           <TableRow>
@@ -109,6 +110,7 @@ export function UserTable({
           ))}
         </TableBody>
       </Table>
+      </div>
       
       <div className="bg-gray-100 dark:bg-slate-800/50 w-full p-1">
           {(totalItems ?? 0) > 10 && (

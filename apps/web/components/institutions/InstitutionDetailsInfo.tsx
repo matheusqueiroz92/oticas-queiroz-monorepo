@@ -20,18 +20,18 @@ export function InstitutionDetailsInfo({ institution, getUserImageUrl }: Institu
       {/* Card Principal */}
       <Card>
         <CardHeader>
-          <div className="flex items-center gap-4">
-            <Avatar className="h-16 w-16">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+            <Avatar className="h-14 w-14 sm:h-16 sm:w-16 shrink-0">
               <AvatarImage 
                 src={getUserImageUrl(institution.image)} 
                 alt={institution.name} 
               />
               <AvatarFallback className="bg-primary/10 text-primary">
-                <Building className="h-8 w-8" />
+                <Building className="h-6 w-6 sm:h-8 sm:w-8" />
               </AvatarFallback>
             </Avatar>
             <div>
-              <CardTitle className="text-2xl">{institution.name}</CardTitle>
+              <CardTitle className="text-lg sm:text-2xl truncate">{institution.name}</CardTitle>
               <CardDescription>
                 Instituição cadastrada no sistema
               </CardDescription>
@@ -59,7 +59,7 @@ export function InstitutionDetailsInfo({ institution, getUserImageUrl }: Institu
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
             <div className="space-y-4">
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Nome da Instituição</label>
@@ -101,7 +101,7 @@ export function InstitutionDetailsInfo({ institution, getUserImageUrl }: Institu
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
             <div className="space-y-4">
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Email</label>

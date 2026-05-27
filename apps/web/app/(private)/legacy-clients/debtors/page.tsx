@@ -126,7 +126,7 @@ export default function DebtorsPage() {
               Não há clientes com dívidas pendentes.
             </div>
           ) : (
-            <div className="border rounded-md overflow-hidden">
+            <div className="border rounded-md overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>

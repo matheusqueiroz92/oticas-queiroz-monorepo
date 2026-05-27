@@ -88,7 +88,7 @@ export function SalesChart({ payments = [], isLoading = false }: SalesChartProps
   }
 
   return (
-    <Card className="h-[420px] flex flex-col">
+    <Card className="flex flex-col min-h-[380px] sm:min-h-[420px]">
       <CardHeader className="border-b border-gray-200 bg-gray-100 dark:border-gray-800 dark:bg-gray-800/50">
         <div className="flex items-center justify-between">
           <div className="flex flex-col gap-1">
@@ -100,14 +100,14 @@ export function SalesChart({ payments = [], isLoading = false }: SalesChartProps
               {getPeriodLabel(selectedPeriod)} - Análise de performance de vendas
             </CardDescription>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-1 sm:gap-2">
             {periods.map(period => (
               <Button
                 key={period.value}
                 variant={"outline"}
                 size="sm"
                 onClick={() => setSelectedPeriod(period.value)}
-                className={selectedPeriod === period.value ? "bg-[var(--primary-blue)] text-white" : ""}
+                className={`text-xs sm:text-sm px-2 sm:px-3 ${selectedPeriod === period.value ? "bg-[var(--primary-blue)] text-white" : ""}`}
               >
                 {period.label}
               </Button>
@@ -168,7 +168,7 @@ export function SalesChart({ payments = [], isLoading = false }: SalesChartProps
         )}
 
         {/* Gráfico */}
-        <div className="flex-1 min-h-[160px]">
+        <div className="flex-1 min-h-[140px] sm:min-h-[160px]">
           {chartData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart

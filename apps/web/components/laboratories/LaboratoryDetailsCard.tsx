@@ -39,14 +39,14 @@ export function LaboratoryDetailsCard({
     <div className="w-full max-w-4xl mx-auto">
       <div className="mt-6">
         <Card className="shadow-sm border">
-          <CardHeader className="p-6 bg-gray-50 border-b">
-            <div className="flex justify-between items-start">
+          <CardHeader className="p-4 sm:p-6 bg-gray-50 border-b dark:bg-slate-800/50">
+            <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-start">
               <div>
-                <CardTitle className="text-2xl flex items-center gap-2">
+                <CardTitle className="text-lg sm:text-2xl flex items-center gap-2">
                   <Building className="h-5 w-5 text-primary" />
                   {laboratory.name}
                 </CardTitle>
-                <CardDescription className="mt-1 flex items-center gap-2">
+                <CardDescription className="mt-1 flex flex-wrap items-center gap-1 sm:gap-2 text-xs sm:text-sm">
                   <Mail className="h-4 w-4 text-muted-foreground" />
                   {laboratory.email} 
                   <span className="mx-2">•</span>
@@ -56,22 +56,22 @@ export function LaboratoryDetailsCard({
                 </CardDescription>
               </div>
               <div>
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                   <Building className="h-6 w-6 text-primary" />
                 </div>
               </div>
             </div>
           </CardHeader>
           
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="space-y-8">
               {/* Informações de Contato */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
                   <User className="h-5 w-5 text-primary" />
-                  <h3 className="text-lg font-semibold">Informações de Contato</h3>
+                  <h3 className="text-base sm:text-lg font-semibold">Informações de Contato</h3>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 bg-gray-50 p-4 rounded-md border">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 sm:gap-x-6 gap-y-3 sm:gap-y-4 bg-gray-50 p-4 rounded-md border">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                       <User className="h-4 w-4" />
@@ -107,7 +107,7 @@ export function LaboratoryDetailsCard({
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
                   <MapPin className="h-5 w-5 text-primary" />
-                  <h3 className="text-lg font-semibold">Endereço</h3>
+                  <h3 className="text-base sm:text-lg font-semibold">Endereço</h3>
                 </div>
                 <div className="bg-gray-50 p-4 rounded-md border">
                   <p className="font-medium">
@@ -124,17 +124,19 @@ export function LaboratoryDetailsCard({
               </div>
             </div>
             
-            <div className="mt-6 pt-4 border-t flex justify-between">
+            <div className="mt-4 sm:mt-6 pt-4 border-t flex flex-wrap justify-between gap-2">
               <Button 
-                variant="outline" 
+                variant="outline"
+                size="sm"
                 onClick={onGoBack}
               >
                 Voltar
               </Button>
 
-              <div className="flex space-x-2">
+              <div className="flex flex-wrap gap-2">
                 <Button
                   variant="outline"
+                  size="sm"
                   onClick={onEdit}
                 >
                   <Edit className="h-4 w-4 mr-2" />
@@ -145,6 +147,7 @@ export function LaboratoryDetailsCard({
                   <AlertDialogTrigger asChild>
                     <Button
                       variant={laboratory.isActive ? "destructive" : "default"}
+                      size="sm"
                       disabled={isTogglingStatus}
                     >
                       {laboratory.isActive ? "Desativar" : "Ativar"}

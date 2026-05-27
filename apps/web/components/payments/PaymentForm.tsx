@@ -384,7 +384,7 @@ export function PaymentForm({
               <div className="space-y-4 border p-4 rounded-md bg-gray-50">
                 <h3 className="font-medium">Dados do Cheque</h3>
                 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <FormField
                     control={form.control}
                     name="check.bank"
@@ -414,7 +414,7 @@ export function PaymentForm({
                   />
                 </div>
                 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <FormField
                     control={form.control}
                     name="check.checkDate"
@@ -511,7 +511,7 @@ export function PaymentForm({
                   />
                 </div>
                 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <FormField
                     control={form.control}
                     name="check.branch"

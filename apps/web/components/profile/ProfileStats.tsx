@@ -80,17 +80,17 @@ export function ProfileStats({ userRole, profileData, isLoading = false }: Profi
               className: "bg-purple-500 text-white border-0" 
             }
           },
-          {
-            title: "Avaliação Média",
-            value: (profileData.userRating || 0).toFixed(1),
-            icon: Star,
-            iconColor: "text-yellow-600",
-            bgColor: "bg-yellow-100 dark:bg-yellow-100/10",
-            badge: { 
-              text: profileData.starRating || "☆☆☆☆☆", 
-              className: "bg-yellow-500 text-white border-0" 
-            }
-          }
+          // {
+          //   title: "Avaliação Média",
+          //   value: (profileData.userRating || 0).toFixed(1),
+          //   icon: Star,
+          //   iconColor: "text-yellow-600",
+          //   bgColor: "bg-yellow-100 dark:bg-yellow-100/10",
+          //   badge: { 
+          //     text: profileData.starRating || "☆☆☆☆☆", 
+          //     className: "bg-yellow-500 text-white border-0" 
+          //   }
+          // }
         ];
       case "customer":
         return [
@@ -147,7 +147,7 @@ export function ProfileStats({ userRole, profileData, isLoading = false }: Profi
   const statsData = getStatsForRole();
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {statsData.map((stat, index) => (
         <StatCard
           key={index}

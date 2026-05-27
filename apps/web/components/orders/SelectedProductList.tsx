@@ -33,8 +33,8 @@ export default function SelectedProductsList({
   }, 0);
 
   return (
-    <div className="border rounded-md overflow-hidden">
-      <table className="w-full text-sm">
+    <div className="border rounded-md overflow-x-auto">
+      <table className="w-full text-sm min-w-[400px]">
         <thead className="bg-muted">
           <tr>
             <th className="px-3 py-2 text-left text-xs">Produto</th>

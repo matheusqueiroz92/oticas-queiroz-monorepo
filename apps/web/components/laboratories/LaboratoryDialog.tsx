@@ -191,10 +191,10 @@ export function LaboratoryDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogOverlay className="bg-black/60" />
-      <DialogContent className="max-w-2xl max-h-[90dvh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold flex items-center gap-2">
-            <Beaker className="w-6 h-6 text-blue-600" />
+            <Building className="w-6 h-6 text-blue-600" />
             {isEditMode ? 'Editar Laboratório' : 'Novo Laboratório'}
           </DialogTitle>
           <DialogDescription>
@@ -209,11 +209,6 @@ export function LaboratoryDialog({
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
             {/* Informações Básicas */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold flex items-center gap-2">
-                <Building className="w-5 h-5 text-[var(--primary-blue)]" />
-                Informações do Laboratório
-              </h3>
-              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}

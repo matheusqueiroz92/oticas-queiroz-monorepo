@@ -34,9 +34,9 @@ export function LegacyClientDetailsHeader({
   const canDeactivate = (client?.debt || 0) === 0 || client?.status === "inactive";
 
   return (
-    <div className="flex justify-between items-center mb-6">
+    <div className="flex flex-wrap items-center justify-between gap-2 mb-4 sm:mb-6">
       <div className="flex items-center gap-2">
-        <Button variant="ghost" onClick={onGoBack}>
+        <Button variant="ghost" size="sm" onClick={onGoBack}>
           <ArrowLeft className="h-4 w-4 mr-2" />
           Voltar
         </Button>
@@ -51,9 +51,10 @@ export function LegacyClientDetailsHeader({
           </Badge>
         )}
       </div>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <Button 
           variant="outline"
+          size="sm"
           onClick={onEditClient}
           disabled={!client}
         >
@@ -64,7 +65,8 @@ export function LegacyClientDetailsHeader({
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button 
-              variant="outline" 
+              variant="outline"
+              size="sm"
               disabled={!canDeactivate || isTogglingStatus}
               className={!canDeactivate ? "cursor-not-allowed opacity-50" : ""}
             >

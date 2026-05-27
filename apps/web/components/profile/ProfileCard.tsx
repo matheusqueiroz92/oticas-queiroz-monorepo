@@ -91,7 +91,7 @@ export function ProfileCard({ user, getUserImageUrl, onEditClick, onChangePasswo
             <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200 mb-2">
               {user.name}
             </h2>
-            <Badge className={`${getRoleColor(user.role)} font-medium`}>
+            <Badge className={`${getRoleColor(user.role)} hover:${getRoleColor(user.role)} font-medium`}>
               {getRoleLabel(user.role)}
             </Badge>
           </div>

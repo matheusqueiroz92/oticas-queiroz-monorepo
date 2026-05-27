@@ -38,7 +38,7 @@ export function PaymentHistoryTable({
   }
 
   return (
-    <div className="border rounded-md overflow-hidden">
+    <div className="border rounded-md overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
@@ -76,7 +76,7 @@ export function PaymentHistoryTable({
 
 function LoadingSkeleton() {
   return (
-    <div className="border rounded-md overflow-hidden">
+    <div className="border rounded-md overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>

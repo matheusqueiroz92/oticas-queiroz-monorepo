@@ -62,7 +62,8 @@ export function CashRegisterPaymentsTable({
         <CardTitle>{title}</CardTitle>
         <CardDescription>{description}</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-0 sm:p-6">
+        <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -124,6 +125,7 @@ export function CashRegisterPaymentsTable({
             ))}
           </TableBody>
         </Table>
+        </div>
       </CardContent>
     </Card>
   );

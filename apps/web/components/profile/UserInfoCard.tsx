@@ -81,22 +81,21 @@ export function UserInfoCard({
 
   return (
     <Card className="shadow-sm border">
-      <CardHeader className="p-6 bg-gray-50 border-b">
-        <div className="flex justify-between items-center">
-          <div>
-            <CardTitle className="text-2xl flex items-center gap-2">
-              <User className="h-5 w-5 text-primary" />
-              {user.name}
+      <CardHeader className="p-4 sm:p-6 bg-gray-50 border-b">
+        <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-start">
+          <div className="min-w-0">
+            <CardTitle className="text-xl sm:text-2xl flex items-center gap-2">
+              <User className="h-5 w-5 text-primary shrink-0" />
+              <span className="truncate">{user.name}</span>
             </CardTitle>
-            <CardDescription className="mt-1 flex items-center gap-2">
-              <Mail className="h-4 w-4 text-muted-foreground" />
-              {user.email} 
-              <span className="mx-2">•</span>
+            <CardDescription className="mt-1 flex flex-wrap items-center gap-2">
+              <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
+              <span className="truncate">{user.email}</span>
               {getRoleBadge(user.role)}
             </CardDescription>
           </div>
-          <div className="relative">
-            <Avatar className="h-20 w-20">
+          <div className="shrink-0">
+            <Avatar className="h-16 w-16 sm:h-20 sm:w-20">
               <AvatarImage
                 src={user.image}
                 alt={user.name}
@@ -112,28 +111,29 @@ export function UserInfoCard({
           </div>
         </div>
       </CardHeader>
-      <CardContent className="p-6">
+      <CardContent className="p-4 sm:p-6">
         {description && <p className="text-sm text-muted-foreground mb-4">{description}</p>}
         
         {children}
         
-        <div className="flex justify-between mt-6 pt-4 border-t">
+        <div className="flex flex-wrap justify-between gap-2 mt-6 pt-4 border-t">
           <Button 
-            variant="outline" 
+            variant="outline"
+            size="sm"
             onClick={handleBackClick}
             className="gap-2"
           >
             Voltar
           </Button>
-          <div className="space-x-2">
+          <div className="flex flex-wrap gap-2">
             {customAction && (
-              <Button onClick={customAction.onClick} className="gap-2">
+              <Button size="sm" onClick={customAction.onClick} className="gap-2">
                 {customAction.icon}
                 {customAction.text}
               </Button>
             )}
             {showEditButton && (
-              <Button onClick={onEditClick} className="gap-2">
+              <Button size="sm" onClick={onEditClick} className="gap-2">
                 <User className="h-4 w-4" />
                 Editar
               </Button>

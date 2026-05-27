@@ -37,6 +37,7 @@ export function CashRegisterList({
 
   return (
     <div className="space-y-4">
+      <div className="overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
@@ -96,6 +97,7 @@ export function CashRegisterList({
           ))}
         </TableBody>
       </Table>
+      </div>
 
       <PaginationItems
         currentPage={currentPage}

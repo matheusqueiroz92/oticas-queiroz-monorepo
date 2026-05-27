@@ -225,4 +225,8 @@ export function PaymentsList({
             totalItems={totalItems}
             pageSize={pageSize || payments.length}
           />
-        <
+        </>
+      )}
+    </>
+  );
+}

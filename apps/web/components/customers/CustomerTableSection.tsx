@@ -81,7 +81,7 @@ export function CustomerTableSection({
       )}
 
       {!isLoading && !error && customers.length > 0 && (
-        <div className="overflow-hidden">
+        <div className="overflow-x-auto">
           <UserTable
             data={customers}
             columns={columns}

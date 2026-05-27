@@ -144,7 +144,7 @@ export function LaboratoryTableSection({
       )}
 
       {!isLoading && !error && laboratories.length > 0 && (
-        <div className="overflow-hidden">
+        <div className="overflow-x-auto">
           <Table>
             <TableHeader className="bg-gray-100 dark:bg-slate-800/50">
               <TableRow>

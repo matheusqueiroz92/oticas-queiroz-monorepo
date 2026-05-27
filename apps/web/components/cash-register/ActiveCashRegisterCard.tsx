@@ -34,7 +34,7 @@ import {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
             <div className="bg-white p-3 rounded-md shadow-sm">
               <div className="text-sm text-gray-500">Saldo Inicial</div>
               <div className="text-lg font-bold text-blue-700">
@@ -55,15 +55,16 @@ import {
             </div>
           </div>
         </CardContent>
-        <CardFooter className="flex justify-end space-x-2">
+        <CardFooter className="flex flex-wrap justify-end gap-2">
           <Button
             variant="outline"
+            size="sm"
             onClick={() => onViewDetails(register._id)}
           >
             <ClipboardList className="h-4 w-4 mr-2" />
             Detalhes
           </Button>
-          <Button onClick={() => onCloseCashRegister(register._id)}>
+          <Button size="sm" onClick={() => onCloseCashRegister(register._id)}>
             Fechar Caixa
           </Button>
         </CardFooter>

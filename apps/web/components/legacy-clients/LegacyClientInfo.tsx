@@ -22,7 +22,7 @@ export function LegacyClientInfo({ client }: LegacyClientInfoProps) {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <h3 className="text-sm font-medium text-gray-500">Informações Pessoais</h3>
           <div className="mt-3 space-y-3">
@@ -91,7 +91,7 @@ export function LegacyClientInfo({ client }: LegacyClientInfoProps) {
       {client.address && (
         <div>
           <h3 className="text-sm font-medium text-gray-500 mb-3">Endereço</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <span className="block text-sm text-gray-500">Logradouro</span>
               <span className="block font-medium">

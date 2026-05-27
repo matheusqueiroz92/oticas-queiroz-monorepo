@@ -25,6 +25,7 @@ export function LaboratoryTable({
 }: LaboratoryTableProps) {
   return (
     <div className="space-y-2">
+      <div className="overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
@@ -61,6 +62,7 @@ export function LaboratoryTable({
           ))}
         </TableBody>
       </Table>
+      </div>
     </div>
   );
 }

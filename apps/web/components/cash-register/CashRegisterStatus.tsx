@@ -152,4 +152,10 @@ export function CashRegisterStatus({
               className="border-green-300 text-green-600 hover:bg-green-100 hover:text-green-900 dark:text-green-300  dark:hover:bg-green-900 dark:hover:text-white"
             >
               Fechar Caixa
-            </Butto
+            </Button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

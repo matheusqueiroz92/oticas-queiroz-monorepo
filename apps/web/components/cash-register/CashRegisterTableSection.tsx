@@ -84,6 +84,7 @@ export function CashRegisterTableSection({
 
   return (
     <div className="space-y-4">
+      <div className="overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
@@ -143,6 +144,7 @@ export function CashRegisterTableSection({
           ))}
         </TableBody>
       </Table>
+      </div>
 
       <PaginationItems
         currentPage={currentPage}

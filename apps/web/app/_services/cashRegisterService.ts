@@ -34,13 +34,20 @@ export async function checkOpenCashRegister(): Promise<CashRegisterCheckResult> 
       }
     }
 
-    // Só logar erros que não sejam 404
     console.error("Erro ao verificar caixa aberto:", error);
+
+    const message =
+      error && typeof error === "object" && "response" in error
+        ? (error as { response?: { data?: { message?: string } } }).response?.data
+            ?.message
+        : undefined;
 
     return {
       isOpen: false,
       data: null,
-      error: "Não foi possível verificar o status do caixa",
+      error:
+        message ||
+        "Não foi possível verificar o status do caixa. Tente atualizar a página.",
     };
   }
 }

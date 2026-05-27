@@ -31,13 +31,13 @@ export function CustomerOrdersHistory({
   return (
     <Card className="h-fit">
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Package className="h-5 w-5" />
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+            <Package className="h-4 w-4 sm:h-5 sm:w-5" />
             Pedidos Recentes
           </CardTitle>
           <Select value={statusFilter} onValueChange={onStatusFilterChange}>
-            <SelectTrigger className="w-[120px]">
+            <SelectTrigger className="w-[100px] sm:w-[120px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -80,7 +80,7 @@ export function CustomerOrdersHistory({
                     {order.products.map(p => p.name).join(", ").substring(0, 50)}...
                   </p>
                 )}
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-sm font-semibold text-green-600">
                     {formatCurrency(order.finalPrice || 0)}
                   </p>

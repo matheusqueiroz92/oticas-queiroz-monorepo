@@ -54,13 +54,13 @@ export default function LaboratoriesPage() {
     <PageContainer>
       <div className="space-y-8">
         {/* Cards de Estatísticas */}
-        <LaboratoryStatsCards
+        {/* <LaboratoryStatsCards
           totalLaboratories={stats.totalLaboratories}
           activeLaboratories={stats.activeLaboratories}
           inactiveLaboratories={stats.inactiveLaboratories}
           newThisMonth={stats.newThisMonth}
           topCities={stats.topCities}
-        />
+        /> */}
 
         {/* Tabela de Laboratórios com Filtros */}
         <LaboratoryTableWithFilters

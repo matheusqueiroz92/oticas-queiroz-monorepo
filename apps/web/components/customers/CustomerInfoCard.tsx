@@ -16,8 +16,8 @@ export function CustomerInfoCard({ customer, customerSince }: CustomerInfoCardPr
   return (
     <Card>
       <CardContent className="p-6">
-        <div className="flex items-center gap-6">
-          <Avatar className="w-20 h-20">
+        <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-6">
+          <Avatar className="w-16 h-16 sm:w-20 sm:h-20 shrink-0">
             <AvatarImage src={customer.image ? getUserImageUrl(customer.image) : undefined} alt={customer.name} />
             <AvatarFallback className="bg-primary text-primary-foreground text-xl font-semibold">
               {getInitials(customer.name)}
@@ -33,7 +33,7 @@ export function CustomerInfoCard({ customer, customerSince }: CustomerInfoCardPr
               </div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               {customer.email && (
                 <div className="flex items-center gap-3 p-3 bg-muted/20 rounded-lg">
                   <Mail className="h-4 w-4 text-muted-foreground" />

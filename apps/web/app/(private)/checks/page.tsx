@@ -220,7 +220,7 @@ export default function ChecksPage() {
           </div>
 
           {/* Desktop/tablet: table view */}
-          <div className="hidden md:block">
+          <div className="hidden md:block overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -228,7 +228,7 @@ export default function ChecksPage() {
                   <TableHead className="hidden lg:table-cell">Banco</TableHead>
                   <TableHead>Número</TableHead>
                   <TableHead>Data do Cheque</TableHead>
-                  <TableHead className="hidden xl:table-cell">Data de Apresentação</TableHead>
+                  <TableHead className="hidden lg:table-cell">Data de Apresentação</TableHead>
                   <TableHead>Valor</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Ações</TableHead>
@@ -248,7 +248,7 @@ export default function ChecksPage() {
                     <TableCell className="hidden lg:table-cell">{check.check.bank}</TableCell>
                     <TableCell>{check.check.checkNumber}</TableCell>
                     <TableCell>{formatDate(check.check.checkDate)}</TableCell>
-                    <TableCell className="hidden xl:table-cell">
+                    <TableCell className="hidden lg:table-cell">
                       {check.check.presentationDate
                         ? formatDate(check.check.presentationDate)
                         : "Imediata"}
@@ -281,7 +281,7 @@ export default function ChecksPage() {
                               onClick={() => handleMarkAsCompensated(check._id)}
                             >
                               <CheckCircle className="h-4 w-4 mr-1" />
-                              <span className="hidden xl:inline">Compensado</span>
+                              <span className="hidden lg:inline">Compensado</span>
                             </Button>
 
                             <Button
@@ -291,7 +291,7 @@ export default function ChecksPage() {
                               onClick={() => handleMarkAsRejected(check._id)}
                             >
                               <XCircle className="h-4 w-4 mr-1" />
-                              <span className="hidden xl:inline">Rejeitado</span>
+                              <span className="hidden lg:inline">Rejeitado</span>
                             </Button>
                           </>
                         )}

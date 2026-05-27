@@ -284,7 +284,7 @@ export function CustomerDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogOverlay className="bg-black/60" />
-      <DialogContent className="max-w-2xl max-h-[90dvh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold flex items-center gap-2">
             <UserPlus className="w-6 h-6 text-blue-600" />
@@ -434,7 +434,7 @@ export function CustomerDialog({
               <p className="text-xs text-muted-foreground font-medium">
                 Endereço (obrigatório para boleto SICREDI)
               </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                 <FormField control={form.control} name="addressDetails.logradouro" render={({ field }) => (
                   <FormItem className="col-span-2">
                     <FormLabel>Logradouro</FormLabel>

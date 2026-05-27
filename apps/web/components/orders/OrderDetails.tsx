@@ -594,7 +594,7 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
             {/* Aba de Receita Médica */}
             {hasPrescriptionData && (
               <TabsContent value="prescription" className="p-3 sm:p-4 md:p-6">
-                <div className="flex justify-between items-start mb-4">
+                <div className="flex flex-wrap justify-between items-start gap-2 mb-4">
                   <h3 className="font-medium text-xl flex items-center">
                     <FileText className="h-5 w-5 mr-2" />
                     Receita Médica
@@ -868,7 +868,7 @@ export default function OrderDetails({ order, onGoBack, onRefresh }: OrderDetail
 
             {/* Aba de Laboratório */}
             <TabsContent value="laboratory" className="p-3 sm:p-4 md:p-6">
-              <div className="flex justify-between items-start mb-4">
+              <div className="flex flex-wrap justify-between items-start gap-2 mb-4">
                 <h3 className="font-medium text-xl flex items-center">
                   <Beaker className="h-5 w-5 mr-2" />
                   Laboratório Associado
