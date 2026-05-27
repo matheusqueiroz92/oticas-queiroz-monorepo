@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { StatCard } from "@/components/ui/StatCard";
 import { DollarSign, Package, Eye, Star } from "lucide-react";
 import { formatCurrency, formatDate } from "@/app/_utils/customer-details-utils";
 
@@ -25,76 +25,57 @@ export function CustomerDetailsStatsSection({
 }: CustomerDetailsStatsSectionProps) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            Total Gasto
-          </CardTitle>
-          <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
-            <DollarSign className="w-4 h-4 text-green-600 dark:text-green-400" />
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="text-xl sm:text-2xl font-bold">{formatCurrency(totalSpent)}</div>
-          <p className="text-xs text-green-600 mt-1">
+      <StatCard
+        title="Total Gasto"
+        value={formatCurrency(totalSpent)}
+        icon={DollarSign}
+        iconColor="text-green-600 dark:text-green-400"
+        bgColor="bg-green-100 dark:bg-green-900/30"
+        description={
+          <span className="text-green-600 dark:text-green-400">
             +{formatCurrency(currentMonthSpent)} este mês
-          </p>
-        </CardContent>
-      </Card>
+          </span>
+        }
+      />
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            Pedidos
-          </CardTitle>
-          <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-            <Package className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="text-xl sm:text-2xl font-bold">{totalOrders}</div>
-          <p className="text-xs text-blue-600 mt-1">
+      <StatCard
+        title="Pedidos"
+        value={totalOrders}
+        icon={Package}
+        iconColor="text-[var(--primary-blue)] dark:text-blue-400"
+        bgColor="bg-[var(--primary-blue)]/10 dark:bg-blue-900/30"
+        description={
+          <span className="text-[var(--primary-blue)] dark:text-blue-400">
             +{currentMonthOrders} este mês
-          </p>
-        </CardContent>
-      </Card>
+          </span>
+        }
+      />
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            Óculos
-          </CardTitle>
-          <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center">
-            <Eye className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="text-xl sm:text-2xl font-bold">{totalGlasses}</div>
-          <p className="text-xs text-purple-600 mt-1">
-            {deliveredOrdersCount > 0 && lastDeliveryDate 
-              ? `Último: ${formatDate(lastDeliveryDate)}` 
-              : "Nenhum entregue"
-            }
-          </p>
-        </CardContent>
-      </Card>
+      <StatCard
+        title="Óculos"
+        value={totalGlasses}
+        icon={Eye}
+        iconColor="text-purple-600 dark:text-purple-400"
+        bgColor="bg-purple-100 dark:bg-purple-900/30"
+        description={
+          <span className="text-purple-600 dark:text-purple-400">
+            {deliveredOrdersCount > 0 && lastDeliveryDate
+              ? `Último: ${formatDate(lastDeliveryDate)}`
+              : "Nenhum entregue"}
+          </span>
+        }
+      />
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            Fidelidade
-          </CardTitle>
-          <div className="w-8 h-8 bg-yellow-100 dark:bg-yellow-900 rounded-full flex items-center justify-center">
-            <Star className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="text-xl sm:text-2xl font-bold">{loyaltyPoints.toLocaleString()}</div>
-          <p className="text-xs text-yellow-600 mt-1">
-            Pontos acumulados
-          </p>
-        </CardContent>
-      </Card>
+      <StatCard
+        title="Fidelidade"
+        value={loyaltyPoints.toLocaleString()}
+        icon={Star}
+        iconColor="text-amber-600 dark:text-amber-400"
+        bgColor="bg-amber-100 dark:bg-amber-900/30"
+        description={
+          <span className="text-amber-600 dark:text-amber-400">Pontos acumulados</span>
+        }
+      />
     </div>
   );
-} 
+}

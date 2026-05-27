@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Clock, ShoppingBag } from "lucide-react";
 import { formatCurrency, getOrderStatusClass, translateOrderStatus } from "@/app/_utils/formatters";
 import { RenderListSkeleton } from "@/components/dashboard/RenderListSkeleton";
@@ -27,17 +28,20 @@ export function RecentOrdersList({
 }: RecentOrdersListProps) {
   return (
     <Card className="h-full flex flex-col">
-      <CardHeader className="border-b border-gray-200 bg-gray-100 dark:border-gray-800 dark:bg-gray-800/50 ">
+      <CardHeader className={[
+        "bg-gradient-to-r from-[var(--primary-blue)]/5 to-transparent",
+        "dark:from-slate-800/70 dark:to-slate-800/30 border-b border-border/50 pb-4",
+      ].join(" ")}>
         <div className="flex items-center justify-between">
           <div className="flex flex-col gap-1">
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5 text-[var(--primary-blue)]" />
+            <CardTitle className="text-base font-semibold text-[var(--primary-blue)] dark:text-zinc-100 flex items-center gap-2">
+              <Clock className="h-4 w-4" />
               Pedidos Recentes
             </CardTitle>
-            <CardDescription>Útimos pedidos realizados no sistema</CardDescription>
+            <CardDescription>Últimos pedidos realizados no sistema</CardDescription>
           </div>
           <Link href="/orders">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" className="text-xs">
               Ver todos
             </Button>
           </Link>
@@ -60,9 +64,9 @@ export function RecentOrdersList({
                 </div>
                 <div className="text-right">
                   <p className="font-medium">{formatCurrency(order.finalPrice)}</p>
-                  <span className={`text-xs px-2 py-1 rounded-full ${getOrderStatusClass(order.status)}`}>
+                  <Badge className={`status-badge ${getOrderStatusClass(order.status)} text-xs mt-1`}>
                     {translateOrderStatus(order.status)}
-                  </span>
+                  </Badge>
                 </div>
               </div>
             ))}
@@ -78,4 +82,4 @@ export function RecentOrdersList({
       </CardContent>
     </Card>
   );
-} 
+}

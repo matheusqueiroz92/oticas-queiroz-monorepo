@@ -25,31 +25,24 @@ interface SalesChartProps {
 export function SalesChart({ payments = [], isLoading = false }: SalesChartProps) {
   const [selectedPeriod, setSelectedPeriod] = useState<SalesPeriod>(7);
 
-  // Calcular dados do gráfico baseado no período selecionado
   const chartData = useMemo(() => {
     if (!payments.length) return [];
-    
-    // Para períodos longos, usar dados semanais
     if (selectedPeriod === 180) {
       return calculateWeeklySales(payments, selectedPeriod);
     }
-    
     return calculateSalesByPeriod(payments, selectedPeriod);
   }, [payments, selectedPeriod]);
 
-  // Calcular estatísticas do período
   const periodStats = useMemo(() => {
     return calculatePeriodStats(chartData);
   }, [chartData]);
 
-  // Períodos disponíveis
   const periods: { value: SalesPeriod; label: string }[] = [
     { value: 7, label: "7 dias" },
     { value: 30, label: "30 dias" },
-    { value: 180, label: "6 meses" }
+    { value: 180, label: "6 meses" },
   ];
 
-  // Tooltip customizado
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
@@ -68,11 +61,19 @@ export function SalesChart({ payments = [], isLoading = false }: SalesChartProps
     return null;
   };
 
+  const headerClass = [
+    "bg-gradient-to-r from-[var(--primary-blue)]/5 to-transparent",
+    "dark:from-slate-800/70 dark:to-slate-800/30 border-b border-border/50 pb-4",
+  ].join(" ");
+
   if (isLoading) {
     return (
       <Card className="h-full flex flex-col">
-        <CardHeader className="border-b border-gray-200 bg-gray-100 dark:border-gray-800 dark:bg-gray-800/50">
-          <CardTitle>Vendas por Período</CardTitle>
+        <CardHeader className={headerClass}>
+          <CardTitle className="text-base font-semibold text-[var(--primary-blue)] dark:text-zinc-100 flex items-center gap-2">
+            <Calendar className="h-4 w-4" />
+            Vendas por Período
+          </CardTitle>
           <CardDescription>Análise de vendas ao longo do tempo</CardDescription>
         </CardHeader>
         <CardContent className="flex-1 flex flex-col">
@@ -89,25 +90,30 @@ export function SalesChart({ payments = [], isLoading = false }: SalesChartProps
 
   return (
     <Card className="flex flex-col min-h-[380px] sm:min-h-[420px]">
-      <CardHeader className="border-b border-gray-200 bg-gray-100 dark:border-gray-800 dark:bg-gray-800/50">
-        <div className="flex items-center justify-between">
-          <div className="flex flex-col gap-1">
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-[var(--primary-blue)]" />
+      <CardHeader className={headerClass}>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-col gap-1 min-w-0">
+            <CardTitle className="text-base font-semibold text-[var(--primary-blue)] dark:text-zinc-100 flex items-center gap-2">
+              <Calendar className="h-4 w-4 shrink-0" />
               Vendas por Período
             </CardTitle>
             <CardDescription>
-              {getPeriodLabel(selectedPeriod)} - Análise de performance de vendas
+              {getPeriodLabel(selectedPeriod)} — Análise de performance de vendas
             </CardDescription>
           </div>
-          <div className="flex flex-wrap gap-1 sm:gap-2">
+          <div className="flex gap-1 shrink-0">
             {periods.map(period => (
               <Button
                 key={period.value}
-                variant={"outline"}
+                variant="outline"
                 size="sm"
                 onClick={() => setSelectedPeriod(period.value)}
-                className={`text-xs sm:text-sm px-2 sm:px-3 ${selectedPeriod === period.value ? "bg-[var(--primary-blue)] text-white" : ""}`}
+                className={[
+                  "text-xs px-2 sm:px-3",
+                  selectedPeriod === period.value
+                    ? "bg-[var(--primary-blue)] text-white border-[var(--primary-blue)]"
+                    : "",
+                ].join(" ")}
               >
                 {period.label}
               </Button>
@@ -115,7 +121,7 @@ export function SalesChart({ payments = [], isLoading = false }: SalesChartProps
           </div>
         </div>
       </CardHeader>
-      
+
       <CardContent className="flex-1 flex flex-col">
         {/* Estatísticas resumidas */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4 mt-4">
@@ -125,21 +131,21 @@ export function SalesChart({ payments = [], isLoading = false }: SalesChartProps
               {formatSalesValue(periodStats.totalSales)}
             </p>
           </div>
-          
+
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">Total de Pedidos</p>
-            <p className="text-lg font-semibold text-blue-600">
+            <p className="text-lg font-semibold text-[var(--primary-blue)]">
               {periodStats.totalOrders}
             </p>
           </div>
-          
+
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">Média Diária</p>
             <p className="text-lg font-semibold">
               {formatSalesValue(periodStats.averageDailySales)}
             </p>
           </div>
-          
+
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">Crescimento</p>
             <div className="flex items-center gap-1">
@@ -148,10 +154,11 @@ export function SalesChart({ payments = [], isLoading = false }: SalesChartProps
               ) : (
                 <TrendingDown className="h-4 w-4 text-red-600" />
               )}
-              <p className={`text-lg font-semibold ${
-                periodStats.growthPercentage >= 0 ? 'text-green-600' : 'text-red-600'
-              }`}>
-                {periodStats.growthPercentage >= 0 ? '+' : ''}{periodStats.growthPercentage}%
+              <p className={[
+                "text-lg font-semibold",
+                periodStats.growthPercentage >= 0 ? "text-green-600" : "text-red-600",
+              ].join(" ")}>
+                {periodStats.growthPercentage >= 0 ? "+" : ""}{periodStats.growthPercentage}%
               </p>
             </div>
           </div>
@@ -162,7 +169,7 @@ export function SalesChart({ payments = [], isLoading = false }: SalesChartProps
           <div className="mb-3">
             <Badge variant="secondary" className="flex items-center gap-2 w-fit">
               <DollarSign className="h-3 w-3" />
-              Melhor dia: {periodStats.bestDay.label} - {formatSalesValue(periodStats.bestDay.sales)}
+              Melhor dia: {periodStats.bestDay.label} — {formatSalesValue(periodStats.bestDay.sales)}
             </Badge>
           </div>
         )}
@@ -173,26 +180,17 @@ export function SalesChart({ payments = [], isLoading = false }: SalesChartProps
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart
                 data={chartData}
-                margin={{
-                  top: 10,
-                  right: 30,
-                  left: 0,
-                  bottom: 0,
-                }}
+                margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
               >
                 <defs>
                   <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#22c55e" stopOpacity={0.05}/>
+                    <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#22c55e" stopOpacity={0.05} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis 
-                  dataKey="label" 
-                  className="text-muted-foreground"
-                  fontSize={12}
-                />
-                <YAxis 
+                <XAxis dataKey="label" className="text-muted-foreground" fontSize={12} />
+                <YAxis
                   className="text-muted-foreground"
                   fontSize={12}
                   tickFormatter={formatCompactValue}
@@ -220,4 +218,4 @@ export function SalesChart({ payments = [], isLoading = false }: SalesChartProps
       </CardContent>
     </Card>
   );
-} 
+}
