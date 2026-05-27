@@ -65,7 +65,7 @@ export function PaymentsList({
   getClientName,
   getOrderNumber,
 }: PaymentsListProps) {
-  
+
   const confirmCancelPayment = async (id: string) => {
     const confirmed = window.confirm(
       "Tem certeza que deseja cancelar este pagamento?"
@@ -75,9 +75,11 @@ export function PaymentsList({
     }
   };
 
-
-
   const getIconMethod = (method: string) => {
+    // Boleto-type methods (includes compound names like sicredi_boleto)
+    if (method === "bank_slip" || method.includes("boleto")) {
+      return <BookText className="h-4 w-4 mr-1 text-muted-foreground" />;
+    }
     switch (method) {
       case "credit_card":
       case "credit":
@@ -87,8 +89,6 @@ export function PaymentsList({
       case "debit_card":
       case "debit":
         return <CreditCard className="h-4 w-4 mr-1 text-muted-foreground" />;
-      case "bank_slip":
-        return <BookText className="h-4 w-4 mr-1 text-muted-foreground" />;
       case "promissor_note":
       case "promissory_note":
         return <NotepadText className="h-4 w-4 mr-1 text-muted-foreground" />;
@@ -101,7 +101,7 @@ export function PaymentsList({
       default:
         return <CreditCard className="h-4 w-4 mr-1 text-muted-foreground" />;
     }
-  }
+  };
 
   return (
     <>
@@ -133,89 +133,89 @@ export function PaymentsList({
       {!isLoading && !error && payments.length > 0 && (
         <>
           <div className="overflow-x-auto">
-          <Table className="min-w-[900px]">
-            <TableHeader className="bg-gray-100 dark:bg-slate-800/50">
-              <TableRow>
-                <TableHead>Nº OS</TableHead>
-                <TableHead>Cliente</TableHead>
-                <TableHead>Descrição</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Método de Pagamento</TableHead>
-                <TableHead>Data</TableHead>
-                <TableHead>Valor</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {payments.map((payment: IPayment) => (
-                <TableRow key={payment._id}>
-                  <TableCell>
-                    {payment.orderId ? getOrderNumber(payment.orderId) : "Sem número de OS"}
-                  </TableCell>
-                  <TableCell>
-                    {payment.customerId ? getClientName(payment.customerId) : "Sem cliente"}
-                  </TableCell>
+            <Table className="min-w-[900px]">
+              <TableHeader className="bg-gray-100 dark:bg-slate-800/50">
+                <TableRow>
+                  <TableHead>Nº OS</TableHead>
+                  <TableHead>Cliente</TableHead>
+                  <TableHead>Descrição</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Método de Pagamento</TableHead>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Valor</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {payments.map((payment: IPayment) => (
+                  <TableRow key={payment._id}>
+                    <TableCell>
+                      {payment.orderId ? getOrderNumber(payment.orderId) : "Sem número de OS"}
+                    </TableCell>
+                    <TableCell>
+                      {payment.customerId ? getClientName(payment.customerId) : "Sem cliente"}
+                    </TableCell>
                     <TableCell>
                       {payment.description || "Sem descrição"}
                     </TableCell>
-                  <TableCell>
-                    <Badge className={`status-badge ${getPaymentTypeClass(payment.type)}`}>
-                      {translatePaymentType(payment.type)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center">
-                      {getIconMethod(payment.paymentMethod)}
-                      {translatePaymentMethod(payment.paymentMethod)}
-                    </div>
-                  </TableCell>
-                  <TableCell>{formatDate(payment.date)}</TableCell>
-                  <TableCell
-                    className={
-                      payment.type === "expense"
-                        ? "text-red-600 font-medium"
-                        : "text-green-600 font-medium"
-                    }
-                  >
-                    {formatCurrency(payment.amount)}
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={`status-badge ${getPaymentStatusClass(payment.status)}`}>
-                      {translatePaymentStatus(payment.status)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex space-x-2">
-                      <Button
-                        variant="outline"
-                        onClick={() => navigateToPaymentDetails(payment._id)}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      {payment.status !== "cancelled" && (
+                    <TableCell>
+                      <Badge className={`status-badge ${getPaymentTypeClass(payment.type)}`}>
+                        {translatePaymentType(payment.type)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center">
+                        {getIconMethod(payment.paymentMethod)}
+                        {translatePaymentMethod(payment.paymentMethod)}
+                      </div>
+                    </TableCell>
+                    <TableCell>{formatDate(payment.date)}</TableCell>
+                    <TableCell
+                      className={
+                        payment.type === "expense"
+                          ? "text-red-600 font-medium"
+                          : "text-green-600 font-medium"
+                      }
+                    >
+                      {formatCurrency(payment.amount)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={`status-badge ${getPaymentStatusClass(payment.status)}`}>
+                        {translatePaymentStatus(payment.status)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex space-x-2">
                         <Button
                           variant="outline"
-                          onClick={() => confirmCancelPayment(payment._id)}
+                          onClick={() => navigateToPaymentDetails(payment._id)}
                         >
-                          <Ban className="h-4 w-4" />
+                          <Eye className="h-4 w-4" />
                         </Button>
-                      )}
-                      {payment.paymentMethod === "mercado_pago" && payment.mercadoPagoId && (
-                        <Button
-                          variant="outline"
-                          className="text-blue-600"
-                          onClick={() => window.open("https://www.mercadopago.com.br", "_blank")}
-                        >
-                          <CreditCard className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                        {payment.status !== "cancelled" && (
+                          <Button
+                            variant="outline"
+                            onClick={() => confirmCancelPayment(payment._id)}
+                          >
+                            <Ban className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {payment.paymentMethod === "mercado_pago" && payment.mercadoPagoId && (
+                          <Button
+                            variant="outline"
+                            className="text-blue-600"
+                            onClick={() => window.open("https://www.mercadopago.com.br", "_blank")}
+                          >
+                            <CreditCard className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
 
           <PaginationItems

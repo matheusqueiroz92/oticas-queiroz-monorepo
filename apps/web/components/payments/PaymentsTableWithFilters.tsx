@@ -1,11 +1,17 @@
-import { DollarSign } from "lucide-react";
+import { DollarSign, Loader2, Plus } from "lucide-react";
 import { DataTableWithFilters, FilterOption } from "@/components/ui/data-table-with-filters";
 import { PaymentFilters } from "@/components/payments/PaymentFilters";
 import { PaymentsList } from "@/components/payments/PaymentsList";
 import { ErrorAlert } from "@/components/ErrorAlert";
-import { Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { IPayment } from "@/app/_types/payment";
+import {
+  translatePaymentType,
+  translatePaymentMethod,
+  translatePaymentStatus,
+  getPaymentTypeClass,
+  getPaymentStatusClass,
+} from "@/app/_utils/formatters";
 
 interface PaymentsTableWithFiltersProps {
   payments: IPayment[];
@@ -22,8 +28,8 @@ interface PaymentsTableWithFiltersProps {
   onPaymentMethodFilterChange: (value: string) => void;
   statusFilter: string;
   onStatusFilterChange: (value: string) => void;
-  filters: Record<string, any>;
-  onUpdateFilters: (filters: Record<string, any>) => void;
+  filters: Record<string, unknown>;
+  onUpdateFilters: (filters: Record<string, unknown>) => void;
   onClearFilters: () => void;
   onNewPayment: () => void;
   currentPage: number;
@@ -64,12 +70,11 @@ export function PaymentsTableWithFilters({
   getClientName,
   getOrderNumber,
 }: PaymentsTableWithFiltersProps) {
-  // Configuração dos filtros básicos
   const typeFilterOptions: FilterOption[] = [
     { value: "all", label: "Todos os tipos" },
     { value: "sale", label: "Venda" },
     { value: "debt_payment", label: "Pagamento de Dívida" },
-    { value: "expense", label: "Despesa" }
+    { value: "expense", label: "Despesa" },
   ];
 
   const paymentMethodFilterOptions: FilterOption[] = [
@@ -81,14 +86,14 @@ export function PaymentsTableWithFilters({
     { value: "check", label: "Cheque" },
     { value: "bank_slip", label: "Boleto Bancário" },
     { value: "promissory_note", label: "Nota Promissória" },
-    { value: "mercado_pago", label: "Mercado Pago" }
+    { value: "mercado_pago", label: "Mercado Pago" },
   ];
 
   const statusFilterOptions: FilterOption[] = [
     { value: "all", label: "Todos os status" },
     { value: "pending", label: "Pendente" },
     { value: "completed", label: "Concluído" },
-    { value: "cancelled", label: "Cancelado" }
+    { value: "cancelled", label: "Cancelado" },
   ];
 
   const basicFilters = [
@@ -97,22 +102,22 @@ export function PaymentsTableWithFilters({
       value: typeFilter,
       onChange: onTypeFilterChange,
       placeholder: "Tipo de pagamento",
-      width: "w-[180px]"
+      width: "w-[180px]",
     },
     {
       options: paymentMethodFilterOptions,
       value: paymentMethodFilter,
       onChange: onPaymentMethodFilterChange,
       placeholder: "Método",
-      width: "w-[160px]"
+      width: "w-[160px]",
     },
     {
       options: statusFilterOptions,
       value: statusFilter,
       onChange: onStatusFilterChange,
       placeholder: "Status",
-      width: "w-[140px]"
-    }
+      width: "w-[140px]",
+    },
   ];
 
   return (
@@ -130,10 +135,10 @@ export function PaymentsTableWithFilters({
       }
       onNewItem={onNewPayment}
       newButtonText="Novo Pagamento"
-      searchIcon={<DollarSign className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />}
-      onExport={() => {
-        // Implementar lógica de exportação
-      }}
+      searchIcon={
+        <DollarSign className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+      }
+      onExport={() => {}}
       exportDisabled={isLoading || payments.length === 0}
     >
       {isLoading && (
@@ -141,19 +146,21 @@ export function PaymentsTableWithFilters({
           <Loader2 className="h-8 w-8 animate-spin" />
         </div>
       )}
-      
+
       {error && (
         <div className="p-6">
           <ErrorAlert message={error} />
         </div>
       )}
-      
+
       {showEmptyState && (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <DollarSign className="h-16 w-16 text-muted-foreground mb-4" />
           <h3 className="text-lg font-semibold">Nenhum pagamento encontrado</h3>
           <p className="text-muted-foreground mt-2 mb-4">
-            {search ? "Tente ajustar os filtros de busca." : "Clique em 'Novo Pagamento' para adicionar um pagamento ao sistema."}
+            {search
+              ? "Tente ajustar os filtros de busca."
+              : "Clique em 'Novo Pagamento' para adicionar um pagamento ao sistema."}
           </p>
           {!search && (
             <Button onClick={onNewPayment}>
@@ -163,10 +170,10 @@ export function PaymentsTableWithFilters({
           )}
         </div>
       )}
-      
+
       {!isLoading && !error && payments.length > 0 && (
         <div className="overflow-x-auto">
-          <PaymentsList 
+          <PaymentsList
             payments={payments}
             isLoading={isLoading}
             error={error}
@@ -186,11 +193,11 @@ export function PaymentsTableWithFilters({
             navigateToPaymentDetails={navigateToPaymentDetails}
             navigateToNewPayment={onNewPayment}
             setCurrentPage={setCurrentPage}
-            translatePaymentType={(type: string) => type}
-            translatePaymentMethod={(method: string) => method}
-            translatePaymentStatus={(status: string) => status}
-            getPaymentTypeClass={() => ""}
-            getPaymentStatusClass={() => ""}
+            translatePaymentType={translatePaymentType}
+            translatePaymentMethod={translatePaymentMethod}
+            translatePaymentStatus={translatePaymentStatus}
+            getPaymentTypeClass={getPaymentTypeClass}
+            getPaymentStatusClass={getPaymentStatusClass}
             getClientName={getClientName}
             getOrderNumber={getOrderNumber}
           />
@@ -198,4 +205,4 @@ export function PaymentsTableWithFilters({
       )}
     </DataTableWithFilters>
   );
-} 
+}
