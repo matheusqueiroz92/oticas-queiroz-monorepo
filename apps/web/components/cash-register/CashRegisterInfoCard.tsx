@@ -23,11 +23,7 @@ import {
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center text-lg">
             {title}
-            <Badge className={`ml-2 ${
-              register.status === "open"
-                ? "bg-green-100 text-green-800 hover:bg-green-100"
-                : "bg-gray-100 text-gray-800 hover:bg-gray-100"
-            }`}>
+            <Badge className={`status-badge ml-2 ${register.status === "open" ? "badge-success" : "badge-neutral"}`}>
               {register.status === "open" ? "Aberto" : "Fechado"}
             </Badge>
           </CardTitle>

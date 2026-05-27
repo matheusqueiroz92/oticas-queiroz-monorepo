@@ -2,13 +2,13 @@
 
 import { useEffect } from "react";
 import { PageContainer } from "@/components/ui/page-container";
-import { LaboratoryStatsCards } from "@/components/laboratories/LaboratoryStatsCards";
+// import { LaboratoryStatsCards } from "@/components/laboratories/LaboratoryStatsCards";
 import { LaboratoryTableWithFilters } from "@/components/laboratories/LaboratoryTableWithFilters";
 import { LaboratoryDialogs } from "@/components/laboratories/LaboratoryDialogs";
 import { useLaboratoriesList } from "@/hooks/laboratories/useLaboratoriesList";
 import { useLaboratoryPageState } from "@/hooks/laboratories/useLaboratoryPageState";
 import { useLaboratoryFilters } from "@/hooks/laboratories/useLaboratoryFilters";
-import { useLaboratoryStats } from "@/hooks/laboratories/useLaboratoryStats";
+// import { useLaboratoryStats } from "@/hooks/laboratories/useLaboratoryStats";
 
 export default function LaboratoriesPage() {
   const { state, actions } = useLaboratoryPageState();
@@ -37,7 +37,7 @@ export default function LaboratoriesPage() {
     applyBasicFilters,
   } = useLaboratoryFilters(search, setSearch, filters, updateFilters, getActiveFiltersCount);
 
-  const stats = useLaboratoryStats(laboratories, totalItems);
+  // const stats = useLaboratoryStats(laboratories, totalItems);
 
   // Aplicar filtros quando os selects básicos mudarem
   useEffect(() => {

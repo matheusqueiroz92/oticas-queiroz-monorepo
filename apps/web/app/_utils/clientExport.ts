@@ -1,7 +1,7 @@
 import { saveAs } from 'file-saver';
 import { jsPDF } from 'jspdf';
 import type { Order } from '@/app/_types/order';
-import { formatCurrency } from './formatters';
+// import { formatCurrency } from './formatters';
 import 'jspdf-autotable';
 
 /**

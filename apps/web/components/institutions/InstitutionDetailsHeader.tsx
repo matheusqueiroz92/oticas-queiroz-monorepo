@@ -27,7 +27,7 @@ export function InstitutionDetailsHeader({
           <Badge
             variant={institution.status === "active" ? "default" : "secondary"}
             className={`${
-              institution.status === "active" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"
+              institution.status === "active" ? "badge-success status-badge" : "badge-neutral status-badge"
             }`}
           >
             {institution.status === "active" ? "Ativo" : "Inativo"}

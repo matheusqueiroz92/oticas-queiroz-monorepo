@@ -236,12 +236,13 @@ export function AppSidebar() {
 
       {/* Conteúdo do Menu */}
       <SidebarContent className="bg-[var(--primary-blue)] text-white p-2">
-        <SidebarMenu className="flex flex-col gap-1 md:gap-2 lg:gap-1.5">
+        <SidebarMenu className="flex flex-col gap-0.5">
           {menuItems.map((item) => {
             if (!shouldShowMenuItem(item.roles)) return null;
 
             const hasSubItems = item.subItems && item.subItems.length > 0;
             const hasVisibleSubItems = hasSubItems && item.subItems!.some(subItem => shouldShowMenuItem(subItem.roles));
+            const active = isActiveGroup(item);
 
             return (
               <React.Fragment key={item.href}>
@@ -250,22 +251,23 @@ export function AppSidebar() {
                     // Item com sub-menu (botão expansível)
                     <SidebarMenuButton
                       onClick={() => toggleMenu(item.href)}
-                      isActive={isActiveGroup(item)}
+                      isActive={active}
                       tooltip={item.title}
                       className={cn(
-                        "text-white hover:bg-white/10 data-[active=true]:bg-white/20",
-                        "group-data-[collapsible=icon]:justify-center"
+                        "text-white/90 hover:text-white hover:bg-white/10 transition-all duration-150",
+                        "data-[active=true]:bg-white/20 data-[active=true]:text-white data-[active=true]:font-medium",
+                        "rounded-lg group-data-[collapsible=icon]:justify-center"
                       )}
                     >
-                      <item.icon className="h-5 w-5" />
+                      <item.icon className="h-4 w-4 shrink-0" />
                       <span className="group-data-[collapsible=icon]:sr-only">
                         {item.title}
                       </span>
                       <div className="ml-auto group-data-[collapsible=icon]:hidden">
                         {isMenuExpanded(item.href) ? (
-                          <ChevronDown className="h-4 w-4 transition-transform duration-200" />
+                          <ChevronDown className="h-3.5 w-3.5 opacity-70 transition-transform duration-200" />
                         ) : (
-                          <ChevronRight className="h-4 w-4 transition-transform duration-200" />
+                          <ChevronRight className="h-3.5 w-3.5 opacity-70 transition-transform duration-200" />
                         )}
                       </div>
                     </SidebarMenuButton>
@@ -273,15 +275,16 @@ export function AppSidebar() {
                     // Item sem sub-menu (link normal)
                     <SidebarMenuButton
                       asChild
-                      isActive={isActiveGroup(item)}
+                      isActive={active}
                       tooltip={item.title}
                       className={cn(
-                        "text-white hover:bg-white/10 data-[active=true]:bg-white/20",
-                        "group-data-[collapsible=icon]:justify-center"
+                        "text-white/90 hover:text-white hover:bg-white/10 transition-all duration-150",
+                        "data-[active=true]:bg-white/20 data-[active=true]:text-white data-[active=true]:font-medium",
+                        "rounded-lg group-data-[collapsible=icon]:justify-center"
                       )}
                     >
                       <Link href={item.href}>
-                        <item.icon className="h-5 w-5" />
+                        <item.icon className="h-4 w-4 shrink-0" />
                         <span className="group-data-[collapsible=icon]:sr-only">
                           {item.title}
                         </span>
@@ -292,21 +295,25 @@ export function AppSidebar() {
 
                 {/* Sub-items (mostrados apenas se expandido) */}
                 {hasVisibleSubItems && isMenuExpanded(item.href) && (
-                  <div className="group-data-[collapsible=icon]:hidden">
+                  <div className="group-data-[collapsible=icon]:hidden ml-2 border-l border-white/15 pl-2">
                     {item.subItems!.map((subItem) => {
                       if (!shouldShowMenuItem(subItem.roles)) return null;
+                      const subActive = isActiveLink(subItem.href);
 
                       return (
-                        <SidebarMenuItem key={subItem.href} className="ml-4">
+                        <SidebarMenuItem key={subItem.href}>
                           <SidebarMenuButton
                             asChild
-                            isActive={isActiveLink(subItem.href)}
+                            isActive={subActive}
                             tooltip={subItem.title}
                             size="sm"
-                            className="text-white/80 hover:bg-white/10 data-[active=true]:bg-white/20"
+                            className={cn(
+                              "text-white/75 hover:text-white hover:bg-white/10 transition-all duration-150 rounded-lg",
+                              "data-[active=true]:bg-white/20 data-[active=true]:text-white data-[active=true]:font-medium"
+                            )}
                           >
                             <Link href={subItem.href}>
-                              <subItem.icon className="h-4 w-4" />
+                              <subItem.icon className="h-3.5 w-3.5 shrink-0" />
                               <span>{subItem.title}</span>
                             </Link>
                           </SidebarMenuButton>
@@ -329,11 +336,11 @@ export function AppSidebar() {
               onClick={handleSignOut}
               tooltip="Sair"
               className={cn(
-                "text-white hover:bg-white/10 hover:text-white",
+                "text-white/80 hover:text-white hover:bg-red-500/20 transition-all duration-150 rounded-lg",
                 "group-data-[collapsible=icon]:justify-center"
               )}
             >
-              <LogOut className="h-5 w-5" />
+              <LogOut className="h-4 w-4 shrink-0" />
               <span className="group-data-[collapsible=icon]:sr-only">Sair</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -342,3 +349,4 @@ export function AppSidebar() {
     </Sidebar>
   );
 } 
+

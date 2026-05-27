@@ -27,28 +27,28 @@ export function PaymentStatus({
         return {
           title: 'Pagamento Aprovado!',
           description: 'Seu pagamento foi processado com sucesso.',
-          color: 'bg-green-100 text-green-800',
+          color: 'badge-success status-badge',
           icon: <CheckCircle className="h-8 w-8 text-green-600" />
         };
       case 'pending':
         return {
           title: 'Pagamento Pendente',
           description: 'Seu pagamento está sendo processado.',
-          color: 'bg-yellow-100 text-yellow-800',
-          icon: <Clock className="h-8 w-8 text-yellow-600" />
+          color: 'badge-warning status-badge',
+          icon: <Clock className="h-8 w-8 text-amber-600" />
         };
       case 'in_process':
         return {
           title: 'Pagamento em Processamento',
           description: 'Seu pagamento está sendo analisado.',
-          color: 'bg-blue-100 text-blue-800',
+          color: 'badge-info status-badge',
           icon: <Clock className="h-8 w-8 text-blue-600" />
         };
       case 'rejected':
         return {
           title: 'Pagamento Rejeitado',
           description: 'Houve um problema com seu pagamento. Por favor, tente novamente.',
-          color: 'bg-red-100 text-red-800',
+          color: 'badge-error status-badge',
           icon: <XCircle className="h-8 w-8 text-red-600" />
         };
       case 'refunded':
@@ -57,14 +57,14 @@ export function PaymentStatus({
         return {
           title: 'Pagamento Cancelado',
           description: 'Seu pagamento foi cancelado ou estornado.',
-          color: 'bg-gray-100 text-gray-800',
+          color: 'badge-neutral status-badge',
           icon: <XCircle className="h-8 w-8 text-gray-600" />
         };
       default:
         return {
           title: 'Status de Pagamento',
           description: 'Consultando status do pagamento...',
-          color: 'bg-gray-100 text-gray-800',
+          color: 'badge-neutral status-badge',
           icon: <Clock className="h-8 w-8 text-gray-600" />
         };
     }

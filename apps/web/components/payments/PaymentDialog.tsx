@@ -694,11 +694,11 @@ export function PaymentDialog({
                                   ? "Parcialmente Pago" 
                                   : "Pendente";
                                   
-                              const statusClass = order.paymentStatus === "paid" 
-                                ? "bg-green-100 text-green-800" 
-                                : order.paymentStatus === "partially_paid" 
-                                  ? "bg-yellow-100 text-yellow-800" 
-                                  : "bg-red-100 text-red-800";
+                              const statusClass = order.paymentStatus === "paid"
+                                ? "badge-success status-badge"
+                                : order.paymentStatus === "partially_paid"
+                                  ? "badge-warning status-badge"
+                                  : "badge-error status-badge";
                                 
                               return (
                                 <div

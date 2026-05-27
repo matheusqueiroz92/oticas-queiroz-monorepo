@@ -29,18 +29,18 @@ export default function MyDebtsPage() {
 
   const getPaymentMethodBadge = (method: string) => {
     const methodMap: { [key: string]: { label: string; className: string } } = {
-      credit: { label: "Cartão de Crédito", className: "bg-blue-100 text-blue-800" },
-      debit: { label: "Cartão de Débito", className: "bg-green-100 text-green-800" },
-      cash: { label: "Dinheiro", className: "bg-orange-100 text-orange-800" },
-      pix: { label: "PIX", className: "bg-purple-100 text-purple-800" },
-      bank_slip: { label: "Boleto", className: "bg-yellow-100 text-yellow-800" },
-      promissory_note: { label: "Promissória", className: "bg-red-100 text-red-800" },
-      check: { label: "Cheque", className: "bg-gray-100 text-gray-800" },
+      credit: { label: "Cartão de Crédito", className: "badge-info" },
+      debit: { label: "Cartão de Débito", className: "badge-success" },
+      cash: { label: "Dinheiro", className: "badge-success" },
+      pix: { label: "PIX", className: "badge-purple" },
+      bank_slip: { label: "Boleto", className: "badge-warning" },
+      promissory_note: { label: "Promissória", className: "badge-warning" },
+      check: { label: "Cheque", className: "badge-neutral" },
     };
 
-    const methodInfo = methodMap[method] || { label: method, className: "bg-gray-100 text-gray-800" };
+    const methodInfo = methodMap[method] || { label: method, className: "badge-neutral" };
     return (
-      <Badge className={`${methodInfo.className} text-xs`}>
+      <Badge className={`status-badge ${methodInfo.className} text-xs`}>
         {methodInfo.label}
       </Badge>
     );
@@ -48,14 +48,14 @@ export default function MyDebtsPage() {
 
   const getPaymentStatusBadge = (status: string) => {
     const statusMap: { [key: string]: { label: string; className: string } } = {
-      pending: { label: "Pendente", className: "bg-yellow-100 text-yellow-800" },
-      completed: { label: "Concluído", className: "bg-green-100 text-green-800" },
-      cancelled: { label: "Cancelado", className: "bg-red-100 text-red-800" },
+      pending: { label: "Pendente", className: "badge-warning" },
+      completed: { label: "Concluído", className: "badge-success" },
+      cancelled: { label: "Cancelado", className: "badge-error" },
     };
 
-    const statusInfo = statusMap[status] || { label: status, className: "bg-gray-100 text-gray-800" };
+    const statusInfo = statusMap[status] || { label: status, className: "badge-neutral" };
     return (
-      <Badge className={`${statusInfo.className} text-xs`}>
+      <Badge className={`status-badge ${statusInfo.className} text-xs`}>
         {statusInfo.label}
       </Badge>
     );

@@ -116,8 +116,8 @@ export function InstitutionTable({
                   variant={item.status === "active" ? "default" : "secondary"}
                   className={
                     item.status === "active" 
-                      ? "bg-green-100 text-green-800" 
-                      : "bg-gray-100 text-gray-800"
+                      ? "badge-success status-badge"
+                      : "badge-neutral status-badge"
                   }
                 >
                   {item.status === "active" ? "Ativo" : "Inativo"}

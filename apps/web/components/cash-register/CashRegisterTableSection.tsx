@@ -111,11 +111,7 @@ export function CashRegisterTableSection({
               </TableCell>
               <TableCell>
                 <Badge
-                  className={
-                    register.status === "open"
-                      ? "bg-green-100 text-green-800 hover:bg-green-100"
-                      : "bg-gray-100 text-gray-800 hover:bg-gray-100"
-                  }
+                  className={`status-badge ${register.status === "open" ? "badge-success" : "badge-neutral"}`}
                 >
                   {register.status === "open" ? "Aberto" : "Fechado"}
                 </Badge>

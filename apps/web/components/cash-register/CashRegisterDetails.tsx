@@ -136,11 +136,7 @@ export function CashRegisterDetails({
               <CircleDollarSign className="h-5 w-5 mr-2" />
               Dados do Caixa
               <Badge
-                className={`ml-2 ${
-                  register.status === "open"
-                    ? "bg-green-100 text-green-800 hover:bg-green-100"
-                    : "bg-gray-100 text-gray-800 hover:bg-gray-100"
-                }`}
+                className={`status-badge ml-2 ${register.status === "open" ? "badge-success" : "badge-neutral"}`}
               >
                 {register.status === "open" ? "Aberto" : "Fechado"}
               </Badge>

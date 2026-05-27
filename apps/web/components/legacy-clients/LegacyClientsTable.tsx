@@ -68,12 +68,7 @@ export function LegacyClientsTable({
               </TableCell>
               <TableCell>
                 <Badge
-                  variant="outline"
-                  className={`${
-                    client.status === "active"
-                      ? "bg-green-100 text-green-800 border-green-200"
-                      : "bg-gray-100 text-gray-800 border-gray-200"
-                  }`}
+                  className={`status-badge ${client.status === "active" ? "badge-success" : "badge-neutral"}`}
                 >
                   {client.status === "active" ? "Ativo" : "Inativo"}
                 </Badge>

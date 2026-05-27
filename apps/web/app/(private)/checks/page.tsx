@@ -93,11 +93,11 @@ export default function ChecksPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "pending":
-        return <Badge className="bg-yellow-100 text-yellow-800">Pendente</Badge>;
+        return <Badge className="badge-warning status-badge">Pendente</Badge>;
       case "compensated":
-        return <Badge className="bg-green-100 text-green-800">Compensado</Badge>;
+        return <Badge className="badge-success status-badge">Compensado</Badge>;
       case "rejected":
-        return <Badge className="bg-red-100 text-red-800">Rejeitado</Badge>;
+        return <Badge className="badge-error status-badge">Rejeitado</Badge>;
       default:
         return <Badge>Desconhecido</Badge>;
     }

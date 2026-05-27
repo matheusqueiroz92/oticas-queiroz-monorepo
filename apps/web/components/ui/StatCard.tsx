@@ -47,32 +47,32 @@ export function StatCard({
   const showCustomFooter = !!footerAction;
 
   return (
-    <Card className="bg-primary/10 border border-primary/20">
+    <Card className="relative overflow-hidden bg-gradient-to-br from-primary/8 to-primary/5 border border-primary/15 shadow-sm hover:shadow-md hover:border-primary/25 transition-all duration-200">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
-        <CardTitle className="text-sm sm:text-base md:text-xl font-normal text-zinc-900 dark:text-zinc-100 line-clamp-2">
+        <CardTitle className="text-sm sm:text-base font-medium text-zinc-700 dark:text-zinc-300 line-clamp-2 leading-snug">
           {title}
         </CardTitle>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 shrink-0">
           {headerAction}
           <div
-            className={`rounded-full ${bgColor} p-2 flex items-center justify-center`}
+            className={`rounded-xl ${bgColor} p-2.5 flex items-center justify-center shadow-sm`}
           >
-            <Icon className={`h-5 w-5 ${iconColor}`} />
+            <Icon className={`h-4 w-4 sm:h-5 sm:w-5 ${iconColor}`} />
           </div>
         </div>
       </CardHeader>
-      <CardContent className="pt-1">
+      <CardContent className="pt-0">
         {isLoading ? (
-          <Skeleton className={`h-6 ${skeletonWidth}`} />
+          <Skeleton className={`h-7 ${skeletonWidth} mt-1`} />
         ) : (
           <>
-            <div className="text-lg sm:text-xl md:text-2xl font-bold text-zinc-900 dark:text-zinc-100 break-words">
+            <div className="text-xl sm:text-2xl font-bold text-zinc-900 dark:text-zinc-50 break-words tabular-nums">
               {value}
             </div>
             {badge && (
               <Badge
                 variant="secondary"
-                className={`text-xs mt-1 pointer-events-none ${badge.className || "bg-blue-500 text-white border-0"}`}
+                className={`text-xs mt-1.5 pointer-events-none ${badge.className || "bg-blue-500 text-white border-0"}`}
               >
                 {badge.text}
               </Badge>
@@ -81,14 +81,14 @@ export function StatCard({
             {showCashRegisterFooter && (
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 {description && !badge && (
-                  <div className="text-xs min-w-0 flex-1">{description}</div>
+                  <div className="text-xs text-muted-foreground min-w-0 flex-1">{description}</div>
                 )}
 
                 {showOpenCashRegisterButton && !isCashRegisterOpen && (
                   <Button
                     asChild
                     size="sm"
-                    className="shrink-0 bg-[var(--primary-blue)] text-white hover:bg-primary hover:text-white"
+                    className="shrink-0 bg-[var(--primary-blue)] text-white hover:bg-[var(--primary-blue-light)] hover:text-white"
                   >
                     <Link href={cashRegisterOpenHref}>
                       Abrir caixa
@@ -109,7 +109,7 @@ export function StatCard({
             )}
 
             {description && !badge && !showCashRegisterFooter && !showCustomFooter && (
-              <div className="text-xs text-[var(--primary-blue)] mt-1">
+              <div className="text-xs text-muted-foreground mt-1.5">
                 {description}
               </div>
             )}

@@ -44,7 +44,7 @@ export function LegacyClientDetailsHeader({
           <Badge
             variant={client.status === "active" ? "default" : "secondary"}
             className={`ml-2 ${
-              client.status === "active" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"
+              client.status === "active" ? "badge-success status-badge" : "badge-neutral status-badge"
             }`}
           >
             {client.status === "active" ? "Ativo" : "Inativo"}

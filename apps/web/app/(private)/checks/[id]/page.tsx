@@ -120,21 +120,21 @@ export default function CheckDetailsPage() {
     switch (status) {
       case "pending":
         return (
-          <Badge className="bg-yellow-100 text-yellow-800 px-3 py-1">
+          <Badge className="badge-warning status-badge px-3 py-1">
             <Clock className="h-4 w-4 mr-2" />
             Pendente
           </Badge>
         );
       case "compensated":
         return (
-          <Badge className="bg-green-100 text-green-800 px-3 py-1">
+          <Badge className="badge-success status-badge px-3 py-1">
             <CheckCircle className="h-4 w-4 mr-2" />
             Compensado
           </Badge>
         );
       case "rejected":
         return (
-          <Badge className="bg-red-100 text-red-800 px-3 py-1">
+          <Badge className="badge-error status-badge px-3 py-1">
             <XCircle className="h-4 w-4 mr-2" />
             Rejeitado
           </Badge>

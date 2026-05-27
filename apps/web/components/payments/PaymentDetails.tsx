@@ -214,11 +214,11 @@ export function PaymentDetails({
                       
                       <div>
                         <span className="font-medium">Status de Compensação:</span>
-                        <Badge className={
-                          payment.check.compensationStatus === "compensated" ? "bg-green-100 text-green-800" :
-                          payment.check.compensationStatus === "rejected" ? "bg-red-100 text-red-800" :
-                          "bg-yellow-100 text-yellow-800"
-                        }>
+                        <Badge className={`status-badge ${
+                          payment.check.compensationStatus === "compensated" ? "badge-success" :
+                          payment.check.compensationStatus === "rejected" ? "badge-error" :
+                          "badge-warning"
+                        }`}>
                           {payment.check.compensationStatus === "compensated" ? "Compensado" :
                           payment.check.compensationStatus === "rejected" ? "Rejeitado" :
                           "Pendente"}

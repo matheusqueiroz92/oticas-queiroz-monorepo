@@ -40,8 +40,8 @@ export function InstitutionDetailsInfo({ institution, getUserImageUrl }: Institu
               variant={institution.status === "active" ? "default" : "secondary"}
               className={
                 institution.status === "active" 
-                  ? "bg-green-100 text-green-800" 
-                  : "bg-gray-100 text-gray-800"
+                  ? "badge-success status-badge"
+                  : "badge-neutral status-badge"
               }
             >
               {institution.status === "active" ? "Ativo" : "Inativo"}

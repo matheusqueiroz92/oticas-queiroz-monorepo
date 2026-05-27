@@ -19,7 +19,7 @@ export default function PaymentDetailsPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   
-  const [legacyClient, _setLegacyClient] = useState<LegacyClient | null>(null);
+  const [legacyClient] = useState<LegacyClient | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   
   const { handleCancelPayment } = usePayments();
