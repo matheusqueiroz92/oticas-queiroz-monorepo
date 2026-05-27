@@ -113,11 +113,22 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no root@147.79.107.246 "
             set -e
-            cd /var/www/oticas-queiroz
+            DEPLOY_DIR=/opt/apps/oticas-queiroz
+            cd \"\$DEPLOY_DIR\"
             git fetch origin main
             git reset --hard origin/main
-            cd /opt/apps/oticas-queiroz
-            docker compose pull --quiet 2>/dev/null || true
-            docker compose up --build -d
-            docker compose ps
+
+            # Containers com prefixo hash ficam órfãos quando um recreate é interrompido
+            docker ps -a --format '{{.Names}}' \
+              | grep -E '^[0-9a-f]{12}_oticas-queiroz-' \
+              | xargs -r docker rm -f 2>/dev/null || true
+
+            COMPOSE_FILES='-f docker-compose.yml'
+            if [ -f docker-compose.prod.yml ]; then
+              COMPOSE_FILES=\"\$COMPOSE_FILES -f docker-compose.prod.yml\"
+            fi
+
+            docker compose \$COMPOSE_FILES pull --quiet 2>/dev/null || true
+            docker compose \$COMPOSE_FILES up --build -d --remove-orphans
+            docker compose \$COMPOSE_FILES ps
           "
