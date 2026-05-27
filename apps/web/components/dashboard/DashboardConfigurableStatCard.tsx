@@ -80,7 +80,7 @@ export function DashboardConfigurableStatCard({
         variant="outline"
         className="shrink-0 text-[var(--primary-blue)] border-[var(--primary-blue)]/30 hover:bg-[var(--primary-blue)]/10"
       >
-        <Link href={config.listHref}>
+        <Link href={config.listHref} className="hover:bg-primary/5 hover:text-primary">
           {config.listLabel}
           <ArrowRight className="h-4 w-4 ml-1" />
         </Link>

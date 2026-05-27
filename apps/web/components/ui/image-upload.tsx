@@ -176,7 +176,7 @@ export function ImageUpload({
   };
 
   return (
-    <div className={cn("space-y-3", className)}>
+    <div className={cn("space-y-2", className)}>
       <input
         ref={fileInputRef}
         type="file"
@@ -185,8 +185,6 @@ export function ImageUpload({
         disabled={disabled}
         className="hidden"
       />
-      
-
 
       <div className="flex items-start gap-4">
         {isCapturing ? (

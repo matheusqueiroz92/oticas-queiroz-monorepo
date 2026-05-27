@@ -13,7 +13,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogOverlay,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -283,7 +282,6 @@ export function CustomerDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogOverlay className="bg-black/60" />
       <DialogContent className="max-w-3xl max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold flex items-center gap-2">
@@ -299,11 +297,10 @@ export function CustomerDialog({
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
             {/* Campo de Imagem - Primeiro */}
-            <div className="space-y-4">
+            <div className="space-y-2">
               <h3 className="text-lg font-semibold flex items-center gap-2">
-              <ImageIcon className="w-5 h-5 text-[var(--primary-blue)]" />
                 Foto do Cliente
               </h3>
               
@@ -316,7 +313,7 @@ export function CustomerDialog({
             </div>
 
             {/* Informações Básicas */}
-            <div className="space-y-4">
+            <div className="space-y-2">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -397,7 +394,7 @@ export function CustomerDialog({
             </div>
 
             {/* Documentos */}
-            <div className="space-y-4">
+            <div className="space-y-2">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -430,7 +427,7 @@ export function CustomerDialog({
             </div>
 
             {/* Endereço */}
-            <div className="space-y-4">
+            <div className="space-y-2">
               <p className="text-xs text-muted-foreground font-medium">
                 Endereço (obrigatório para boleto SICREDI)
               </p>

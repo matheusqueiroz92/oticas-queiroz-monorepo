@@ -57,8 +57,12 @@ export function EmployeeDashboard({
 }: EmployeeDashboardProps) {
   return (
     <>
-      {/* Busca rápida de pedidos — ocupa largura total em mobile, metade em sm+ */}
-      <QuickOrderSearch className="w-full" />
+      {/* Busca rápida — largura total em mobile; em lg+ equivale a 2 botões do grid de ações */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+        <div className="col-span-2">
+          <QuickOrderSearch />
+        </div>
+      </div>
 
       <DashboardQuickActions
         dialogStates={dialogStates}

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogOverlay } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { OrderForm } from "./OrderForm";
 import OrderSuccessScreen from "./OrderSuccessScreen";
 import type { OrderFormValues } from "@/app/_types/form-types";
@@ -299,7 +299,6 @@ export const OrderDialog: React.FC<OrderDialogProps> = ({ open, onOpenChange, or
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogOverlay className="bg-black/60" />
       <DialogContent className="max-w-5xl w-[calc(100%-1.5rem)] sm:w-full overflow-y-auto max-h-[90dvh] p-0 border-0">
         <div className="p-4 sm:p-6 pb-2">
           <DialogHeader>

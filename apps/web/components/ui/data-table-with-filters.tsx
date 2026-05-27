@@ -62,7 +62,7 @@ export function DataTableWithFilters({
   advancedFiltersComponent,
   onNewItem,
   newButtonText,
-  newButtonIcon = <Plus className="w-4 h-4 mr-2" />,
+  newButtonIcon = <Plus className="w-4 h-4" />,
   onExport,
   exportButtonText = "Exportar",
   exportDisabled = false,
