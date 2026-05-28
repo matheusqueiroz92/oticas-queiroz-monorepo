@@ -1,10 +1,21 @@
 # Overlay para deploy no VPS com Traefik (rede externa já criada no servidor).
 # Uso: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 #
-# MongoDB: use MONGODB_URI no .env apontando para oticas-queiroz-db (banco real).
-# Não ative o profile bundled-mongo em produção — evita subir um Mongo vazio paralelo.
+# MongoDB: MONGODB_URI no .env deve apontar para o container oticas-queiroz-db.
+# O backend precisa estar na MESMA rede Docker que o banco (veja MONGO_DOCKER_NETWORK).
+# Não ative o profile bundled-mongo em produção.
 
 networks:
   oticas-network:
     external: true
     name: ${TRAEFIK_NETWORK:-traefik-public}
+  # Rede onde o container oticas-queiroz-db está (descubra com: docker inspect oticas-queiroz-db)
+  mongo-network:
+    external: true
+    name: ${MONGO_DOCKER_NETWORK:-oticas-queiroz-db_default}
+
+services:
+  backend:
+    networks:
+      - oticas-network
+      - mongo-network
