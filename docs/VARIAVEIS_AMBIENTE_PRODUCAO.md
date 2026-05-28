@@ -79,8 +79,10 @@ NEXT_PUBLIC_API_URL=
 ```
 
 **Nota sobre NEXT_PUBLIC_API_URL:**
-- Se estiver usando NGINX fazendo proxy reverso, deixe vazio (`NEXT_PUBLIC_API_URL=`)
-- Se não usar proxy, defina: `NEXT_PUBLIC_API_URL=https://app.oticasqueiroz.com.br/api`
+- Produção com Traefik: `https://api.app.oticasqueiroz.com.br` (subdomínio roteado nas labels do `backend`)
+- Alternativa no mesmo host: `https://app.oticasqueiroz.com.br/api` (PathPrefix `/api` no Traefik)
+- Após alterar, é obrigatório **rebuild** do frontend (`docker compose build --no-cache frontend`)
+- DNS: registro `A` de `api.app.oticasqueiroz.com.br` apontando para o IP do VPS
 
 ---
 

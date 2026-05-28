@@ -8,6 +8,9 @@ RUN turbo prune web --docker
 
 FROM node:20-alpine AS installer
 WORKDIR /app
+# NEXT_PUBLIC_* é embutido no bundle do cliente no build (passado via docker-compose build.args).
+ARG NEXT_PUBLIC_API_URL=https://api.app.oticasqueiroz.com.br
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 COPY --from=builder /app/out/json/ .
 COPY --from=builder /app/out/package-lock.json ./package-lock.json
 RUN npm install

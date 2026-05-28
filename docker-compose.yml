@@ -122,7 +122,7 @@ services:
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-24h}
       BOT_API_KEY: ${BOT_API_KEY:-}
       FRONTEND_URL: ${FRONTEND_URL:-https://app.oticasqueiroz.com.br}
-      API_URL: ${API_URL:-https://app.oticasqueiroz.com.br/api}
+      API_URL: ${API_URL:-https://api.app.oticasqueiroz.com.br}
       EMAIL_HOST: ${EMAIL_HOST}
       EMAIL_PORT: ${EMAIL_PORT:-587}
       EMAIL_USER: ${EMAIL_USER}
@@ -160,9 +160,17 @@ services:
       start_period: 90s
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=${TRAEFIK_NETWORK:-traefik-public}"
+      # Rota 1: subdomínio da API (usado pelo frontend: NEXT_PUBLIC_API_URL)
+      - "traefik.http.routers.oticas-api-host.rule=Host(`api.app.oticasqueiroz.com.br`)"
+      - "traefik.http.routers.oticas-api-host.entrypoints=websecure"
+      - "traefik.http.routers.oticas-api-host.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.oticas-api-host.service=oticas-api"
+      # Rota 2: mesmo domínio do app com prefixo /api (health, curl, compatibilidade)
       - "traefik.http.routers.oticas-api.rule=Host(`app.oticasqueiroz.com.br`) && PathPrefix(`/api`)"
       - "traefik.http.routers.oticas-api.entrypoints=websecure"
       - "traefik.http.routers.oticas-api.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.oticas-api.service=oticas-api"
       - "traefik.http.services.oticas-api.loadbalancer.server.port=3333"
 
   whatsapp-bot:
@@ -213,6 +221,8 @@ services:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.app.oticasqueiroz.com.br}
     container_name: oticas-queiroz-frontend
     restart: unless-stopped
     depends_on:
@@ -220,11 +230,12 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://app.oticasqueiroz.com.br/api}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.app.oticasqueiroz.com.br}
     networks:
       - oticas-network
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=${TRAEFIK_NETWORK:-traefik-public}"
       - "traefik.http.routers.oticas-web.rule=Host(`app.oticasqueiroz.com.br`)"
       - "traefik.http.routers.oticas-web.entrypoints=websecure"
       - "traefik.http.routers.oticas-web.tls.certresolver=letsencrypt"

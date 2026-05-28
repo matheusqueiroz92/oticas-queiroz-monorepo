@@ -18,9 +18,9 @@ yarn-error.log*
 # Git e Configurações de ambiente
 .git
 .gitignore
-.env.example
-.env.local
-.env.production
+.env
+.env.*
+!.env.example
 .vscode
 
 # Arquivos de sistema
