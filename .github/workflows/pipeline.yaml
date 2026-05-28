@@ -113,10 +113,23 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no root@147.79.107.246 "
             set -e
+            REPO_DIR=/var/www/oticas-queiroz
             DEPLOY_DIR=/opt/apps/oticas-queiroz
-            cd \"\$DEPLOY_DIR\"
+
+            cd \"\$REPO_DIR\"
             git fetch origin main
             git reset --hard origin/main
+
+            mkdir -p \"\$DEPLOY_DIR\"
+            rsync -a \
+              --exclude '.git/' \
+              --exclude 'node_modules/' \
+              --exclude '.env' \
+              --exclude 'whatsapp-auth/' \
+              --exclude 'apps/web/.next/' \
+              \"\$REPO_DIR/\" \"\$DEPLOY_DIR/\"
+
+            cd \"\$DEPLOY_DIR\"
 
             # Containers com prefixo hash ficam órfãos quando um recreate é interrompido
             docker ps -a --format '{{.Names}}' \
