@@ -295,10 +295,9 @@ export default function OrderClientProducts({
                       field.onChange(value);
                       setShowInstallments(
                         value === "credit" ||
-                          value === "bank_slip" ||
-                          value === "promissory_note" ||
-                          value === "check" ||
-                          value === "sicredi_boleto"
+                        value === "promissory_note" ||
+                        value === "check" ||
+                        value === "sicredi_boleto"
                       );
                       if (value === "sicredi_boleto") {
                         form.setValue("emitBoletosNow", true);
@@ -307,7 +306,7 @@ export default function OrderClientProducts({
                         }
                       }
                     }}
-                    value={field.value}
+                    value={field.value || undefined}
                   >
                     <FormControl>
                       <SelectTrigger className="h-8 text-sm bg-background text-foreground border-input focus:ring-primary">
@@ -315,14 +314,13 @@ export default function OrderClientProducts({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="credit">Cartão de Crédito</SelectItem>
-                      <SelectItem value="debit">Cartão de Débito</SelectItem>
-                      <SelectItem value="cash">Dinheiro</SelectItem>
-                      <SelectItem value="pix">PIX</SelectItem>
-                      <SelectItem value="bank_slip">Boleto Bancário</SelectItem>
-                      <SelectItem value="sicredi_boleto">Boleto SICREDI</SelectItem>
-                      <SelectItem value="promissory_note">Nota Promissória</SelectItem>
-                      <SelectItem value="check">Cheque</SelectItem>
+                      <SelectItem className="hover:bg-accent/50" value="credit">Cartão de Crédito</SelectItem>
+                      <SelectItem className="hover:bg-accent/50" value="debit">Cartão de Débito</SelectItem>
+                      <SelectItem className="hover:bg-accent/50" value="cash">Dinheiro</SelectItem>
+                      <SelectItem className="hover:bg-accent/50" value="pix">PIX</SelectItem>
+                      <SelectItem className="hover:bg-accent/50" value="sicredi_boleto">Boleto SICREDI</SelectItem>
+                      <SelectItem className="hover:bg-accent/50" value="promissory_note">Nota Promissória</SelectItem>
+                      <SelectItem className="hover:bg-accent/50" value="check">Cheque</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
