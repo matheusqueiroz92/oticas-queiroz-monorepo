@@ -17,7 +17,7 @@ COPY --from=builder /app/out/full/ .
 RUN npx turbo run build --filter=backend
 
 FROM node:20-alpine AS runner
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache libc6-compat wget
 WORKDIR /app
 ENV NODE_ENV=production
 
