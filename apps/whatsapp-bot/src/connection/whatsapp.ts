@@ -216,7 +216,8 @@ export async function startWhatsAppConnection(): Promise<void> {
               sock,
               payload.remoteJid,
               response.text,
-              msg.key
+              msg.key,
+              msg
             );
             logger.info("Resposta enviada ao WhatsApp", {
               remoteJid: payload.remoteJid,

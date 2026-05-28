@@ -27,6 +27,25 @@ describe("processInboundMessage", () => {
     jest.clearAllMocks();
   });
 
+  it("uses ERP when n8n times out", async () => {
+    mockedAxios.post
+      .mockRejectedValueOnce({
+        isAxiosError: true,
+        code: "ECONNABORTED",
+        message: "timeout of 3000ms exceeded",
+      })
+      .mockResolvedValueOnce({
+        data: { action: "SHOW_MENU", text: "Menu", sessionStatus: "AGUARDANDO_OPCAO" },
+      });
+
+    mockedAxios.isAxiosError.mockReturnValue(true);
+
+    const result = await processInboundMessage(payload);
+
+    expect(result).toEqual({ text: "Menu" });
+    expect(mockedAxios.post).toHaveBeenCalledTimes(2);
+  });
+
   it("uses ERP when n8n returns 404", async () => {
     mockedAxios.post
       .mockRejectedValueOnce({

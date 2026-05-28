@@ -202,13 +202,14 @@ services:
       N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL:-http://n8n:5678/webhook/whatsapp-inbound}
       # URL do backend ERP na rede Docker interna
       ERP_API_URL: ${ERP_API_URL:-http://backend:3333}
-      # Modo de operação: n8n (padrão) | erp (direto, sem n8n)
-      BOT_CHAT_MODE: ${BOT_CHAT_MODE:-n8n}
+      # Modo de operação: erp (recomendado em produção) | n8n (webhook publicado)
+      BOT_CHAT_MODE: ${BOT_CHAT_MODE:-erp}
       # Se n8n falhar, cai automaticamente no ERP
       BOT_ERP_FALLBACK_ON_N8N_ERROR: ${BOT_ERP_FALLBACK_ON_N8N_ERROR:-true}
       WA_SESSION_PATH: /app/apps/whatsapp-bot/data/auth
       LOG_LEVEL: ${LOG_LEVEL:-info}
-      N8N_WEBHOOK_TIMEOUT_MS: ${N8N_WEBHOOK_TIMEOUT_MS:-10000}
+      # Timeout curto no n8n evita resposta lenta quando o workflow não existe ou está lento
+      N8N_WEBHOOK_TIMEOUT_MS: ${N8N_WEBHOOK_TIMEOUT_MS:-3000}
       WA_RECONNECT_DELAY_MS: ${WA_RECONNECT_DELAY_MS:-3000}
     volumes:
       # Bind mount: sessão fica no host em ./whatsapp-auth (persiste recreações de container)

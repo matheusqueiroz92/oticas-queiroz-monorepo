@@ -112,24 +112,30 @@ function normalizePn(pn: string | null | undefined): string | null {
 }
 
 /**
- * JID para envio de respostas. Contatos com privacidade (@lid) precisam do PN
- * (senderPn / participantPn) ou do cache; enviar só para @lid costuma falhar (PDO / offline).
+ * JID para envio de respostas.
+ *
+ * WhatsApp (privacidade / linked devices): se a mensagem veio em @lid, a resposta
+ * deve ir para o **mesmo @lid**. Converter para @s.whatsapp.net quebra a sessão E2E
+ * e o celular do cliente mostra "Aguardando mensagem".
+ *
+ * O mapeamento LID→telefone é mantido só para logs/CRM; não altera o destino do envio.
  */
 export function resolveOutboundJid(
   remoteJid: string,
   key?: OutboundJidKey | null
 ): string {
   const senderPn = normalizePn(key?.senderPn);
-  if (senderPn) {
-    rememberLidPhoneMapping(remoteJid, senderPn);
-    return senderPn;
+  const participantPn = normalizePn(key?.participantPn);
+
+  if (senderPn) rememberLidPhoneMapping(remoteJid, senderPn);
+  if (participantPn) rememberLidPhoneMapping(remoteJid, participantPn);
+
+  if (isLidJid(remoteJid)) {
+    return remoteJid;
   }
 
-  const participantPn = normalizePn(key?.participantPn);
-  if (participantPn) {
-    rememberLidPhoneMapping(remoteJid, participantPn);
-    return participantPn;
-  }
+  if (senderPn) return senderPn;
+  if (participantPn) return participantPn;
 
   const cached = lidToPhoneJidCache.get(remoteJid);
   if (cached) return cached;

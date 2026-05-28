@@ -1,24 +1,40 @@
-import type { WASocket } from "@whiskeysockets/baileys";
+import type { proto, WASocket } from "@whiskeysockets/baileys";
 import { logger } from "../config/logger";
-import { resolveOutboundJid, type OutboundJidKey } from "../utils/jidResolver";
+import {
+  getCachedPhoneJidForLid,
+  isLidJid,
+  resolveOutboundJid,
+  type OutboundJidKey,
+} from "../utils/jidResolver";
 import { storeMessageForRetry } from "../utils/recentMessageCache";
 
 export async function sendWhatsAppText(
   sock: WASocket,
   remoteJid: string,
   text: string,
-  key?: OutboundJidKey | null
+  key?: OutboundJidKey | null,
+  quotedMessage?: proto.IWebMessageInfo | null
 ): Promise<string> {
   const outboundJid = resolveOutboundJid(remoteJid, key);
 
-  if (outboundJid !== remoteJid) {
-    logger.info("Envio usando JID de telefone (mapeamento LID)", {
+  if (isLidJid(remoteJid)) {
+    const phoneHint = getCachedPhoneJidForLid(remoteJid);
+    logger.info("Envio na mesma conversa LID (E2E)", {
+      remoteJid,
+      phoneHint,
+    });
+  } else if (outboundJid !== remoteJid) {
+    logger.info("Envio usando JID de telefone", {
       remoteJid,
       outboundJid,
     });
   }
 
-  const sent = await sock.sendMessage(outboundJid, { text });
+  const sent = await sock.sendMessage(
+    outboundJid,
+    { text },
+    quotedMessage ? { quoted: quotedMessage } : undefined
+  );
 
   if (sent?.key?.id) {
     storeMessageForRetry(outboundJid, sent.key.id, sent.message);

@@ -13,20 +13,21 @@ describe("jidResolver", () => {
     clearLidPhoneCache();
   });
 
-  it("uses senderPn when remoteJid is LID", () => {
+  it("replies on LID when inbound is LID (keeps phone in cache only)", () => {
     const result = resolveOutboundJid(lid, { senderPn: phone });
-    expect(result).toBe(phone);
+    expect(result).toBe(lid);
     expect(getCachedPhoneJidForLid(lid)).toBe(phone);
   });
 
-  it("normalizes senderPn without suffix", () => {
+  it("normalizes senderPn into cache without changing LID destination", () => {
     const result = resolveOutboundJid(lid, { senderPn: "557788334370" });
-    expect(result).toBe(phone);
+    expect(result).toBe(lid);
+    expect(getCachedPhoneJidForLid(lid)).toBe(phone);
   });
 
-  it("uses cache when key has no Pn", () => {
+  it("returns LID when key has no Pn but cache exists", () => {
     rememberLidPhoneMapping(lid, phone);
-    expect(resolveOutboundJid(lid)).toBe(phone);
+    expect(resolveOutboundJid(lid)).toBe(lid);
   });
 
   it("returns original jid when not LID and no mapping", () => {

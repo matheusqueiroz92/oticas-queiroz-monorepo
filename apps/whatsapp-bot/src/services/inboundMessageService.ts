@@ -5,10 +5,24 @@ import type { InboundMessagePayload, N8nWebhookResponse } from "../types/message
 import { forwardToErpBot } from "./erpBotService";
 import { forwardInbound } from "./n8nService";
 
+/** Erros em que vale acionar fallback ERP (evita esperar timeout longo do n8n). */
 function isN8nRequestFailure(err: unknown): boolean {
   if (!axios.isAxiosError(err)) return true;
+
+  const code = err.code;
+  if (
+    code === "ECONNABORTED" ||
+    code === "ENOTFOUND" ||
+    code === "ECONNREFUSED" ||
+    code === "ETIMEDOUT"
+  ) {
+    return true;
+  }
+
   const status = err.response?.status;
-  return status === 404 || status === 405 || (status != null && status >= 500);
+  if (status == null) return true;
+
+  return status === 404 || status === 405 || status >= 500;
 }
 
 /**

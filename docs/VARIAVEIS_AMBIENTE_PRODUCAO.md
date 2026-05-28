@@ -79,6 +79,7 @@ NEXT_PUBLIC_API_URL=
 ```
 
 **Nota sobre NEXT_PUBLIC_API_URL:**
+
 - Produção com Traefik: `https://api.app.oticasqueiroz.com.br` (subdomínio roteado nas labels do `backend`)
 - Alternativa no mesmo host: `https://app.oticasqueiroz.com.br/api` (PathPrefix `/api` no Traefik)
 - Após alterar, é obrigatório **rebuild** do frontend (`docker compose build --no-cache frontend`)
@@ -174,12 +175,14 @@ O arquivo `apps/backend/env.example` estava com um erro. Ele tinha `EMAIL_PASS` 
 Após configurar, verifique se todas as variáveis estão sendo lidas corretamente:
 
 ### Backend
+
 ```bash
 cd apps/backend
 node -e "require('dotenv').config(); console.log('MONGODB_URI:', process.env.MONGODB_URI ? '✓ Configurado' : '✗ Faltando'); console.log('JWT_SECRET:', process.env.JWT_SECRET ? '✓ Configurado' : '✗ Faltando');"
 ```
 
 ### Frontend
+
 O Next.js carrega automaticamente as variáveis do `.env.local` em produção.
 
 ---
@@ -187,21 +190,36 @@ O Next.js carrega automaticamente as variáveis do `.env.local` em produção.
 ## 🚨 Problemas Comuns
 
 ### Erro: "MONGODB_URI not defined"
+
 - Verifique se o arquivo `.env` existe em `apps/backend/`
 - Verifique se o nome da variável está correto (MONGODB_URI, não MONGODB_URL)
 
 ### Erro: "JWT_SECRET não está definido no ambiente"
+
 - Verifique se `JWT_SECRET` está definido no `.env`
 - Certifique-se de que o arquivo está na raiz do backend
 
 ### Erro: "Credenciais de email não configuradas"
+
 - Verifique `EMAIL_USER` e `EMAIL_PASSWORD` no `.env`
 - Use `EMAIL_PASSWORD` (não `EMAIL_PASS`)
 
 ### Frontend não consegue conectar à API
+
 - Verifique `NEXT_PUBLIC_API_URL` no `.env.local`
 - Se usar NGINX, deixe vazio para usar URLs relativas
 - Se não usar NGINX, defina a URL completa da API
+
+### Deploy: `network oticas-queiroz-db_default ... could not be found`
+
+- No `.env` da VPS (`/opt/apps/oticas-queiroz/.env`): `MONGO_DOCKER_NETWORK=traefik-public`
+- Confirme com: `docker inspect oticas-queiroz-db --format '{{range $k,$v := .NetworkSettings.Networks}}{{$k}} {{end}}'`
+
+### WhatsApp: "Aguardando mensagem" no celular do cliente
+
+- Respostas devem usar o **mesmo JID** da mensagem recebida (`@lid` → responder em `@lid`).
+- Use `BOT_CHAT_MODE=erp` em produção se o workflow n8n não estiver publicado.
+- Senha com `@` na `MONGODB_URI` deve ser codificada (`%40`).
 
 ---
 

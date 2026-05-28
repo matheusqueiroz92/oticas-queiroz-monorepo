@@ -186,7 +186,7 @@ npm test
 - Ignora **grupos** e mensagens **enviadas por você** (`fromMe`).
 - Apenas mensagens de **texto** (`conversation` / `extendedTextMessage`) disparam o processamento.
 - **Reconexão automática** com backoff exponencial (base × 2ⁿ, teto em 60 s) + jitter — inclusive após logout, gerando novo QR automaticamente.
-- **JID `@lid` (privacidade WhatsApp):** respostas são enviadas para o número `@s.whatsapp.net` quando o Baileys informa `senderPn` na mensagem recebida (evita falha “PDO / phone offline” ao responder só no `@lid`).
+- **JID `@lid` (privacidade WhatsApp):** respostas vão para o **mesmo `@lid`** da mensagem recebida (obrigatório para E2E; evita “Aguardando mensagem” no celular). O `senderPn` só alimenta cache LID→telefone para logs.
 - Logs: `Inbound WhatsApp`, `Envio usando JID de telefone (mapeamento LID)`, `Resposta enviada ao WhatsApp`.
 
 Menu e fluxos (opções 1–4, voltar com `0`): ver [`bot-api-docs.md`](../../bot-api-docs.md).

@@ -81,7 +81,8 @@ describe("POST /send-message", () => {
     expect(res.body).toEqual({ success: true });
     expect(sendMessage).toHaveBeenCalledWith(
       "5511999999999@s.whatsapp.net",
-      { text: "Resposta" }
+      { text: "Resposta" },
+      undefined
     );
   });
 });

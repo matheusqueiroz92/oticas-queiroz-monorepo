@@ -12,7 +12,7 @@ networks:
   # Rede onde o container oticas-queiroz-db está (descubra com: docker inspect oticas-queiroz-db)
   mongo-network:
     external: true
-    name: ${MONGO_DOCKER_NETWORK:-oticas-queiroz-db_default}
+    name: ${MONGO_DOCKER_NETWORK:-traefik-public}
 
 services:
   backend:
