@@ -3,7 +3,15 @@ services:
     image: mongo:7.0
     container_name: oticas-queiroz-mongodb
     restart: unless-stopped
-    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    command:
+      [
+        "mongod",
+        "--replSet",
+        "rs0",
+        "--bind_ip_all",
+        "--keyFile",
+        "/etc/mongodb/keyfile",
+      ]
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:-admin}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?MONGO_ROOT_PASSWORD obrigatório}
@@ -12,14 +20,30 @@ services:
       - mongodb_data:/data/db
       - mongodb_config:/data/configdb
       - ./scripts/mongo-init-rs.js:/docker-entrypoint-initdb.d/01-init-rs.js:ro
+      - ./secrets/mongodb-keyfile:/etc/mongodb/keyfile:ro
     networks:
       - oticas-network
     healthcheck:
-      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      test:
+        [
+          "CMD",
+          "mongosh",
+          "--host",
+          "localhost",
+          "--username",
+          "${MONGO_ROOT_USER:-admin}",
+          "--password",
+          "${MONGO_ROOT_PASSWORD}",
+          "--authenticationDatabase",
+          "admin",
+          "--quiet",
+          "--eval",
+          "db.adminCommand('ping').ok",
+        ]
       interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 30s
+      retries: 10
+      start_period: 60s
     labels:
       - "traefik.enable=false"
 

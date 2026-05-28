@@ -125,11 +125,20 @@ jobs:
               --exclude '.git/' \
               --exclude 'node_modules/' \
               --exclude '.env' \
+              --exclude 'secrets/' \
               --exclude 'whatsapp-auth/' \
               --exclude 'apps/web/.next/' \
               \"\$REPO_DIR/\" \"\$DEPLOY_DIR/\"
 
             cd \"\$DEPLOY_DIR\"
+
+            # Garante keyFile do MongoDB (obrigatório com replica set + auth)
+            mkdir -p \"\$DEPLOY_DIR/secrets\"
+            if [ ! -s \"\$DEPLOY_DIR/secrets/mongodb-keyfile\" ]; then
+              openssl rand -base64 756 | tr -d '\n' > \"\$DEPLOY_DIR/secrets/mongodb-keyfile\"
+            fi
+            chmod 400 \"\$DEPLOY_DIR/secrets/mongodb-keyfile\"
+            chown 999:999 \"\$DEPLOY_DIR/secrets/mongodb-keyfile\" || true
 
             # Containers com prefixo hash ficam órfãos quando um recreate é interrompido
             docker ps -a --format '{{.Names}}' \
