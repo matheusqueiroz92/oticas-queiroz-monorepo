@@ -11,7 +11,6 @@ import {
   beforeEach,
   beforeAll,
   afterAll,
-  jest,
 } from "@jest/globals";
 import path from "node:path";
 import fs from "node:fs";
