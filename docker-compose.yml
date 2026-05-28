@@ -106,6 +106,8 @@ services:
     depends_on:
       mongodb:
         condition: service_healthy
+      mongo-rs-init:
+        condition: service_completed_successfully
     environment:
       NODE_ENV: production
       PORT: 3333
@@ -148,8 +150,8 @@ services:
       test: ["CMD", "wget", "-qO-", "http://localhost:3333/api/health"]
       interval: 15s
       timeout: 5s
-      retries: 5
-      start_period: 30s
+      retries: 10
+      start_period: 90s
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.oticas-api.rule=Host(`app.oticasqueiroz.com.br`) && PathPrefix(`/api`)"
