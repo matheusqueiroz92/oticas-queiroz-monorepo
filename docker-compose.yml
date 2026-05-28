@@ -20,7 +20,7 @@ services:
       - mongodb_data:/data/db
       - mongodb_config:/data/configdb
       - ./scripts/mongo-init-rs.js:/docker-entrypoint-initdb.d/01-init-rs.js:ro
-      - ./secrets/mongodb-keyfile:/etc/mongodb/keyfile:ro
+      - /opt/apps/oticas-queiroz/secrets/mongodb-keyfile:/etc/mongodb/keyfile:ro
     networks:
       - oticas-network
     healthcheck:
@@ -191,7 +191,7 @@ services:
       # Bind mount: sessão fica no host em ./whatsapp-auth (persiste recreações de container)
       # Em produção: /opt/apps/oticas-queiroz/whatsapp-auth
       # Backup automático feito em código a cada creds.update → auth-backup/
-      - ./whatsapp-auth:/app/apps/whatsapp-bot/data/auth
+      - /opt/apps/oticas-queiroz/whatsapp-auth:/app/apps/whatsapp-bot/data/auth
     networks:
       - oticas-network
     healthcheck:
