@@ -7,37 +7,24 @@ on:
   pull_request:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      deploy_only:
+        description: "Pular CI e só executar deploy na VPS"
+        required: false
+        default: false
+        type: boolean
+      force_rebuild:
+        description: "Forçar docker build de todos os serviços na VPS"
+        required: false
+        default: false
+        type: boolean
 
 jobs:
-  lint:
-    name: Lint
+  ci:
+    name: CI (lint, test, build)
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.deploy_only != true }}
     runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: "npm"
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Lint backend
-        run: npm run lint --workspace=apps/backend
-
-      - name: Lint frontend
-        run: npm run lint --workspace=apps/web
-
-      - name: Lint whatsapp-bot
-        run: npm run lint --workspace=apps/whatsapp-bot
-
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-    needs: lint
     env:
       NODE_ENV: test
       JWT_SECRET: ci-test-jwt-secret-32-chars-long!!
@@ -55,6 +42,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Lint
+        run: |
+          npm run lint --workspace=apps/backend
+          npm run lint --workspace=apps/web
+          npm run lint --workspace=apps/whatsapp-bot
+
       - name: Run backend tests with coverage
         working-directory: apps/backend
         run: npm run coverage -- --ci --forceExit
@@ -67,6 +60,12 @@ jobs:
         working-directory: apps/web
         run: npm run test:ci
 
+      - name: Build all apps
+        run: npx turbo run build
+        env:
+          NODE_ENV: production
+          NEXT_PUBLIC_API_URL: ""
+
       - name: Upload backend coverage report
         uses: actions/upload-artifact@v4
         if: always()
@@ -75,34 +74,15 @@ jobs:
           path: apps/backend/coverage/
           retention-days: 7
 
-  build:
-    name: Build
-    runs-on: ubuntu-latest
-    needs: test
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: "npm"
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build all apps
-        run: npx turbo run build
-        env:
-          NODE_ENV: production
-          NEXT_PUBLIC_API_URL: ""
-
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
-    needs: build
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: ci
+    if: |
+      always() &&
+      (needs.ci.result == 'success' || needs.ci.result == 'skipped') &&
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     steps:
       - name: Add SSH key
         uses: webfactory/ssh-agent@v0.7.0
@@ -110,16 +90,21 @@ jobs:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
       - name: Deploy via SSH
+        env:
+          FORCE_REBUILD: ${{ github.event_name == 'workflow_dispatch' && inputs.force_rebuild == true }}
         run: |
           ssh -o StrictHostKeyChecking=no root@147.79.107.246 "
             set -e
             REPO_DIR=/var/www/oticas-queiroz
             COMPOSE_DIR=/opt/apps/oticas-queiroz
             ENV_FILE=/opt/apps/oticas-queiroz/.env
+            FORCE_REBUILD=${FORCE_REBUILD}
 
             cd \"\$REPO_DIR\"
+            PREV=\$(git rev-parse HEAD)
             git fetch origin main
             git reset --hard origin/main
+            CHANGED=\$(git diff --name-only \"\$PREV\" HEAD 2>/dev/null || echo 'FULL')
 
             mkdir -p \"\$COMPOSE_DIR\"
             cp -f \"\$REPO_DIR/docker-compose.yml\" \"\$COMPOSE_DIR/docker-compose.yml\"
@@ -127,15 +112,13 @@ jobs:
               cp -f \"\$REPO_DIR/docker-compose.prod.yml\" \"\$COMPOSE_DIR/docker-compose.prod.yml\"
             fi
 
-            # Garante keyFile do MongoDB (obrigatório com replica set + auth)
             mkdir -p \"\$COMPOSE_DIR/secrets\"
             if [ ! -s \"\$COMPOSE_DIR/secrets/mongodb-keyfile\" ]; then
               openssl rand -base64 756 | tr -d '\n' > \"\$COMPOSE_DIR/secrets/mongodb-keyfile\"
             fi
             chmod 400 \"\$COMPOSE_DIR/secrets/mongodb-keyfile\"
-            chown 999:999 \"\$COMPOSE_DIR/secrets/mongodb-keyfile\" || true
+            chown 999:999 \"\$COMPOSE_DIR/secrets/mongodb-keyfile\" 2>/dev/null || true
 
-            # Containers com prefixo hash ficam órfãos quando um recreate é interrompido
             docker ps -a --format '{{.Names}}' \
               | grep -E '^[0-9a-f]{12}_oticas-queiroz-' \
               | xargs -r docker rm -f 2>/dev/null || true
@@ -144,12 +127,29 @@ jobs:
             if [ -f /opt/apps/oticas-queiroz/docker-compose.prod.yml ]; then
               COMPOSE_FILES=\"\$COMPOSE_FILES -f /opt/apps/oticas-queiroz/docker-compose.prod.yml\"
             fi
+            COMPOSE=\"docker compose --project-directory \$REPO_DIR --env-file \$ENV_FILE \$COMPOSE_FILES\"
 
-            docker compose --project-directory \"\$REPO_DIR\" --env-file \"\$ENV_FILE\" \$COMPOSE_FILES pull --quiet 2>/dev/null || true
-            if ! docker compose --project-directory \"\$REPO_DIR\" --env-file \"\$ENV_FILE\" \$COMPOSE_FILES up --build -d --remove-orphans; then
-              docker compose --project-directory \"\$REPO_DIR\" --env-file \"\$ENV_FILE\" \$COMPOSE_FILES ps
-              docker compose --project-directory \"\$REPO_DIR\" --env-file \"\$ENV_FILE\" \$COMPOSE_FILES logs --tail=120 mongodb mongo-rs-init backend
+            BUILD_SERVICES=''
+            if [ \"\$FORCE_REBUILD\" = 'true' ] || [ \"\$CHANGED\" = 'FULL' ]; then
+              BUILD_SERVICES='backend frontend whatsapp-bot'
+            else
+              echo \"\$CHANGED\" | grep -qE '^apps/backend/|^apps/backend/Dockerfile' && BUILD_SERVICES=\"\$BUILD_SERVICES backend\"
+              echo \"\$CHANGED\" | grep -qE '^apps/web/|^apps/web/Dockerfile' && BUILD_SERVICES=\"\$BUILD_SERVICES frontend\"
+              echo \"\$CHANGED\" | grep -qE '^apps/whatsapp-bot/|^apps/whatsapp-bot/Dockerfile' && BUILD_SERVICES=\"\$BUILD_SERVICES whatsapp-bot\"
+              echo \"\$CHANGED\" | grep -qE '^package(-lock)?\\.json$|^turbo\\.json$|^packages/' && BUILD_SERVICES='backend frontend whatsapp-bot'
+            fi
+
+            if [ -n \"\$BUILD_SERVICES\" ]; then
+              echo \"Rebuild: \$BUILD_SERVICES\"
+              \$COMPOSE build \$BUILD_SERVICES
+            else
+              echo \"Sem alteração em código de app — apenas recria containers (compose/labels/env)\"
+            fi
+
+            if ! \$COMPOSE up -d --remove-orphans; then
+              \$COMPOSE ps
+              \$COMPOSE logs --tail=120 mongodb mongo-rs-init backend
               exit 1
             fi
-            docker compose --project-directory \"\$REPO_DIR\" --env-file \"\$ENV_FILE\" \$COMPOSE_FILES ps
+            \$COMPOSE ps
           "

@@ -1,5 +1,8 @@
 # Overlay para deploy no VPS com Traefik (rede externa já criada no servidor).
 # Uso: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# MongoDB: use MONGODB_URI no .env apontando para oticas-queiroz-db (banco real).
+# Não ative o profile bundled-mongo em produção — evita subir um Mongo vazio paralelo.
 
 networks:
   oticas-network:

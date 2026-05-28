@@ -15,7 +15,7 @@ Estas variáveis **DEVEM** estar configuradas ou a aplicação não funcionará:
 NODE_ENV=production
 
 # Banco de Dados
-MONGODB_URI=mongodb://usuario:senha@host:porta/database
+MONGODB_URI=mongodb://usuario:senha@oticas-queiroz-db:27017/oticas_queiroz_db?authSource=admin&replicaSet=rs0
 
 # Autenticação
 JWT_SECRET=sua_chave_secreta_jwt_minimo_32_caracteres
@@ -100,7 +100,7 @@ API_URL=https://app.oticasqueiroz.com.br/api
 FRONTEND_URL=https://app.oticasqueiroz.com.br
 
 # Banco de Dados
-MONGODB_URI=mongodb://usuario:senha@host:porta/oticas-queiroz
+MONGODB_URI=mongodb://usuario:senha@oticas-queiroz-db:27017/oticas_queiroz_db?authSource=admin&replicaSet=rs0
 
 # JWT
 JWT_SECRET=GERAR_UMA_CHAVE_SECRETA_ALEATORIA_MINIMO_32_CARACTERES

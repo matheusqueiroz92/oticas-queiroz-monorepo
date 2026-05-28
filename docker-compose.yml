@@ -1,5 +1,8 @@
 services:
+  # Mongo embutido só para ambiente sem banco externo (ex.: teste local com compose).
+  # Produção na VPS usa MONGODB_URI do .env → container oticas-queiroz-db (profile não ativado).
   mongodb:
+    profiles: ["bundled-mongo"]
     image: mongo:7.0
     container_name: oticas-queiroz-mongodb
     restart: unless-stopped
@@ -48,6 +51,7 @@ services:
       - "traefik.enable=false"
 
   mongo-rs-init:
+    profiles: ["bundled-mongo"]
     image: mongo:7.0
     container_name: oticas-queiroz-mongo-rs-init
     restart: "no"
@@ -111,13 +115,15 @@ services:
     depends_on:
       mongodb:
         condition: service_healthy
+        required: false
       mongo-rs-init:
         condition: service_completed_successfully
+        required: false
     environment:
       NODE_ENV: production
       PORT: 3333
-      # Formato com autenticação e replicaSet obrigatório para transações
-      MONGODB_URI: mongodb://${MONGO_ROOT_USER:-admin}:${MONGO_ROOT_PASSWORD}@mongodb:27017/oticas-queiroz?authSource=admin&replicaSet=rs0
+      # Obrigatório no .env de produção (ex.: mongodb://user:pass@oticas-queiroz-db:27017/oticas_queiroz_db?...)
+      MONGODB_URI: ${MONGODB_URI:?Defina MONGODB_URI no .env — apontando para o banco real, ex. oticas-queiroz-db}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET obrigatório}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-24h}
       BOT_API_KEY: ${BOT_API_KEY:-}
