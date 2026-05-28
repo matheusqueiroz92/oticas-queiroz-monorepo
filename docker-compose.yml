@@ -61,8 +61,13 @@ services:
               --password ${MONGO_ROOT_PASSWORD}
               --authenticationDatabase admin
               --eval "
-                var status = rs.status();
-                if (status.code === 94 || !status.ok) {
+                var initialized = true;
+                try {
+                  rs.status();
+                } catch (error) {
+                  initialized = false;
+                }
+                if (!initialized) {
                   rs.initiate({
                     _id: 'rs0',
                     members: [{ _id: 0, host: 'mongodb:27017' }]
