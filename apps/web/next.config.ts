@@ -1,13 +1,21 @@
-/** @type {import('next').NextConfig} */
-const nextConfig = {
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
   reactStrictMode: true,
-  output: 'standalone',
+  output: "standalone",
   images: {
-    domains: ['app.oticasqueiroz.com.br', 'api.app.oticasqueiroz.com.br'],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "app.oticasqueiroz.com.br",
+      },
+      {
+        protocol: "https",
+        hostname: "api.app.oticasqueiroz.com.br",
+      },
+    ],
     unoptimized: true,
   },
-  assetPrefix: '',
-  basePath: '',
-}
+};
 
-module.exports = nextConfig
+export default nextConfig;

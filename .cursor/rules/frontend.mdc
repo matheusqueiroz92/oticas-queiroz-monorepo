@@ -2,7 +2,7 @@
 alwaysApply: true
 ---
 Regras válidas para o frontend (pasta apps/web):
-- Considere sempre os componentes, bibliotecas e frameworks em suas versões mais atuais. Exemplo: React 19, Next.js 15, etc.
+- Considere sempre os componentes, bibliotecas e frameworks em suas versões mais atuais. Exemplo: React 19, Next.js 16, etc.
 - Sempre use Tailwind para estilização;
 - Use componentes da biblioteca ShadCN/ui, na versão mais atual, o máximo possível ao criar/modificar componentes (veja https://ui.shadcn.com/ para lista de componentes disponíveis);
 - Sempre use ZOD para validação de fomulários;

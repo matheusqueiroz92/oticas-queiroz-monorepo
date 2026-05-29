@@ -30,7 +30,7 @@ const ADMIN_EMPLOYEE_ROUTES = [
   "/cash-register/close",
 ];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Rotas de redefinição de senha são sempre públicas
