@@ -4,8 +4,6 @@ import { LegacyClientService } from './LegacyClientService';
 import { OrderService } from './OrderService';
 import { IPayment } from '../interfaces/IPayment';
 import { logger } from '../config/logger';
-import { IUser } from '../interfaces/IUser';
-import { ILegacyClient } from '../interfaces/ILegacyClient';
 
 export class SicrediSyncError extends Error {
   constructor(message: string, public code?: string, public details?: any) {
@@ -99,7 +97,6 @@ export class SicrediSyncService {
    */
   async performSync(): Promise<SyncResult> {
     
-    const startTime = Date.now();
     const result: SyncResult = {
       totalProcessed: 0,
       updatedPayments: 0,
@@ -132,8 +129,6 @@ export class SicrediSyncService {
           });
         }
       }
-
-      const duration = Date.now() - startTime;
 
     } catch (error) {
       logger.error('SICREDI Sync: Erro geral na sincronização', { error });
@@ -188,8 +183,8 @@ export class SicrediSyncService {
     }
 
     const newStatus = statusResult.data?.status;
-    const valorPago = statusResult.data?.valorPago;
-    const dataPagamento = statusResult.data?.dataPagamento;
+    const _valorPago = statusResult.data?.valorPago;
+    const _dataPagamento = statusResult.data?.dataPagamento;
 
     // Atualizar contadores de resumo
     switch (newStatus) {

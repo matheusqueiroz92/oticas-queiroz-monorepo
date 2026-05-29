@@ -1,13 +1,12 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { useForm } from "react-hook-form";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/useToast";
-import { CreditCard, Mail, Phone, Home, Building, User, FileImage, Key, CheckCircle2, ChevronRight, Loader2, Briefcase } from "lucide-react";
+import { CreditCard, Mail, Phone, Home, Building, User, FileImage, Key, CheckCircle2, Loader2, Briefcase } from "lucide-react";
 import { InstitutionFormData, InstitutionUpdateData, createInstitutionForm, updateInstitutionForm } from "@/schemas/institution-schema";
 import { Institution } from "@/app/_types/institution";
 import { api } from "@/app/_services/authService";
@@ -400,7 +399,7 @@ export function InstitutionForm({
             <FormField
               control={createForm.control}
               name="image"
-              render={({ field }) => (
+              render={({ field: _field }) => (
                 <FormItem>
                   <FormLabel className="flex items-center gap-1">
                     <FileImage className="h-4 w-4 text-primary" />
@@ -648,7 +647,7 @@ export function InstitutionForm({
           <FormField
             control={updateForm.control}
             name="image"
-            render={({ field }) => (
+            render={({ field: _field }) => (
               <FormItem>
                 <FormLabel className="flex items-center gap-1">
                   <FileImage className="h-4 w-4 text-primary" />

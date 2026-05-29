@@ -1,5 +1,5 @@
 import { Types } from 'mongoose';
-import { IProduct, ILens, ICleanLens, IPrescriptionFrame, ISunglassesFrame, ProductType } from "./IProduct";
+import { IProduct, ILens, ICleanLens, IPrescriptionFrame, ISunglassesFrame } from "./IProduct";
 
 export type ProductReference = string | Types.ObjectId;
 

@@ -151,8 +151,8 @@ export class PaymentCalculationService {
     customerId?: string,
     legacyClientId?: string,
     debtAmount?: number,
-    paymentId?: string,
-    institutionId?: string
+    _paymentId?: string,
+    _institutionId?: string
   ): Promise<void> {
     if (!debtAmount || debtAmount <= 0) return;
 

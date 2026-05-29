@@ -30,7 +30,7 @@ export function useInstitutions(options: UseInstitutionsOptions = {}) {
   const { getUserImageUrl } = useUsers();
 
   const debouncedSearch = useMemo(
-    () => debounce((value: string) => {
+    () => debounce((_value: string) => {
       setCurrentPage(1);
       queryClient.invalidateQueries({ 
         queryKey: QUERY_KEYS.USERS.INSTITUTIONS() 

@@ -30,7 +30,7 @@ export class UserController {
 
   async getAllUsers(req: Request, res: Response): Promise<void> {    
     try {
-      const { role, search, cpf, serviceOrder } = req.query;
+      const { role, cpf, serviceOrder } = req.query;
       
       const page = Number(req.query.page) || 1;
       const limit = Number(req.query.limit) || 10;
@@ -66,15 +66,6 @@ export class UserController {
   
       let result: { users: IUser[]; total: number } = { users: [], total: 0 };
   
-      // Detecta se há filtros avançados (excluindo role e search)
-      const hasAdvancedFilters =
-        req.query.purchaseRange ||
-        req.query.salesRange ||
-        req.query.totalSalesRange ||
-        req.query.startDate ||
-        req.query.endDate ||
-        req.query.hasDebts;
-
       // Sempre usar getAllUsers com filtros
       const filters = { ...req.query };
       
@@ -122,7 +113,7 @@ export class UserController {
     const user = await this.userService.getUserById(req.params.id);
     
     // Remover senha da resposta
-    const { password, ...userWithoutPassword } = user;
+    const { password: _password, ...userWithoutPassword } = user;
     res.status(200).json(userWithoutPassword);
   }
 
@@ -212,7 +203,7 @@ export class UserController {
 
     const user = await this.userService.getUserById(req.user.id);
 
-    const { password, ...userWithoutPassword } = user;
+    const { password: _password, ...userWithoutPassword } = user;
     res.status(200).json(userWithoutPassword);
   }
 

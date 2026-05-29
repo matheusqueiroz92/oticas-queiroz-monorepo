@@ -16,7 +16,7 @@ export function DirectTestButton({
   className = "" 
 }: DirectTestButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
+  const [, setPaymentUrl] = useState<string | null>(null);
   const { toast } = useToast();
 
   const handleClick = async () => {

@@ -94,7 +94,7 @@ export class CashRegisterController {
           totalPages: result.totalPages,
         },
       });
-    } catch (error) {
+    } catch (_error) {
       res.status(500).json({ message: "Erro interno do servidor" });
     }
   }
@@ -269,7 +269,7 @@ export class CashRegisterController {
           totalPages: Math.ceil(result.total / limit),
         },
       });
-    } catch (error) {
+    } catch (_error) {
       res.status(500).json({ message: "Erro interno do servidor" });
     }
   }
@@ -279,10 +279,6 @@ export class CashRegisterController {
       const format =
         (req.query.format as "excel" | "pdf" | "csv" | "json") || "excel";
       const title = (req.query.title as string) || "Resumo de Caixa";
-
-      const summary = await this.cashRegisterService.getRegisterSummary(
-        req.params.id
-      );
 
       const exportOptions = {
         format,

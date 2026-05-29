@@ -209,7 +209,7 @@ export class ReportService {
     const customersResult = await this.userRepository.findByRole("customer", 1, 1000);
     const customers = customersResult.items;
 
-    let query: Record<string, unknown> = { role: "customer" };
+    const query: Record<string, unknown> = { role: "customer" };
 
     if (filters.startDate && filters.endDate) {
       query.createdAt = {

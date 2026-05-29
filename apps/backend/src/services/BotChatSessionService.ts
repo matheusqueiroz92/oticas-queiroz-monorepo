@@ -8,8 +8,6 @@ import { normalizeRemoteJid } from "../utils/botInboundNormalize";
 import { logger } from "../config/logger";
 import { resolveSessionTtlMinutes } from "../constants/botChatMessages";
 
-const DEFAULT_SESSION_TTL_MS = 30 * 60 * 1000;
-
 function resolveSessionTtlMs(): number {
   return resolveSessionTtlMinutes() * 60 * 1000;
 }

@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { User, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { OrderExportButton } from "@/components/orders/exports/OrderExportButton";
 import { OrderFilters } from "@/components/orders/OrderFilters";

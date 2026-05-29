@@ -1,13 +1,6 @@
 import { toast } from "sonner";
 import { AxiosError } from "axios";
 
-interface ApiError {
-  message: string;
-  code?: string;
-  statusCode?: number;
-  details?: any;
-}
-
 interface ApiErrorResponse {
   message?: string;
   error?: string;

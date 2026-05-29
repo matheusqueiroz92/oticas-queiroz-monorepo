@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Edit, ToggleLeft, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Edit, ToggleLeft } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,

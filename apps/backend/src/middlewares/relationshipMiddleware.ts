@@ -1,8 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { OrderModel } from '../models/OrderModel';
 import { UserModel } from '../models/UserModel';
 
-const orderModel = new OrderModel();
 const userModel = new UserModel();
 
 export const validateAndUpdateRelationships = async (req: Request, res: Response, next: NextFunction) => {

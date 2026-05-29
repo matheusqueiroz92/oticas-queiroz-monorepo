@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
-import { Loader2, Mail, Phone, ImageIcon, UserPlus } from "lucide-react";
+import { Loader2, Mail, Phone, UserPlus } from "lucide-react";
 import React, { useState, useEffect, useMemo } from "react";
 
 import {

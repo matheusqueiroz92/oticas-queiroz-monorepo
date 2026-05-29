@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { formatCurrency, formatDate } from "@/app/_utils/formatters";
+import { formatCurrency } from "@/app/_utils/formatters";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LegacyClient } from "@/app/_types/legacy-client";
 import { Eye } from "lucide-react";

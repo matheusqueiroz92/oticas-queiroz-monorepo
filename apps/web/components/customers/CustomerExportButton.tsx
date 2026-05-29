@@ -37,7 +37,7 @@ export function CustomerExportButton({
     return "Novo";
   };
 
-  const getCustomerStatus = (customer: User) => {
+  const getCustomerStatus = (_customer: User) => {
     // Lógica simples para status - pode ser expandida
     // Como não temos essas propriedades no tipo User, vamos usar uma lógica padrão
     return "Ativo";

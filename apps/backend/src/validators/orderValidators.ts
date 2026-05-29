@@ -161,7 +161,7 @@ export const createOrderSchema = baseOrderSchema
     }
   )
   .refine(
-    (data) => {
+    (_data) => {
       // Validação de data de entrega - apenas um aviso, não mais obrigatória
       // A data de entrega é recomendada mas não obrigatória
       return true;
@@ -205,7 +205,7 @@ export const updateOrderSchema = baseOrderSchema
     }
   )
   .refine(
-    (data) => {
+    (_data) => {
       // Validação de data de entrega - apenas um aviso, não mais obrigatória
       // A data de entrega é recomendada mas não obrigatória
       return true;

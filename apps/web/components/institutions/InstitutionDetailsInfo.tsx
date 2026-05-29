@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Institution } from "@/app/_types/institution";
-import { Building, Mail, Phone, MapPin, CreditCard, User, Briefcase } from "lucide-react";
+import { Building, Mail, Phone, MapPin } from "lucide-react";
 
 interface InstitutionDetailsInfoProps {
   institution: Institution;

@@ -62,7 +62,7 @@ export class AuthModel {
 
   convertToIUser(doc: UserDocument): IUser {
     const user = doc.toObject();
-    const { password, ...userWithoutPassword } = user;
+    const { password: _password, ...userWithoutPassword } = user;
 
     return {
       ...userWithoutPassword,

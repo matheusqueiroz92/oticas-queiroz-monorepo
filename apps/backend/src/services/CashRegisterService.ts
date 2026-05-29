@@ -191,7 +191,7 @@ export class CashRegisterService {
       const startDate = register.openingDate;
       const endDate = register.closingDate || new Date();
       
-      const paymentsResult = await this.paymentRepository.findByDateRange(
+      await this.paymentRepository.findByDateRange(
         startDate,
         endDate
       );

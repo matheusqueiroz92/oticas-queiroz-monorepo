@@ -74,29 +74,6 @@ interface RegisterSummary {
   };
 }
 
-interface OrderSummary {
-  date: string;
-  totalOrders: number;
-  ordersByStatus: {
-    pending: number;
-    in_production: number;
-    ready: number;
-    delivered: number;
-    cancelled: number;
-  };
-  totalValue: number;
-  totalDiscount?: number;
-  finalValue?: number;
-  ordersByType: {
-    lenses?: number;
-    clean_lenses?: number;
-    prescription_frame?: number;
-    sunglasses_frame?: number;
-    [key: string]: number | undefined;
-  };
-  orders: IOrder[];
-}
-
 export class ExportUtils {
   async exportOrders(
     orders: IOrder[],
@@ -3156,7 +3133,7 @@ export class ExportUtils {
   private async generateUsersExcel(
     users: IUser[],
     filename: string,
-    title?: string
+    _title?: string
   ): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
     const workbook = new Excel.Workbook();
     const worksheet = workbook.addWorksheet("Funcionários");

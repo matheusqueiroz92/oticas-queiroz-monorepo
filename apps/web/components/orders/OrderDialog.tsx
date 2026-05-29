@@ -10,7 +10,6 @@ import type { Customer } from "@/app/_types/customer";
 import { useCustomers } from "@/hooks/customers/useCustomers";
 import { useProducts } from "@/hooks/products/useProducts";
 import { useOrders } from "@/hooks/orders/useOrders";
-import { useToast } from "@/hooks/useToast";
 import { handleError, showSuccess } from "@/app/_utils/error-handler";
 import { useQueryClient } from "@tanstack/react-query";
 import { QUERY_KEYS } from "@/app/_constants/query-keys";
@@ -140,7 +139,6 @@ export const OrderDialog: React.FC<OrderDialogProps> = ({ open, onOpenChange, or
   
   const { products: productsData } = useProducts(1, "", "all");
   const { handleCreateOrder, handleUpdateOrder } = useOrders();
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
 

@@ -16,7 +16,7 @@ interface OrderEditHistoryProps {
 }
 
 export function OrderEditHistory({ 
-  orderId, 
+  orderId: _orderId, 
   onChangeNoteSubmit,
   previousEdits = []
 }: OrderEditHistoryProps) {

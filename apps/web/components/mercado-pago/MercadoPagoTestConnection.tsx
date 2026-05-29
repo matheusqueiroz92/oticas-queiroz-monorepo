@@ -33,7 +33,7 @@ export default function MercadoPagoTestPage() {
         title: "Conexão OK",
         description: "A conexão com o Mercado Pago está funcionando corretamente.",
       });
-    } catch (error) {
+    } catch (_error) {
       setConnectionStatus("error");
       toast({
         variant: "destructive",

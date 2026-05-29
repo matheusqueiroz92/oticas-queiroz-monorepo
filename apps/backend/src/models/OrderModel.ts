@@ -223,20 +223,6 @@ export class OrderModel {
     try {
       const UserModel = mongoose.model('User');
 
-  
-
-      // Primeiro, vamos ver todos os usuários que correspondem ao termo (sem filtro de role)
-      const allMatchingUsers = await UserModel.find({
-        $or: [
-          { name: { $regex: searchTerm, $options: 'i' } },
-          { cpf: { $regex: searchTerm, $options: 'i' } },
-          { email: { $regex: searchTerm, $options: 'i' } }
-        ]
-      }).select('_id name role cpf email');
-
-      
-
-
       // Agora filtrar apenas por customers
       const matchingClients = await UserModel.find({
         $or: [

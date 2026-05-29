@@ -135,7 +135,7 @@ export class AuthController {
 
     const user = await this.userService.createUser(userData, req.user.role);
 
-    const { password, ...userWithoutPassword } = user;
+    const { password: _password, ...userWithoutPassword } = user;
 
     res.status(201).json(userWithoutPassword);
   }

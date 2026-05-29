@@ -173,7 +173,7 @@ export class OrderController {
             });
             return;
           }
-        } catch (error) {
+        } catch (_error) {
           res.status(200).json({
             orders: [],
             pagination: {

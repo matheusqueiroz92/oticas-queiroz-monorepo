@@ -60,17 +60,6 @@ interface UpdateOperation {
   };
 }
 
-interface UpdateData {
-  currentBalance: number;
-  "sales.total"?: number;
-  "sales.cash"?: number;
-  "sales.credit"?: number;
-  "sales.debit"?: number;
-  "sales.pix"?: number;
-  "payments.received"?: number;
-  "payments.made"?: number;
-}
-
 export class CashRegisterModel {
   private isValidId(id: string): boolean {
     return Types.ObjectId.isValid(id);

@@ -50,7 +50,7 @@ export function useProfileData() {
   const {
     data: myOrders,
     isLoading: isLoadingMyOrders,
-    error: myOrdersError,
+    error: _myOrdersError,
   } = useQuery({
     queryKey: QUERY_KEYS.ORDERS.MY_ORDERS,
     queryFn: () => getMyOrders(),
@@ -235,7 +235,7 @@ export function useProfileData() {
         formData.append("userImage", data.image);
       }
 
-      const updatedUser = await handleUpdateProfile(formData);
+      await handleUpdateProfile(formData);
 
       refetchProfile();
       setEditDialogOpen(false);

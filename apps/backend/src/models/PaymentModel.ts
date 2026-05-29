@@ -28,41 +28,6 @@ interface PaymentDocument extends Document {
   updatedAt: Date;
 }
 
-interface PopulatedDocument {
-  _id: Types.ObjectId;
-}
-
-interface PopulatedUser extends PopulatedDocument {
-  name: string;
-  email: string;
-}
-
-interface PopulatedCashRegister extends PopulatedDocument {
-  date: Date;
-  openingBalance: number;
-  currentBalance: number;
-  closingBalance?: number;
-  status: "open" | "closed";
-  openedBy: Types.ObjectId;
-  closedBy?: Types.ObjectId;
-  totalSales: number;
-  totalPayments: number;
-  sales: {
-    total: number;
-    cash: number;
-    credit: number;
-    debit: number;
-    pix: number;
-  };
-  payments: {
-    received: number;
-    made: number;
-  };
-  observations?: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
 export class PaymentModel {
   private isValidId(id: string): boolean {
     return Types.ObjectId.isValid(id);

@@ -73,17 +73,6 @@ export class OrderExportService {
       return groups;
     }, {} as Record<string, { count: number; revenue: number }>);
 
-    // Agrupar por método de pagamento
-    const paymentGroups = orders.reduce((groups, order) => {
-      const status = order.paymentStatus;
-      if (!groups[status]) {
-        groups[status] = { count: 0, revenue: 0 };
-      }
-      groups[status].count++;
-      groups[status].revenue += order.totalPrice - (order.discount || 0);
-      return groups;
-    }, {} as Record<string, { count: number; revenue: number }>);
-
     // Criar estrutura do relatório
     const summary = {
       date: date.toLocaleDateString('pt-BR'),

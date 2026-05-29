@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Edit, Building } from "lucide-react";
+import { ArrowLeft, Edit } from "lucide-react";
 import { Institution } from "@/app/_types/institution";
 
 interface InstitutionDetailsHeaderProps {

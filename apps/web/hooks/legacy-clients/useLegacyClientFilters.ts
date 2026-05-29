@@ -17,7 +17,7 @@ interface UseLegacyClientFiltersProps {
 }
 
 export function useLegacyClientFilters({
-  search,
+  search: _search,
   setSearch,
   filters,
   updateFilters,

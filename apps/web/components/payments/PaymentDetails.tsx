@@ -17,7 +17,6 @@ import {
   DollarSign,
   Calendar,
   ArrowLeft,
-  ChevronLeft,
   Receipt,
   CreditCard,
   ExternalLink,

@@ -1,14 +1,7 @@
-import express, { Request, Response, NextFunction } from "express";
+import express from "express";
 import { CashRegisterController } from "../controllers/CashRegisterController";
 import { authenticate, authorize } from "../middlewares/authMiddleware";
 import { asyncHandler } from "../utils/asyncHandler";
-
-interface AuthRequest extends Request {
-  user?: {
-    id: string;
-    role: string;
-  };
-}
 
 const router = express.Router();
 const cashRegisterController = new CashRegisterController();

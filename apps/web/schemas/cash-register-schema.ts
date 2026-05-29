@@ -1,7 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import type { OpenCashRegisterDTO, CloseCashRegisterDTO } from "../app/_types/cash-register";
 
 // Schema para abrir um caixa
 export const openCashRegisterSchema = z.object({

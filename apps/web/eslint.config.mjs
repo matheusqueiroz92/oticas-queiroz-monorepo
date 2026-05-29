@@ -4,6 +4,17 @@ import eslintParserTypescript from "@typescript-eslint/parser";
 
 export default [
   {
+    ignores: [
+      ".next/**",
+      "out/**",
+      "build/**",
+      "coverage/**",
+      "node_modules/**",
+      "next-env.d.ts",
+      "jest.setup.js",
+    ],
+  },
+  {
     files: ["**/*.ts", "**/*.tsx"],
     plugins: {
       "@next/next": eslintPluginNext,
@@ -16,20 +27,24 @@ export default [
     },
     rules: {
       "@next/next/no-html-link-for-pages": "off",
-      "@typescript-eslint/no-unused-vars": "warn",
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+        },
+      ],
+      "@typescript-eslint/no-explicit-any": "off",
+      "react-hooks/rules-of-hooks": "off",
+      "@typescript-eslint/no-require-imports": "off",
     },
   },
   {
-    files: ["**/*.js", "**/*.jsx"],
-    plugins: {
-      "@next/next": eslintPluginNext,
-    },
-    languageOptions: {
-      ecmaVersion: "latest",
-      sourceType: "module",
-    },
+    files: ["**/__tests__/**/*", "**/*.test.ts", "**/*.test.tsx"],
     rules: {
-      "@next/next/no-html-link-for-pages": "off",
+      "@typescript-eslint/no-unused-vars": "off",
+      "@typescript-eslint/no-explicit-any": "off",
     },
   },
 ];

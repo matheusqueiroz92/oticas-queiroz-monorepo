@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useMercadoPago } from '@/hooks/useMercadoPago';
 import { Button } from '@/components/ui/button';
 import { PaymentStatus } from '@/components/mercado-pago/PaymentStatus';
-import { useRouter } from 'next/navigation';
 import { CreditCard, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
 import { formatCurrency } from '@/app/_utils/formatters';
@@ -32,7 +31,6 @@ export function MercadoPagoPaymentFlow({
   onPaymentFailure,
   onPaymentCancel
 }: MercadoPagoPaymentFlowProps) {
-  const router = useRouter();
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(true);
   const [showStatus, setShowStatus] = useState(false);
@@ -48,7 +46,7 @@ export function MercadoPagoPaymentFlow({
     preferenceId,
     isCreatingPreference,
     isLoadingPaymentInfo,
-    paymentWindowOpened
+    paymentWindowOpened: _paymentWindowOpened
   } = useMercadoPago();
 
   // Iniciar pagamento quando o componente montar

@@ -4,11 +4,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/useToast";
 import { useCallback, useState, useEffect } from "react";
 import {
-  getAllLegacyClients,
-  getLegacyClientById,
-  searchLegacyClientByIdentifier,
-  getDebtors,
-  getPaymentHistory,
   updateLegacyClient,
   toggleLegacyClientStatus,
   createLegacyClient

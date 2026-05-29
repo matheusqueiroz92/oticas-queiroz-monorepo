@@ -1,4 +1,4 @@
-import mongoose, { Model, Document, Types } from "mongoose";
+import mongoose, { Model, Types } from "mongoose";
 import { IBaseRepository } from "../interfaces/IBaseRepository";
 import { logger } from "../../config/logger";
 
@@ -245,7 +245,7 @@ export abstract class BaseRepository<T, CreateDTO = Omit<T, '_id'>>
     const query: Record<string, any> = {};
 
     // Remover filtros internos que não devem fazer parte da query
-    const { includeDeleted, sort, searchTerm, page, limit, _t, startDate, endDate, ...remainingFilters } = filters;
+    const { includeDeleted: _includeDeleted, sort: _sort, searchTerm: _searchTerm, page: _page, limit: _limit, _t, startDate: _startDate, endDate: _endDate, ...remainingFilters } = filters;
 
     // Adicionar filtros restantes
     Object.keys(remainingFilters).forEach(key => {

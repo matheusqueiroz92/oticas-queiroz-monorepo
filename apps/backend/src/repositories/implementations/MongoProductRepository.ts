@@ -133,7 +133,7 @@ export class MongoProductRepository extends BaseRepository<IProduct, Omit<IProdu
       }
 
       // Se o tipo não mudou, apenas atualizar normalmente
-      const { productType, ...updateData } = data as any;
+      const { productType: _productType, ...updateData } = data as any;
 
       let doc: any = null;
       

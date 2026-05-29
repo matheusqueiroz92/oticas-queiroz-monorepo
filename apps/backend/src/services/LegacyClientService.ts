@@ -240,7 +240,7 @@ export class LegacyClientService {
         
         // Calcular o débito real com base no histórico de pagamentos
         // Usamos a mesma lógica do caso individual
-        let newDebt = oldDebt;
+        const newDebt = oldDebt;
         
         // Se houver diferença, atualizar o débito do cliente
         if (newDebt !== oldDebt && client._id) {

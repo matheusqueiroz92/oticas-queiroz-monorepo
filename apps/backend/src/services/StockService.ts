@@ -1,6 +1,5 @@
 import { getRepositories } from "../repositories/RepositoryFactory";
 import { IProduct, IPrescriptionFrame, ISunglassesFrame } from "../interfaces/IProduct";
-import { OrderProduct } from "../interfaces/IOrder";
 import mongoose from "mongoose";
 import { StockLog, createStockLogWithSession } from "../schemas/StockLogSchema";
 

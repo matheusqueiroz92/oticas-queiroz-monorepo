@@ -3,7 +3,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, Beaker, Building, Mail, Phone, MapPin } from "lucide-react";
+import { Loader2, Building, Mail, Phone, MapPin } from "lucide-react";
 import React, { useState, useEffect, useMemo } from "react";
 
 import {
@@ -23,7 +23,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { useToast } from "@/hooks/useToast";
 import { createLaboratory, updateLaboratory } from "@/app/_services/laboratoryService";
 import { Laboratory } from "@/app/_types/laboratory";
 import { handleError, showSuccess } from "@/app/_utils/error-handler";
@@ -62,7 +61,6 @@ export function LaboratoryDialog({
   laboratory,
   mode,
 }: LaboratoryDialogProps) {
-  const { toast } = useToast();
   const [isPending, setIsPending] = useState(false);
   
   // Memoizar o laboratório para evitar renderizações desnecessárias

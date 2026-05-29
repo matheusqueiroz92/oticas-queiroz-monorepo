@@ -2,7 +2,7 @@ import { Order } from "../../schemas/OrderSchema";
 import { User } from "../../schemas/UserSchema";
 import { BaseRepository } from "./BaseRepository";
 import { IOrderRepository } from "../interfaces/IOrderRepository";
-import type { IOrder, CreateOrderDTO, IPaymentHistoryEntry } from "../../interfaces/IOrder";
+import type { IOrder, CreateOrderDTO } from "../../interfaces/IOrder";
 import { Types } from "mongoose";
 
 /**
@@ -272,7 +272,7 @@ export class MongoOrderRepository extends BaseRepository<IOrder, CreateOrderDTO>
     employeeId: string,
     page: number = 1,
     limit: number = 10,
-    includeDeleted: boolean = false
+    _includeDeleted: boolean = false
   ): Promise<{ items: IOrder[]; total: number; page: number; limit: number }> {
     try {
       if (!this.isValidId(employeeId)) {

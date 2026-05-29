@@ -7,7 +7,7 @@ interface OrdersFiltersProps {
   updateFilters: (filters: Record<string, any>) => void;
 }
 
-export function useOrdersFilters({ search, filters, setSearch, updateFilters }: OrdersFiltersProps) {
+export function useOrdersFilters({ search, filters, setSearch: _setSearch, updateFilters }: OrdersFiltersProps) {
   const getActiveFiltersCount = useCallback(() => {
     let count = 0;
     if (search) count++;

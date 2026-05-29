@@ -2,7 +2,6 @@ import { BaseRepository } from "./BaseRepository";
 import { CashRegister } from "../../schemas/CashRegisterSchema";
 import type { ICashRegister } from "../../interfaces/ICashRegister";
 import type { ICashRegisterRepository } from "../interfaces/ICashRegisterRepository";
-import { Types } from "mongoose";
 
 /**
  * Implementação MongoDB do CashRegisterRepository

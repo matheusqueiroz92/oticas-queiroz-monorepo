@@ -128,14 +128,4 @@ const SunglassesFrame = ProductBase.discriminator<SunglassesFrameDocument, Sungl
   sunglassesFrameSchema
 );
 
-const discriminatorOptions = {
-  toObject: { virtuals: true },
-  toJSON: { virtuals: true },
-  id: false,
-  versionKey: false,
-  timestamps: true,
-  strict: 'throw'
-  // Removido optimisticConcurrency temporariamente para teste
-}
-
 export { ProductBase as Product, Lens, CleanLens, PrescriptionFrame, SunglassesFrame };

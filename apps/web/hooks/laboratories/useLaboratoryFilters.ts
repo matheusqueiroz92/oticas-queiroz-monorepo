@@ -5,7 +5,7 @@ export function useLaboratoryFilters(
   setSearch: (value: string) => void,
   filters: Record<string, any>,
   updateFilters: (filters: Record<string, any>) => void,
-  getActiveFiltersCount: number
+  _getActiveFiltersCount: number
 ) {
   const handleUpdateFilters = useCallback((newFilters: Record<string, any>) => {
     updateFilters(newFilters);

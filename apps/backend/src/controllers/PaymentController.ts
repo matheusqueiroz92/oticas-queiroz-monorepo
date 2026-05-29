@@ -706,7 +706,7 @@ export class PaymentController {
           ["cash", "pix", "debit", "credit", "mercado_pago"].includes(payment.paymentMethod)) {
         
         // Usar o repositório diretamente para atualizar
-        const updatedPayment = await this.paymentService['paymentRepository'].update(paymentId, {
+        await this.paymentService['paymentRepository'].update(paymentId, {
           status: "completed"
         });
 

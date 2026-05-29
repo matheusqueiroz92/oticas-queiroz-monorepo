@@ -1,5 +1,4 @@
 import { Schema, model } from "mongoose";
-import { ReportData } from "../interfaces/IReport";
 
 const reportSchema = new Schema(
   {

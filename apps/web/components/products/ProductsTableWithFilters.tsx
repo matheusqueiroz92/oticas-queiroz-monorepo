@@ -1,7 +1,6 @@
 import { DataTableWithFilters, FilterOption } from "@/components/ui/data-table-with-filters";
 import { ProductsAdvancedFilters } from "@/components/products/ProductsAdvancedFilters";
 import { ProductsContent } from "@/components/products/ProductsContent";
-import { ProductActions } from "@/components/products/ProductActions";
 import { getProductTypeFilterOptions, getStockFilterOptions } from "@/app/_utils/product-utils";
 
 interface ProductsTableWithFiltersProps {

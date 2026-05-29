@@ -64,8 +64,8 @@ export default function OrderClientProducts({
   handleAddProduct,
   handleRemoveProduct,
   handleUpdateProductPrice,
-  handleDiscountChange,
-  calculateInstallmentValue,
+  handleDiscountChange: _handleDiscountChange,
+  calculateInstallmentValue: _calculateInstallmentValue,
   selectedResponsible,
   handleResponsibleSelect,
 }: OrderClientProductsProps) {
@@ -76,7 +76,6 @@ export default function OrderClientProducts({
   
   const { 
     institutions, 
-    isLoading: isLoadingInstitutions,
     fetchAllInstitutions
   } = useInstitutions({
     enablePagination: false
@@ -86,7 +85,6 @@ export default function OrderClientProducts({
     nextServiceOrder,
     isLoadingNextServiceOrder,
     nextServiceOrderError,
-    fetchNextServiceOrder,
     getServiceOrderDisplayValue
   } = useOrders({ enableQueries: true });
 
@@ -131,7 +129,7 @@ export default function OrderClientProducts({
               <FormField
                 control={form.control}
                 name="serviceOrder"
-                render={({ field }) => (
+                render={({ field: _field }) => (
                   <FormItem>
                     <FormLabel className="text-xs text-muted-foreground">Nº da O.S.</FormLabel>
                     <FormControl>
@@ -314,13 +312,13 @@ export default function OrderClientProducts({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem className="hover:bg-accent/50" value="credit">Cartão de Crédito</SelectItem>
-                      <SelectItem className="hover:bg-accent/50" value="debit">Cartão de Débito</SelectItem>
-                      <SelectItem className="hover:bg-accent/50" value="cash">Dinheiro</SelectItem>
-                      <SelectItem className="hover:bg-accent/50" value="pix">PIX</SelectItem>
-                      <SelectItem className="hover:bg-accent/50" value="sicredi_boleto">Boleto SICREDI</SelectItem>
-                      <SelectItem className="hover:bg-accent/50" value="promissory_note">Nota Promissória</SelectItem>
-                      <SelectItem className="hover:bg-accent/50" value="check">Cheque</SelectItem>
+                      <SelectItem className="hover:bg-accent/50 cursor-pointer" value="credit">Cartão de Crédito</SelectItem>
+                      <SelectItem className="hover:bg-accent/50 cursor-pointer" value="debit">Cartão de Débito</SelectItem>
+                      <SelectItem className="hover:bg-accent/50 cursor-pointer" value="cash">Dinheiro</SelectItem>
+                      <SelectItem className="hover:bg-accent/50 cursor-pointer" value="pix">PIX</SelectItem>
+                      <SelectItem className="hover:bg-accent/50 cursor-pointer" value="sicredi_boleto">Boleto SICREDI</SelectItem>
+                      <SelectItem className="hover:bg-accent/50 cursor-pointer" value="promissory_note">Nota Promissória</SelectItem>
+                      <SelectItem className="hover:bg-accent/50 cursor-pointer" value="check">Cheque</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />

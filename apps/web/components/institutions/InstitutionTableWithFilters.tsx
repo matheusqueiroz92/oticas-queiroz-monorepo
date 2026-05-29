@@ -31,7 +31,7 @@ interface InstitutionTableWithFiltersProps {
 export function InstitutionTableWithFilters({
   institutions,
   isLoading,
-  error,
+  error: _error,
   search,
   onSearchChange,
   showFilters,

@@ -331,7 +331,7 @@ export class UserService {
     userData: UpdateUserInput
   ): Promise<IUser> {
     // Remover campos que não devem ser alterados no perfil
-    const { role, ...profileData } = userData;
+    const { role: _role, ...profileData } = userData;
     
     return this.updateUser(userId, profileData);
   }

@@ -2,7 +2,6 @@
 
 import {
   FilePlus,
-  FileText,
   UserPlus,
   PackagePlus,
   HandCoins,

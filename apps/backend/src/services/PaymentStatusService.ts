@@ -74,7 +74,7 @@ export class PaymentStatusService {
     paymentId?: string,
     amount?: number,
     method?: string,
-    action: 'add' | 'remove' | 'recalculate' = 'recalculate'
+    _action: 'add' | 'remove' | 'recalculate' = 'recalculate'
   ): Promise<void> {
     const order = await this.orderRepository.findById(orderId);
     if (!order) throw new Error("Pedido não encontrado");
@@ -159,7 +159,7 @@ export class PaymentStatusService {
    * @param orderId ID do pedido
    * @param customerId ID do cliente (opcional)
    */
-  async recalculateOrderPaymentStatus(orderId: string, customerId?: string): Promise<void> {
+  async recalculateOrderPaymentStatus(orderId: string, _customerId?: string): Promise<void> {
     await this.updateOrderPaymentStatus(orderId, undefined, undefined, undefined, 'recalculate');
   }
 

@@ -155,7 +155,7 @@ export default function ProductSearch({
     <FormField
       control={form.control}
       name="products"
-      render={({ field }) => (
+      render={({ field: _field }) => (
         <FormItem>
           <FormLabel>Adicionar Produtos</FormLabel>
           <div className="relative">

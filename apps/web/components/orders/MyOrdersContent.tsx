@@ -40,7 +40,7 @@ export function MyOrdersContent({
   totalOrders,
   activeFiltersCount,
   isCustomer,
-  isEmployee,
+  isEmployee: _isEmployee,
 }: MyOrdersContentProps) {
   return (
     <ListPageContent>

@@ -131,7 +131,7 @@ export default function ClientSearch({
     <FormField
       control={form.control}
       name="clientId"
-      render={({ field }) => (
+      render={({ field: _field }) => (
         <FormItem>
           <FormLabel className="text-xs text-muted-foreground">Cliente</FormLabel>
           <div className="relative">

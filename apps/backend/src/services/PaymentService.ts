@@ -8,7 +8,7 @@ import { SicrediPaymentSettlementService } from "./SicrediPaymentSettlementServi
 import type { IPayment, CreatePaymentDTO } from "../interfaces/IPayment";
 import type { IPaymentRepository } from "../repositories/interfaces/IPaymentRepository";
 import NodeCache from "node-cache";
-import { ExportUtils, type ExportOptions } from "../utils/exportUtils";
+import { type ExportOptions } from "../utils/exportUtils";
 import { withTransaction } from "../utils/withTransaction";
 import { logger } from "../config/logger";
 
@@ -17,11 +17,6 @@ export class PaymentError extends Error {
     super(message);
     this.name = "PaymentError";
   }
-}
-
-interface DateRangeQuery {
-  $gte: Date;
-  $lte: Date;
 }
 
 interface FinancialReportData {
@@ -244,7 +239,7 @@ export class PaymentService {
    * @param userId ID do usuário que está cancelando
    * @returns Pagamento cancelado
    */
-  async cancelPayment(id: string, userId: string): Promise<IPayment> {
+  async cancelPayment(id: string, _userId: string): Promise<IPayment> {
     const payment = await this.paymentRepository.findById(id);
     if (!payment) {
       throw new PaymentError("Pagamento não encontrado");
@@ -429,7 +424,7 @@ export class PaymentService {
    * @param clientId ID do cliente (opcional, se não informado recalcula todos)
    * @returns Resumo da operação
    */
-  async recalculateClientDebts(clientId?: string): Promise<{
+  async recalculateClientDebts(_clientId?: string): Promise<{
     updated: number;
     clients: Array<{ id: string; oldDebt: number; newDebt: number; diff: number }>;
   }> {

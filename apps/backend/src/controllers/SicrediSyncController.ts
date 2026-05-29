@@ -1,27 +1,15 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
 import { asyncHandler } from '../utils/asyncHandler';
-import { SicrediSyncService, SicrediSyncError } from '../services/SicrediSyncService';
+import { SicrediSyncService } from '../services/SicrediSyncService';
 import { PaymentService } from '../services/PaymentService';
 import { UserService } from '../services/UserService';
 import { LegacyClientService } from '../services/LegacyClientService';
 import { OrderService } from '../services/OrderService';
 
-interface AuthRequest extends Request {
-  user?: {
-    _id: string;
-    role: string;
-    name: string;
-  };
-}
-
 // Schemas de validação
 const startSyncSchema = z.object({
   intervalMinutes: z.number().min(5).max(1440).optional().default(30), // 5 min a 24h
-});
-
-const syncClientSchema = z.object({
-  clientId: z.string().min(1, "ID do cliente é obrigatório"),
 });
 
 export class SicrediSyncController {

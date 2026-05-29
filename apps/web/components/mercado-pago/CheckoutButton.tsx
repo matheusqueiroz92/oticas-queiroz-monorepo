@@ -32,7 +32,7 @@ export function CheckoutButton({
 }: CheckoutButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
+  const [, setPaymentUrl] = useState<string | null>(null);
   const { toast } = useToast();
 
   const handleClick = () => {

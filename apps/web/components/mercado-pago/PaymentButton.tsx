@@ -48,7 +48,7 @@ export function MercadoPagoButton({
     preferenceId,
     isCreatingPreference,
     isLoadingPaymentInfo,
-    paymentWindowOpened
+    paymentWindowOpened: _paymentWindowOpened
   } = useMercadoPago();
 
   const handleInitPayment = () => {

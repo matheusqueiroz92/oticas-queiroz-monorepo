@@ -69,11 +69,3 @@ function isTransactionUnsupportedError(error: unknown): boolean {
   }
   return false;
 }
-
-/**
- * Sessão nula que mantém a assinatura mas não participa de transação.
- * Usado apenas como fallback de compatibilidade em ambientes sem replica set.
- */
-function createNoOpSession(): mongoose.ClientSession {
-  return null as unknown as mongoose.ClientSession;
-}

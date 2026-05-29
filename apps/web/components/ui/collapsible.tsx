@@ -14,7 +14,7 @@ interface CollapsibleProps {
 const Collapsible = React.forwardRef<
   HTMLDivElement,
   CollapsibleProps
->(({ open = false, onOpenChange, children, className, ...props }, ref) => {
+>(({ open: _open = false, onOpenChange: _onOpenChange, children, className, ...props }, ref) => {
   return (
     <div
       ref={ref}

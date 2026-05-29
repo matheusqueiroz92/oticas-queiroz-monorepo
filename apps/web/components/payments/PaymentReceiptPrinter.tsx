@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Printer, RefreshCw } from "lucide-react";
-import { formatCurrency, formatDate, formatDateTime } from "@/app/_utils/formatters";
+import { formatCurrency, formatDate } from "@/app/_utils/formatters";
 import type { IPayment } from "@/app/_types/payment";
 import type { LegacyClient } from "@/app/_types/legacy-client";
 import { useOrders } from '@/hooks/orders/useOrders';

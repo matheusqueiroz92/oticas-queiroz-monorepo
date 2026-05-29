@@ -2,7 +2,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency, formatDate } from "@/app/_utils/formatters";
 import { 
   DollarSign, 
-  Calendar, 
   CreditCard, 
   AlertTriangle,
   TrendingUp,

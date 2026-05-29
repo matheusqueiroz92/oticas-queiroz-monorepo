@@ -3,7 +3,6 @@ import app from "./app";
 import { logger } from "./config/logger";
 
 const PORT = Number(process.env.PORT) || 3333;
-const HOST = process.env.HOST || "0.0.0.0";
 const NODE_ENV = process.env.NODE_ENV || "development";
 
 app.listen(PORT, "0.0.0.0", () => {

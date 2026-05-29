@@ -1,7 +1,7 @@
 import { User } from "../schemas/UserSchema";
 import type { ICreateUserDTO, IUser } from "../interfaces/IUser";
 import type mongoose from "mongoose";
-import { type Document, Model, Types } from "mongoose";
+import { type Document, Types } from "mongoose";
 import bcrypt from "bcrypt";
 
 interface UserDocument extends Document {
@@ -31,7 +31,7 @@ export class UserModel {
 
   private convertToIUser(doc: UserDocument): IUser {
     const user = doc.toObject();
-    const { password, ...userWithoutPassword } = user;
+    const { password: _password, ...userWithoutPassword } = user;
     return {
       ...userWithoutPassword,
       _id: doc._id.toString(),
@@ -124,7 +124,7 @@ export class UserModel {
   ): Promise<{ users: IUser[]; total: number }> {
     const skip = (page - 1) * limit;
     
-    let query: any = {};
+    const query: any = {};
     
     if (filters.role) {
       query.role = filters.role;
