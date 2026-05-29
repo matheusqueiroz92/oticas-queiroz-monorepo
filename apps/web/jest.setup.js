@@ -1,4 +1,5 @@
 // apps/web/jest.setup.js
+import React from 'react';
 import '@testing-library/jest-dom';
 import 'whatwg-fetch';
 import { TextDecoder, TextEncoder } from 'util';
@@ -56,21 +57,6 @@ jest.mock('js-cookie', () => ({
   set: jest.fn(),
   remove: jest.fn(),
 }));
-
-// Mock para o Hook use do next/react (usado em RSC)
-jest.mock('react', () => {
-  const originalReact = jest.requireActual('react');
-  return {
-    ...originalReact,
-    cache: (fn) => fn,
-    use: (promise) => {
-      if (promise && typeof promise.then === 'function') {
-        throw new Error('Cannot use Promises in tests. Mock them instead.');
-      }
-      return promise;
-    },
-  };
-});
 
 // Mock para o componente Card e outros componentes UI
 jest.mock('@/components/ui/card', () => ({

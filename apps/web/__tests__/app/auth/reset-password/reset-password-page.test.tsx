@@ -8,9 +8,8 @@ import { useRouter } from 'next/navigation';
 // Aumentando o timeout global para todos os testes neste arquivo
 jest.setTimeout(20000);
 
-// Mock para o componente ResetPasswordPage
-// Aqui vamos fazer um mock completo em vez de usar o real
-const ResetPasswordPage = jest.fn(({ params }) => {
+// Mock do componente ResetPasswordPage (deve ser function component para hooks)
+function ResetPasswordPageMock({ params }: { params: { token: string } }) {
   const [isValidating, setIsValidating] = React.useState(true);
   const [isTokenValid, setIsTokenValid] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(false);
@@ -145,7 +144,7 @@ const ResetPasswordPage = jest.fn(({ params }) => {
       <a href="/auth/login">Voltar para o login</a>
     </div>
   );
-});
+}
 
 // Mock para useRouter
 jest.mock('next/navigation', () => ({
@@ -153,15 +152,9 @@ jest.mock('next/navigation', () => ({
 }));
 
 // Mock para o serviço de autenticação
-jest.mock('@/app/services/authService', () => ({
+jest.mock('@/app/_services/authService', () => ({
   validateResetToken: jest.fn(),
   resetPassword: jest.fn(),
-}));
-
-// Mock para o componente real
-jest.mock('@/app/auth/reset-password/[token]/page', () => ({
-  __esModule: true,
-  default: (props: { params: { token: string } }) => ResetPasswordPage(props),
 }));
 
 describe('ResetPasswordPage', () => {
@@ -186,7 +179,7 @@ describe('ResetPasswordPage', () => {
       setTimeout(() => resolve(true), 50);
     }));
 
-    render(<ResetPasswordPage params={{ token: validToken }} />);
+    render(<ResetPasswordPageMock params={{ token: validToken }} />);
 
     // Verificar o estado de carregamento
     expect(screen.getByText('Verificando seu link de redefinição...')).toBeInTheDocument();
@@ -202,7 +195,7 @@ describe('ResetPasswordPage', () => {
   it('handles invalid token', async () => {
     mockValidateResetToken.mockResolvedValueOnce(false);
 
-    render(<ResetPasswordPage params={{ token: 'invalid-token' }} />);
+    render(<ResetPasswordPageMock params={{ token: 'invalid-token' }} />);
 
     // Aguardar a validação do token
     await waitFor(() => {
@@ -223,7 +216,7 @@ describe('ResetPasswordPage', () => {
   it('renders reset password form for valid token', async () => {
     mockValidateResetToken.mockResolvedValueOnce(true);
 
-    render(<ResetPasswordPage params={{ token: validToken }} />);
+    render(<ResetPasswordPageMock params={{ token: validToken }} />);
 
     // Aguardar a validação
     await waitFor(() => {
@@ -241,7 +234,7 @@ describe('ResetPasswordPage', () => {
   it('shows validation errors for invalid inputs', async () => {
     mockValidateResetToken.mockResolvedValueOnce(true);
 
-    render(<ResetPasswordPage params={{ token: validToken }} />);
+    render(<ResetPasswordPageMock params={{ token: validToken }} />);
     const user = userEvent.setup();
 
     // Aguardar o carregamento do formulário
@@ -262,7 +255,7 @@ describe('ResetPasswordPage', () => {
   it('shows error when passwords do not match', async () => {
     mockValidateResetToken.mockResolvedValueOnce(true);
 
-    render(<ResetPasswordPage params={{ token: validToken }} />);
+    render(<ResetPasswordPageMock params={{ token: validToken }} />);
     const user = userEvent.setup();
 
     // Aguardar o carregamento do formulário
@@ -290,7 +283,7 @@ describe('ResetPasswordPage', () => {
     // Mock para o reset de senha - resolução imediata
     mockResetPassword.mockResolvedValueOnce(undefined);
 
-    render(<ResetPasswordPage params={{ token: validToken }} />);
+    render(<ResetPasswordPageMock params={{ token: validToken }} />);
     const user = userEvent.setup();
 
     // Aguardar o carregamento do formulário
@@ -331,7 +324,7 @@ describe('ResetPasswordPage', () => {
       return Promise.reject(new Error(errorMessage));
     });
 
-    render(<ResetPasswordPage params={{ token: validToken }} />);
+    render(<ResetPasswordPageMock params={{ token: validToken }} />);
     const user = userEvent.setup();
 
     // Aguardar o carregamento do formulário
@@ -372,7 +365,7 @@ describe('ResetPasswordPage', () => {
     // Configuramos mockResetPassword para retornar essa Promise
     mockResetPassword.mockReturnValueOnce(neverEndingPromise);
 
-    render(<ResetPasswordPage params={{ token: validToken }} />);
+    render(<ResetPasswordPageMock params={{ token: validToken }} />);
     const user = userEvent.setup();
 
     // Aguardar o carregamento do formulário
@@ -404,7 +397,7 @@ describe('ResetPasswordPage', () => {
   it('navigates to login page when "Voltar para o login" link is clicked', async () => {
     mockValidateResetToken.mockResolvedValueOnce(true);
 
-    render(<ResetPasswordPage params={{ token: validToken }} />);
+    render(<ResetPasswordPageMock params={{ token: validToken }} />);
     const user = userEvent.setup();
 
     // Aguardar o carregamento do formulário
@@ -424,7 +417,7 @@ describe('ResetPasswordPage', () => {
     const token = 'very-long-token-123456789abcdef';
     mockValidateResetToken.mockResolvedValueOnce(true);
 
-    render(<ResetPasswordPage params={{ token }} />);
+    render(<ResetPasswordPageMock params={{ token }} />);
 
     // Verifica se o token é mascarado corretamente durante a validação
     expect(screen.getByText(/Verificando seu link de redefinição/i)).toBeInTheDocument();

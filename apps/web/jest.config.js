@@ -1,17 +1,30 @@
 const nextJest = require('next/jest');
+const path = require('path');
 
 const createJestConfig = nextJest({
   // Provide the path to your Next.js app to load next.config.js and .env files in your test environment
   dir: './',
 });
 
+// Uma única cópia de React no monorepo (evita "Invalid hook call" no CI)
+const reactResolve = (subpath) =>
+  path.join(path.dirname(require.resolve('react/package.json')), subpath);
+const reactDomResolve = (subpath) =>
+  path.join(path.dirname(require.resolve('react-dom/package.json')), subpath);
+
 // Add any custom config to be passed to Jest
 const customJestConfig = {
   // Custom resolver: maps services/authService → _services/authService (same physical
   // file so mocks intercept component imports) and handles Next.js route groups.
   resolver: '<rootDir>/jest.resolver.js',
+  modulePathIgnorePatterns: ['<rootDir>/.next/'],
   // Adicione os módulos e arquivos a serem ignorados ou mockados
   moduleNameMapper: {
+    '^react$': reactResolve('index.js'),
+    '^react/jsx-runtime$': reactResolve('jsx-runtime.js'),
+    '^react/jsx-dev-runtime$': reactResolve('jsx-dev-runtime.js'),
+    '^react-dom$': reactDomResolve('index.js'),
+    '^react-dom/client$': reactDomResolve('client.js'),
     // Handle module aliases (this will be automatically configured for you soon)
     '^@/(.*)$': '<rootDir>/$1',
     // Handle CSS imports (with CSS modules)
@@ -51,7 +64,10 @@ const customJestConfig = {
   // Configurar os arquivos de setup
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   // Configurar o diretório de saída dos testes
-  testPathIgnorePatterns: ['<rootDir>/node_modules/', '<rootDir>/.next/'],
+  testPathIgnorePatterns: [
+    '<rootDir>/node_modules/',
+    '<rootDir>/.next/',
+  ],
 };
 
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async
