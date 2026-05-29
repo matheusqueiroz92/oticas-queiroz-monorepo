@@ -10,7 +10,7 @@ DB_NAME="${MONGO_DB_NAME:-oticas_queiroz_db}"
 BACKUP_ROOT="${BACKUP_ROOT:-/opt/backups/oticas-queiroz}"
 RETENTION_DAYS="${RETENTION_DAYS:-30}"
 LOG_FILE="${LOG_FILE:-/var/log/oticas-queiroz-mongo-backup.log}"
-MIN_BYTES="${MIN_BYTES:-102400}" # 100 KiB — falha se dump menor (banco vazio/corrompido)
+MIN_BYTES="${MIN_BYTES:-4096}" # 4 KiB — falha só se dump vazio/corrompido (~20 KiB é normal para DB pequeno)
 
 TIMESTAMP="$(date -u +%Y%m%d-%H%M%S)"
 ARCHIVE_NAME="oticas_queiroz_db-${TIMESTAMP}.archive.gz"

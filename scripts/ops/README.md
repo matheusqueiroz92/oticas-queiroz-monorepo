@@ -74,7 +74,7 @@ export RETENTION_DAYS=30
 
 1. Container Mongo rodando  
 2. `mongodump` com exit 0  
-3. Arquivo existe e tamanho mínimo (100 KiB)  
+3. Arquivo existe e tamanho mínimo (4 KiB; ~20 KiB é normal com poucos pedidos)  
 4. `gzip -t` (integridade do gzip)  
 5. `mongorestore --dryRun` (estrutura legível do archive)
 
