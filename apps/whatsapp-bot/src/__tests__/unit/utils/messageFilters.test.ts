@@ -1,6 +1,8 @@
 import {
   extractTextFromMessage,
   isGroupJid,
+  isIgnorableInboundJid,
+  isProcessableUserMessage,
   toUnixTimestampSeconds,
 } from "../../../utils/messageFilters";
 
@@ -16,6 +18,64 @@ describe("messageFilters", () => {
 
     it("returns false for empty", () => {
       expect(isGroupJid(null)).toBe(false);
+    });
+  });
+
+  describe("isIgnorableInboundJid", () => {
+    it("ignora status do WhatsApp", () => {
+      expect(isIgnorableInboundJid("status@broadcast")).toBe(true);
+    });
+
+    it("ignora grupos e canais", () => {
+      expect(isIgnorableInboundJid("120363123456789012@g.us")).toBe(true);
+      expect(isIgnorableInboundJid("1234567890@newsletter")).toBe(true);
+    });
+
+    it("aceita conversa individual", () => {
+      expect(isIgnorableInboundJid("5511999999999@s.whatsapp.net")).toBe(
+        false
+      );
+      expect(isIgnorableInboundJid("258690393337861@lid")).toBe(false);
+    });
+
+    it("ignora JID vazio", () => {
+      expect(isIgnorableInboundJid(null)).toBe(true);
+    });
+  });
+
+  describe("isProcessableUserMessage", () => {
+    it("aceita mensagem de texto comum", () => {
+      expect(
+        isProcessableUserMessage({
+          key: {},
+          message: { conversation: "Olá" },
+        })
+      ).toBe(true);
+    });
+
+    it("ignora status e mensagens de protocolo", () => {
+      expect(
+        isProcessableUserMessage({
+          key: { remoteJid: "status@broadcast" },
+          broadcast: true,
+          message: { conversation: "Meu status" },
+        })
+      ).toBe(false);
+
+      expect(
+        isProcessableUserMessage({
+          key: {},
+          message: { protocolMessage: { type: 0 } },
+        })
+      ).toBe(false);
+
+      expect(
+        isProcessableUserMessage({
+          key: {},
+          messageStubType: 1,
+          message: { conversation: "stub" },
+        })
+      ).toBe(false);
     });
   });
 

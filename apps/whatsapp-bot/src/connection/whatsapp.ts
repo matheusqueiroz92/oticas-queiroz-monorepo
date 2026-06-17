@@ -1,6 +1,9 @@
 import makeWASocket, {
   DisconnectReason,
   fetchLatestBaileysVersion,
+  isJidBroadcast,
+  isJidNewsletter,
+  isJidStatusBroadcast,
   makeCacheableSignalKeyStore,
   useMultiFileAuthState,
   type WASocket,
@@ -16,7 +19,8 @@ import { sendWhatsAppText } from "../services/whatsappSendService";
 import type { InboundMessagePayload } from "../types/messages";
 import {
   extractTextFromMessage,
-  isGroupJid,
+  isIgnorableInboundJid,
+  isProcessableUserMessage,
   toUnixTimestampSeconds,
 } from "../utils/messageFilters";
 import { getMessageForRetry, storeMessageForRetry } from "../utils/recentMessageCache";
@@ -123,6 +127,11 @@ export async function startWhatsAppConnection(): Promise<void> {
       markOnlineOnConnect: false,
       fireInitQueries: true,
       getMessage: getMessageForRetry,
+      // Evita processar status, listas de transmissão e canais no messages.upsert
+      shouldIgnoreJid: (jid) =>
+        isJidStatusBroadcast(jid) ||
+        isJidBroadcast(jid) ||
+        isJidNewsletter(jid),
     });
 
     socket = sock;
@@ -180,7 +189,8 @@ export async function startWhatsAppConnection(): Promise<void> {
         if (msg.key.fromMe) continue;
 
         const remoteJid = msg.key.remoteJid;
-        if (!remoteJid || isGroupJid(remoteJid)) continue;
+        if (!remoteJid || isIgnorableInboundJid(remoteJid)) continue;
+        if (!isProcessableUserMessage(msg)) continue;
 
         if (msg.key.id && msg.message) {
           storeMessageForRetry(remoteJid, msg.key.id, msg.message);
