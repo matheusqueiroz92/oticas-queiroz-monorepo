@@ -2,6 +2,11 @@ import mongoose from 'mongoose';
 import { Order } from '../schemas/OrderSchema';
 import { Counter } from '../schemas/CounterSchema';
 import { CounterService } from '../services/CounterService';
+import {
+  SERVICE_ORDER_COUNTER_ID,
+  SERVICE_ORDER_COUNTER_INITIAL,
+  SERVICE_ORDER_START,
+} from '../constants/serviceOrder';
 import dotenv from 'dotenv';
 import connectDB from '../config/db';
 
@@ -33,11 +38,11 @@ async function migrateServiceOrder() {
     }
 
     // 2. Verificar se já existe um contador para serviceOrder
-    let currentCounter = await CounterService.getCurrentSequence('serviceOrder');
+    let currentCounter = await CounterService.getCurrentSequence(SERVICE_ORDER_COUNTER_ID);
     
     if (currentCounter === null) {
-      console.log('📝 Criando contador inicial para serviceOrder começando em 300000');
-      currentCounter = 299999; // Começará em 300000 no primeiro incremento
+      console.log(`📝 Criando contador inicial para serviceOrder começando em ${SERVICE_ORDER_START}`);
+      currentCounter = SERVICE_ORDER_COUNTER_INITIAL;
     } else {
       console.log(`📝 Contador atual encontrado: ${currentCounter}`);
     }
@@ -77,7 +82,7 @@ async function migrateServiceOrder() {
     }
 
     // 4. Atualizar o contador para o próximo número disponível
-    await CounterService.resetCounter('serviceOrder', currentNumber - 1);
+    await CounterService.resetCounter(SERVICE_ORDER_COUNTER_ID, currentNumber - 1);
 
     console.log(`✅ Migração concluída com sucesso!`);
     console.log(`📊 Total de pedidos atualizados: ${updatedCount}`);
@@ -125,7 +130,7 @@ async function rollbackMigration() {
     console.log(`✅ Rollback concluído: ${result.modifiedCount} pedidos tiveram serviceOrder removido`);
 
     // Remover contador
-    await Counter.deleteOne({ _id: 'serviceOrder' });
+    await Counter.deleteOne({ _id: SERVICE_ORDER_COUNTER_ID });
     console.log('✅ Contador removido');
 
   } catch (error) {

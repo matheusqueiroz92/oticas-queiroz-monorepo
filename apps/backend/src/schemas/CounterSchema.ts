@@ -1,4 +1,8 @@
 import { Schema, model } from "mongoose";
+import {
+  SERVICE_ORDER_COUNTER_ID,
+  SERVICE_ORDER_COUNTER_INITIAL,
+} from "../constants/serviceOrder";
 
 interface ICounter {
   _id: string;
@@ -12,15 +16,15 @@ const counterSchema = new Schema<ICounter>({
   },
   sequence: { 
     type: Number, 
-    default: 299999 // Padrão será 299999, para que o primeiro número gerado seja 300000
+    default: SERVICE_ORDER_COUNTER_INITIAL
   }
 });
 
-// Middleware para garantir que o serviceOrder nunca seja menor que 300000
+// Middleware para garantir que o serviceOrder nunca seja menor que o mínimo configurado
 counterSchema.pre('save', function(next) {
-  if (this._id === 'serviceOrder' && this.sequence < 299999) {
-    console.log(`Corrigindo sequence de ${this.sequence} para 299999`);
-    this.sequence = 299999;
+  if (this._id === SERVICE_ORDER_COUNTER_ID && this.sequence < SERVICE_ORDER_COUNTER_INITIAL) {
+    console.log(`Corrigindo sequence de ${this.sequence} para ${SERVICE_ORDER_COUNTER_INITIAL}`);
+    this.sequence = SERVICE_ORDER_COUNTER_INITIAL;
   }
   next();
 });

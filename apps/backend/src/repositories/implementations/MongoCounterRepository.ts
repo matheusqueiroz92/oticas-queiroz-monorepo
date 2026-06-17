@@ -1,5 +1,6 @@
 import { Counter } from "../../schemas/CounterSchema";
 import type { ICounter, ICounterRepository } from "../interfaces/ICounterRepository";
+import { SERVICE_ORDER_START } from "../../constants/serviceOrder";
 import mongoose from "mongoose";
 
 /**
@@ -11,7 +12,7 @@ export class MongoCounterRepository implements ICounterRepository {
   /**
    * Obtém o próximo número da sequência
    */
-  async getNextSequence(counterId: string, startValue: number = 300000): Promise<number> {
+  async getNextSequence(counterId: string, startValue: number = SERVICE_ORDER_START): Promise<number> {
     try {
       // Verificar se o contador existe
       let counter = await Counter.findById(counterId);
@@ -50,7 +51,7 @@ export class MongoCounterRepository implements ICounterRepository {
   async getNextSequenceWithSession(
     counterId: string,
     session: mongoose.ClientSession,
-    startValue: number = 300000
+    startValue: number = SERVICE_ORDER_START
   ): Promise<number> {
     try {
       // Verificar se o contador existe

@@ -1,12 +1,17 @@
 import mongoose from 'mongoose';
 import { config } from 'dotenv';
-import { Order } from '../schemas/OrderSchema'; // Importar o schema
-import { Counter } from '../schemas/CounterSchema'; // Importar o schema
+import { Order } from '../schemas/OrderSchema';
+import { Counter } from '../schemas/CounterSchema';
+import {
+  SERVICE_ORDER_COUNTER_ID,
+  SERVICE_ORDER_COUNTER_INITIAL,
+  SERVICE_ORDER_START,
+} from '../constants/serviceOrder';
 
 config();
 
 /**
- * Script para resetar o contador serviceOrder para começar em 300000
+ * Script para resetar o contador serviceOrder com base no maior número existente
  */
 async function resetServiceOrderCounter() {
   try {
@@ -16,18 +21,16 @@ async function resetServiceOrderCounter() {
 
     console.log('🔄 Resetando contador serviceOrder...');
     
-    // Verificar se existem pedidos no sistema
     console.log('📊 Verificando pedidos existentes...');
     const orderCount = await Order.countDocuments();
     console.log(`📈 Total de pedidos no sistema: ${orderCount}`);
     
-    let targetValue = 299999; // Padrão: próximo será 300000
+    let targetValue = SERVICE_ORDER_COUNTER_INITIAL;
     
     if (orderCount === 0) {
-      console.log('📋 Sistema sem pedidos, configurando contador para 299999');
-      targetValue = 299999;
+      console.log(`📋 Sistema sem pedidos, configurando contador para ${SERVICE_ORDER_COUNTER_INITIAL}`);
+      targetValue = SERVICE_ORDER_COUNTER_INITIAL;
     } else {
-      // Verificar o maior serviceOrder existente
       console.log('🔍 Buscando o maior serviceOrder existente...');
       const lastOrder = await Order.findOne(
         { serviceOrder: { $exists: true, $ne: null } },
@@ -42,30 +45,27 @@ async function resetServiceOrderCounter() {
         console.log(`🔢 Último serviceOrder: ${lastServiceOrder}`);
         
         if (!isNaN(lastServiceOrder)) {
-          if (lastServiceOrder >= 300000) {
-            // Se já existe um serviceOrder >= 300000, usar esse valor
+          if (lastServiceOrder >= SERVICE_ORDER_START) {
             targetValue = lastServiceOrder;
             console.log(`✅ Usando serviceOrder existente: ${lastServiceOrder}`);
           } else {
-            // Se o último serviceOrder é < 300000, resetar para 299999
-            targetValue = 299999;
-            console.log(`⚠️  Último serviceOrder < 300000, resetando para 299999`);
+            targetValue = SERVICE_ORDER_COUNTER_INITIAL;
+            console.log(`⚠️  Último serviceOrder < ${SERVICE_ORDER_START}, resetando para ${SERVICE_ORDER_COUNTER_INITIAL}`);
           }
         } else {
-          targetValue = 299999;
-          console.log(`❌ ServiceOrder inválido, resetando para 299999`);
+          targetValue = SERVICE_ORDER_COUNTER_INITIAL;
+          console.log(`❌ ServiceOrder inválido, resetando para ${SERVICE_ORDER_COUNTER_INITIAL}`);
         }
       } else {
-        targetValue = 299999;
-        console.log(`📝 Nenhum serviceOrder válido encontrado, resetando para 299999`);
+        targetValue = SERVICE_ORDER_COUNTER_INITIAL;
+        console.log(`📝 Nenhum serviceOrder válido encontrado, resetando para ${SERVICE_ORDER_COUNTER_INITIAL}`);
       }
     }
     
-    // Resetar/criar o contador
     console.log(`🎯 Definindo contador para: ${targetValue}`);
     
     const result = await Counter.findOneAndUpdate(
-      { _id: 'serviceOrder' },
+      { _id: SERVICE_ORDER_COUNTER_ID },
       { sequence: targetValue },
       { 
         upsert: true, 
@@ -81,8 +81,7 @@ async function resetServiceOrderCounter() {
       console.log(`📊 Valor atual do contador: ${result.sequence}`);
       console.log(`🎯 Próximo serviceOrder será: ${result.sequence + 1}`);
       
-      // Verificação adicional
-      const verification = await Counter.findById('serviceOrder');
+      const verification = await Counter.findById(SERVICE_ORDER_COUNTER_ID);
       console.log('🔍 Verificação final:', verification);
       
     } else {
@@ -110,19 +109,17 @@ async function forceResetServiceOrderCounter() {
 
     console.log('🗑️  RESET FORÇADO - Removendo contador existente...');
     
-    // Remover contador existente
-    await Counter.deleteOne({ _id: 'serviceOrder' });
+    await Counter.deleteOne({ _id: SERVICE_ORDER_COUNTER_ID });
     console.log('🗑️  Contador removido');
     
-    // Criar novo contador
     const newCounter = new Counter({
-      _id: 'serviceOrder',
-      sequence: 299999
+      _id: SERVICE_ORDER_COUNTER_ID,
+      sequence: SERVICE_ORDER_COUNTER_INITIAL
     });
     
     await newCounter.save();
-    console.log('✅ Novo contador criado com sequence: 299999');
-    console.log('🎯 Próximo serviceOrder será: 300000');
+    console.log(`✅ Novo contador criado com sequence: ${SERVICE_ORDER_COUNTER_INITIAL}`);
+    console.log(`🎯 Próximo serviceOrder será: ${SERVICE_ORDER_START}`);
     
   } catch (error) {
     console.error('💥 Erro durante o reset forçado:', error);
@@ -134,7 +131,6 @@ async function forceResetServiceOrderCounter() {
   }
 }
 
-// Verificar argumentos da linha de comando
 const args = process.argv.slice(2);
 
 if (args.includes('--force')) {

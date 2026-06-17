@@ -1,5 +1,6 @@
 import { RepositoryFactory } from "../repositories/RepositoryFactory";
 import type { ICounterRepository } from "../repositories/interfaces/ICounterRepository";
+import { SERVICE_ORDER_START } from "../constants/serviceOrder";
 import mongoose from "mongoose";
 
 export class CounterService {
@@ -12,12 +13,12 @@ export class CounterService {
   /**
    * Obtém o próximo número da sequência para um contador específico
    * @param counterId ID do contador (ex: 'serviceOrder')
-   * @param startValue Valor inicial caso seja o primeiro (padrão: 300000)
+   * @param startValue Valor inicial caso seja o primeiro (padrão: SERVICE_ORDER_START)
    * @returns Promise com o próximo número da sequência
    */
   static async getNextSequence(
     counterId: string, 
-    startValue: number = 300000
+    startValue: number = SERVICE_ORDER_START
   ): Promise<number> {
     const service = new CounterService();
     return service.counterRepository.getNextSequence(counterId, startValue);
@@ -29,7 +30,7 @@ export class CounterService {
   static async getNextSequenceWithSession(
     counterId: string,
     session: mongoose.ClientSession,
-    startValue: number = 300000
+    startValue: number = SERVICE_ORDER_START
   ): Promise<number> {
     const service = new CounterService();
     return service.counterRepository.getNextSequenceWithSession(counterId, session, startValue);
@@ -63,7 +64,7 @@ export class CounterService {
    * @param initialValue Valor inicial
    * @returns Promise com o counter criado
    */
-  static async createCounter(counterId: string, initialValue: number = 300000) {
+  static async createCounter(counterId: string, initialValue: number = SERVICE_ORDER_START) {
     const service = new CounterService();
     return service.counterRepository.createCounter(counterId, initialValue);
   }
@@ -101,7 +102,7 @@ export class CounterService {
   /**
    * Obtém próxima sequência (método de instância)
    */
-  async getNextSequenceInstance(counterId: string, startValue: number = 300000): Promise<number> {
+  async getNextSequenceInstance(counterId: string, startValue: number = SERVICE_ORDER_START): Promise<number> {
     return this.counterRepository.getNextSequence(counterId, startValue);
   }
 
@@ -111,7 +112,7 @@ export class CounterService {
   async getNextSequenceWithSessionInstance(
     counterId: string,
     session: mongoose.ClientSession,
-    startValue: number = 300000
+    startValue: number = SERVICE_ORDER_START
   ): Promise<number> {
     return this.counterRepository.getNextSequenceWithSession(counterId, session, startValue);
   }

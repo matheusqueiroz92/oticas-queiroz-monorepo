@@ -1,4 +1,5 @@
 import { CounterService } from "../../../services/CounterService";
+import { SERVICE_ORDER_START } from "../../../constants/serviceOrder";
 import { RepositoryFactory } from "../../../repositories/RepositoryFactory";
 import type { ICounterRepository } from "../../../repositories/interfaces/ICounterRepository";
 import mongoose from "mongoose";
@@ -33,12 +34,12 @@ describe("CounterService", () => {
 
   describe("getNextSequence", () => {
     it("should get next sequence with default start value", async () => {
-      mockCounterRepository.getNextSequence.mockResolvedValue(300000);
+      mockCounterRepository.getNextSequence.mockResolvedValue(SERVICE_ORDER_START);
 
       const result = await CounterService.getNextSequence("serviceOrder");
 
-      expect(result).toBe(300000);
-      expect(mockCounterRepository.getNextSequence).toHaveBeenCalledWith("serviceOrder", 300000);
+      expect(result).toBe(SERVICE_ORDER_START);
+      expect(mockCounterRepository.getNextSequence).toHaveBeenCalledWith("serviceOrder", SERVICE_ORDER_START);
     });
 
     it("should get next sequence with custom start value", async () => {
@@ -52,28 +53,28 @@ describe("CounterService", () => {
 
     it("should increment sequence", async () => {
       mockCounterRepository.getNextSequence
-        .mockResolvedValueOnce(300000)
-        .mockResolvedValueOnce(300001);
+        .mockResolvedValueOnce(SERVICE_ORDER_START)
+        .mockResolvedValueOnce(SERVICE_ORDER_START + 1);
 
       const firstResult = await CounterService.getNextSequence("serviceOrder");
       const secondResult = await CounterService.getNextSequence("serviceOrder");
 
-      expect(firstResult).toBe(300000);
-      expect(secondResult).toBe(300001);
+      expect(firstResult).toBe(SERVICE_ORDER_START);
+      expect(secondResult).toBe(SERVICE_ORDER_START + 1);
       expect(mockCounterRepository.getNextSequence).toHaveBeenCalledTimes(2);
     });
 
     it("should handle different counter IDs", async () => {
       mockCounterRepository.getNextSequence
-        .mockResolvedValueOnce(300000)
+        .mockResolvedValueOnce(SERVICE_ORDER_START)
         .mockResolvedValueOnce(100000);
 
       const serviceOrderSeq = await CounterService.getNextSequence("serviceOrder");
       const invoiceSeq = await CounterService.getNextSequence("invoice", 100000);
 
-      expect(serviceOrderSeq).toBe(300000);
+      expect(serviceOrderSeq).toBe(SERVICE_ORDER_START);
       expect(invoiceSeq).toBe(100000);
-      expect(mockCounterRepository.getNextSequence).toHaveBeenCalledWith("serviceOrder", 300000);
+      expect(mockCounterRepository.getNextSequence).toHaveBeenCalledWith("serviceOrder", SERVICE_ORDER_START);
       expect(mockCounterRepository.getNextSequence).toHaveBeenCalledWith("invoice", 100000);
     });
   });
@@ -81,15 +82,15 @@ describe("CounterService", () => {
   describe("getNextSequenceWithSession", () => {
     it("should get next sequence with session", async () => {
       const mockSession = {} as mongoose.ClientSession;
-      mockCounterRepository.getNextSequenceWithSession.mockResolvedValue(300000);
+      mockCounterRepository.getNextSequenceWithSession.mockResolvedValue(SERVICE_ORDER_START);
 
       const result = await CounterService.getNextSequenceWithSession("serviceOrder", mockSession);
 
-      expect(result).toBe(300000);
+      expect(result).toBe(SERVICE_ORDER_START);
       expect(mockCounterRepository.getNextSequenceWithSession).toHaveBeenCalledWith(
         "serviceOrder", 
         mockSession, 
-        300000
+        SERVICE_ORDER_START
       );
     });
 
@@ -150,13 +151,13 @@ describe("CounterService", () => {
 
   describe("createCounter", () => {
     it("should create counter with default initial value", async () => {
-      const mockCounter = { _id: "serviceOrder", sequence: 300000 };
+      const mockCounter = { _id: "serviceOrder", sequence: SERVICE_ORDER_START };
       mockCounterRepository.createCounter.mockResolvedValue(mockCounter);
 
       const result = await CounterService.createCounter("serviceOrder");
 
       expect(result).toEqual(mockCounter);
-      expect(mockCounterRepository.createCounter).toHaveBeenCalledWith("serviceOrder", 300000);
+      expect(mockCounterRepository.createCounter).toHaveBeenCalledWith("serviceOrder", SERVICE_ORDER_START);
     });
 
     it("should create counter with custom initial value", async () => {
@@ -242,29 +243,29 @@ describe("CounterService", () => {
     });
 
     it("should get next sequence using instance method", async () => {
-      mockCounterRepository.getNextSequence.mockResolvedValue(300000);
+      mockCounterRepository.getNextSequence.mockResolvedValue(SERVICE_ORDER_START);
 
-      const result = await counterService.getNextSequenceInstance("serviceOrder", 300000);
+      const result = await counterService.getNextSequenceInstance("serviceOrder", SERVICE_ORDER_START);
 
-      expect(result).toBe(300000);
-      expect(mockCounterRepository.getNextSequence).toHaveBeenCalledWith("serviceOrder", 300000);
+      expect(result).toBe(SERVICE_ORDER_START);
+      expect(mockCounterRepository.getNextSequence).toHaveBeenCalledWith("serviceOrder", SERVICE_ORDER_START);
     });
 
     it("should get next sequence with session using instance method", async () => {
       const mockSession = {} as mongoose.ClientSession;
-      mockCounterRepository.getNextSequenceWithSession.mockResolvedValue(300000);
+      mockCounterRepository.getNextSequenceWithSession.mockResolvedValue(SERVICE_ORDER_START);
 
       const result = await counterService.getNextSequenceWithSessionInstance(
         "serviceOrder", 
         mockSession, 
-        300000
+        SERVICE_ORDER_START
       );
 
-      expect(result).toBe(300000);
+      expect(result).toBe(SERVICE_ORDER_START);
       expect(mockCounterRepository.getNextSequenceWithSession).toHaveBeenCalledWith(
         "serviceOrder",
         mockSession,
-        300000
+        SERVICE_ORDER_START
       );
     });
 

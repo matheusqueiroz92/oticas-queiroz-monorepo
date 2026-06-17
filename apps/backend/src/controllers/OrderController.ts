@@ -10,6 +10,9 @@ import { UserService } from "../services/UserService";
 import { emitOrderSicrediBoletoSchema } from "../validators/sicrediValidators";
 import { PaymentValidationError } from "../services/PaymentValidationService";
 import { CounterService } from "../services/CounterService";
+import {
+  SERVICE_ORDER_START,
+} from "../constants/serviceOrder";
 import { z } from "zod";
 import type { CreateOrderDTO, IOrder } from "../interfaces/IOrder";
 import type { JwtPayload } from "jsonwebtoken";
@@ -953,8 +956,7 @@ export class OrderController {
       let nextServiceOrder: number;
       
       if (currentSequence === null || currentSequence === undefined) {
-        // Se não existe contador ainda, o próximo será 300000
-        nextServiceOrder = 300000;
+        nextServiceOrder = SERVICE_ORDER_START;
         console.log("Contador não existe, próximo será:", nextServiceOrder);
       } else {
         // Se já existe, o próximo será o atual + 1
@@ -962,10 +964,9 @@ export class OrderController {
         console.log("Contador existe, próximo será:", nextServiceOrder);
       }
       
-      // Verificar se o número calculado é menor que 300000
-      if (nextServiceOrder < 300000) {
-        nextServiceOrder = 300000;
-        console.log("Número menor que 300000, resetando para:", nextServiceOrder);
+      if (nextServiceOrder < SERVICE_ORDER_START) {
+        nextServiceOrder = SERVICE_ORDER_START;
+        console.log(`Número menor que ${SERVICE_ORDER_START}, resetando para:`, nextServiceOrder);
       }
       
       res.status(200).json({
