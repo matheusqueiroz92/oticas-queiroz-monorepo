@@ -22,6 +22,7 @@ import path from "node:path";
 import dotenv from "dotenv";
 import { initSicredi } from "./config/sicredi";
 import { startSicrediSync } from "./scripts/startSicrediSync";
+import { startBotInactivityMonitor } from "./scripts/startBotInactivityMonitor";
 import { logger } from "./config/logger";
 
 dotenv.config();
@@ -197,6 +198,14 @@ class App {
             await startSicrediSync();
           } catch (error) {
             logger.warn("SICREDI Sync: Não foi possível iniciar a sincronização", { error });
+          }
+        }, 5000);
+
+        setTimeout(async () => {
+          try {
+            await startBotInactivityMonitor();
+          } catch (error) {
+            logger.warn("BotInactivityMonitor: Não foi possível iniciar o monitor", { error });
           }
         }, 5000);
       }

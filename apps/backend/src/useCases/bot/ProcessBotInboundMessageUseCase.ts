@@ -80,14 +80,19 @@ export class ProcessBotInboundMessageUseCase {
     if (!session) {
       await this.sessionService.openMenuSession(remoteJid);
       if (expiredByInactivity) {
-        return {
+        return this.respondAndAwait(remoteJid, {
           action: "SESSION_EXPIRED",
           text: buildSessionExpiredMenuText(),
           sessionStatus: "AGUARDANDO_OPCAO",
-        };
+        });
       }
-      return this.menuResponse(BOT_MAIN_MENU_TEXT, "AGUARDANDO_OPCAO");
+      return this.respondAndAwait(
+        remoteJid,
+        this.menuResponse(BOT_MAIN_MENU_TEXT, "AGUARDANDO_OPCAO")
+      );
     }
+
+    await this.sessionService.recordUserActivity(remoteJid);
 
     const currentStatus = isBotChatSessionStatus(session.status)
       ? session.status
@@ -105,24 +110,55 @@ export class ProcessBotInboundMessageUseCase {
         status: session.status,
       });
       await this.sessionService.openMenuSession(remoteJid);
-      return this.menuResponse(BOT_MAIN_MENU_TEXT, "AGUARDANDO_OPCAO");
+      return this.respondAndAwait(
+        remoteJid,
+        this.menuResponse(BOT_MAIN_MENU_TEXT, "AGUARDANDO_OPCAO")
+      );
     }
 
     switch (currentStatus) {
       case "AGUARDANDO_OPCAO":
-        return this.handleMenuOption(remoteJid, text);
+        return this.respondAndAwait(
+          remoteJid,
+          await this.handleMenuOption(remoteJid, text)
+        );
       case "AGUARDANDO_OS":
-        return this.handleOsInput(remoteJid, text);
+        return this.respondAndAwait(
+          remoteJid,
+          await this.handleOsInput(remoteJid, text)
+        );
       case "AGUARDANDO_CPF":
-        return this.handleCpfInput(remoteJid, text);
+        return this.respondAndAwait(
+          remoteJid,
+          await this.handleCpfInput(remoteJid, text)
+        );
       case "AGUARDANDO_AGENDAMENTO":
-        return this.handleAgendamentoInput(remoteJid, text);
+        return this.respondAndAwait(
+          remoteJid,
+          await this.handleAgendamentoInput(remoteJid, text)
+        );
       case "AGUARDANDO_ORCAMENTO":
-        return this.handleOrcamentoInput(remoteJid, text);
+        return this.respondAndAwait(
+          remoteJid,
+          await this.handleOrcamentoInput(remoteJid, text)
+        );
       default:
         await this.sessionService.openMenuSession(remoteJid);
-        return this.menuResponse(BOT_MAIN_MENU_TEXT, "AGUARDANDO_OPCAO");
+        return this.respondAndAwait(
+          remoteJid,
+          this.menuResponse(BOT_MAIN_MENU_TEXT, "AGUARDANDO_OPCAO")
+        );
     }
+  }
+
+  private async respondAndAwait(
+    remoteJid: string,
+    response: BotWebhookResponse
+  ): Promise<BotWebhookResponse> {
+    if (response.sessionStatus !== null) {
+      await this.sessionService.markAwaitingResponse(remoteJid);
+    }
+    return response;
   }
 
   private async returnToMainMenu(remoteJid: string): Promise<BotWebhookResponse> {

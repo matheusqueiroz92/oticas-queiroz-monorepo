@@ -27,11 +27,14 @@ function lookupWithSession(
     | "AGUARDANDO_AGENDAMENTO"
     | "AGUARDANDO_ORCAMENTO"
 ) {
+  const now = new Date();
   return {
     session: {
       remoteJid: jid,
       status,
-      updatedAt: new Date(),
+      awaitingResponseSince: now,
+      inactivityWarningSentAt: null,
+      updatedAt: now,
     },
     expiredByInactivity: false,
   };
@@ -42,7 +45,12 @@ describe("ProcessBotInboundMessageUseCase", () => {
   let mockSession: jest.Mocked<
     Pick<
       BotChatSessionService,
-      "lookupSession" | "openMenuSession" | "setStatus" | "closeSession"
+      | "lookupSession"
+      | "openMenuSession"
+      | "setStatus"
+      | "closeSession"
+      | "recordUserActivity"
+      | "markAwaitingResponse"
     >
   >;
   let mockOrder: jest.Mocked<Pick<GetBotOrderByOsUseCase, "execute">>;
@@ -55,6 +63,8 @@ describe("ProcessBotInboundMessageUseCase", () => {
       openMenuSession: jest.fn(),
       setStatus: jest.fn(),
       closeSession: jest.fn(),
+      recordUserActivity: jest.fn(),
+      markAwaitingResponse: jest.fn(),
     };
     mockOrder = { execute: jest.fn() };
     mockDebts = { execute: jest.fn() };
@@ -70,11 +80,15 @@ describe("ProcessBotInboundMessageUseCase", () => {
     mockSession.openMenuSession.mockResolvedValue({
       remoteJid: jid,
       status: "AGUARDANDO_OPCAO",
+      awaitingResponseSince: new Date(),
+      inactivityWarningSentAt: null,
       updatedAt: new Date(),
     });
     mockSession.setStatus.mockImplementation(async (_jid, status) => ({
       remoteJid: jid,
       status,
+      awaitingResponseSince: new Date(),
+      inactivityWarningSentAt: null,
       updatedAt: new Date(),
     }));
 
@@ -95,9 +109,41 @@ describe("ProcessBotInboundMessageUseCase", () => {
     const r = await useCase.execute(jid, "Oi");
 
     expect(mockSession.openMenuSession).toHaveBeenCalledWith(jid);
+    expect(mockSession.markAwaitingResponse).toHaveBeenCalledWith(jid);
     expect(r.action).toBe("SHOW_MENU");
     expect(r.text).toBe(BOT_MAIN_MENU_TEXT);
     expect(r.sessionStatus).toBe("AGUARDANDO_OPCAO");
+  });
+
+  it("records user activity and marks awaiting response on existing session", async () => {
+    mockSession.lookupSession.mockResolvedValue(
+      lookupWithSession("AGUARDANDO_OPCAO")
+    );
+
+    await useCase.execute(jid, "xyz");
+
+    expect(mockSession.recordUserActivity).toHaveBeenCalledWith(jid);
+    expect(mockSession.markAwaitingResponse).toHaveBeenCalledWith(jid);
+  });
+
+  it("does not mark awaiting response when session is closed after order result", async () => {
+    mockSession.lookupSession.mockResolvedValue(lookupWithSession("AGUARDANDO_OS"));
+    mockOrder.execute.mockResolvedValue({
+      serviceOrder: "300001",
+      status: "ready",
+      paymentStatus: "paid",
+      orderDate: "2025-01-01T00:00:00.000Z",
+      deliveryDate: null,
+      totalPrice: 100,
+      totalPaid: 100,
+      remainingAmount: 0,
+    });
+
+    mockSession.markAwaitingResponse.mockClear();
+
+    await useCase.execute(jid, "300001");
+
+    expect(mockSession.markAwaitingResponse).not.toHaveBeenCalled();
   });
 
   it("notifies inactivity expiry and shows menu when session timed out", async () => {
@@ -335,6 +381,8 @@ describe("ProcessBotInboundMessageUseCase", () => {
       session: {
         remoteJid: jid,
         status: "INVALID" as "AGUARDANDO_OPCAO",
+        awaitingResponseSince: new Date(),
+        inactivityWarningSentAt: null,
         updatedAt: new Date(),
       },
       expiredByInactivity: false,

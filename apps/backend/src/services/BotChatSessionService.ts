@@ -85,6 +85,42 @@ export class BotChatSessionService {
     logger.info("Bot session encerrada", { remoteJid: normalizedJid });
   }
 
+  async markAwaitingResponse(remoteJid: string): Promise<void> {
+    const normalizedJid = normalizeRemoteJid(remoteJid);
+    await this.sessionModel.markAwaitingResponse(normalizedJid);
+    logger.debug("Bot session — aguardando resposta", {
+      remoteJid: normalizedJid,
+    });
+  }
+
+  async recordUserActivity(remoteJid: string): Promise<void> {
+    const normalizedJid = normalizeRemoteJid(remoteJid);
+    await this.sessionModel.recordUserActivity(normalizedJid);
+    logger.debug("Bot session — atividade do usuário registrada", {
+      remoteJid: normalizedJid,
+    });
+  }
+
+  async markInactivityWarningSent(remoteJid: string): Promise<void> {
+    const normalizedJid = normalizeRemoteJid(remoteJid);
+    await this.sessionModel.markInactivityWarningSent(normalizedJid);
+    logger.info("Bot session — aviso de inatividade enviado", {
+      remoteJid: normalizedJid,
+    });
+  }
+
+  async findSessionsForInactivityWarning(
+    before: Date
+  ): Promise<IBotChatSession[]> {
+    return this.sessionModel.findSessionsForInactivityWarning(before);
+  }
+
+  async findSessionsForInactivityClose(
+    before: Date
+  ): Promise<IBotChatSession[]> {
+    return this.sessionModel.findSessionsForInactivityClose(before);
+  }
+
   isExpired(updatedAt: Date): boolean {
     const updatedMs = new Date(updatedAt).getTime();
     if (Number.isNaN(updatedMs)) return true;

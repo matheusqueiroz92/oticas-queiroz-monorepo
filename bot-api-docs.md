@@ -35,8 +35,27 @@ O endpoint **`POST /api/bot/chat`** concentra a lógica do diálogo. O n8n (ou o
 | `AGUARDANDO_AGENDAMENTO` | Aguardando dados para agendamento |
 | `AGUARDANDO_ORCAMENTO` | Aguardando dados para orçamento |
 
-- Sessão expira após **`BOT_SESSION_TTL_MINUTES`** sem interação (padrão: 30).
+- Sessão expira após **`BOT_SESSION_TTL_MINUTES`** sem interação (padrão: 30) — fallback passivo quando o cliente retorna após muito tempo.
+- **Monitor proativo de inatividade** (job no backend): após **`BOT_INACTIVITY_WARNING_MINUTES`** (padrão: 10) sem resposta, envia aviso; após mais **`BOT_INACTIVITY_CLOSE_MINUTES`** (padrão: 5) sem resposta, encerra a conversa e notifica o cliente via `POST /send-message` no gateway.
+- Após encerramento proativo, a próxima mensagem do cliente inicia uma **nova conversa** com o menu inicial.
 - Após consultas (O.S./CPF) ou envio de solicitação (3/4), a sessão é **encerrada**; o cliente pode digitar `0` ou qualquer mensagem para reabrir o menu.
+
+### Campos adicionais da sessão (`botchatsessions`)
+
+| Campo | Descrição |
+|-------|-----------|
+| `awaitingResponseSince` | Momento em que o bot passou a aguardar resposta |
+| `inactivityWarningSentAt` | Quando o aviso proativo foi enviado (`null` = ainda não avisou) |
+
+### Variáveis de ambiente (inatividade)
+
+| Variável | Padrão | Descrição |
+|----------|--------|-----------|
+| `BOT_INACTIVITY_WARNING_MINUTES` | `10` | Minutos sem resposta antes do aviso |
+| `BOT_INACTIVITY_CLOSE_MINUTES` | `5` | Minutos após o aviso para encerrar |
+| `BOT_INACTIVITY_POLL_INTERVAL_SECONDS` | `60` | Intervalo do job de monitoramento |
+| `BOT_INACTIVITY_MONITOR_ENABLED` | `true` (exceto em testes) | Habilita o monitor proativo |
+| `WHATSAPP_BOT_URL` | `http://localhost:3344` | URL do gateway para envio proativo |
 
 ### Solicitações salvas (MongoDB: `botwhatsapprequests`)
 

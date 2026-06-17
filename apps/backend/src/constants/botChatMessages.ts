@@ -10,6 +10,37 @@ export function resolveSessionTtlMinutes(): number {
   return botEnv.sessionTtlMinutes;
 }
 
+export function resolveInactivityWarningMinutes(): number {
+  return botEnv.inactivityWarningMinutes;
+}
+
+export function resolveInactivityCloseMinutes(): number {
+  return botEnv.inactivityCloseMinutes;
+}
+
+function formatMinutesLabel(minutes: number): string {
+  return minutes === 1 ? "1 minuto" : `${minutes} minutos`;
+}
+
+export function buildInactivityWarningText(): string {
+  const closeMinutes = resolveInactivityCloseMinutes();
+  const closeLabel = formatMinutesLabel(closeMinutes);
+
+  return `Olá! Você ainda está aí? 👋
+
+Deseja continuar o atendimento?
+
+Se não recebermos sua resposta em *${closeLabel}*, esta conversa será encerrada automaticamente.
+
+Envie qualquer mensagem para continuar.`;
+}
+
+export function buildConversationClosedText(): string {
+  return `Sua conversa foi *encerrada por inatividade*.
+
+Quando quiser, envie uma nova mensagem para recomeçar o atendimento. 👓`;
+}
+
 export function buildSessionExpiredMenuText(): string {
   const minutes = resolveSessionTtlMinutes();
   const inactivityLabel =

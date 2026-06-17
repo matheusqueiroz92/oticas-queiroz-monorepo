@@ -1,4 +1,5 @@
 import mongoose, { Schema, type Document } from "mongoose";
+import { botEnv } from "../config/botEnv";
 import {
   BOT_CHAT_SESSION_STATUSES,
   type BotChatSessionStatus,
@@ -17,14 +18,22 @@ const botChatSessionSchema = new Schema<BotChatSessionDocument>(
       required: true,
       enum: BOT_CHAT_SESSION_STATUSES,
     },
+    awaitingResponseSince: { type: Date, required: true, default: Date.now },
+    inactivityWarningSentAt: { type: Date, default: null },
   },
   { timestamps: true }
 );
 
 botChatSessionSchema.index({ remoteJid: 1 }, { unique: true });
-// TTL index: MongoDB remove automaticamente sessões inativas há mais de 30 min (M4).
-// O valor deve ser mantido em sincronia com DEFAULT_SESSION_TTL_MS em BotChatSessionService.ts.
-botChatSessionSchema.index({ updatedAt: 1 }, { expireAfterSeconds: 30 * 60 });
+botChatSessionSchema.index(
+  { awaitingResponseSince: 1, inactivityWarningSentAt: 1 },
+  { name: "inactivity_monitor" }
+);
+// TTL index: remove sessões órfãs após BOT_SESSION_TTL_MINUTES sem atualização.
+botChatSessionSchema.index(
+  { updatedAt: 1 },
+  { expireAfterSeconds: botEnv.sessionTtlMinutes * 60 }
+);
 
 export const BotChatSession = mongoose.model<BotChatSessionDocument>(
   "BotChatSession",

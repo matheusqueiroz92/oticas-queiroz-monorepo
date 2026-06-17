@@ -5,15 +5,28 @@ import type { BotChatSessionModel } from "../../../models/BotChatSessionModel";
 describe("BotChatSessionService", () => {
   let service: BotChatSessionService;
   let mockModel: jest.Mocked<
-    Pick<BotChatSessionModel, "findByRemoteJid" | "upsert" | "deleteByRemoteJid">
+    Pick<
+      BotChatSessionModel,
+      | "findByRemoteJid"
+      | "upsert"
+      | "deleteByRemoteJid"
+      | "markAwaitingResponse"
+      | "recordUserActivity"
+      | "markInactivityWarningSent"
+      | "findSessionsForInactivityWarning"
+      | "findSessionsForInactivityClose"
+    >
   >;
 
   const jid = "5511999999999@s.whatsapp.net";
+  const now = new Date();
   const session = {
     _id: "s1",
     remoteJid: jid,
     status: "AGUARDANDO_OPCAO" as const,
-    updatedAt: new Date(),
+    awaitingResponseSince: now,
+    inactivityWarningSentAt: null,
+    updatedAt: now,
   };
 
   beforeEach(() => {
@@ -21,6 +34,11 @@ describe("BotChatSessionService", () => {
       findByRemoteJid: jest.fn(),
       upsert: jest.fn(),
       deleteByRemoteJid: jest.fn(),
+      markAwaitingResponse: jest.fn(),
+      recordUserActivity: jest.fn(),
+      markInactivityWarningSent: jest.fn(),
+      findSessionsForInactivityWarning: jest.fn(),
+      findSessionsForInactivityClose: jest.fn(),
     };
     service = new BotChatSessionService(
       mockModel as unknown as BotChatSessionModel
@@ -66,5 +84,51 @@ describe("BotChatSessionService", () => {
   it("closes session", async () => {
     await service.closeSession(jid);
     expect(mockModel.deleteByRemoteJid).toHaveBeenCalledWith(jid);
+  });
+
+  it("marks awaiting response", async () => {
+    mockModel.markAwaitingResponse.mockResolvedValue(session);
+    await service.markAwaitingResponse(jid);
+    expect(mockModel.markAwaitingResponse).toHaveBeenCalledWith(jid);
+  });
+
+  it("records user activity", async () => {
+    mockModel.recordUserActivity.mockResolvedValue(session);
+    await service.recordUserActivity(jid);
+    expect(mockModel.recordUserActivity).toHaveBeenCalledWith(jid);
+  });
+
+  it("marks inactivity warning sent", async () => {
+    mockModel.markInactivityWarningSent.mockResolvedValue({
+      ...session,
+      inactivityWarningSentAt: new Date(),
+    });
+    await service.markInactivityWarningSent(jid);
+    expect(mockModel.markInactivityWarningSent).toHaveBeenCalledWith(jid);
+  });
+
+  it("finds sessions for inactivity warning", async () => {
+    const threshold = new Date(Date.now() - 10 * 60 * 1000);
+    mockModel.findSessionsForInactivityWarning.mockResolvedValue([session]);
+
+    const result = await service.findSessionsForInactivityWarning(threshold);
+
+    expect(mockModel.findSessionsForInactivityWarning).toHaveBeenCalledWith(
+      threshold
+    );
+    expect(result).toEqual([session]);
+  });
+
+  it("finds sessions for inactivity close", async () => {
+    const threshold = new Date(Date.now() - 5 * 60 * 1000);
+    const warned = { ...session, inactivityWarningSentAt: new Date() };
+    mockModel.findSessionsForInactivityClose.mockResolvedValue([warned]);
+
+    const result = await service.findSessionsForInactivityClose(threshold);
+
+    expect(mockModel.findSessionsForInactivityClose).toHaveBeenCalledWith(
+      threshold
+    );
+    expect(result).toEqual([warned]);
   });
 });
