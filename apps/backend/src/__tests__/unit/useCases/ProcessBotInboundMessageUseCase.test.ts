@@ -13,6 +13,7 @@ import { ErrorCode } from "../../../utils/errorCodes";
 import {
   BOT_ASK_CPF_TEXT,
   BOT_ASK_OS_TEXT,
+  BOT_INVALID_OPTION_TEXT,
   BOT_MAIN_MENU_TEXT,
   buildSessionExpiredMenuText,
 } from "../../../constants/botChatMessages";
@@ -193,7 +194,9 @@ describe("ProcessBotInboundMessageUseCase", () => {
     const r = await useCase.execute(jid, "xyz");
 
     expect(r.action).toBe("SHOW_MENU");
+    expect(r.text).toBe(BOT_INVALID_OPTION_TEXT);
     expect(r.text).toContain("Opção inválida");
+    expect(r.text).not.toContain("Bem-vindo");
   });
 
   it("AGUARDANDO_OS queries order and closes session", async () => {

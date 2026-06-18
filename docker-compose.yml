@@ -127,6 +127,15 @@ services:
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET obrigatório}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-24h}
       BOT_API_KEY: ${BOT_API_KEY:-}
+      # Chatbot WhatsApp — monitor proativo de inatividade (POST /send-message no gateway)
+      # WHATSAPP_BOT_URL: defina no .env (ex.: http://whatsapp-bot:3344). Evite default com :// aqui — quebra o parser do Compose.
+      WHATSAPP_BOT_URL: ${WHATSAPP_BOT_URL}
+      BOT_SESSION_TTL_MINUTES: ${BOT_SESSION_TTL_MINUTES:-30}
+      BOT_INACTIVITY_MONITOR_ENABLED: ${BOT_INACTIVITY_MONITOR_ENABLED:-true}
+      BOT_INACTIVITY_WARNING_MINUTES: ${BOT_INACTIVITY_WARNING_MINUTES:-10}
+      BOT_INACTIVITY_CLOSE_MINUTES: ${BOT_INACTIVITY_CLOSE_MINUTES:-5}
+      BOT_INACTIVITY_POLL_INTERVAL_SECONDS: ${BOT_INACTIVITY_POLL_INTERVAL_SECONDS:-60}
+      BOT_EXAM_PRICE_BRL: ${BOT_EXAM_PRICE_BRL:-150}
       FRONTEND_URL: ${FRONTEND_URL:-https://app.oticasqueiroz.com.br}
       API_URL: ${API_URL:-https://api.app.oticasqueiroz.com.br}
       EMAIL_HOST: ${EMAIL_HOST}

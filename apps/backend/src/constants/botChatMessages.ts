@@ -53,16 +53,18 @@ Vamos recomeçar:
 ${BOT_MAIN_MENU_TEXT}`;
 }
 
-export const BOT_MAIN_MENU_TEXT = `Olá! Bem-vindo(a) à *Óticas Queiroz*. 👓
-
-Escolha uma opção digitando o número:
-
-*1* — Consultar status do pedido (O.S.)
+export const BOT_MENU_OPTIONS_TEXT = `*1* — Consultar status do pedido (O.S.)
 *2* — Consultar débitos por CPF
 *3* — Agendar exame de vista
 *4* — Solicitar orçamento
 
 Digite o número da opção desejada.`;
+
+export const BOT_MAIN_MENU_TEXT = `Olá! Bem-vindo(a) à *Óticas Queiroz*. 👓
+
+Escolha uma opção digitando o número:
+
+${BOT_MENU_OPTIONS_TEXT}`;
 
 export const BOT_BACK_TO_MENU_HINT =
   "\n\n_Digite *0* para voltar ao menu principal._";
@@ -76,7 +78,7 @@ export const BOT_BACK_TO_MENU_LINE =
 
 export const BOT_INVALID_OPTION_TEXT = `Opção inválida. Por favor, escolha uma das opções abaixo:
 
-${BOT_MAIN_MENU_TEXT}`;
+${BOT_MENU_OPTIONS_TEXT}`;
 
 export const BOT_ASK_OS_TEXT =
   "Por favor, informe o número da *Ordem de Serviço (O.S.)* do seu pedido." +
